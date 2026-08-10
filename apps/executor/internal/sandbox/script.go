@@ -40,8 +40,8 @@ func buildScript(spec Spec, nonce string) string {
 		compileSeconds := seconds(spec.CompileTimeoutMs)
 		b.WriteString("if ! timeout -k 1 " + compileSeconds + " " + quoteAll(spec.Compile) + " >/work/.compile 2>&1; then\n")
 		b.WriteString("  cat /work/.compile >&2\n")
-		b.WriteString(fmt.Sprintf("  printf '\\n%s exit=%d wall_ms=0 mem_bytes=0\\n'\n", nonce, compileFailedExitCode))
-		b.WriteString(fmt.Sprintf("  exit %d\n", compileFailedExitCode))
+		fmt.Fprintf(&b, "  printf '\\n%s exit=%d wall_ms=0 mem_bytes=0\\n'\n", nonce, compileFailedExitCode)
+		fmt.Fprintf(&b, "  exit %d\n", compileFailedExitCode)
 		b.WriteString("fi\n")
 	}
 
