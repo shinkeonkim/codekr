@@ -12,8 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.simple.JdbcClient
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.Duration
 import java.time.Instant
@@ -152,6 +154,56 @@ class ContestSubmissionIntegrationTest : IntegrationTestBase() {
         // 적체를 볼 수 없으면 워커를 언제 늘려야 하는지 알 수 없다.
         assertTrue(QueueKeys.JUDGE_STREAM_CONTEST in QueueKeys.JUDGE_STREAMS)
         assertTrue(QueueKeys.JUDGE_STREAM_CONTEST !in QueueKeys.JUDGE_PRIORITY_STREAMS)
+    }
+
+    @Test
+    fun `대회 제출은 감사 이력을 남긴다`() {
+        // 부정행위 의심이 생겼을 때 판단할 근거가 없으면 아무 조치도 할 수 없다 (#148).
+        submitToContest("two-sum").andExpect(status().isAccepted)
+
+        val rows = jdbcClient.sql("SELECT count(*) FROM contest_submission_audits")
+            .query(Int::class.java).single()
+        assertEquals(1, rows)
+    }
+
+    @Test
+    fun `평소 제출은 감사 이력을 남기지 않는다`() {
+        // 모든 사용자의 접속 이력이 쌓이는 것은 이 기능이 필요로 하지 않는 정보다.
+        mockMvc.perform(
+            post("/api/v1/problems/two-sum/submissions")
+                .header("Authorization", "Bearer $userToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"runtimeId":"python:3.12","sourceCode":"print(3)"}"""),
+        ).andExpect(status().isAccepted)
+
+        val rows = jdbcClient.sql("SELECT count(*) FROM contest_submission_audits")
+            .query(Int::class.java).single()
+        assertEquals(0, rows)
+    }
+
+    @Test
+    fun `같은 주소에서 낸 계정이 여럿이면 어드민에게 보인다`() {
+        submitToContest("two-sum").andExpect(status().isAccepted)
+        // 다른 참가자가 같은 주소에서 낸 것처럼 만든다.
+        val outsider = userRepository.save(
+            User("second@codekr.dev", "x", "두번째", setOf(UserRole.USER)),
+        )
+        jdbcClient.sql(
+            """
+            INSERT INTO contest_submission_audits (submission_id, contest_id, user_id, ip)
+            SELECT id, contest_id, :userId, (SELECT ip FROM contest_submission_audits LIMIT 1)
+            FROM submissions WHERE contest_id IS NOT NULL LIMIT 1
+            ON CONFLICT (submission_id) DO UPDATE SET user_id = :userId
+            """,
+        ).param("userId", outsider.id).update()
+
+        mockMvc.perform(
+            get("/api/v1/admin/contests/$contestId/audit/shared-addresses")
+                .header("Authorization", "Bearer $adminToken"),
+        )
+            .andExpect(status().isOk)
+            // 전체 목록을 내리면 감사가 아니라 감시가 된다. 겹치는 것만 나온다.
+            .andExpect(jsonPath("$.length()").value(0))
     }
 
     private fun submitToContest(problemSlug: String) = mockMvc.perform(

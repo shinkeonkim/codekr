@@ -135,6 +135,12 @@ object ApiEndpointInventory {
         Endpoint("PUT", "/api/v1/admin/contests/{id}/status", Access.ADMIN, UserRole.CONTEST_MANAGER),
         Endpoint("POST", "/api/v1/admin/contests/{id}/unfreeze", Access.ADMIN, UserRole.CONTEST_MANAGER),
         Endpoint(
+            "GET",
+            "/api/v1/admin/contests/{id}/audit/shared-addresses",
+            Access.ADMIN,
+            UserRole.CONTEST_MANAGER,
+        ),
+        Endpoint(
             "PUT",
             "/api/v1/admin/contests/{id}/problems/{problemId}/exclusion",
             Access.ADMIN,
