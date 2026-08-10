@@ -18,6 +18,8 @@ class ActivityController(private val activityService: ActivityService) {
     fun findMyActivity(
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate?,
+        /** 그 해 전체를 본다 (#81). from/to 보다 우선한다. */
+        @RequestParam(required = false) year: Int?,
         principal: AuthPrincipal,
-    ): ActivityResponse = activityService.findActivity(principal.userId, from, to)
+    ): ActivityResponse = activityService.findActivity(principal.userId, from, to, year)
 }

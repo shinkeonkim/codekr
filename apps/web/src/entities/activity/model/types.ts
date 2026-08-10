@@ -11,7 +11,10 @@ export interface ActivityResponse {
   days: DailyActivity[];
   totalCount: number;
   activeDayCount: number;
+  /** 스트릭은 조회 범위가 아니라 전체 기간 기준이다 (#81). */
   currentStreak: number;
   longestStreak: number;
+  /** 활동이 있는 연도 + 올해. 최신 연도가 앞. */
+  availableYears: number[];
   timeZone: string;
 }
