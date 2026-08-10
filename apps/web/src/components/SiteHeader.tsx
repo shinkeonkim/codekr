@@ -7,6 +7,7 @@ import { Button } from "./ui";
 
 const NAV_ITEMS = [
   { href: "/problems", label: "문제" },
+  { href: "/submissions/explore", label: "전체 제출" },
   { href: "/submissions", label: "내 제출" },
 ];
 

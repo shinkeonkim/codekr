@@ -130,6 +130,10 @@ export const api = {
   submissions: (query: Record<string, string | number | undefined>) =>
     request<Page<SubmissionSummary>>("/api/v1/submissions", { auth: true, query }),
 
+  /** 전체 회원의 제출 목록 (#34). 소스 코드는 담기지 않는다. */
+  exploreSubmissions: (query: Record<string, string | number | undefined>) =>
+    request<Page<SubmissionSummary>>("/api/v1/submissions/explore", { auth: true, query }),
+
   adminProblems: (query: Record<string, string | number | undefined>) =>
     request<Page<ProblemSummary>>("/api/v1/admin/problems", { auth: true, query }),
 
