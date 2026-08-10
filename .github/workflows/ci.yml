@@ -91,7 +91,9 @@ jobs:
           cache-dependency-path: apps/${{ matrix.module }}/go.sum
       - uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.6
+          # go.mod 의 Go 버전보다 낮은 Go 로 빌드된 golangci-lint 는 패키지를 읽다가
+          # 패닉한다("file requires newer Go version"). Go 를 올리면 여기도 같이 올려야 한다.
+          version: v2.12
           working-directory: apps/${{ matrix.module }}
           args: --config ${{ github.workspace }}/.golangci.yml
       # 컨테이너 런타임이 필요한 라이브 샌드박스 테스트는 CODEKR_SANDBOX_TEST 로 분리돼 있다.
