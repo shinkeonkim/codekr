@@ -16,6 +16,7 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     PROBLEM_NOT_FOUND(HttpStatus.NOT_FOUND, "문제를 찾을 수 없습니다."),
+    CONTEST_NOT_FOUND(HttpStatus.NOT_FOUND, "대회를 찾을 수 없습니다."),
     SUBMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "제출을 찾을 수 없습니다."),
     RUNTIME_NOT_FOUND(HttpStatus.NOT_FOUND, "지원하지 않는 실행 환경입니다."),
 

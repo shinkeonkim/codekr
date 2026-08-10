@@ -57,6 +57,9 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/runtimes", Access.PUBLIC),
         Endpoint("GET", "/api/v1/rankings", Access.PUBLIC),
         Endpoint("GET", "/api/v1/rankings/metrics", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/contests", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/contests/{slug}", Access.PUBLIC),
+        Endpoint("POST", "/api/v1/contests/{slug}/registrations", Access.AUTHENTICATED),
 
         // --- 제출 ---
         Endpoint("POST", "/api/v1/problems/{slug}/run", Access.AUTHENTICATED),
@@ -92,6 +95,19 @@ object ApiEndpointInventory {
         Endpoint("POST", "/api/v1/admin/executors/scale", Access.ADMIN, UserRole.ADMIN),
         Endpoint("POST", "/api/v1/admin/retention/cleanup", Access.ADMIN, UserRole.ADMIN),
         // 경로 규칙에 적지 않아 안전한 기본값(최고 관리자)이 적용된다.
+        Endpoint("GET", "/api/v1/admin/contests", Access.ADMIN, UserRole.CONTEST_MANAGER),
+        Endpoint("GET", "/api/v1/admin/contests/{id}", Access.ADMIN, UserRole.CONTEST_MANAGER),
+        Endpoint("POST", "/api/v1/admin/contests", Access.ADMIN, UserRole.CONTEST_MANAGER),
+        Endpoint("PUT", "/api/v1/admin/contests/{id}", Access.ADMIN, UserRole.CONTEST_MANAGER),
+        Endpoint("PUT", "/api/v1/admin/contests/{id}/status", Access.ADMIN, UserRole.CONTEST_MANAGER),
+        Endpoint("POST", "/api/v1/admin/contests/{id}/unfreeze", Access.ADMIN, UserRole.CONTEST_MANAGER),
+        Endpoint(
+            "PUT",
+            "/api/v1/admin/contests/{id}/problems/{problemId}/exclusion",
+            Access.ADMIN,
+            UserRole.CONTEST_MANAGER,
+        ),
+        Endpoint("DELETE", "/api/v1/admin/contests/{id}", Access.ADMIN, UserRole.CONTEST_MANAGER),
         Endpoint("PUT", "/api/v1/admin/users/{id}/roles", Access.ADMIN, UserRole.SUPERUSER),
         Endpoint("POST", "/api/v1/admin/users/{userId}/activity/recompute", Access.ADMIN, UserRole.SUPERUSER),
     )

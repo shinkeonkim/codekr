@@ -71,6 +71,8 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/api/v1/runtimes").permitAll()
                     // 랭킹은 공개 정보다 (#57, #85).
                     .requestMatchers(HttpMethod.GET, "/api/v1/rankings", "/api/v1/rankings/*").permitAll()
+                    // 대회 목록·상세는 공개다. 참가 등록만 로그인이 필요하다 (#61).
+                    .requestMatchers(HttpMethod.GET, "/api/v1/contests", "/api/v1/contests/*").permitAll()
                     .requestMatchers("/ws/**").permitAll()
                     // 어드민 영역의 역할 규칙 (#103).
                     //
@@ -78,6 +80,9 @@ class SecurityConfig(
                     //   1. 메서드 보안은 **본문 바인딩 뒤에** 돈다. 권한 없는 요청이
                     //      400(검증 실패)을 먼저 받아, 막혔다는 사실조차 알 수 없다
                     //   2. 인가가 두 곳에 흩어지면 새 컨트롤러에서 어느 쪽을 써야 하는지 헷갈린다
+                    // 대회 운영은 대회 관리자 이상 (#61, #103).
+                    .requestMatchers("/api/v1/admin/contests/**")
+                    .hasRole(UserRole.CONTEST_MANAGER.name)
                     .requestMatchers("/api/v1/admin/problems/**")
                     .hasRole(UserRole.PROBLEM_SETTER.name)
                     .requestMatchers(
