@@ -33,6 +33,10 @@ spec:
             # 엔진 API 클라이언트가 읽는 표준 변수명이다 (제품명이 아니라 규약).
             - { name: DOCKER_HOST, value: "unix://{{ .Values.executor.runtimeSocket }}" }
             - { name: CODEKR_SANDBOX_RUNTIME, value: {{ .Values.executor.sandboxRuntime | quote }} }
+            {{- if .Values.executor.runtimeRegistry }}
+            # 런타임 이미지를 자체 레지스트리에서 받는다 (#96).
+            - { name: CODEKR_RUNTIME_REGISTRY, value: {{ .Values.executor.runtimeRegistry | quote }} }
+            {{- end }}
             {{- if .Values.executor.seccompProfile.enabled }}
             # 좁힌 프로파일 (#48). 파일이 없거나 망가지면 실행기가 기동에서 실패한다
             # — 첫 제출에서 드러나지 않게.

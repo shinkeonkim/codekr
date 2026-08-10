@@ -23,6 +23,9 @@ type Config struct {
 	// SeccompProfilePath 는 샌드박스 컨테이너에 걸 seccomp 프로파일 파일이다 (#48).
 	// 비어 있으면 런타임 기본 프로파일을 쓴다.
 	SeccompProfilePath string
+	// RuntimeRegistry 는 런타임 이미지를 받아올 레지스트리다 (#96).
+	// 비면 정의 파일의 주소 그대로 — 로컬 개발은 원본에서 받는다.
+	RuntimeRegistry string
 }
 
 // Load 는 환경 변수를 읽어 설정을 만든다. 값이 없으면 로컬 개발에 맞는 기본값을 쓴다.
@@ -42,6 +45,7 @@ func Load() Config {
 		ConsumerName:         env("CODEKR_CONSUMER_NAME", hostname),
 		SandboxRuntime:       env("CODEKR_SANDBOX_RUNTIME", "engine-api"),
 		SeccompProfilePath:   env("CODEKR_SECCOMP_PROFILE", ""),
+		RuntimeRegistry:      env("CODEKR_RUNTIME_REGISTRY", ""),
 	}
 }
 

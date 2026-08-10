@@ -79,7 +79,14 @@ func run() int {
 		"redis", cfg.RedisAddr, "http", cfg.HTTPAddr, "sandbox", cfg.SandboxRuntime,
 		"concurrency", cfg.Concurrency, "runtimes", registry.Images())
 
-	runner := worker.NewRunner(registry, box, cfg.CompileTimeoutMs, cfg.CompileMemoryLimitMb, cfg.MaxOutputBytes)
+	runner := worker.NewRunner(
+		registry,
+		box,
+		cfg.CompileTimeoutMs,
+		cfg.CompileMemoryLimitMb,
+		cfg.MaxOutputBytes,
+		cfg.RuntimeRegistry,
+	)
 	consumer := worker.NewConsumer(redisClient, runner, cfg.ConsumerName, cfg.Concurrency, log)
 	exitCode := 0
 	if err := consumer.Start(ctx); err != nil {
