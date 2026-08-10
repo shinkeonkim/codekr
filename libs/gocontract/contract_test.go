@@ -126,3 +126,27 @@ func TestQueueKeysMatchFixture(t *testing.T) {
 		}
 	}
 }
+
+// SQL 채점 작업도 api(Kotlin)와 같은 고정 JSON 으로 읽는다 (#60).
+func TestJudgeJobSQLFixtureMatchesContract(t *testing.T) {
+	var job JudgeJob
+	decodeStrict(t, readFixture(t, "judge-job-sql.json"), &job)
+
+	if job.KindOf() != KindJudgeSQL {
+		t.Fatalf("SQL 유형이어야 합니다: %s", job.KindOf())
+	}
+	if job.SQL == nil {
+		t.Fatal("SQL 블록이 손실되었습니다")
+	}
+	// 정답은 결과 집합이 아니라 쿼리다 — 시드가 바뀌면 기대 결과도 따라간다.
+	if job.SQL.Answer == "" || job.SQL.Schema == "" {
+		t.Fatalf("스키마와 정답 쿼리가 있어야 합니다: %+v", job.SQL)
+	}
+	if !job.SQL.IgnoreRowOrder {
+		t.Fatal("행 순서 무시 옵션이 손실되었습니다")
+	}
+	// SQL 문제의 채점 단위는 정답 쿼리 하나다.
+	if len(job.Testcases) != 0 {
+		t.Fatalf("테스트케이스가 없어야 합니다: %+v", job.Testcases)
+	}
+}

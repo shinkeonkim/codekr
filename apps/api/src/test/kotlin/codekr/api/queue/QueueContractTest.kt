@@ -13,6 +13,7 @@ import tools.jackson.module.kotlin.KotlinModule
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -44,6 +45,20 @@ class QueueContractTest {
         assertEquals("3\n", job.testcases.first().expectedOutput)
         // 유형 필드가 없는 옛 작업은 stdin/stdout 으로 읽는다 (#59). 채점기(Go)도 같게 읽는다.
         assertEquals(ProblemKind.JUDGE_STDIO, job.kind)
+        // stdin/stdout 작업에는 SQL 블록이 없다 (#60).
+        assertNull(job.sql)
+    }
+
+    @Test
+    fun `SQL 채점 작업 고정 JSON 을 그대로 읽는다`() {
+        val job = mapper.readValue(fixture("judge-job-sql.json"), JudgeJobMessage::class.java)
+
+        assertEquals(ProblemKind.JUDGE_SQL, job.kind)
+        // 정답은 결과 집합이 아니라 **쿼리**다 — 시드가 바뀌면 기대 결과도 따라간다.
+        assertEquals("SELECT city, count(*) FROM members GROUP BY city ORDER BY city;", job.sql?.answer)
+        assertEquals(true, job.sql?.ignoreRowOrder)
+        // SQL 문제의 채점 단위는 정답 쿼리 하나다. 테스트케이스가 없다.
+        assertEquals(0, job.testcases.size)
     }
 
     @Test

@@ -24,6 +24,7 @@ export type {
   ProblemStats,
   ProblemSolution,
   ProblemSummary,
+  SqlSpec,
   ProblemTemplate,
   ProblemVerification,
   Runtime,

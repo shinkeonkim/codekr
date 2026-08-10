@@ -6,8 +6,10 @@ import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.config.properties.SubmissionProperties
 import codekr.api.problem.entity.Problem
+import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.service.ProblemService
+import codekr.api.queue.JudgeJobFactory
 import codekr.api.queue.QueuePublisher
 import codekr.api.queue.JudgePriority
 import codekr.api.queue.message.JudgeJobMessage
@@ -42,6 +44,7 @@ class SubmissionService(
     private val problemService: ProblemService,
     private val runtimeRegistry: RuntimeRegistry,
     private val queuePublisher: QueuePublisher,
+    private val judgeJobFactory: JudgeJobFactory,
     private val userRepository: UserRepository,
     private val properties: SubmissionProperties,
 ) {
@@ -70,7 +73,10 @@ class SubmissionService(
     fun submit(slug: String, userId: Long, request: SubmitRequest): SubmitResponse {
         val problem = problemService.requirePublished(slug)
         validate(problem, request.runtimeId, request.sourceCode)
-        if (problem.testcases.isEmpty()) throw ApiException(ErrorCode.TESTCASE_REQUIRED)
+        // SQL 문제의 채점 대상은 테스트케이스가 아니라 정답 쿼리다 (#60).
+        if (problem.problemKind != ProblemKind.JUDGE_SQL && problem.testcases.isEmpty()) {
+            throw ApiException(ErrorCode.TESTCASE_REQUIRED)
+        }
 
         val submission = submissionRepository.save(
             Submission(
@@ -78,14 +84,14 @@ class SubmissionService(
                 problemId = problem.id,
                 runtimeId = request.runtimeId,
                 sourceCode = request.sourceCode,
-                totalCount = problem.testcases.size,
+                totalCount = problem.judgeUnitCount,
                 // 요청에 없으면 사용자 기본값을 쓴다 (#104).
                 // **서버에서 채운다** — 화면이 기본값을 알고 보내는 방식이면 화면마다 어긋난다.
             ).apply { changeVisibility(request.visibility ?: defaultVisibilityOf(userId)) },
         )
 
         queuePublisher.publishJudgeJob(
-            JudgeJobMessage.of(submission, problem),
+            judgeJobFactory.of(submission, problem),
             JudgePriority.of(submission.kind, problem),
         )
         return SubmitResponse.from(submission)

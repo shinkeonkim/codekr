@@ -15,7 +15,7 @@ enum class ProblemKind(val label: String, val ready: Boolean) {
     JUDGE_STDIO("코드 실행 (stdin/stdout)", ready = true),
 
     /** 격리 PostgreSQL 에서 쿼리를 실행해 결과 집합을 비교한다 (#60). */
-    JUDGE_SQL("SQL", ready = false),
+    JUDGE_SQL("SQL", ready = true),
 
     /** 객관식·단답. 실행기를 쓰지 않고 api 에서 즉시 채점한다. */
     QUIZ("객관식 · 단답", ready = false),
