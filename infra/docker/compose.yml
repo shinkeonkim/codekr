@@ -37,6 +37,29 @@ services:
       retries: 20
     networks: [codekr]
 
+  # 사용자가 올린 이미지를 두는 곳 (#115).
+  #
+  # **클라우드 계정 없이 전체가 돌아야 한다.** 로컬에서만 다른 저장 방식을 쓰면
+  # 로컬에서 되던 것이 운영에서 안 되는 일이 생기고, 그때 원인을 찾기 어렵다.
+  storage:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: codekr-storage
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-codekr}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-codekr_local_pw}
+    ports:
+      - "${STORAGE_HOST_PORT:-19000}:9000"
+      - "${STORAGE_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - storage-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [codekr]
+
   api:
     build:
       context: *build-context
@@ -52,11 +75,17 @@ services:
       CODEKR_JWT_ACCESS_TTL_SECONDS: ${CODEKR_JWT_ACCESS_TTL_SECONDS:-3600}
       CODEKR_JWT_REFRESH_TTL_SECONDS: ${CODEKR_JWT_REFRESH_TTL_SECONDS:-1209600}
       CODEKR_CORS_ALLOWED_ORIGINS: ${CODEKR_CORS_ALLOWED_ORIGINS:-http://localhost:13000}
+      # 오브젝트 스토리지 (#115). 운영은 S3 호환, 로컬은 MinIO — **같은 코드 경로**다.
+      CODEKR_STORAGE_ENDPOINT: http://storage:9000
+      CODEKR_STORAGE_BUCKET: ${STORAGE_BUCKET:-codekr}
+      CODEKR_STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-codekr}
+      CODEKR_STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-codekr_local_pw}
     ports:
       - "${API_HOST_PORT:-18080}:8080"
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
+      storage: { condition: service_healthy }
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
       interval: 5s
@@ -132,6 +161,7 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  storage-data:
 
 networks:
   codekr:

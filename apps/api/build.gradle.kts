@@ -48,6 +48,15 @@ dependencies {
     // jjwt 의 Jackson 직렬화기는 Jackson 2 를 요구하므로 해당 의존성을 함께 가져온다.
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
+    // 오브젝트 스토리지 (#115). S3 호환 API 하나로 운영(S3)과 로컬(MinIO)을 함께 쓴다.
+    // apache-client 대신 url-connection-client 를 쓰는 이유: 의존성이 훨씬 가볍고,
+    // 아바타 크기의 요청에는 커넥션 풀링의 이득이 없다.
+    implementation("software.amazon.awssdk:s3:2.31.78") {
+        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
+        exclude(group = "software.amazon.awssdk", module = "apache-client")
+    }
+    implementation("software.amazon.awssdk:url-connection-client:2.31.78")
+
     implementation("io.micrometer:micrometer-registry-prometheus")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
