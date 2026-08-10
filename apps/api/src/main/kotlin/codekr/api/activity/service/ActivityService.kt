@@ -2,7 +2,7 @@ package codekr.api.activity.service
 
 import codekr.api.activity.ActivityPolicy
 import codekr.api.activity.dto.ActivityResponse
-import codekr.api.activity.repository.ActivityRepository
+import codekr.api.activity.repository.UserDailyActivityRepository
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import org.springframework.stereotype.Service
@@ -11,7 +11,7 @@ import java.time.LocalDate
 
 @Service
 @Transactional(readOnly = true)
-class ActivityService(private val activityRepository: ActivityRepository) {
+class ActivityService(private val activityRepository: UserDailyActivityRepository) {
 
     /**
      * 활동 그래프와 스트릭.

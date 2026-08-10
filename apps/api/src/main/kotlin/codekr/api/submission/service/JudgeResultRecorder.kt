@@ -1,7 +1,9 @@
 package codekr.api.submission.service
 
+import codekr.api.activity.service.ActivityRecorder
 import codekr.api.queue.message.JudgeEventMessage
 import codekr.api.rejudge.service.RejudgeCompletion
+import codekr.api.submission.entity.SubmissionKind
 import codekr.api.submission.entity.SubmissionTestcaseResult
 import codekr.api.submission.repository.SubmissionRepository
 import codekr.api.submission.repository.SubmissionTestcaseResultRepository
@@ -19,6 +21,7 @@ class JudgeResultRecorder(
     private val submissionRepository: SubmissionRepository,
     private val resultRepository: SubmissionTestcaseResultRepository,
     private val rejudgeCompletion: RejudgeCompletion,
+    private val activityRecorder: ActivityRecorder,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -36,6 +39,10 @@ class JudgeResultRecorder(
             JudgeEventMessage.TYPE_TESTCASE -> upsertTestcaseResult(event)
             JudgeEventMessage.TYPE_COMPLETED -> {
                 submission.complete(event.toOutcome())
+                // 활동 집계는 제출 테이블과 분리돼 있다 (#105). 결과가 확정되는 여기서 반영한다.
+                if (submission.kind == SubmissionKind.USER) {
+                    activityRecorder.recordCompletion(submission.userId, submission.createdAt)
+                }
                 // 재채점이었으면 판정이 바뀌었는지 보고 알린다 (#107).
                 // 여기서 부르는 이유: 결과가 확정되는 유일한 지점이다.
                 if (submission.isRejudging) rejudgeCompletion.completeOne(submission.id)

@@ -90,6 +90,7 @@ object ApiEndpointInventory {
         Endpoint("POST", "/api/v1/admin/retention/cleanup", Access.ADMIN, UserRole.ADMIN),
         // 경로 규칙에 적지 않아 안전한 기본값(최고 관리자)이 적용된다.
         Endpoint("PUT", "/api/v1/admin/users/{id}/roles", Access.ADMIN, UserRole.SUPERUSER),
+        Endpoint("POST", "/api/v1/admin/users/{userId}/activity/recompute", Access.ADMIN, UserRole.SUPERUSER),
     )
 
     /** 인증이 필요한(=비공개) 엔드포인트. */
