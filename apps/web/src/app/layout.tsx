@@ -1,7 +1,8 @@
+import { AuthProvider } from "@/features/auth";
+import { SiteHeader } from "@/widgets/site-header";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { SiteHeader } from "@/components/SiteHeader";
-import { AuthProvider } from "@/lib/auth";
+
 import "./globals.css";
 
 export const metadata: Metadata = {

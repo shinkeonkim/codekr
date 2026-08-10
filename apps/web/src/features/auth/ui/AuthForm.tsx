@@ -1,0 +1,100 @@
+"use client";
+
+import type { TokenResponse } from "@/entities/user";
+import { useAuth } from "../model/AuthProvider";
+import { ApiError } from "@/shared/api";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { FormEvent } from "react";
+
+import { Alert, Button, Card, Field, Input } from "@/shared/ui";
+
+export interface AuthFormField {
+  name: string;
+  label: string;
+  type: string;
+  placeholder?: string;
+  autoComplete?: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  fields: AuthFormField[];
+  submitLabel: string;
+  footer: { text: string; href: string; linkLabel: string };
+  onSubmit: (values: Record<string, string>) => Promise<TokenResponse>;
+}
+
+/** 로그인과 회원가입이 공유하는 폼. 다른 것은 필드 목록과 제출 동작뿐이다. */
+export function AuthForm({ title, description, fields, submitLabel, footer, onSubmit }: Props) {
+  const router = useRouter();
+  const { signIn } = useAuth();
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    setFieldErrors({});
+
+    try {
+      const tokens = await onSubmit(values);
+      signIn(tokens);
+      router.push("/problems");
+    } catch (caught) {
+      if (caught instanceof ApiError) {
+        setError(caught.message);
+        setFieldErrors(Object.fromEntries(caught.fieldErrors.map((it) => [it.field, it.message])));
+      } else {
+        setError("서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-md py-8">
+      <Card className="p-6">
+        <h1 className="text-xl font-bold text-ink">{title}</h1>
+        <p className="mt-1 text-sm text-ink-muted">{description}</p>
+
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          {error ? <Alert>{error}</Alert> : null}
+
+          {fields.map((field) => (
+            <Field key={field.name} label={field.label} error={fieldErrors[field.name]}>
+              <Input
+                name={field.name}
+                type={field.type}
+                placeholder={field.placeholder}
+                autoComplete={field.autoComplete}
+                required
+                value={values[field.name] ?? ""}
+                onChange={(event) =>
+                  setValues((previous) => ({ ...previous, [field.name]: event.target.value }))
+                }
+              />
+            </Field>
+          ))}
+
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? "처리 중…" : submitLabel}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-ink-muted">
+          {footer.text}{" "}
+          <Link href={footer.href} className="font-medium text-brand hover:underline">
+            {footer.linkLabel}
+          </Link>
+        </p>
+      </Card>
+    </div>
+  );
+}
