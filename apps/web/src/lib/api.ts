@@ -1,4 +1,5 @@
 import type {
+  ActivityResponse,
   AdminProblemDetail,
   Page,
   ProblemDetail,
@@ -150,6 +151,9 @@ export const api = {
 
   deleteProblem: (id: number) =>
     request<void>(`/api/v1/admin/problems/${id}`, { method: "DELETE", auth: true }),
+
+  activity: (query: Record<string, string | number | undefined> = {}) =>
+    request<ActivityResponse>("/api/v1/users/me/activity", { auth: true, query }),
 
   queues: () => request<QueueStatus>("/api/v1/admin/queues", { auth: true }),
 };

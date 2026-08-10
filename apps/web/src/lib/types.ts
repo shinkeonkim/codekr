@@ -180,6 +180,23 @@ export interface RunResult {
   truncated: boolean;
 }
 
+/** 일별 활동과 스트릭 (#36). */
+export interface DailyActivity {
+  date: string;
+  count: number;
+}
+
+export interface ActivityResponse {
+  from: string;
+  to: string;
+  days: DailyActivity[];
+  totalCount: number;
+  activeDayCount: number;
+  currentStreak: number;
+  longestStreak: number;
+  timeZone: string;
+}
+
 export interface Page<T> {
   content: T[];
   page: number;
