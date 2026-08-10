@@ -25,6 +25,11 @@ export interface Runtime {
   label: string;
   monacoLanguage: string;
   template: string;
+  /** 이 런타임으로 실행할 때 실제 적용되는 제한. 문제 기본값과 다를 수 있다 (#97). */
+  timeLimitMs: number;
+  memoryLimitMb: number;
+  /** 문제 기본값이 아니라 이 런타임 전용 값이 쓰였는지. */
+  limitOverridden: boolean;
 }
 
 export interface ProblemSummary {
@@ -68,6 +73,13 @@ export interface Testcase {
 }
 
 /** 문제가 언어/버전별로 제공하는 초기 코드. */
+/** 런타임별 실행 제한 오버라이드 (어드민 편집용). */
+export interface ProblemRuntimeLimit {
+  runtimeId: string;
+  timeLimitMs: number;
+  memoryLimitMb: number;
+}
+
 export interface ProblemTemplate {
   runtimeId: string;
   sourceCode: string;
@@ -98,6 +110,7 @@ export interface AdminProblemDetail extends ProblemSummary {
   outputDescription: string | null;
   testcases: Testcase[];
   templates: ProblemTemplate[];
+  runtimeLimits: ProblemRuntimeLimit[];
   solution: ProblemSolution | null;
   verification: ProblemVerification | null;
 }

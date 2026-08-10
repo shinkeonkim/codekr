@@ -6,6 +6,7 @@ import codekr.api.common.error.ErrorCode
 import codekr.api.problem.admin.dto.AdminProblemDetailResponse
 import codekr.api.problem.admin.dto.ProblemCreatedResponse
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
+import codekr.api.problem.admin.dto.RuntimeLimitRequest
 import codekr.api.problem.admin.dto.TemplateRequest
 import codekr.api.problem.admin.dto.TestcaseRequest
 import codekr.api.problem.dto.ProblemSummaryResponse
@@ -57,6 +58,7 @@ class AdminProblemService(
         ).apply {
             addTestcases(request.testcases.map(TestcaseRequest::toEntity))
             addTemplates(request.templates.map(TemplateRequest::toEntity))
+            addRuntimeLimits(request.runtimeLimits.map(RuntimeLimitRequest::toEntity))
             replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
         }
 
@@ -85,12 +87,14 @@ class AdminProblemService(
             published = request.published
             softDeleteTestcases()
             softDeleteTemplates()
+            softDeleteRuntimeLimits()
         }
         // 살아 있는 행에만 걸린 유니크 인덱스 때문에, 기존 행의 삭제 표시가 먼저 반영돼야 한다.
         problemRepository.flush()
 
         problem.addTestcases(request.testcases.map(TestcaseRequest::toEntity))
         problem.addTemplates(request.templates.map(TemplateRequest::toEntity))
+        problem.addRuntimeLimits(request.runtimeLimits.map(RuntimeLimitRequest::toEntity))
         problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
         return AdminProblemDetailResponse.from(problem, verificationService.findLatest(problem))
     }

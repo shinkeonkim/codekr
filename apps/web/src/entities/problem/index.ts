@@ -18,6 +18,7 @@ export type {
   ProblemCategory,
   ProblemDetail,
   ProblemExample,
+  ProblemRuntimeLimit,
   ProblemSolution,
   ProblemSummary,
   ProblemTemplate,
@@ -26,4 +27,5 @@ export type {
   Testcase,
   TestcaseVisibility,
 } from "./model/types";
+export { RuntimeLimitNotice } from "./ui/RuntimeLimitNotice";
 export { TierBadge } from "./ui/TierBadge";

@@ -48,14 +48,17 @@ class SubmissionService(
     fun run(slug: String, request: RunRequest): RunResponse {
         val problem = problemService.requirePublished(slug)
         validate(request.runtimeId, request.sourceCode)
+        // 실행도 제출과 같은 제한을 써야 한다. 실행에서 통과한 코드가 제출에서 TLE 나면
+        // 사용자는 왜 그런지 알 수 없다.
+        val limits = problem.limitsFor(request.runtimeId)
 
         return RunResponse.from(
             queuePublisher.runOnce(
                 runtimeId = request.runtimeId,
                 sourceCode = request.sourceCode,
                 stdin = request.stdin,
-                timeLimitMs = problem.timeLimitMs,
-                memoryLimitMb = problem.memoryLimitMb,
+                timeLimitMs = limits.timeLimitMs,
+                memoryLimitMb = limits.memoryLimitMb,
                 waitTimeout = Duration.ofSeconds(RUN_WAIT_SECONDS),
             ),
         )

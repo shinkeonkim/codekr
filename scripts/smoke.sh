@@ -115,4 +115,31 @@ VERDICT=$(await_verdict "$(submit_to "limit-tight-${SUFFIX}")")
 [[ "${VERDICT}" == "TIME_LIMIT_EXCEEDED" ]] || fail "빠듯한 제한(500ms)에서 시간 초과여야 합니다: ${VERDICT}"
 pass "500ms 제한 → TIME_LIMIT_EXCEEDED (같은 코드)"
 
+step "9. 같은 문제에서 언어별 제한이 다르게 적용되는지"
+# 한 문제에 python:3.12 만 넉넉한 제한을 준다. 같은 1.5초 코드를 두 런타임으로 제출해
+# 언어별 오버라이드가 실제 판정을 가르는지 본다 (#97).
+PER_LANG_SLUG="limit-per-lang-${SUFFIX}"
+status=$(curl -s -o /tmp/codekr-smoke-problem.json -w '%{http_code}' -X POST "${API}/api/v1/admin/problems" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" -H 'Content-Type: application/json' \
+  -d "{\"slug\":\"${PER_LANG_SLUG}\",\"title\":\"언어별 제한 검증\",\"category\":\"ALGORITHM\",
+       \"difficulty\":\"BRONZE_5\",\"description\":\"스모크 전용\",\"timeLimitMs\":500,
+       \"memoryLimitMb\":256,\"published\":true,
+       \"testcases\":[{\"seq\":1,\"input\":\"\",\"expectedOutput\":\"done\\n\",\"visibility\":\"HIDDEN\"}],
+       \"runtimeLimits\":[{\"runtimeId\":\"python:3.12\",\"timeLimitMs\":5000,\"memoryLimitMb\":256}]}")
+[[ "${status}" == "201" ]] || fail "언어별 제한 문제 생성 실패(${status}): $(cat /tmp/codekr-smoke-problem.json)"
+
+submit_with_runtime() {
+  curl -s -X POST "${API}/api/v1/problems/${PER_LANG_SLUG}/submissions" \
+    -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+    -d "{\"runtimeId\":\"$1\",\"sourceCode\":\"${SLEEPY}\"}" | json '["submissionId"]'
+}
+
+VERDICT=$(await_verdict "$(submit_with_runtime "python:3.12")")
+[[ "${VERDICT}" == "ACCEPTED" ]] || fail "오버라이드된 런타임(5000ms)에서 통과해야 합니다: ${VERDICT}"
+pass "python:3.12 (오버라이드 5000ms) → ACCEPTED"
+
+VERDICT=$(await_verdict "$(submit_with_runtime "python:3.13")")
+[[ "${VERDICT}" == "TIME_LIMIT_EXCEEDED" ]] || fail "기본 제한(500ms)을 쓰는 런타임은 시간 초과여야 합니다: ${VERDICT}"
+pass "python:3.13 (문제 기본 500ms) → TIME_LIMIT_EXCEEDED (같은 코드, 같은 문제)"
+
 printf '\n\033[32m스모크 테스트 통과\033[0m — 채점 파이프라인이 정상 동작합니다.\n'

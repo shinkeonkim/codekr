@@ -1,10 +1,11 @@
 "use client";
 
 import { useProblem } from "@/entities/problem";
+import type { Runtime } from "@/entities/problem";
 import { EmptyState } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import { SolveWorkspace } from "@/widgets/solve-workspace";
-import { use } from "react";
+import { use, useState } from "react";
 
 /**
  * 코드 제출 탭.
@@ -16,14 +17,15 @@ import { use } from "react";
 export function ProblemSolvePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { problem, error } = useProblem(slug);
+  const [runtime, setRuntime] = useState<Runtime | undefined>();
 
   if (error) return <EmptyState title={error} />;
   if (!problem) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
 
   return (
     <div className="space-y-5">
-      <ProblemHeader problem={problem} />
-      <SolveWorkspace problem={problem} />
+      <ProblemHeader problem={problem} runtime={runtime} />
+      <SolveWorkspace problem={problem} onRuntimeChange={setRuntime} />
     </div>
   );
 }

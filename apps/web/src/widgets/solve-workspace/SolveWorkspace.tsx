@@ -1,6 +1,6 @@
 "use client";
 
-import type { ProblemDetail } from "@/entities/problem";
+import type { ProblemDetail, Runtime } from "@/entities/problem";
 import { VISIBILITY_DESCRIPTIONS, VISIBILITY_LABELS, submissionApi } from "@/entities/submission";
 import type { RunResult, SubmissionVisibility } from "@/entities/submission";
 import { useAuth } from "@/features/auth";
@@ -19,7 +19,13 @@ function readDraft(slug: string, runtimeId: string): string | null {
   return localStorage.getItem(draftKey(slug, runtimeId));
 }
 
-export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
+interface Props {
+  problem: ProblemDetail;
+  /** 고른 실행 환경을 바깥에 알린다. 머리말이 그 언어의 제한을 보여주기 위함이다 (#97). */
+  onRuntimeChange?: (runtime: Runtime) => void;
+}
+
+export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const [runtimeId, setRuntimeId] = useState(problem.runtimes[0]?.id ?? "");
@@ -34,6 +40,10 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
     () => problem.runtimes.find((it) => it.id === runtimeId) ?? problem.runtimes[0],
     [problem.runtimes, runtimeId],
   );
+
+  useEffect(() => {
+    if (runtime) onRuntimeChange?.(runtime);
+  }, [runtime, onRuntimeChange]);
 
   // 언어가 바뀌면 저장해 둔 초안을 불러오고, 없으면 템플릿에서 시작한다.
   // 렌더 중 상태를 맞추는 방식이라 이펙트로 인한 추가 렌더가 생기지 않는다.

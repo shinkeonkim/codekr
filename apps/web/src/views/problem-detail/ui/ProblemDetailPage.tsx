@@ -1,6 +1,6 @@
 "use client";
 
-import { useProblem } from "@/entities/problem";
+import { RuntimeLimitNotice, useProblem } from "@/entities/problem";
 import { Button, Card, EmptyState } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
@@ -18,6 +18,7 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <ProblemHeader problem={problem} />
+          <RuntimeLimitNotice problem={problem} />
         </div>
         <Link href={`/problems/${slug}/solve`}>
           <Button>코드 작성하기</Button>

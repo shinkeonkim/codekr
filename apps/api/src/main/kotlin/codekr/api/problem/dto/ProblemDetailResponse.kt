@@ -43,7 +43,9 @@ data class ProblemDetailResponse(
             timeLimitMs = problem.timeLimitMs,
             memoryLimitMb = problem.memoryLimitMb,
             examples = problem.examples.map(ProblemExampleResponse::from),
-            runtimes = runtimes.map { ProblemRuntimeResponse.of(it, problem.templateOf(it.id)) },
+            runtimes = runtimes.map {
+                ProblemRuntimeResponse.of(it, problem.templateOf(it.id), problem.limitsFor(it.id))
+            },
         )
     }
 }

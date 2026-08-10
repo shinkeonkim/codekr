@@ -1,12 +1,13 @@
 "use client";
 
 import { ALL_DIFFICULTIES, CATEGORY_LABELS, difficultyLabel } from "@/entities/problem";
-import type { AdminProblemDetail, Difficulty, ProblemSolution, ProblemTemplate, ProblemVerification, Testcase } from "@/entities/problem";
+import type { AdminProblemDetail, Difficulty, ProblemRuntimeLimit, ProblemSolution, ProblemTemplate, ProblemVerification, Testcase } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
+import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
 import { Alert, Button, Card, Field, Input, Select, Textarea } from "@/shared/ui";
 
@@ -23,6 +24,7 @@ export interface ProblemFormValues {
   published: boolean;
   testcases: Testcase[];
   templates: ProblemTemplate[];
+  runtimeLimits: ProblemRuntimeLimit[];
   solution: ProblemSolution | null;
 }
 
@@ -42,6 +44,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     published: problem.published,
     testcases: problem.testcases,
     templates: problem.templates,
+    runtimeLimits: problem.runtimeLimits ?? [],
     solution: problem.solution,
   };
 }
@@ -59,6 +62,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   published: false,
   testcases: [EMPTY_TESTCASE],
   templates: [],
+  runtimeLimits: [],
   solution: null,
 };
 
@@ -248,6 +252,13 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
           </div>
         ))}
       </Card>
+
+      <RuntimeLimitEditor
+        limits={values.runtimeLimits}
+        baseTimeLimitMs={values.timeLimitMs}
+        baseMemoryLimitMb={values.memoryLimitMb}
+        onChange={(runtimeLimits) => update("runtimeLimits", runtimeLimits)}
+      />
 
       <ProblemTemplateEditor
         templates={values.templates}
