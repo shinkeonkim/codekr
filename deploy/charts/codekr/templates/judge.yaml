@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codekr-judge
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.judge.replicas }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: judge }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codekr
+        app.kubernetes.io/component: judge
+    spec:
+      containers:
+        - name: judge
+          image: {{ include "codekr.image" (dict "root" . "name" "judge") }}
+          ports:
+            - { name: http, containerPort: 8082 }
+          env:
+            - { name: JUDGE_CONCURRENCY, value: "{{ .Values.judge.concurrency }}" }
+          envFrom:
+            - configMapRef: { name: codekr-config }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          resources: {{- toYaml .Values.judge.resources | nindent 12 }}
+          # 채점기는 사용자 코드를 직접 실행하지 않고 DB 자격증명도 없다 (ADR-0004).
+          securityContext: {{- include "codekr.securityContext" . | nindent 12 }}

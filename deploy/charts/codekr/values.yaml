@@ -1,0 +1,67 @@
+# 코드.kr 기본 값. 홈랩 전용 오버라이드는 oh-my-homelab 의 helm-charts/values/codekr.yaml 에 있다.
+
+global:
+  # CI(.github/workflows/ci.yml)가 여기로 이미지를 올린다.
+  registry: ghcr.io/shinkeonkim
+  imageTag: latest
+  domainSuffix: homelab.shinkeonkim.com
+
+ingress:
+  enabled: true
+  className: traefik
+  # 사용자에게 보이는 주소. 코드.kr 도메인은 외부 터널이 붙은 뒤 여기에 추가한다.
+  host: codekr.homelab.shinkeonkim.com
+  annotations: {}
+
+api:
+  replicas: 1
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+web:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { memory: 512Mi }
+
+judge:
+  replicas: 1
+  concurrency: 4
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+executor:
+  replicas: 2
+  concurrency: 4
+  # 실행기는 컨테이너 런타임 소켓을 쓴다. 이 권한은 노드 root 와 동등하므로
+  # 반드시 실행 전용 노드에만 배치한다 (docs/07 의 잔여 위험 R1, 이슈 #47).
+  nodeSelector:
+    codekr.kr/workload: executor
+  tolerations:
+    - key: codekr.kr/executor
+      operator: Exists
+      effect: NoSchedule
+  # 런타임 소켓 경로. containerd 노드 기준.
+  runtimeSocket: /run/containerd/containerd.sock
+  # 어드민 스케일 제어(#40)가 조정할 수 있는 범위.
+  minReplicas: 1
+  maxReplicas: 20
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+redis:
+  storage: 2Gi
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+postgres:
+  # CNPG 오퍼레이터가 만든 클러스터를 쓴다 (홈랩 인프라 쪽에서 정의).
+  host: codekr-db-rw
+  port: 5432
+  database: codekr
+  # 자격증명은 SOPS 시크릿에서 온다.
+  secretName: codekr-secrets

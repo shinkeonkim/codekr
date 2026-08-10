@@ -1,0 +1,51 @@
+# 실행기는 컨테이너 런타임 소켓을 마운트한다. 이 권한은 노드 root 와 동등하므로
+# 반드시 실행 전용 노드에만 배치한다 (docs/07 잔여 위험 R1, 이슈 #47).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codekr-executor
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.executor.replicas }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: executor }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codekr
+        app.kubernetes.io/component: executor
+    spec:
+      nodeSelector: {{- toYaml .Values.executor.nodeSelector | nindent 8 }}
+      tolerations: {{- toYaml .Values.executor.tolerations | nindent 8 }}
+      containers:
+        - name: executor
+          image: {{ include "codekr.image" (dict "root" . "name" "executor") }}
+          ports:
+            - { name: http, containerPort: 8081 }
+          env:
+            - { name: EXECUTOR_CONCURRENCY, value: "{{ .Values.executor.concurrency }}" }
+            - { name: CODEKR_RUNTIMES_PATH, value: /etc/codekr/runtimes.yaml }
+            - { name: DOCKER_HOST, value: "unix://{{ .Values.executor.runtimeSocket }}" }
+          envFrom:
+            - configMapRef: { name: codekr-config }
+          volumeMounts:
+            - { name: runtimes, mountPath: /etc/codekr }
+            - { name: runtime-socket, mountPath: {{ .Values.executor.runtimeSocket }} }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          resources: {{- toYaml .Values.executor.resources | nindent 12 }}
+          # 실행기 자신은 root 로 돈다 — 런타임 소켓 접근이 이미 root 와 동등해서
+          # 여기서 사용자를 낮춰도 실질적인 이득이 없다. 실제 격리는 실행기가 만드는
+          # 샌드박스 컨테이너에 걸린다 (ADR-0003).
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: runtimes
+          configMap: { name: codekr-runtimes }
+        - name: runtime-socket
+          hostPath:
+            path: {{ .Values.executor.runtimeSocket }}
+            type: Socket

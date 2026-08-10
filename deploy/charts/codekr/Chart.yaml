@@ -1,0 +1,6 @@
+apiVersion: v2
+name: codekr
+description: 코드.kr — 코딩 테스트 문제 풀이 플랫폼
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

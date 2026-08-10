@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codekr-api
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: api }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codekr
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: codekr-api
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: api
+          image: {{ include "codekr.image" (dict "root" . "name" "api") }}
+          ports:
+            - { name: http, containerPort: 8080 }
+          envFrom:
+            - configMapRef: { name: codekr-config }
+            - secretRef: { name: {{ .Values.postgres.secretName }} }
+          volumeMounts:
+            - { name: runtimes, mountPath: /etc/codekr }
+            - { name: tmp, mountPath: /tmp }
+          # 기동 중 Flyway 마이그레이션이 도는 동안 죽이지 않도록 startup 을 따로 둔다.
+          startupProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: http }
+            periodSeconds: 20
+          resources: {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext: {{- include "codekr.securityContext" . | nindent 12 }}
+      volumes:
+        - name: runtimes
+          configMap: { name: codekr-runtimes }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codekr-api
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  selector: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: api }
+  ports:
+    - { name: http, port: 8080, targetPort: http }

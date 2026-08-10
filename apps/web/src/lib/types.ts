@@ -219,6 +219,17 @@ export interface QueueStatus {
   streams: StreamStatus[];
 }
 
+/** 실행기 배포의 replica 상태 (#40). */
+export interface ExecutorScaleStatus {
+  available: boolean;
+  deployment: string;
+  desiredReplicas: number;
+  readyReplicas: number;
+  minReplicas: number;
+  maxReplicas: number;
+  reason: string | null;
+}
+
 /** 채점 진행 이벤트 (WebSocket). */
 export interface JudgeEvent {
   type: "SUBSCRIBED" | "JUDGING" | "TESTCASE" | "COMPLETED" | "ERROR";

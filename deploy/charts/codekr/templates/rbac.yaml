@@ -1,0 +1,35 @@
+# api 가 실행기 Deployment 의 replicas 를 조정할 수 있게 한다 (#40).
+# 권한은 "이 네임스페이스의 이 Deployment 의 scale" 하나로 좁힌다.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: codekr-api
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: codekr-executor-scaler
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    resourceNames: ["codekr-executor"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    resourceNames: ["codekr-executor"]
+    verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: codekr-executor-scaler
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: codekr-api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: codekr-executor-scaler

@@ -47,6 +47,11 @@ codekr:
     secret: ${CODEKR_JWT_SECRET:local-development-only-secret-change-me-please-32b}
     access-ttl-seconds: ${CODEKR_JWT_ACCESS_TTL_SECONDS:3600}
     refresh-ttl-seconds: ${CODEKR_JWT_REFRESH_TTL_SECONDS:1209600}
+  executor-scaling:
+    # 어드민이 조정할 수 있는 실행기 배포와 범위 (#40)
+    deployment: ${CODEKR_EXECUTOR_DEPLOYMENT:codekr-executor}
+    min-replicas: ${CODEKR_EXECUTOR_MIN_REPLICAS:1}
+    max-replicas: ${CODEKR_EXECUTOR_MAX_REPLICAS:20}
   retention:
     # 소프트 삭제된 행을 실제로 지우기까지의 유예 (#46)
     enabled: ${CODEKR_RETENTION_ENABLED:true}

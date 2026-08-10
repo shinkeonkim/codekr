@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
+import { ExecutorScalePanel } from "@/components/ExecutorScalePanel";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { api } from "@/lib/api";
 import type { QueueStatus } from "@/lib/types";
@@ -47,8 +48,12 @@ function QueueMonitor() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-ink">큐 모니터링</h1>
-        <p className="mt-1 text-sm text-ink-muted">채점·실행 큐의 적체와 워커 수를 실시간으로 확인합니다.</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          채점·실행 큐의 적체와 워커 수를 실시간으로 확인하고, 밀릴 때 실행기를 늘립니다.
+        </p>
       </div>
+
+      <ExecutorScalePanel />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {status?.streams.map((stream) => (
