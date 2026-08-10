@@ -14,7 +14,8 @@ func newLiveSandbox(t *testing.T) Sandbox {
 	if os.Getenv("CODEKR_SANDBOX_TEST") != "1" {
 		t.Skip("CODEKR_SANDBOX_TEST=1 일 때만 실행한다 (컨테이너 런타임 필요)")
 	}
-	box, err := NewContainerSandbox()
+	// 프로파일 경로를 환경에서 받는다. 비우면 런타임 기본 프로파일로 돈다 (#48).
+	box, err := NewContainerSandbox(os.Getenv("CODEKR_SECCOMP_PROFILE"))
 	if err != nil {
 		t.Fatalf("샌드박스 생성 실패: %v", err)
 	}

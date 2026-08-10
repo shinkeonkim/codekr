@@ -33,11 +33,19 @@ spec:
             # 엔진 API 클라이언트가 읽는 표준 변수명이다 (제품명이 아니라 규약).
             - { name: DOCKER_HOST, value: "unix://{{ .Values.executor.runtimeSocket }}" }
             - { name: CODEKR_SANDBOX_RUNTIME, value: {{ .Values.executor.sandboxRuntime | quote }} }
+            {{- if .Values.executor.seccompProfile.enabled }}
+            # 좁힌 프로파일 (#48). 파일이 없거나 망가지면 실행기가 기동에서 실패한다
+            # — 첫 제출에서 드러나지 않게.
+            - { name: CODEKR_SECCOMP_PROFILE, value: /etc/codekr/seccomp/seccomp.json }
+            {{- end }}
             # 실행기가 필요로 하는 설정은 큐 주소뿐이다. DB 자격증명은 주지 않는다
             # (ADR-0004) — 그래서 codekr-config 를 통째로 넣지 않는다.
             - { name: CODEKR_REDIS_ADDR, value: {{ include "codekr.redisAddr" . | quote }} }
           volumeMounts:
             - { name: runtimes, mountPath: /etc/codekr }
+            {{- if .Values.executor.seccompProfile.enabled }}
+            - { name: seccomp, mountPath: /etc/codekr/seccomp }
+            {{- end }}
             - { name: runtime-socket, mountPath: {{ .Values.executor.runtimeSocket }} }
           readinessProbe:
             httpGet: { path: /healthz, port: http }
@@ -60,6 +68,10 @@ spec:
       volumes:
         - name: runtimes
           configMap: { name: codekr-runtimes }
+        {{- if .Values.executor.seccompProfile.enabled }}
+        - name: seccomp
+          configMap: { name: codekr-seccomp }
+        {{- end }}
         - name: runtime-socket
           hostPath:
             path: {{ .Values.executor.runtimeSocket }}

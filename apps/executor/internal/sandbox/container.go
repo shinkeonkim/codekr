@@ -2,9 +2,11 @@ package sandbox
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -49,15 +51,40 @@ func unpackCommand(scripts stageScripts) string {
 // 작업 디렉터리에 쓸 수 있기 때문이다.
 type containerSandbox struct {
 	cli *client.Client
+	// 샌드박스 컨테이너에 걸 seccomp 프로파일 (#48). 비어 있으면 런타임 기본값을 쓴다.
+	seccompProfile string
 }
 
 // NewContainerSandbox 는 컨테이너 런타임 기반 샌드박스를 만든다.
-func NewContainerSandbox() (Sandbox, error) {
+//
+// seccompProfilePath 가 비어 있지 않으면 그 파일을 **기동 시점에** 읽는다.
+// 실행할 때마다 읽으면 파일이 사라지거나 망가진 것이 첫 제출에서야 드러난다.
+func NewContainerSandbox(seccompProfilePath string) (Sandbox, error) {
+	profile, err := readSeccompProfile(seccompProfilePath)
+	if err != nil {
+		return nil, err
+	}
 	cli, err := client.New(client.FromEnv)
 	if err != nil {
 		return nil, fmt.Errorf("컨테이너 런타임 클라이언트 생성 실패: %w", err)
 	}
-	return &containerSandbox{cli: cli}, nil
+	return &containerSandbox{cli: cli, seccompProfile: profile}, nil
+}
+
+func readSeccompProfile(path string) (string, error) {
+	if path == "" {
+		return "", nil
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("seccomp 프로파일을 읽지 못했습니다 (%s): %w", path, err)
+	}
+	// 런타임에 넘기기 전에 JSON 인지 확인한다. 망가진 파일을 그대로 넘기면
+	// 컨테이너 생성이 실패하고, 그 사유가 사용자에게는 채점 오류로만 보인다.
+	if !json.Valid(content) {
+		return "", fmt.Errorf("seccomp 프로파일이 올바른 JSON 이 아닙니다: %s", path)
+	}
+	return string(content), nil
 }
 
 // Close 는 런타임 클라이언트가 쥐고 있는 연결을 정리한다.
@@ -133,6 +160,18 @@ func (s *containerSandbox) applyRunMemoryLimit(ctx context.Context, containerID 
 	return nil
 }
 
+// securityOpt 는 컨테이너에 걸 보안 옵션이다.
+//
+// 프로파일이 없으면 런타임 기본 프로파일이 그대로 걸린다 — **옵션을 비우는 것과
+// seccomp=unconfined 는 다르다.** 후자는 아무것도 막지 않으므로 절대 쓰지 않는다.
+func (s *containerSandbox) securityOpt() []string {
+	opts := []string{"no-new-privileges"}
+	if s.seccompProfile != "" {
+		opts = append(opts, "seccomp="+s.seccompProfile)
+	}
+	return opts
+}
+
 func (s *containerSandbox) create(ctx context.Context, spec Spec, budget time.Duration) (string, error) {
 	// 컴파일 단계에 필요한 여유를 먼저 열어 두고, 실행 직전에 문제의 한도로 낮춘다.
 	memoryBytes := int64(startupMemoryLimitMb(spec)) * bytesPerMb
@@ -165,7 +204,7 @@ func (s *containerSandbox) create(ctx context.Context, spec Spec, budget time.Du
 				PidsLimit:  &pidsLimit,
 			},
 			CapDrop:     []string{"ALL"},
-			SecurityOpt: []string{"no-new-privileges"},
+			SecurityOpt: s.securityOpt(),
 		},
 	})
 	if err != nil {

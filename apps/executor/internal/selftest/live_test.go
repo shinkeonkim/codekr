@@ -18,7 +18,7 @@ func TestLiveSandboxHardening(t *testing.T) {
 		t.Skip("CODEKR_SANDBOX_TEST=1 일 때만 실행한다 (컨테이너 런타임 필요)")
 	}
 
-	box, err := sandbox.New(os.Getenv("CODEKR_SANDBOX_RUNTIME"))
+	box, err := sandbox.New(os.Getenv("CODEKR_SANDBOX_RUNTIME"), os.Getenv("CODEKR_SECCOMP_PROFILE"))
 	if err != nil {
 		t.Fatalf("샌드박스 생성 실패: %v", err)
 	}
