@@ -12,19 +12,25 @@ import (
 
 // Runner 는 실행 작업 하나를 결과로 바꾼다. 큐/전송과 무관하게 단독으로 테스트할 수 있다.
 type Runner struct {
-	registry         *runtimes.Registry
-	box              sandbox.Sandbox
-	compileTimeoutMs int
-	maxOutputBytes   int
+	registry             *runtimes.Registry
+	box                  sandbox.Sandbox
+	compileTimeoutMs     int
+	compileMemoryLimitMb int
+	maxOutputBytes       int
 }
 
 // NewRunner 는 실행 러너를 만든다.
-func NewRunner(registry *runtimes.Registry, box sandbox.Sandbox, compileTimeoutMs, maxOutputBytes int) *Runner {
+func NewRunner(
+	registry *runtimes.Registry,
+	box sandbox.Sandbox,
+	compileTimeoutMs, compileMemoryLimitMb, maxOutputBytes int,
+) *Runner {
 	return &Runner{
-		registry:         registry,
-		box:              box,
-		compileTimeoutMs: compileTimeoutMs,
-		maxOutputBytes:   maxOutputBytes,
+		registry:             registry,
+		box:                  box,
+		compileTimeoutMs:     compileTimeoutMs,
+		compileMemoryLimitMb: compileMemoryLimitMb,
+		maxOutputBytes:       maxOutputBytes,
 	}
 }
 
@@ -41,16 +47,17 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 	}
 
 	outcome, err := r.box.Run(ctx, sandbox.Spec{
-		Image:            definition.Image,
-		SourceFile:       definition.SourceFile,
-		SourceCode:       job.SourceCode,
-		Stdin:            job.Stdin,
-		Compile:          definition.Compile,
-		Run:              definition.Run,
-		TimeLimitMs:      job.TimeLimitMs,
-		MemoryLimitMb:    job.MemoryLimitMb,
-		CompileTimeoutMs: r.compileTimeoutMs,
-		MaxOutputBytes:   r.maxOutputBytes,
+		Image:                definition.Image,
+		SourceFile:           definition.SourceFile,
+		SourceCode:           job.SourceCode,
+		Stdin:                job.Stdin,
+		Compile:              definition.Compile,
+		Run:                  definition.Run,
+		TimeLimitMs:          job.TimeLimitMs,
+		MemoryLimitMb:        job.MemoryLimitMb,
+		CompileTimeoutMs:     r.compileTimeoutMs,
+		CompileMemoryLimitMb: r.compileMemoryLimitMb,
+		MaxOutputBytes:       r.maxOutputBytes,
 	})
 	if err != nil {
 		return systemError(job, err.Error())

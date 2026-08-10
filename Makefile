@@ -10,7 +10,7 @@ GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \
-        pull-runtimes seed smoke test test-api test-web test-go lint lint-go
+        pull-runtimes build-runtimes verify-runtimes seed smoke test test-api test-web test-go lint lint-go
 
 help: ## 사용 가능한 명령 표시
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -48,6 +48,13 @@ infra-down: env ## postgres, redis 만 중지
 
 pull-runtimes: ## 코드 실행용 런타임 이미지 미리 받기
 	@bash scripts/pull-runtimes.sh
+
+build-runtimes: ## 공식 이미지가 없는 언어의 런타임 이미지 빌드 (kotlin, csharp)
+	@bash scripts/build-runtimes.sh
+
+verify-runtimes: ## 등록된 모든 런타임의 기본 템플릿이 실제로 컴파일·실행되는지 확인
+	cd apps/executor && CODEKR_SANDBOX_TEST=1 go test ./internal/sandbox/ \
+		-run TestLiveEveryRegisteredRuntime -timeout 25m -v
 
 seed: env ## 데모 계정 및 시드 문제 주입
 	@bash scripts/seed.sh

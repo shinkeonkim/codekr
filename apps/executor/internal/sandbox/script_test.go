@@ -5,27 +5,60 @@ import (
 	"testing"
 )
 
-func TestBuildScriptAppliesTimeLimitOnlyToRunStage(t *testing.T) {
-	script := buildScript(Spec{
+func TestCompileAndRunStagesUseTheirOwnTimeouts(t *testing.T) {
+	spec := Spec{
 		Compile:          []string{"g++", "-o", "main", "main.cpp"},
 		Run:              []string{"./main"},
 		TimeLimitMs:      2000,
 		CompileTimeoutMs: 15000,
-	}, "NONCE")
-
-	if !strings.Contains(script, "timeout -k 1 15 'g++'") {
-		t.Fatalf("컴파일 단계에 컴파일 타임아웃이 적용되지 않았습니다:\n%s", script)
 	}
-	if !strings.Contains(script, "timeout -k 1 2 './main'") {
-		t.Fatalf("실행 단계에 시간 제한이 적용되지 않았습니다:\n%s", script)
+
+	compile := buildCompileScript(spec, "NONCE")
+	run := buildRunScript(spec, "NONCE")
+
+	if !strings.Contains(compile, "timeout -k 1 15 'g++'") {
+		t.Fatalf("컴파일 단계에 컴파일 타임아웃이 적용되지 않았습니다:\n%s", compile)
+	}
+	if !strings.Contains(run, "timeout -k 1 2 './main'") {
+		t.Fatalf("실행 단계에 시간 제한이 적용되지 않았습니다:\n%s", run)
+	}
+	// 문제의 시간 제한이 컴파일까지 잡아먹으면 안 된다.
+	if strings.Contains(compile, "timeout -k 1 2 ") {
+		t.Fatalf("컴파일에 문제의 시간 제한이 적용되었습니다:\n%s", compile)
 	}
 }
 
-func TestBuildScriptSkipsCompileStageForInterpretedRuntimes(t *testing.T) {
-	script := buildScript(Spec{Run: []string{"python3", "main.py"}, TimeLimitMs: 1000}, "NONCE")
+func TestCompileScriptIsEmptyForInterpretedRuntimes(t *testing.T) {
+	if compile := buildCompileScript(Spec{Run: []string{"python3", "main.py"}}, "NONCE"); compile != "" {
+		t.Fatalf("컴파일 단계가 없어야 합니다:\n%s", compile)
+	}
+}
 
-	if strings.Contains(script, ".compile") {
-		t.Fatalf("컴파일 단계가 없어야 합니다:\n%s", script)
+func TestCompileScriptClearsBuildCacheBeforeRunStage(t *testing.T) {
+	compile := buildCompileScript(Spec{
+		Compile: []string{"go", "build"}, Run: []string{"./main"}, CompileTimeoutMs: 15000,
+	}, "NONCE")
+
+	// 빌드 캐시가 남으면 tmpfs 를 통해 실행 단계의 메모리 한도를 잡아먹는다.
+	if !strings.Contains(compile, "rm -rf /work/.gocache") {
+		t.Fatalf("빌드 캐시를 정리하지 않습니다:\n%s", compile)
+	}
+}
+
+func TestStartupMemoryLimitOpensHeadroomOnlyForCompiledRuntimes(t *testing.T) {
+	interpreted := Spec{MemoryLimitMb: 256, CompileMemoryLimitMb: 1024, Run: []string{"python3"}}
+	if got := startupMemoryLimitMb(interpreted); got != 256 {
+		t.Errorf("컴파일이 없으면 문제의 한도를 그대로 써야 합니다: %d", got)
+	}
+
+	compiled := Spec{MemoryLimitMb: 256, CompileMemoryLimitMb: 1024, Compile: []string{"go", "build"}}
+	if got := startupMemoryLimitMb(compiled); got != 1024 {
+		t.Errorf("컴파일 단계는 여유 한도를 써야 합니다: %d", got)
+	}
+
+	generous := Spec{MemoryLimitMb: 2048, CompileMemoryLimitMb: 1024, Compile: []string{"go", "build"}}
+	if got := startupMemoryLimitMb(generous); got != 2048 {
+		t.Errorf("문제 한도가 더 크면 그쪽을 써야 합니다: %d", got)
 	}
 }
 

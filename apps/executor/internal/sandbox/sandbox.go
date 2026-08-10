@@ -18,7 +18,10 @@ type Spec struct {
 	MemoryLimitMb int
 	// 컴파일 단계에 허용하는 최대 시간. 문제의 시간 제한과 별개로 적용된다.
 	CompileTimeoutMs int
-	MaxOutputBytes   int
+	// 컴파일 단계에 허용하는 메모리. 툴체인은 사용자 프로그램보다 훨씬 많이 쓰므로
+	// 문제의 메모리 제한과 별개로 둔다 (docs/06_실행_제약_계약.md).
+	CompileMemoryLimitMb int
+	MaxOutputBytes       int
 }
 
 // Outcome 은 샌드박스가 관찰한 실행 결과다. 정답 여부는 판단하지 않는다.
