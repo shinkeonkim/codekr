@@ -1,0 +1,44 @@
+{
+  "slug": "reverse-words",
+  "title": "단어 뒤집기",
+  "category": "DATA_STRUCTURE",
+  "difficulty": "SILVER_4",
+  "description": "한 줄의 문장이 주어집니다. 단어의 순서를 뒤집어 출력하세요.\n\n단어는 하나 이상의 공백으로 구분되며, 출력할 때는 단어 사이를 공백 하나로만 구분합니다.",
+  "inputDescription": "첫째 줄에 영문 소문자와 공백으로 이루어진 문장이 주어집니다. (길이 ≤ 1000)",
+  "outputDescription": "단어의 순서를 뒤집어 한 줄로 출력합니다.",
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "published": true,
+  "testcases": [
+    {
+      "seq": 1,
+      "input": "hello world\n",
+      "expectedOutput": "world hello\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 2,
+      "input": "a b c d\n",
+      "expectedOutput": "d c b a\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 3,
+      "input": "single\n",
+      "expectedOutput": "single\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 4,
+      "input": "the quick brown fox jumps\n",
+      "expectedOutput": "jumps fox brown quick the\n",
+      "visibility": "HIDDEN"
+    }
+  ],
+  "templates": [
+    {
+      "runtimeId": "python:3.12",
+      "sourceCode": "import sys\n\ndef main():\n    words = sys.stdin.readline().split()\n    print(\" \".join(reversed(words)))\n\nmain()\n"
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 name: codekr
 
+# 빌드 컨텍스트는 모두 저장소 루트다 — libs/gocontract 와 infra/runtimes 를 공유하기 때문이다.
+x-build-context: &build-context ../..
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -32,6 +35,97 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    networks: [codekr]
+
+  api:
+    build:
+      context: *build-context
+      dockerfile: apps/api/Dockerfile
+    container_name: codekr-api
+    environment:
+      CODEKR_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-codekr}
+      CODEKR_DB_USERNAME: ${POSTGRES_USER:-codekr}
+      CODEKR_DB_PASSWORD: ${POSTGRES_PASSWORD:-codekr_local_pw}
+      CODEKR_REDIS_HOST: redis
+      CODEKR_REDIS_PORT: 6379
+      CODEKR_JWT_SECRET: ${CODEKR_JWT_SECRET:-local-development-only-secret-change-me-please-32b}
+      CODEKR_JWT_ACCESS_TTL_SECONDS: ${CODEKR_JWT_ACCESS_TTL_SECONDS:-3600}
+      CODEKR_JWT_REFRESH_TTL_SECONDS: ${CODEKR_JWT_REFRESH_TTL_SECONDS:-1209600}
+      CODEKR_CORS_ALLOWED_ORIGINS: ${CODEKR_CORS_ALLOWED_ORIGINS:-http://localhost:13000}
+    ports:
+      - "${API_HOST_PORT:-18080}:8080"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 40s
+    networks: [codekr]
+
+  executor:
+    build:
+      context: *build-context
+      dockerfile: apps/executor/Dockerfile
+    container_name: codekr-executor
+    environment:
+      CODEKR_REDIS_ADDR: redis:6379
+      CODEKR_HTTP_ADDR: ":8081"
+      CODEKR_RUNTIMES_PATH: /etc/codekr/runtimes.yaml
+      EXECUTOR_CONCURRENCY: ${EXECUTOR_CONCURRENCY:-4}
+      EXECUTOR_COMPILE_TIMEOUT_MS: ${EXECUTOR_COMPILE_TIMEOUT_MS:-15000}
+      EXECUTOR_MAX_OUTPUT_BYTES: ${EXECUTOR_MAX_OUTPUT_BYTES:-65536}
+    ports:
+      - "${EXECUTOR_HOST_PORT:-18081}:8081"
+    volumes:
+      # 샌드박스를 형제 컨테이너로 띄우기 위한 소켓. 실행 전용 노드에서만 허용한다 (ADR-0003).
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [codekr]
+
+  judge:
+    build:
+      context: *build-context
+      dockerfile: apps/judge/Dockerfile
+    container_name: codekr-judge
+    environment:
+      CODEKR_REDIS_ADDR: redis:6379
+      CODEKR_HTTP_ADDR: ":8082"
+      JUDGE_CONCURRENCY: ${JUDGE_CONCURRENCY:-4}
+      JUDGE_EXEC_TIMEOUT_MS: ${JUDGE_EXEC_TIMEOUT_MS:-60000}
+    ports:
+      - "${JUDGE_HOST_PORT:-18082}:8082"
+    depends_on:
+      redis: { condition: service_healthy }
+      executor: { condition: service_started }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [codekr]
+
+  web:
+    build:
+      context: *build-context
+      dockerfile: apps/web/Dockerfile
+      args:
+        # 브라우저에서 쓰는 주소이므로 컨테이너 이름이 아니라 호스트 주소여야 한다.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:18080}
+        NEXT_PUBLIC_WS_BASE_URL: ${NEXT_PUBLIC_WS_BASE_URL:-ws://localhost:18080}
+    container_name: codekr-web
+    ports:
+      - "${WEB_HOST_PORT:-13000}:3000"
+    depends_on:
+      api: { condition: service_started }
     networks: [codekr]
 
 volumes:

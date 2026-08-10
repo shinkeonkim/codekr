@@ -1,0 +1,32 @@
+{
+  "slug": "tcp-handshake-order",
+  "title": "TCP 3-way 핸드셰이크 순서",
+  "category": "NETWORK",
+  "difficulty": "BRONZE_3",
+  "description": "TCP 연결 수립 과정에서 주고받는 세그먼트의 순서를 출력하는 프로그램을 작성하세요.\n\n클라이언트가 연결을 시작한다고 가정합니다. 각 단계를 한 줄에 하나씩, 대문자로 출력합니다.\n\n이 문제는 개념을 코드로 확인해 보는 연습입니다.",
+  "inputDescription": "입력은 없습니다.",
+  "outputDescription": "핸드셰이크 순서대로 SYN, SYN-ACK, ACK 를 각 줄에 출력합니다.",
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "published": true,
+  "testcases": [
+    {
+      "seq": 1,
+      "input": "",
+      "expectedOutput": "SYN\nSYN-ACK\nACK\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 2,
+      "input": "\n",
+      "expectedOutput": "SYN\nSYN-ACK\nACK\n",
+      "visibility": "HIDDEN"
+    }
+  ],
+  "templates": [
+    {
+      "runtimeId": "python:3.12",
+      "sourceCode": "# TCP 3-way 핸드셰이크 순서를 출력하세요.\n"
+    }
+  ]
+}
