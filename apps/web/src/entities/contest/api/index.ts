@@ -1,6 +1,12 @@
 import { request } from "@/shared/api";
 import type { Page } from "@/shared/api";
-import type { ContestDetail, ContestSummary, Scoreboard } from "../model/types";
+import type {
+  ContestDetail,
+  ContestNotice,
+  ContestQuestion,
+  ContestSummary,
+  Scoreboard,
+} from "../model/types";
 
 export const contestApi = {
   /** 목록. 공개다. 준비 중인 대회는 서버가 걸러 준다. */
@@ -27,5 +33,35 @@ export const contestApi = {
     request<Scoreboard>(
       `/api/v1/contests/${encodeURIComponent(slug)}/scoreboard?actual=${actual}`,
       { auth: true },
+    ),
+
+  /** 공지 (#147). 참가하지 않은 사람도 읽는다 — 끝난 뒤 기록으로 남는다. */
+  notices: (slug: string) =>
+    request<ContestNotice[]>(`/api/v1/contests/${encodeURIComponent(slug)}/notices`, { auth: true }),
+
+  addNotice: (slug: string, body: { title: string; body: string }) =>
+    request<ContestNotice>(`/api/v1/contests/${encodeURIComponent(slug)}/notices`, {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+
+  /** 질의. **볼 수 있는 것만** 온다 — 남의 비공개 답변은 내려오지 않는다. */
+  questions: (slug: string) =>
+    request<ContestQuestion[]>(`/api/v1/contests/${encodeURIComponent(slug)}/questions`, {
+      auth: true,
+    }),
+
+  ask: (slug: string, body: { problemId?: number; body: string }) =>
+    request<ContestQuestion>(`/api/v1/contests/${encodeURIComponent(slug)}/questions`, {
+      method: "POST",
+      body,
+      auth: true,
+    }),
+
+  answer: (slug: string, questionId: number, body: { answer: string; public: boolean }) =>
+    request<void>(
+      `/api/v1/contests/${encodeURIComponent(slug)}/questions/${questionId}/answer`,
+      { method: "PUT", body, auth: true },
     ),
 };

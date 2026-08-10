@@ -77,3 +77,29 @@ export interface ScoreboardCell {
   /** 동결 이후의 시도 수. 결과는 감춰지고 시도 사실만 보인다. */
   pending: number;
 }
+
+/** 대회 공지 (#147). */
+export interface ContestNotice {
+  id: number;
+  title: string;
+  body: string;
+  createdAt: string;
+  edited: boolean;
+}
+
+/**
+ * 대회 질의 (#147).
+ *
+ * 목록에는 **볼 수 있는 것만** 온다 — 남의 비공개 답변은 아예 내려오지 않는다.
+ */
+export interface ContestQuestion {
+  id: number;
+  problemLabel: string | null;
+  body: string;
+  answer: string | null;
+  answerPublic: boolean;
+  answeredAt: string | null;
+  createdAt: string;
+  /** 내가 낸 질문인가. 목록에서 내 것을 찾을 수 있어야 한다. */
+  mine: boolean;
+}

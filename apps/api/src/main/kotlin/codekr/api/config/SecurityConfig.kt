@@ -78,6 +78,9 @@ class SecurityConfig(
                         "/api/v1/contests/*",
                         // 순위표는 관전자도 본다 (#63).
                         "/api/v1/contests/*/scoreboard",
+                        // 공지는 공개다 (#147). 대회가 끝난 뒤 기록으로 남아야 한다.
+                        "/api/v1/contests/*/notices",
+                        "/api/v1/contests/*/questions",
                     ).permitAll()
                     // 게시판 읽기는 공개다 (#137). 로그인해야 읽을 수 있으면
                     // 검색으로 들어온 사람이 아무것도 볼 수 없다.
