@@ -3,6 +3,7 @@
 import type { TokenResponse } from "@/entities/user";
 import { useAuth } from "../model/AuthProvider";
 import { ApiError } from "@/shared/api";
+import { readNextParam } from "@/shared/lib";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -45,7 +46,9 @@ export function AuthForm({ title, description, fields, submitLabel, footer, onSu
     try {
       const tokens = await onSubmit(values);
       signIn(tokens);
-      router.push("/problems");
+      // 가려던 곳이 있으면 그리로 돌려보낸다 (#113).
+      // safeNextPath 가 외부 주소를 걸러낸다 — 오픈 리다이렉트가 되면 안 된다.
+      router.push(readNextParam());
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
