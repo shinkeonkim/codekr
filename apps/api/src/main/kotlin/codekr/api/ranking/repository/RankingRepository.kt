@@ -2,6 +2,7 @@ package codekr.api.ranking.repository
 
 import codekr.api.ranking.dto.RankingEntry
 import codekr.api.ranking.entity.RankingMetric
+import codekr.api.ranking.entity.RankingPeriod
 import codekr.api.ranking.entity.SCORE_PROBLEM_LIMIT
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
@@ -17,8 +18,13 @@ import java.time.Instant
 @Repository
 class RankingRepository(private val jdbcClient: JdbcClient) {
 
-    fun findPage(metric: RankingMetric, limit: Int, offset: Int): List<RankingEntry> =
-        jdbcClient.sql(rankingSql(metric))
+    fun findPage(
+        metric: RankingMetric,
+        period: RankingPeriod,
+        limit: Int,
+        offset: Int,
+    ): List<RankingEntry> =
+        jdbcClient.sql(rankingSql(metric, period))
             .param("scoreLimit", SCORE_PROBLEM_LIMIT)
             .param("limit", limit)
             .param("offset", offset)
@@ -33,16 +39,23 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
             }
             .list()
 
-    fun countRanked(): Int =
-        jdbcClient.sql("SELECT count(DISTINCT user_id) FROM user_problem_scores")
+    fun countRanked(period: RankingPeriod): Int =
+        jdbcClient.sql(
+            """
+            SELECT count(DISTINCT s.user_id)
+            FROM user_problem_scores s
+            JOIN users u ON u.id = s.user_id
+            WHERE u.ranking_opt_out = false AND ${periodFilter(period)}
+            """,
+        )
             .query(Int::class.java)
             .single()
 
     /** 그 사용자의 순위. 푼 문제가 하나도 없으면 null 이다 — 0등이 아니라 순위가 없는 것이다. */
-    fun findRankOf(nickname: String, metric: RankingMetric): RankingEntry? =
+    fun findRankOf(nickname: String, metric: RankingMetric, period: RankingPeriod): RankingEntry? =
         jdbcClient.sql(
             """
-            SELECT * FROM (${rankingSql(metric, paged = false)}) ranked
+            SELECT * FROM (${rankingSql(metric, period, paged = false)}) ranked
             WHERE nickname = :nickname
             """,
         )
@@ -66,7 +79,13 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
      *
      * 동점 처리: 총점 → 푼 문제 수 → **최초 해결이 이른 순** → 닉네임.
      */
-    private fun rankingSql(metric: RankingMetric, paged: Boolean = true): String {
+    /** 월간은 '이번 달에 처음 맞힌 문제'만 본다. 지난달 점수를 이월하면 월간이 아니다. */
+    private fun periodFilter(period: RankingPeriod): String = when (period) {
+        RankingPeriod.ALL_TIME -> "true"
+        RankingPeriod.MONTHLY -> "s.solved_at >= date_trunc('month', now())"
+    }
+
+    private fun rankingSql(metric: RankingMetric, period: RankingPeriod, paged: Boolean = true): String {
         val order = when (metric) {
             RankingMetric.SCORE -> "score DESC, solved_count DESC, last_solved_at ASC, nickname ASC"
             RankingMetric.SOLVED_COUNT -> "solved_count DESC, score DESC, last_solved_at ASC, nickname ASC"
@@ -88,6 +107,8 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
                     FROM user_problem_scores ups
                 ) s
                 JOIN users u ON u.id = s.user_id
+                -- 랭킹에 이름이 오르는 것을 원하지 않는 사람은 뺀다 (#58).
+                WHERE u.ranking_opt_out = false AND ${periodFilter(period)}
                 GROUP BY u.id, u.nickname
             ) totals
             ORDER BY $order

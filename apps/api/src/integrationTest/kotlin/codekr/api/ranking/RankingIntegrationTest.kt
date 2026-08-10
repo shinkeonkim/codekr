@@ -176,9 +176,9 @@ class RankingIntegrationTest : IntegrationTestBase() {
     fun `지표 목록을 서버가 알려준다`() {
         mockMvc.perform(get("/api/v1/rankings/metrics"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.length()").value(2))
-            .andExpect(jsonPath("$[0].value").value("SCORE"))
-            .andExpect(jsonPath("$[0].label").value("실력 점수"))
+            .andExpect(jsonPath("$.metrics.length()").value(2))
+            .andExpect(jsonPath("$.metrics[0].value").value("SCORE"))
+            .andExpect(jsonPath("$.metrics[0].label").value("실력 점수"))
     }
 
     private fun problem(id: Long, level: Int, published: Boolean = true) {

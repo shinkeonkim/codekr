@@ -40,6 +40,22 @@ class User(
     @Column(name = "default_submission_visibility", nullable = false, length = 20)
     var defaultSubmissionVisibility: SubmissionVisibility = SubmissionVisibility.PRIVATE,
 
+    /**
+     * 랭킹 목록에서 빠진다 (#58).
+     *
+     * 점수는 그대로 쌓인다 — 껐다 켤 때 기록이 사라지면 끄기가 되돌릴 수 없는 선택이 된다.
+     */
+    @Column(name = "ranking_opt_out", nullable = false)
+    var rankingOptOut: Boolean = false,
+
+    /**
+     * 도달했던 최고 점수 (#58). 실력 티어는 이 값으로 정한다 — **강등이 없기 때문이다.**
+     *
+     * 현재 점수와 갈라질 수 있고, 그게 의도다. 재채점으로 점수가 내려가도 티어는 남는다.
+     */
+    @Column(name = "peak_score", nullable = false)
+    var peakScore: Int = 0,
+
 ) : BaseTimeEntity() {
 
     @Id
