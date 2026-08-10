@@ -70,7 +70,7 @@ class RejudgeService(
      *
      * **바뀌지 않은 사람에게는 보내지 않는다** — 소음이다.
      */
-    override fun completeOne(submissionId: Long) {
+    override fun completeOne(submissionId: Long, scoreDelta: Int) {
         val submission = submissionRepository.findById(submissionId).orElse(null) ?: return
         val batchId = submission.rejudgeBatchId ?: return
         val batch = batchRepository.findById(batchId).orElse(null)
@@ -84,9 +84,20 @@ class RejudgeService(
             category = NotificationCategory.JUDGE,
             title = "재채점으로 판정이 바뀌었습니다",
             // 왜 바뀌었는지를 함께 담는다. 이유 없이 기록이 바뀌면 우리가 임의로 바꾼 것으로 읽힌다.
-            body = batch?.reason,
+            body = notificationBody(batch?.reason, scoreDelta),
             link = "/submissions/${submission.id}",
         )
+    }
+
+    /**
+     * 점수가 내려갔다면 그 사실도 함께 알린다 (#57).
+     *
+     * 알림을 따로 보내지 않는 이유: 점수가 내려가는 경우는 판정이 뒤집힌 경우뿐이라
+     * 두 번 보내면 같은 일을 두 번 알리는 소음이 된다.
+     */
+    private fun notificationBody(reason: String?, scoreDelta: Int): String? {
+        val scoreNote = if (scoreDelta < 0) "랭킹 점수가 ${-scoreDelta}점 내려갔습니다." else null
+        return listOfNotNull(reason, scoreNote).joinToString(" ").ifBlank { null }
     }
 
     @Transactional(readOnly = true)

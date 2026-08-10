@@ -69,6 +69,8 @@ class SecurityConfig(
                     .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/problems", "/api/v1/problems/*").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/runtimes").permitAll()
+                    // 랭킹은 공개 정보다 (#57, #85).
+                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings", "/api/v1/rankings/*").permitAll()
                     .requestMatchers("/ws/**").permitAll()
                     // 어드민 영역의 역할 규칙 (#103).
                     //

@@ -55,6 +55,8 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/problems", Access.PUBLIC),
         Endpoint("GET", "/api/v1/problems/{slug}", Access.PUBLIC),
         Endpoint("GET", "/api/v1/runtimes", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/rankings", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/rankings/metrics", Access.PUBLIC),
 
         // --- 제출 ---
         Endpoint("POST", "/api/v1/problems/{slug}/run", Access.AUTHENTICATED),
