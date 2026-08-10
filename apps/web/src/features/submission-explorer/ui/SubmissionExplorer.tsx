@@ -2,37 +2,19 @@
 
 import { problemApi } from "@/entities/problem";
 import type { Runtime } from "@/entities/problem";
-import { SubmissionResult, VERDICT_LABELS, submissionApi } from "@/entities/submission";
+import { SubmissionResult, submissionApi } from "@/entities/submission";
 import { UserLink } from "@/entities/user";
-import type { SubmissionSummary, Verdict } from "@/entities/submission";
+import type { SubmissionSummary } from "@/entities/submission";
 import type { Page } from "@/shared/api";
 import { formatDateTime, formatMemory } from "@/shared/lib";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Button, EmptyState, Input, Pagination, Select, Table } from "@/shared/ui";
+import { EmptyState, Pagination, Table } from "@/shared/ui";
+import { FILTER_KEYS, activeChips, hasActiveFilters } from "../model/filters";
+import type { FilterKey, Filters } from "../model/filters";
+import { FilterChips } from "./FilterChips";
+import { FilterPanel } from "./FilterPanel";
 
-const VERDICTS: Verdict[] = [
-  "ACCEPTED",
-  "WRONG_ANSWER",
-  "TIME_LIMIT_EXCEEDED",
-  "MEMORY_LIMIT_EXCEEDED",
-  "RUNTIME_ERROR",
-  "COMPILE_ERROR",
-  "OUTPUT_LIMIT_EXCEEDED",
-  "SYSTEM_ERROR",
-];
-
-const SORTS = [
-  { value: "LATEST", label: "최신순" },
-  { value: "OLDEST", label: "오래된순" },
-  { value: "RUNTIME", label: "실행 시간 짧은순" },
-  { value: "MEMORY", label: "메모리 적은순" },
-];
-
-/** URL 쿼리에 담는 필터 키. 새로고침·링크 공유 후에도 같은 목록이 나오게 한다. */
-const FILTER_KEYS = ["problemSlug", "nickname", "runtimeId", "verdict", "from", "to", "sort", "page"] as const;
-type FilterKey = (typeof FILTER_KEYS)[number];
-type Filters = Partial<Record<FilterKey, string>>;
 
 interface Props {
   /** 문제 상세 안에서 쓸 때는 그 문제로 범위를 고정한다. */
@@ -88,74 +70,47 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.toString(), fixedProblemSlug, fixedNickname]);
 
-  const hasFilters = FILTER_KEYS.some((key) => key !== "page" && filters[key]);
+  // 범위가 고정된 화면(문제 상세·프로필)에서는 그 필터를 그리지도, 칩으로 보이지도 않는다.
+  const hidden: FilterKey[] = [
+    ...(fixedProblemSlug ? (["problemSlug"] as FilterKey[]) : []),
+    ...(fixedNickname ? (["nickname"] as FilterKey[]) : []),
+  ];
+  const hasFilters = hasActiveFilters(filters, hidden);
+
+  const clearFilters = () => {
+    const next = new URLSearchParams(searchParams.toString());
+    activeChips(filters, hidden).forEach((key) => next.delete(key));
+    next.delete("page");
+    router.replace(next.size > 0 ? `${pathname}?${next}` : pathname, { scroll: false });
+  };
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {fixedProblemSlug ? null : (
-          <Input
-            placeholder="문제 slug"
-            value={filters.problemSlug ?? ""}
-            onChange={(event) => setFilter("problemSlug", event.target.value)}
-          />
-        )}
-        {fixedNickname ? null : (
-          <Input
-            placeholder="닉네임"
-            value={filters.nickname ?? ""}
-            onChange={(event) => setFilter("nickname", event.target.value)}
-          />
-        )}
-        <Select value={filters.runtimeId ?? ""} onChange={(event) => setFilter("runtimeId", event.target.value)}>
-          <option value="">전체 언어</option>
-          {runtimes.map((runtime) => (
-            <option key={runtime.id} value={runtime.id}>
-              {runtime.label}
-            </option>
-          ))}
-        </Select>
-        <Select value={filters.verdict ?? ""} onChange={(event) => setFilter("verdict", event.target.value)}>
-          <option value="">전체 판정</option>
-          {VERDICTS.map((verdict) => (
-            <option key={verdict} value={verdict}>
-              {VERDICT_LABELS[verdict]}
-            </option>
-          ))}
-        </Select>
-        <Input
-          type="date"
-          aria-label="시작일"
-          value={filters.from ?? ""}
-          onChange={(event) => setFilter("from", event.target.value)}
-        />
-        <Input
-          type="date"
-          aria-label="종료일"
-          value={filters.to ?? ""}
-          onChange={(event) => setFilter("to", event.target.value)}
-        />
-        <Select value={filters.sort ?? "LATEST"} onChange={(event) => setFilter("sort", event.target.value)}>
-          {SORTS.map((sort) => (
-            <option key={sort.value} value={sort.value}>
-              {sort.label}
-            </option>
-          ))}
-        </Select>
-        {hasFilters ? (
-          <Button type="button" variant="secondary" onClick={() => router.replace(pathname, { scroll: false })}>
-            필터 초기화
-          </Button>
-        ) : null}
-      </div>
+      <FilterChips
+        filters={filters}
+        hidden={hidden}
+        runtimes={runtimes}
+        onRemove={(key) => setFilter(key, "")}
+        onClear={clearFilters}
+      />
+
+      <FilterPanel filters={filters} hidden={hidden} runtimes={runtimes} onChange={setFilter} />
 
       {error ? <EmptyState title={error} /> : null}
 
+      {/*
+        빈 화면은 두 가지다 (#76). **필터를 안 걸었는데 비었다**는 것과
+        **조건에 맞는 것이 없다**는 것은 다른 말이고, 사용자가 할 일도 다르다.
+      */}
       {result && result.content.length === 0 ? (
-        <EmptyState
-          title={emptyMessage ?? "조건에 맞는 제출이 없습니다."}
-          description={hasFilters ? "필터를 바꿔 보세요." : undefined}
-        />
+        hasFilters ? (
+          <EmptyState
+            title="조건에 맞는 제출이 없습니다."
+            description="위의 필터를 지우거나 바꿔 보세요."
+          />
+        ) : (
+          <EmptyState title={emptyMessage ?? "아직 제출이 없습니다."} />
+        )
       ) : null}
 
       {result && result.content.length > 0 ? (
