@@ -1,0 +1,245 @@
+# 코드 실행 런타임 레지스트리 — api 와 executor 가 공유하는 단일 정의.
+#
+# 언어나 버전을 추가할 때는 이미지 하나와 아래 항목 하나만 늘리면 된다 (ADR-0003).
+#   id            : 제출/실행 요청에서 쓰는 식별자 (언어:버전)
+#   label         : 화면에 보여줄 이름
+#   monacoLanguage: 에디터 문법 강조용 언어 키
+#   image         : 샌드박스 컨테이너 이미지 (공식 이미지를 그대로 쓴다)
+#   sourceFile    : 작업 디렉터리에 기록할 소스 파일명
+#   compile       : (선택) 컴파일 명령. 없으면 인터프리터 언어로 취급한다
+#   run           : 실행 명령
+#   template      : 에디터 초기 코드 (문제가 지정한 초기 코드가 있으면 그쪽이 우선한다)
+#
+# 이미지 선택 기준
+#   - 공식 이미지를 쓰고 자체 빌드하지 않는다. 유지보수 대상을 늘리지 않기 위함이다.
+#     공식 이미지가 없는 언어(Kotlin, C#)만 infra/runtimes/images/ 에서 직접 만든다.
+#   - 컴파일러가 필요한 언어는 SDK 이미지를, 인터프리터 언어는 alpine 변형을 쓴다.
+#   - 실행 계정(UID 10001)은 이미지에 없어도 되므로 별도 준비가 필요 없다.
+
+runtimes:
+  # ── Python ────────────────────────────────────────────────────────────────
+  - id: "python:3.13"
+    label: "Python 3.13"
+    monacoLanguage: "python"
+    image: "python:3.13-alpine"
+    sourceFile: "main.py"
+    run: ["python3", "main.py"]
+    template: |
+      import sys
+
+      def main():
+          data = sys.stdin.read().split()
+          print(sum(map(int, data)))
+
+      main()
+
+  - id: "python:3.12"
+    label: "Python 3.12"
+    monacoLanguage: "python"
+    image: "python:3.12-alpine"
+    sourceFile: "main.py"
+    run: ["python3", "main.py"]
+    template: |
+      import sys
+
+      def main():
+          data = sys.stdin.read().split()
+          print(sum(map(int, data)))
+
+      main()
+
+  - id: "python:3.11"
+    label: "Python 3.11"
+    monacoLanguage: "python"
+    image: "python:3.11-alpine"
+    sourceFile: "main.py"
+    run: ["python3", "main.py"]
+    template: |
+      import sys
+
+      def main():
+          data = sys.stdin.read().split()
+          print(sum(map(int, data)))
+
+      main()
+
+  # ── JavaScript ────────────────────────────────────────────────────────────
+  - id: "javascript:22"
+    label: "JavaScript (Node 22)"
+    monacoLanguage: "javascript"
+    image: "node:22-alpine"
+    sourceFile: "main.js"
+    run: ["node", "main.js"]
+    template: |
+      const data = require('fs').readFileSync(0, 'utf8').trim().split(/\s+/);
+      console.log(data.map(Number).reduce((a, b) => a + b, 0));
+
+  - id: "javascript:20"
+    label: "JavaScript (Node 20)"
+    monacoLanguage: "javascript"
+    image: "node:20-alpine"
+    sourceFile: "main.js"
+    run: ["node", "main.js"]
+    template: |
+      const data = require('fs').readFileSync(0, 'utf8').trim().split(/\s+/);
+      console.log(data.map(Number).reduce((a, b) => a + b, 0));
+
+  # ── C / C++ ───────────────────────────────────────────────────────────────
+  - id: "cpp:17"
+    label: "C++17 (GCC 13)"
+    monacoLanguage: "cpp"
+    image: "gcc:13"
+    sourceFile: "main.cpp"
+    compile: ["g++", "-O2", "-std=c++17", "-o", "main", "main.cpp"]
+    run: ["./main"]
+    template: |
+      #include <bits/stdc++.h>
+      using namespace std;
+
+      int main() {
+          ios::sync_with_stdio(false);
+          cin.tie(nullptr);
+          long long a, b;
+          cin >> a >> b;
+          cout << a + b << '\n';
+          return 0;
+      }
+
+  - id: "cpp:20"
+    label: "C++20 (GCC 13)"
+    monacoLanguage: "cpp"
+    image: "gcc:13"
+    sourceFile: "main.cpp"
+    compile: ["g++", "-O2", "-std=c++20", "-o", "main", "main.cpp"]
+    run: ["./main"]
+    template: |
+      #include <bits/stdc++.h>
+      using namespace std;
+
+      int main() {
+          ios::sync_with_stdio(false);
+          cin.tie(nullptr);
+          long long a, b;
+          cin >> a >> b;
+          cout << a + b << '\n';
+          return 0;
+      }
+
+  - id: "c:17"
+    label: "C17 (GCC 13)"
+    monacoLanguage: "c"
+    image: "gcc:13"
+    sourceFile: "main.c"
+    compile: ["gcc", "-O2", "-std=c17", "-o", "main", "main.c", "-lm"]
+    run: ["./main"]
+    template: |
+      #include <stdio.h>
+
+      int main(void) {
+          long long a, b;
+          if (scanf("%lld %lld", &a, &b) != 2) return 0;
+          printf("%lld\n", a + b);
+          return 0;
+      }
+
+  # ── JVM ───────────────────────────────────────────────────────────────────
+  # 클래스 이름을 Main 으로 고정한다 — 파일명과 public 클래스 이름이 같아야 하기 때문이다.
+  - id: "java:21"
+    label: "Java 21"
+    monacoLanguage: "java"
+    image: "eclipse-temurin:21-jdk-alpine"
+    sourceFile: "Main.java"
+    compile: ["javac", "Main.java"]
+    run: ["java", "-XX:+UseSerialGC", "-Xss64m", "Main"]
+    template: |
+      import java.io.*;
+      import java.util.*;
+
+      public class Main {
+          public static void main(String[] args) throws IOException {
+              StreamTokenizer in = new StreamTokenizer(new BufferedInputStream(System.in));
+              in.nextToken(); long a = (long) in.nval;
+              in.nextToken(); long b = (long) in.nval;
+              System.out.println(a + b);
+          }
+      }
+
+  - id: "kotlin:2.2"
+    label: "Kotlin 2.2 (JVM)"
+    monacoLanguage: "kotlin"
+    image: "ghcr.io/shinkeonkim/codekr-runtime-kotlin:2.2"
+    sourceFile: "Main.kt"
+    compile: ["kotlinc", "Main.kt", "-include-runtime", "-d", "main.jar"]
+    run: ["java", "-XX:+UseSerialGC", "-jar", "main.jar"]
+    template: |
+      fun main() {
+          val (a, b) = readln().trim().split(" ").map(String::toLong)
+          println(a + b)
+      }
+
+  # ── Go / Rust ─────────────────────────────────────────────────────────────
+  - id: "go:1.26"
+    label: "Go 1.26"
+    monacoLanguage: "go"
+    image: "golang:1.26-alpine"
+    sourceFile: "main.go"
+    # 캐시 디렉터리를 작업 디렉터리 안에 두어야 읽기 전용 rootfs 에서도 빌드된다.
+    compile: ["sh", "-c", "GOCACHE=/work/.gocache GOFLAGS=-mod=mod go build -o main main.go"]
+    run: ["./main"]
+    template: |
+      package main
+
+      import "fmt"
+
+      func main() {
+          var a, b int64
+          fmt.Scan(&a, &b)
+          fmt.Println(a + b)
+      }
+
+  - id: "rust:1.85"
+    label: "Rust 1.85"
+    monacoLanguage: "rust"
+    image: "rust:1.85-alpine"
+    sourceFile: "main.rs"
+    compile: ["rustc", "-O", "-o", "main", "main.rs"]
+    run: ["./main"]
+    template: |
+      use std::io::Read;
+
+      fn main() {
+          let mut input = String::new();
+          std::io::stdin().read_to_string(&mut input).unwrap();
+          let nums: Vec<i64> = input.split_whitespace().map(|x| x.parse().unwrap()).collect();
+          println!("{}", nums.iter().sum::<i64>());
+      }
+
+  # ── 그 외 인터프리터 ──────────────────────────────────────────────────────
+  - id: "ruby:3.4"
+    label: "Ruby 3.4"
+    monacoLanguage: "ruby"
+    image: "ruby:3.4-alpine"
+    sourceFile: "main.rb"
+    run: ["ruby", "main.rb"]
+    template: |
+      a, b = STDIN.read.split.map(&:to_i)
+      puts a + b
+
+  - id: "csharp:9"
+    label: "C# (.NET 9)"
+    monacoLanguage: "csharp"
+    image: "ghcr.io/shinkeonkim/codekr-runtime-csharp:9"
+    sourceFile: "Program.cs"
+    # 이미지에 미리 복원해 둔 프로젝트 골격을 작업 디렉터리로 옮겨야 빌드할 수 있다.
+    compile: ["sh", "-c", "cp -r /skeleton/app.csproj /skeleton/obj /work/ && cd /work && dotnet build -c Release -o out --nologo -v q"]
+    run: ["dotnet", "out/app.dll"]
+    template: |
+      using System;
+      using System.Linq;
+
+      class Program {
+          static void Main() {
+              var parts = Console.In.ReadToEnd().Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+              Console.WriteLine(parts.Select(long.Parse).Sum());
+          }
+      }

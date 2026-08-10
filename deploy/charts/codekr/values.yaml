@@ -1,0 +1,82 @@
+# 코드.kr 기본 값. 홈랩 전용 오버라이드는 oh-my-homelab 의 helm-charts/values/codekr.yaml 에 있다.
+
+global:
+  # CI(.github/workflows/ci.yml)가 여기로 이미지를 올린다.
+  registry: ghcr.io/shinkeonkim
+  imageTag: latest
+  domainSuffix: homelab.shinkeonkim.com
+  # 비공개 레지스트리에서 받을 때만 필요하다. 저장소가 비공개면 ghcr 패키지도
+  # 기본이 비공개라서 이 시크릿이 없으면 ImagePullBackOff 로 멈춘다.
+  imagePullSecrets: []
+
+ingress:
+  enabled: true
+  className: traefik
+  # 사용자에게 보이는 주소. Cloudflare Tunnel 의 public hostname 이 이 이름으로 붙는다.
+  #
+  # 퓨니코드로 적는 이유: Ingress 의 host 와 CORS 의 Origin 은 아스키만 받는다.
+  # 브라우저는 주소창에 코드.kr 을 보여주지만 실제로 보내는 Host/Origin 헤더는 이 값이다.
+  publicHost: xn--hy1by51c.kr # 코드.kr
+  # 내부 관리용 주소 (Traefik + Tailscale). 터널을 거치지 않고 접근할 때 쓴다.
+  internalHost: codekr.homelab.shinkeonkim.com
+  annotations: {}
+
+api:
+  replicas: 1
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+web:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { memory: 512Mi }
+
+judge:
+  replicas: 1
+  concurrency: 4
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+executor:
+  replicas: 2
+  concurrency: 4
+  # 실행기는 컨테이너 런타임 소켓을 쓴다. 이 권한은 노드 root 와 동등하므로
+  # 반드시 실행 전용 노드에만 배치한다 (docs/07 의 잔여 위험 R1, 이슈 #47).
+  nodeSelector:
+    codekr/workload: executor
+  tolerations:
+    - key: codekr/executor
+      operator: Exists
+      effect: NoSchedule
+  # 런타임 소켓 경로. containerd 노드 기준.
+  runtimeSocket: /run/containerd/containerd.sock
+  # 샌드박스 구현 (#45). containerd 네이티브 구현이 생기기 전까지는 엔진 API 뿐이다.
+  # 값이 틀리면 실행기가 기동에서 실패한다 — 첫 제출에서 드러나지 않게.
+  sandboxRuntime: engine-api
+  # 실행기만 다른 네임스페이스에 둘 수 있다. hostPath 마운트 때문에 그 네임스페이스는
+  # Pod Security 를 privileged 로 열어야 하는데, 나머지 워크로드까지 함께 열리지 않게
+  # 분리한다. 비워 두면 릴리스 네임스페이스에 함께 배치된다.
+  namespace: ""
+  # 어드민 스케일 제어(#40)가 조정할 수 있는 범위.
+  minReplicas: 1
+  maxReplicas: 20
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+redis:
+  storage: 2Gi
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+postgres:
+  # CNPG 오퍼레이터가 만든 클러스터를 쓴다 (홈랩 인프라 쪽에서 정의).
+  host: codekr-db-rw
+  port: 5432
+  database: codekr
+  # 자격증명은 SOPS 시크릿에서 온다.
+  secretName: codekr-secrets

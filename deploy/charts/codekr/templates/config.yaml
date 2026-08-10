@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codekr-config
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+data:
+  CODEKR_DB_URL: "jdbc:postgresql://{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+  CODEKR_REDIS_HOST: "codekr-redis.{{ .Release.Namespace }}.svc.cluster.local"
+  CODEKR_REDIS_PORT: "6379"
+  CODEKR_REDIS_ADDR: {{ include "codekr.redisAddr" . | quote }}
+  # 공개 주소와 내부 주소 모두 허용한다. 하나만 넣으면 다른 쪽으로 들어온 사용자의
+  # 브라우저가 API 호출을 막는다.
+  CODEKR_CORS_ALLOWED_ORIGINS: >-
+    {{- $origins := list }}
+    {{- range (include "codekr.hosts" . | fromJsonArray) }}
+    {{- $origins = append $origins (printf "https://%s" .) }}
+    {{- end }}
+    {{ join "," $origins }}
+  # 실행기가 조정할 수 있는 범위 (#40)
+  CODEKR_EXECUTOR_DEPLOYMENT: "codekr-executor"
+  CODEKR_EXECUTOR_NAMESPACE: {{ include "codekr.executorNamespace" . | quote }}
+  CODEKR_EXECUTOR_MIN_REPLICAS: "{{ .Values.executor.minReplicas }}"
+  CODEKR_EXECUTOR_MAX_REPLICAS: "{{ .Values.executor.maxReplicas }}"
+{{/*
+런타임 정의는 api 와 실행기가 함께 읽는다 (ADR-0003). ConfigMap 은 네임스페이스에
+묶이므로, 실행기를 따로 떼어 놓았으면 그 네임스페이스에도 같은 내용을 만든다.
+*/}}
+{{- range (list .Release.Namespace (include "codekr.executorNamespace" .)) | uniq }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codekr-runtimes
+  namespace: {{ . }}
+  labels:
+    app.kubernetes.io/name: codekr
+data:
+  runtimes.yaml: |
+{{ $.Files.Get "files/runtimes.yaml" | indent 4 }}
+{{- end }}

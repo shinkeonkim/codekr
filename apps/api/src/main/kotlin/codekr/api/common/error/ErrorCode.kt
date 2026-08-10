@@ -24,5 +24,6 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     SOLUTION_REQUIRED(HttpStatus.BAD_REQUEST, "검증하려면 정답 코드를 먼저 등록해야 합니다."),
 
     EXECUTION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "코드 실행에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+    SCALING_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "이 환경에서는 실행기 수를 조정할 수 없습니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
 }

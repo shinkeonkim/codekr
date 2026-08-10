@@ -18,6 +18,8 @@ type Config struct {
 	MaxOutputBytes       int
 	// ConsumerName 은 Redis consumer group 안에서 이 인스턴스를 식별한다.
 	ConsumerName string
+	// SandboxRuntime 은 어떤 컨테이너 런타임 구현을 쓸지 고른다 (#45).
+	SandboxRuntime string
 }
 
 // Load 는 환경 변수를 읽어 설정을 만든다. 값이 없으면 로컬 개발에 맞는 기본값을 쓴다.
@@ -35,6 +37,7 @@ func Load() Config {
 		CompileMemoryLimitMb: envInt("EXECUTOR_COMPILE_MEMORY_MB", 1024),
 		MaxOutputBytes:       envInt("EXECUTOR_MAX_OUTPUT_BYTES", 65536),
 		ConsumerName:         env("CODEKR_CONSUMER_NAME", hostname),
+		SandboxRuntime:       env("CODEKR_SANDBOX_RUNTIME", "engine-api"),
 	}
 }
 

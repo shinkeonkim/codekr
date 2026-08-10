@@ -1,6 +1,7 @@
 import type {
   ActivityResponse,
   AdminProblemDetail,
+  ExecutorScaleStatus,
   Page,
   ProblemDetail,
   ProblemSummary,
@@ -156,4 +157,13 @@ export const api = {
     request<ActivityResponse>("/api/v1/users/me/activity", { auth: true, query }),
 
   queues: () => request<QueueStatus>("/api/v1/admin/queues", { auth: true }),
+
+  executorScale: () => request<ExecutorScaleStatus>("/api/v1/admin/executors", { auth: true }),
+
+  scaleExecutors: (replicas: number) =>
+    request<ExecutorScaleStatus>("/api/v1/admin/executors/scale", {
+      method: "POST",
+      body: { replicas },
+      auth: true,
+    }),
 };

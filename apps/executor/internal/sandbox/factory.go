@@ -1,0 +1,32 @@
+package sandbox
+
+import "fmt"
+
+// 지원하는 런타임 구현.
+const (
+	// RuntimeEngineAPI 는 OCI 호환 엔진 API 로 런타임과 이야기한다. 로컬 개발 환경과
+	// 엔진 API 를 노출하는 노드에서 쓴다.
+	RuntimeEngineAPI = "engine-api"
+	// RuntimeContainerd 는 containerd 를 CRI 로 직접 다룬다. 아직 구현하지 않았다 (#45).
+	RuntimeContainerd = "containerd"
+)
+
+// New 는 설정된 런타임에 맞는 샌드박스를 만든다.
+//
+// 구현을 이름으로 고르게 한 이유는, 운영 노드의 런타임이 로컬 개발 환경과 다를 수
+// 있는데 그 차이가 첫 제출에서야 드러나면 곤란하기 때문이다. 알 수 없는 이름이나
+// 아직 없는 구현은 **기동 시점에** 실패한다.
+func New(runtime string) (Sandbox, error) {
+	switch runtime {
+	case "", RuntimeEngineAPI:
+		return NewContainerSandbox()
+	case RuntimeContainerd:
+		return nil, fmt.Errorf(
+			"containerd 네이티브 구현은 아직 없습니다 (이슈 #45). "+
+				"엔진 API 를 노출하는 노드라면 CODEKR_SANDBOX_RUNTIME=%s 로 두십시오", RuntimeEngineAPI)
+	default:
+		return nil, fmt.Errorf(
+			"알 수 없는 샌드박스 런타임 %q — %s 또는 %s 여야 합니다",
+			runtime, RuntimeEngineAPI, RuntimeContainerd)
+	}
+}

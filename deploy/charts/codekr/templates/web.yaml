@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codekr-web
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: web }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codekr
+        app.kubernetes.io/component: web
+    spec:
+      {{- include "codekr.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: web
+          image: {{ include "codekr.image" (dict "root" . "name" "web") }}
+          ports:
+            - { name: http, containerPort: 3000 }
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            periodSeconds: 10
+          resources: {{- toYaml .Values.web.resources | nindent 12 }}
+          securityContext: {{- include "codekr.securityContext" . | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codekr-web
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  selector: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: web }
+  ports:
+    - { name: http, port: 3000, targetPort: http }

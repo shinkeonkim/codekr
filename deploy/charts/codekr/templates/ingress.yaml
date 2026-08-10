@@ -1,0 +1,37 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: codekr
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+  annotations: {{- toYaml .Values.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    # 공개 주소와 내부 주소가 같은 서비스를 가리킨다. 경로 규칙은 하나로 유지한다 —
+    # 둘이 갈라지면 "터널로는 되는데 내부로는 안 되는" 차이가 생긴다.
+    {{- range (include "codekr.hosts" . | fromJsonArray) }}
+    - host: {{ . }}
+      http:
+        paths:
+          # API 와 WebSocket 을 먼저 매칭하고, 나머지는 웹으로 보낸다.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: codekr-api
+                port: { name: http }
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: codekr-api
+                port: { name: http }
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: codekr-web
+                port: { name: http }
+    {{- end }}
+{{- end }}
