@@ -1,6 +1,6 @@
 "use client";
 
-import { RuntimeLimitNotice, useProblem } from "@/entities/problem";
+import { ProblemStatsSummary, RuntimeLimitNotice, useProblem } from "@/entities/problem";
 import { Button, Card, EmptyState } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
@@ -18,6 +18,9 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <ProblemHeader problem={problem} />
+          <div className="mt-2">
+            <ProblemStatsSummary stats={problem.stats} />
+          </div>
           <RuntimeLimitNotice problem={problem} />
         </div>
         <Link href={`/problems/${slug}/solve`}>

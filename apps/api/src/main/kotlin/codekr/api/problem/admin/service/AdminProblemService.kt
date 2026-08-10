@@ -9,7 +9,9 @@ import codekr.api.problem.admin.dto.ProblemUpsertRequest
 import codekr.api.problem.admin.dto.RuntimeLimitRequest
 import codekr.api.problem.admin.dto.TemplateRequest
 import codekr.api.problem.admin.dto.TestcaseRequest
+import codekr.api.problem.dto.ProblemStats
 import codekr.api.problem.dto.ProblemSummaryResponse
+import codekr.api.problem.repository.ProblemStatsRepository
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.repository.ProblemSearchCondition
@@ -26,10 +28,14 @@ class AdminProblemService(
     private val problemSearchRepository: ProblemSearchRepository,
     private val runtimeRegistry: RuntimeRegistry,
     private val verificationService: SolutionVerificationService,
+    private val statsRepository: ProblemStatsRepository,
 ) {
 
     fun search(condition: ProblemSearchCondition, pageable: Pageable): PageResponse<ProblemSummaryResponse> =
-        PageResponse.from(problemSearchRepository.search(condition, pageable).map(ProblemSummaryResponse::from))
+        problemSearchRepository.search(condition, pageable).let { page ->
+            val stats = statsRepository.findAll(page.content.map { it.id })
+            PageResponse.from(page.map { ProblemSummaryResponse.from(it, stats[it.id] ?: ProblemStats.EMPTY) })
+        }
 
     fun findDetail(id: Long): AdminProblemDetailResponse {
         val problem = require(id)

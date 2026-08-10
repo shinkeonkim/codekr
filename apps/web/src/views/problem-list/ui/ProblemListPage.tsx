@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORY_LABELS, TIER_LABELS, TierBadge, problemApi } from "@/entities/problem";
+import { CATEGORY_LABELS, ProblemStatsCell, TIER_LABELS, TierBadge, problemApi } from "@/entities/problem";
 import type { ProblemCategory, ProblemSummary } from "@/entities/problem";
 import type { Page } from "@/shared/api";
 import { EmptyState, Input, Pagination, Select, Table } from "@/shared/ui";
@@ -107,6 +107,13 @@ export function ProblemListPage() {
                     {problem.timeLimitMs}ms · {problem.memoryLimitMb}MB
                   </span>
                 ),
+              },
+              {
+                key: "stats",
+                header: "맞은 사람 · 정답률",
+                hideOnMobile: true,
+                align: "right",
+                render: (problem) => <ProblemStatsCell stats={problem.stats} />,
               },
               {
                 key: "difficulty",

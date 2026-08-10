@@ -24,11 +24,12 @@ data class ProblemDetailResponse(
     val outputDescription: String?,
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
+    val stats: ProblemStats,
     val examples: List<ProblemExampleResponse>,
     val runtimes: List<ProblemRuntimeResponse>,
 ) {
     companion object {
-        fun of(problem: Problem, runtimes: List<RuntimeDefinition>) = ProblemDetailResponse(
+        fun of(problem: Problem, runtimes: List<RuntimeDefinition>, stats: ProblemStats) = ProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
             title = problem.title,
@@ -42,6 +43,7 @@ data class ProblemDetailResponse(
             outputDescription = problem.outputDescription,
             timeLimitMs = problem.timeLimitMs,
             memoryLimitMb = problem.memoryLimitMb,
+            stats = stats,
             examples = problem.examples.map(ProblemExampleResponse::from),
             runtimes = runtimes.map {
                 ProblemRuntimeResponse.of(it, problem.templateOf(it.id), problem.limitsFor(it.id))
