@@ -2,6 +2,7 @@ package codekr.api.activity.service
 
 import codekr.api.activity.ActivityPolicy
 import codekr.api.activity.dto.ActivityResponse
+import codekr.api.activity.dto.Streaks
 import codekr.api.activity.repository.UserDailyActivityRepository
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
@@ -19,6 +20,20 @@ class ActivityService(private val activityRepository: UserDailyActivityRepositor
      * [year] 를 주면 그 해 전체를 본다. from/to 와 함께 주면 year 가 이긴다 —
      * 화면은 둘 중 하나만 쓴다.
      */
+    /**
+     * 그 사용자의 스트릭. 프로필(#83)과 활동 그래프가 이 한 곳에서 받아 간다 (#117).
+     *
+     * 계산이 두 곳에 있으면 언젠가 어긋나고, 그때 사용자는 어느 쪽을 믿어야 할지 모른다.
+     */
+    fun streaksOf(userId: Long): Streaks {
+        val activeDates = activityRepository.findActiveDates(userId)
+        val today = LocalDate.now(ActivityPolicy.ZONE)
+        return Streaks(
+            current = StreakCalculator.current(activeDates, today),
+            longest = StreakCalculator.longest(activeDates),
+        )
+    }
+
     fun findActivity(userId: Long, from: LocalDate?, to: LocalDate?, year: Int? = null): ActivityResponse {
         val today = LocalDate.now(ActivityPolicy.ZONE)
         val (start, end) = resolveRange(from, to, year, today)
@@ -33,6 +48,7 @@ class ActivityService(private val activityRepository: UserDailyActivityRepositor
         val days = activityRepository.findDailyCounts(userId, start, end)
         // 그래프는 조회 범위지만 스트릭은 전체 기간이다 (#81).
         val allActiveDates = activityRepository.findActiveDates(userId)
+        val streaks = streaksOf(userId)
 
         return ActivityResponse(
             from = start,
@@ -40,8 +56,8 @@ class ActivityService(private val activityRepository: UserDailyActivityRepositor
             days = days,
             totalCount = days.sumOf { it.count },
             activeDayCount = days.size,
-            currentStreak = StreakCalculator.current(allActiveDates, today),
-            longestStreak = StreakCalculator.longest(allActiveDates),
+            currentStreak = streaks.current,
+            longestStreak = streaks.longest,
             availableYears = availableYears(allActiveDates, today),
             timeZone = ActivityPolicy.ZONE.id,
         )
