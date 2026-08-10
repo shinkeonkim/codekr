@@ -29,12 +29,15 @@ func TestLiveEveryRegisteredRuntimeSolvesSumOfTwo(t *testing.T) {
 			t.Parallel()
 
 			outcome, err := box.Run(context.Background(), Spec{
-				Image:            definition.Image,
-				SourceFile:       definition.SourceFile,
-				SourceCode:       definition.Template,
-				Stdin:            "1 2\n",
-				Compile:          definition.Compile,
-				Run:              definition.Run,
+				Image:      definition.Image,
+				SourceFile: definition.SourceFile,
+				SourceCode: definition.Template,
+				Stdin:      "1 2\n",
+				Compile:    definition.Compile,
+				Run:        definition.Run,
+				// 러너와 같은 값을 넘긴다 — 여기서 빠뜨리면 시험이 실제 실행과 달라진다.
+				Harness:          definition.Harness,
+				User:             definition.User,
 				TimeLimitMs:      5000,
 				MemoryLimitMb:    512,
 				CompileTimeoutMs: 60000,

@@ -18,6 +18,14 @@ import (
 // 샌드박스 UID/GID. 이미지에 이 계정이 없어도 되도록 숫자로 지정한다.
 const sandboxUser = "10001:10001"
 
+// userOf 는 이 실행에 쓸 계정을 고른다. 런타임이 지정하지 않으면 기본 계정이다.
+func userOf(spec Spec) string {
+	if spec.User != "" {
+		return spec.User
+	}
+	return sandboxUser
+}
+
 // capturedOutput 은 한 번의 실행에서 거둬들인 표준 출력/에러다.
 type capturedOutput struct {
 	stdout    string
@@ -122,7 +130,7 @@ func (s *containerSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) 
 	}
 
 	// 1단계: 작업 파일을 심고, 필요하면 컴파일한다 (넉넉한 메모리 한도).
-	captured, err := s.exec(ctx, containerID, unpackCommand(scripts), payload, spec.MaxOutputBytes)
+	captured, err := s.exec(ctx, containerID, userOf(spec), unpackCommand(scripts), payload, spec.MaxOutputBytes)
 	if err != nil {
 		return Outcome{}, err
 	}
@@ -135,7 +143,7 @@ func (s *containerSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) 
 	if err := s.applyRunMemoryLimit(ctx, containerID, spec); err != nil {
 		return Outcome{}, err
 	}
-	captured, err = s.exec(ctx, containerID, runCommand, nil, spec.MaxOutputBytes)
+	captured, err = s.exec(ctx, containerID, userOf(spec), runCommand, nil, spec.MaxOutputBytes)
 	if err != nil {
 		return Outcome{}, err
 	}
@@ -221,12 +229,13 @@ func (s *containerSandbox) create(ctx context.Context, spec Spec, budget time.Du
 func (s *containerSandbox) exec(
 	ctx context.Context,
 	containerID string,
+	user string,
 	command string,
 	payload io.Reader,
 	maxOutput int,
 ) (capturedOutput, error) {
 	created, err := s.cli.ExecCreate(ctx, containerID, client.ExecCreateOptions{
-		User:         sandboxUser,
+		User:         user,
 		Cmd:          []string{"sh", "-c", command},
 		AttachStdin:  payload != nil,
 		AttachStdout: true,

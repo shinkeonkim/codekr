@@ -8,9 +8,38 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/shinkeonkim/codekr/apps/executor/internal/sandbox/harness"
 )
+
+// 샌드박스가 스스로 쓰는 파일 이름. 문제 자료가 이 이름을 쓰면 래퍼 스크립트를
+// 덮어써 임의 명령을 실행할 수 있다.
+var reservedFiles = map[string]bool{
+	"input.txt": true, "compile.sh": true, "run.sh": true,
+}
+
+func validateExtraFileName(name string, reserved map[string]bool) error {
+	if name == "" || reserved[name] {
+		return fmt.Errorf("쓸 수 없는 파일 이름입니다: %q", name)
+	}
+	// 작업 디렉터리 밖으로 나가는 이름은 받지 않는다.
+	if strings.ContainsAny(name, "/\\") || name == "." || name == ".." {
+		return fmt.Errorf("파일 이름에 경로를 쓸 수 없습니다: %q", name)
+	}
+	return nil
+}
+
+func sortedNames(files map[string]string) []string {
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
 
 const (
 	// 컴파일 실패를 다른 실패와 구분하기 위한 약속된 종료 코드.
@@ -96,6 +125,11 @@ func buildInputArchive(spec Spec, scripts stageScripts) (io.Reader, error) {
 	var buf bytes.Buffer
 	writer := tar.NewWriter(&buf)
 
+	reserved := map[string]bool{}
+	for name := range reservedFiles {
+		reserved[name] = true
+	}
+
 	files := []struct {
 		name string
 		body string
@@ -105,6 +139,35 @@ func buildInputArchive(spec Spec, scripts stageScripts) (io.Reader, error) {
 		{"input.txt", spec.Stdin, 0o644},
 		{"compile.sh", scripts.compile, 0o755},
 		{"run.sh", scripts.run, 0o755},
+	}
+
+	// 런타임이 필요로 하는 하네스 (#60). 문제 자료보다 먼저 넣어 이름이 겹치면
+	// 문제 자료 쪽이 거부되게 한다 — 하네스를 덮어쓰면 임의 명령을 실행할 수 있다.
+	harnessFiles, err := harness.Files(spec.Harness)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range sortedNames(harnessFiles) {
+		files = append(files, struct {
+			name string
+			body string
+			mode int64
+		}{name, harnessFiles[name], 0o755})
+		reserved[name] = true
+	}
+
+	// 문제가 싣는 파일 (#60). 예약 이름과 경로 탈출은 미리 막는다 — 이 자료는
+	// 출제자가 넣지만, 검증을 어드민 화면에만 두면 화면을 거치지 않는 경로가 생겼을 때
+	// 그대로 뚫린다.
+	for _, name := range sortedNames(spec.ExtraFiles) {
+		if err := validateExtraFileName(name, reserved); err != nil {
+			return nil, err
+		}
+		files = append(files, struct {
+			name string
+			body string
+			mode int64
+		}{name, spec.ExtraFiles[name], 0o644})
 	}
 
 	for _, file := range files {

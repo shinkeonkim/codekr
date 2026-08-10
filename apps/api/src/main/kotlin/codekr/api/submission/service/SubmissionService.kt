@@ -49,7 +49,7 @@ class SubmissionService(
     /** 임의 입력으로 1회 실행한다. 채점하지 않으므로 제출 이력을 남기지 않는다. */
     fun run(slug: String, request: RunRequest): RunResponse {
         val problem = problemService.requirePublished(slug)
-        validate(request.runtimeId, request.sourceCode)
+        validate(problem, request.runtimeId, request.sourceCode)
         // 실행도 제출과 같은 제한을 써야 한다. 실행에서 통과한 코드가 제출에서 TLE 나면
         // 사용자는 왜 그런지 알 수 없다.
         val limits = problem.limitsFor(request.runtimeId)
@@ -69,7 +69,7 @@ class SubmissionService(
     @Transactional
     fun submit(slug: String, userId: Long, request: SubmitRequest): SubmitResponse {
         val problem = problemService.requirePublished(slug)
-        validate(request.runtimeId, request.sourceCode)
+        validate(problem, request.runtimeId, request.sourceCode)
         if (problem.testcases.isEmpty()) throw ApiException(ErrorCode.TESTCASE_REQUIRED)
 
         val submission = submissionRepository.save(
@@ -188,8 +188,16 @@ class SubmissionService(
         )
     }
 
-    private fun validate(runtimeId: String, sourceCode: String) {
-        runtimeRegistry.require(runtimeId)
+    private fun validate(problem: Problem, runtimeId: String, sourceCode: String) {
+        val runtime = runtimeRegistry.require(runtimeId)
+        // 유형이 맞지 않는 런타임은 고를 수 있어도 채점되지 않는다 (#60).
+        // 화면이 목록을 걸러 주지만, 화면을 거치지 않는 경로가 생겨도 막히게 여기서도 본다.
+        if (runtime.problemKind != problem.problemKind) {
+            throw ApiException(
+                ErrorCode.RUNTIME_NOT_FOUND,
+                "이 문제에서 쓸 수 없는 실행 환경입니다: $runtimeId",
+            )
+        }
         if (sourceCode.toByteArray().size > properties.maxSourceCodeBytes) {
             throw ApiException(ErrorCode.SOURCE_CODE_TOO_LARGE)
         }
