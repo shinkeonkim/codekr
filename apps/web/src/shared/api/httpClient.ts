@@ -16,9 +16,16 @@ interface RequestOptions {
  * 도메인을 전혀 모른다 — 어떤 엔드포인트가 있는지는 각 entity/feature 가 안다.
  * 그래야 새 도메인이 생겨도 이 파일은 그대로다.
  */
+/** 서버 렌더링 중에는 window 가 없다. 그 경우는 절대 주소 설정이 반드시 있어야 한다. */
+function resolveOrigin(): string | undefined {
+  return typeof window === "undefined" ? undefined : window.location.origin;
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = false, query } = options;
-  const url = new URL(`${API_BASE_URL}${path}`);
+  // API_BASE_URL 이 비어 있으면 같은 출처다. URL 은 절대 주소를 요구하므로
+  // 그때는 현재 출처를 기준으로 만든다.
+  const url = new URL(`${API_BASE_URL}${path}`, resolveOrigin());
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
   });

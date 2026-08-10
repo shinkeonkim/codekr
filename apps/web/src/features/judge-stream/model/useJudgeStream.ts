@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { submissionApi } from "@/entities/submission";
 import { tokenStore } from "@/shared/api";
-import { WS_BASE_URL } from "@/shared/config";
+import { wsBaseUrl } from "@/shared/config";
 import type { SubmissionDetail, TestcaseResult, Verdict } from "@/entities/submission";
 import type { JudgeEvent } from "./types";
 
@@ -63,7 +63,7 @@ export function useJudgeStream(): {
       const token = tokenStore.read();
       if (!token) return;
 
-      const socket = new WebSocket(`${WS_BASE_URL}/ws/submissions`);
+      const socket = new WebSocket(`${wsBaseUrl()}/ws/submissions`);
       socketRef.current = socket;
 
       socket.onopen = () => socket.send(JSON.stringify({ type: "SUBSCRIBE", submissionId, token }));
