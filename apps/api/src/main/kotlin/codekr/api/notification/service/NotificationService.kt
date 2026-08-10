@@ -72,22 +72,52 @@ class NotificationService(
         return targets.size
     }
 
-    fun findPage(userId: Long, unreadOnly: Boolean, pageable: Pageable): PageResponse<NotificationResponse> {
-        val page = if (unreadOnly) {
-            notificationRepository.findByUserIdAndReadAtIsNullOrderByIdDesc(userId, pageable)
-        } else {
-            notificationRepository.findByUserIdOrderByIdDesc(userId, pageable)
+    /**
+     * @param category null 이면 전체 탭이다.
+     *   "안 읽은 것만" 과 함께 걸면 **교집합**이다 — 이 탭에서 안 읽은 것.
+     */
+    fun findPage(
+        userId: Long,
+        unreadOnly: Boolean,
+        category: NotificationCategory?,
+        pageable: Pageable,
+    ): PageResponse<NotificationResponse> {
+        val page = when {
+            category != null && unreadOnly ->
+                notificationRepository.findByUserIdAndCategoryAndReadAtIsNullOrderByIdDesc(userId, category, pageable)
+            category != null ->
+                notificationRepository.findByUserIdAndCategoryOrderByIdDesc(userId, category, pageable)
+            unreadOnly -> notificationRepository.findByUserIdAndReadAtIsNullOrderByIdDesc(userId, pageable)
+            else -> notificationRepository.findByUserIdOrderByIdDesc(userId, pageable)
         }
         return PageResponse.from(page.map(NotificationResponse::from))
     }
 
     fun unreadCount(userId: Long): Long = notificationRepository.countByUserIdAndReadAtIsNull(userId)
 
+    /** 탭마다 안 읽은 수. 없는 카테고리는 0 으로 채워 화면이 빈 값을 다루지 않게 한다. */
+    fun unreadCountByCategory(userId: Long): Map<NotificationCategory, Long> {
+        val counted = notificationRepository.countUnreadByCategory(userId)
+            .associate { it[0] as NotificationCategory to it[1] as Long }
+        return NotificationCategory.entries.associateWith { counted[it] ?: 0L }
+    }
+
     @Transactional
     fun markRead(userId: Long, id: Long) {
         notificationRepository.findByIdAndUserId(id, userId)?.markRead()
     }
 
+    /**
+     * 모두 읽음. **보고 있는 탭만 읽는다** (#135).
+     *
+     * 전체 탭에서만 전부 읽는다. 채점 탭에서 눌렀는데 대회 알림까지 읽음이 되면
+     * 보지 않은 것을 읽은 것으로 만든 셈이고, 되돌릴 수 없다.
+     */
     @Transactional
-    fun markAllRead(userId: Long): Int = notificationRepository.markAllRead(userId, Instant.now())
+    fun markAllRead(userId: Long, category: NotificationCategory? = null): Int {
+        val now = Instant.now()
+        return category
+            ?.let { notificationRepository.markCategoryRead(userId, it, now) }
+            ?: notificationRepository.markAllRead(userId, now)
+    }
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { notificationApi } from "@/entities/notification";
+import type { NotificationCategoryOption } from "@/entities/notification";
+import { userApi } from "@/entities/user";
 import type { Notification } from "@/entities/notification";
 import { RequireAuth } from "@/features/auth";
 import type { Page } from "@/shared/api";
@@ -21,20 +23,42 @@ function NotificationList() {
   const toast = useToast();
   const [page, setPage] = useState(0);
   const [unreadOnly, setUnreadOnly] = useState(false);
+  /** 빈 문자열이 전체 탭이다. 전체가 첫 번째이고 기본값이다 (#135). */
+  const [category, setCategory] = useState("");
   const [result, setResult] = useState<Page<Notification> | null>(null);
+  const [options, setOptions] = useState<NotificationCategoryOption[]>([]);
+  const [unread, setUnread] = useState<Record<string, number>>({});
 
   const load = useCallback(() => {
     notificationApi
-      .list({ page, size: 20, unreadOnly: unreadOnly ? "true" : "false" })
+      .list({
+        page,
+        size: 20,
+        unreadOnly: unreadOnly ? "true" : "false",
+        // 탭과 "안 읽은 것만" 은 함께 걸린다 — 이 탭에서 안 읽은 것.
+        category: category || undefined,
+      })
       .then(setResult)
       .catch(() => toast.error("알림을 불러오지 못했습니다."));
-  }, [page, unreadOnly, toast]);
+    notificationApi
+      .unreadCount()
+      .then(({ byCategory }) => setUnread(byCategory))
+      .catch(() => undefined);
+  }, [page, unreadOnly, category, toast]);
 
   useEffect(load, [load]);
 
+  // 탭 목록은 **서버가 내려주는 카테고리 옵션**에서 만든다. 화면이 하드코딩하지 않는다.
+  useEffect(() => {
+    userApi
+      .settings()
+      .then((settings) => setOptions(settings.notificationCategories))
+      .catch(() => setOptions([]));
+  }, []);
+
   const readAll = async () => {
-    await notificationApi.markAllRead();
-    toast.success("모두 읽음으로 표시했습니다.");
+    await notificationApi.markAllRead(category || undefined);
+    toast.success(category ? "이 탭의 알림을 읽음으로 표시했습니다." : "모두 읽음으로 표시했습니다.");
     load();
   };
 
@@ -52,11 +76,42 @@ function NotificationList() {
           >
             안 읽은 것만
           </Button>
+          {/* 문구가 무엇을 읽는지 말한다. "모두" 가 탭 안인지 밖인지 헷갈리면 안 된다. */}
           <Button variant="secondary" onClick={readAll}>
-            모두 읽음
+            {category ? "이 탭 모두 읽음" : "모두 읽음"}
           </Button>
         </div>
       </header>
+
+      <nav aria-label="알림 분류" className="flex flex-wrap gap-1.5">
+        {[{ category: "", label: "전체" }, ...options].map((option) => {
+          const active = category === option.category;
+          const count = option.category ? (unread[option.category] ?? 0) : 0;
+          return (
+            <button
+              key={option.category || "ALL"}
+              type="button"
+              aria-current={active ? "page" : undefined}
+              onClick={() => {
+                setCategory(option.category);
+                setPage(0);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
+                active
+                  ? "border-brand bg-brand/12 font-medium text-ink"
+                  : "border-border text-ink-muted hover:text-ink"
+              }`}
+            >
+              {option.label}
+              {count > 0 ? (
+                <span className="rounded-full bg-brand px-1.5 text-[10px] font-bold text-brand-ink">
+                  {count}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </nav>
 
       {result && result.content.length === 0 ? (
         <EmptyState
