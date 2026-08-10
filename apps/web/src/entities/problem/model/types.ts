@@ -113,7 +113,21 @@ export interface ProblemVerification {
   results: TestcaseResult[];
 }
 
+/**
+ * 채점 방식 (#59).
+ *
+ * **분야(`ProblemCategory`)와는 다른 축이다** — 분야는 무엇에 대한 문제인지를,
+ * 채점 방식은 어떻게 채점하는지를 말한다. 화면에서도 두 말을 구분해 쓴다.
+ */
+export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "QUIZ" | "MANUAL";
+
+/** 지금 고를 수 있는 채점 방식. 나머지는 채점기 구현이 없어 서버가 거절한다. */
+export const SELECTABLE_KINDS: Record<string, string> = {
+  JUDGE_STDIO: "코드 실행 (stdin/stdout)",
+};
+
 export interface AdminProblemDetail extends ProblemSummary {
+  problemKind: ProblemKind;
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;

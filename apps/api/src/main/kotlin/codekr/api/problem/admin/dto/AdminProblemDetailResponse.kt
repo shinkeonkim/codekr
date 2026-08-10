@@ -5,6 +5,7 @@ import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.ProblemCategory
+import codekr.api.problem.entity.ProblemKind
 
 /** 어드민 편집 화면용 상세 — 히든 테스트케이스와 언어별 초기 코드를 포함한다. */
 data class AdminProblemDetailResponse(
@@ -12,6 +13,7 @@ data class AdminProblemDetailResponse(
     val slug: String,
     val title: String,
     val category: ProblemCategory,
+    val problemKind: ProblemKind,
     val difficulty: Difficulty,
     val difficultyLevel: Int,
     val tier: DifficultyTier,
@@ -35,6 +37,7 @@ data class AdminProblemDetailResponse(
             slug = problem.slug,
             title = problem.title,
             category = problem.category,
+            problemKind = problem.problemKind,
             difficulty = problem.difficulty,
             difficultyLevel = problem.difficultyLevel,
             tier = problem.difficulty.tier,

@@ -141,6 +141,27 @@ class AdminProblemIntegrationTest : IntegrationTestBase() {
         createProblem("reusable", published = true)
     }
 
+    @Test
+    fun `기존 문제는 stdin·stdout 유형으로 만들어진다`() {
+        // #59 는 사용자에게 보이는 변화가 없는 준비 작업이다. 유형을 보내지 않으면 지금까지와 같다.
+        val id = createProblem("default-kind", published = true)
+
+        mockMvc.perform(get("/api/v1/admin/problems/$id").header("Authorization", "Bearer $adminToken"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.problemKind").value("JUDGE_STDIO"))
+    }
+
+    @Test
+    fun `채점기 구현이 없는 유형으로는 문제를 만들 수 없다`() {
+        // 허용하면 채점되지 않는 문제가 만들어지고, 그 사실은 누가 제출한 뒤에야 드러난다.
+        mockMvc.perform(
+            post("/api/v1/admin/problems")
+                .header("Authorization", "Bearer $adminToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body("sql-problem", true, problemKind = "JUDGE_SQL")),
+        ).andExpect(status().isBadRequest)
+    }
+
     private fun createProblem(slug: String, published: Boolean): Long {
         val response = mockMvc.perform(
             post("/api/v1/admin/problems")
@@ -157,10 +178,12 @@ class AdminProblemIntegrationTest : IntegrationTestBase() {
         published: Boolean,
         title: String = "두 수의 합",
         difficulty: String = "BRONZE_5",
+        problemKind: String = "JUDGE_STDIO",
     ) = """
         {
           "slug": "$slug", "title": "$title",
           "category": "ALGORITHM", "difficulty": "$difficulty",
+          "problemKind": "$problemKind",
           "description": "두 정수를 더한다.", "timeLimitMs": 2000, "memoryLimitMb": 256,
           "published": $published,
           "testcases": [

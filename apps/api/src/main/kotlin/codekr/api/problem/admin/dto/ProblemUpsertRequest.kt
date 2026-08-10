@@ -4,6 +4,7 @@ import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.ExecutionLimits
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemJudgePriority
+import codekr.api.problem.entity.ProblemKind
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -24,6 +25,10 @@ data class ProblemUpsertRequest(
     val title: String,
 
     val category: ProblemCategory,
+
+    /** 채점 방식 (#59). 아직 구현이 없는 유형은 서비스가 막는다. */
+    val problemKind: ProblemKind = ProblemKind.JUDGE_STDIO,
+
     val difficulty: Difficulty,
 
     @field:NotBlank
