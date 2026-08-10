@@ -1,5 +1,6 @@
-import { Button, Card } from "@/shared/ui";
-import Link from "next/link";
+import { Card } from "@/shared/ui";
+
+import { HomeCta } from "./HomeCta";
 
 const FEATURES = [
   {
@@ -26,14 +27,7 @@ export function HomePage() {
         <p className="mx-auto mt-4 max-w-2xl text-base text-ink-muted">
           코드.kr 은 다양한 유형의 코딩 테스트 문제와 실시간 채점 환경을 제공하는 오픈소스 플랫폼입니다.
         </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <Link href="/problems">
-            <Button>문제 풀러 가기</Button>
-          </Link>
-          <Link href="/signup">
-            <Button variant="secondary">회원가입</Button>
-          </Link>
-        </div>
+        <HomeCta />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">

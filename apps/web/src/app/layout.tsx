@@ -14,10 +14,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
-      <body className="min-h-screen bg-surface text-ink">
+      {/*
+        본문이 짧은 화면에서도 Footer 가 바닥에 붙어 있게 세로 flex 로 잡고 main 이
+        남는 공간을 차지하게 한다 (#74). 페이지마다 여백을 넣어 맞추면 다음 페이지에서
+        또 어긋나므로 레이아웃에서 한 번만 해결한다.
+        100vh 가 아니라 100dvh 인 이유: 모바일 주소창 때문에 vh 는 실제 높이와 어긋난다.
+      */}
+      <body className="flex min-h-[100dvh] flex-col bg-surface text-ink">
         <AuthProvider>
           <SiteHeader />
-          <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
           <footer className="border-t border-border py-6 text-center text-xs text-ink-muted">
             코드.kr · 오픈소스 코딩 테스트 플랫폼
           </footer>
