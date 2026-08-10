@@ -319,6 +319,24 @@ POST 와 동일한 바디. 테스트케이스와 초기 코드는 **전체 치�
 
 ---
 
+## 5.1 활동 `/api/v1/users/me/activity` 🔒 (#36)
+
+일별 활동량과 현재·최장 스트릭. 규칙과 근거는 [08 문서](08_활동_스트릭_정책.md)에 있다.
+
+| 쿼리 | 기본값 | 설명 |
+|---|---|---|
+| `from`, `to` | 최근 365일 | `YYYY-MM-DD`. 최대 3년 |
+
+```json
+{
+  "from": "2025-08-11", "to": "2026-08-10",
+  "days": [ { "date": "2026-08-10", "count": 3 } ],
+  "totalCount": 3, "activeDayCount": 1,
+  "currentStreak": 1, "longestStreak": 4,
+  "timeZone": "Asia/Seoul"
+}
+```
+
 ## 6. 런타임 목록 `/api/v1/runtimes`
 
 ```json

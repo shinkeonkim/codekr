@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ActivityGraph } from "@/components/ActivityGraph";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { api } from "@/lib/api";
 import { STATUS_LABELS, VERDICT_LABELS, formatDateTime, verdictTone } from "@/lib/labels";
-import type { Page, SubmissionSummary } from "@/lib/types";
+import type { ActivityResponse, Page, SubmissionSummary } from "@/lib/types";
 
 export default function SubmissionListPage() {
   return (
@@ -18,21 +19,25 @@ export default function SubmissionListPage() {
 
 function SubmissionList() {
   const [result, setResult] = useState<Page<SubmissionSummary> | null>(null);
+  const [activity, setActivity] = useState<ActivityResponse | null>(null);
 
   useEffect(() => {
     api
       .submissions({ page: 0, size: 30 })
       .then(setResult)
       .catch(() => setResult({ content: [], page: 0, size: 0, totalElements: 0, totalPages: 0 }));
+    api.activity().then(setActivity).catch(() => setActivity(null));
   }, []);
 
-  if (result && result.content.length === 0) {
-    return <EmptyState title="아직 제출한 코드가 없습니다." description="문제를 골라 풀어 보세요." />;
-  }
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">내 제출</h1>
+
+      {activity ? <ActivityGraph activity={activity} /> : null}
+
+      {result && result.content.length === 0 ? (
+        <EmptyState title="아직 제출한 코드가 없습니다." description="문제를 골라 풀어 보세요." />
+      ) : null}
       <div className="space-y-2">
         {result?.content.map((submission) => (
           <Link key={submission.id} href={`/submissions/${submission.id}`} className="block">
