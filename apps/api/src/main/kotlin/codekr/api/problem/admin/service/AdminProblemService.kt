@@ -59,6 +59,7 @@ class AdminProblemService(
             outputDescription = request.outputDescription,
             timeLimitMs = request.timeLimitMs,
             memoryLimitMb = request.memoryLimitMb,
+            judgePriority = request.judgePriority,
             published = request.published,
             createdBy = createdBy,
         ).apply {
@@ -90,6 +91,7 @@ class AdminProblemService(
             outputDescription = request.outputDescription
             timeLimitMs = request.timeLimitMs
             memoryLimitMb = request.memoryLimitMb
+            judgePriority = request.judgePriority
             published = request.published
             softDeleteTestcases()
             softDeleteTemplates()

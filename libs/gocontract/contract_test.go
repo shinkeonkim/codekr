@@ -76,3 +76,49 @@ func decodeStrict(t *testing.T, raw []byte, target any) {
 		t.Fatalf("계약과 맞지 않는 JSON 입니다: %v", err)
 	}
 }
+
+// 큐 키는 api(Kotlin)와 judge/executor(Go)가 문자열로 맞춰야 하는 계약이다.
+// 한쪽만 바꾸면 워커가 아무것도 못 읽는데, 오류 없이 조용히 멈추기 때문에 발견이 늦다.
+// 그래서 고정 JSON 을 두고 양쪽이 같은 값을 보는지 확인한다 (#102).
+func TestQueueKeysMatchFixture(t *testing.T) {
+	raw := readFixture(t, "queue-keys.json")
+
+	var fixture struct {
+		JudgeStreamsByPriority []string `json:"judgeStreamsByPriority"`
+		ExecStream             string   `json:"execStream"`
+		JudgeGroup             string   `json:"judgeGroup"`
+		ExecGroup              string   `json:"execGroup"`
+		EventChannel           string   `json:"eventChannel"`
+		ReplyStreamPrefix      string   `json:"replyStreamPrefix"`
+		PayloadField           string   `json:"payloadField"`
+	}
+	if err := json.Unmarshal(raw, &fixture); err != nil {
+		t.Fatalf("고정 JSON 파싱 실패: %v", err)
+	}
+
+	actual := JudgeStreamsByPriority()
+	if len(actual) != len(fixture.JudgeStreamsByPriority) {
+		t.Fatalf("채점 스트림 개수가 다릅니다: %v vs %v", actual, fixture.JudgeStreamsByPriority)
+	}
+	for i, want := range fixture.JudgeStreamsByPriority {
+		if actual[i] != want {
+			t.Errorf("채점 스트림 %d 번이 다릅니다: %q != %q", i, actual[i], want)
+		}
+	}
+
+	for _, pair := range []struct {
+		name          string
+		got, expected string
+	}{
+		{"실행 스트림", StreamExec, fixture.ExecStream},
+		{"채점 그룹", GroupJudge, fixture.JudgeGroup},
+		{"실행 그룹", GroupExec, fixture.ExecGroup},
+		{"이벤트 채널", ChannelEvents, fixture.EventChannel},
+		{"응답 스트림 접두사", ReplyStreamPfx, fixture.ReplyStreamPrefix},
+		{"payload 필드", MessagePayloadKey, fixture.PayloadField},
+	} {
+		if pair.got != pair.expected {
+			t.Errorf("%s 가 다릅니다: %q != %q", pair.name, pair.got, pair.expected)
+		}
+	}
+}

@@ -1,0 +1,9 @@
+{
+  "judgeStreamsByPriority": ["codekr:judge:high", "codekr:judge:normal", "codekr:judge:low"],
+  "execStream": "codekr:exec",
+  "judgeGroup": "judge-workers",
+  "execGroup": "exec-workers",
+  "eventChannel": "codekr:events",
+  "replyStreamPrefix": "codekr:exec:res:",
+  "payloadField": "payload"
+}
