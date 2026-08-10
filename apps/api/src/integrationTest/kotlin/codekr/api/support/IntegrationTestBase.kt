@@ -31,8 +31,8 @@ abstract class IntegrationTestBase {
     fun truncateAll() {
         jdbcClient.sql(
             """
-            TRUNCATE submission_testcase_results, submissions, problem_templates, problem_testcases,
-                     problems, users
+            TRUNCATE submission_testcase_results, submissions, problem_runtime_limits,
+                     problem_templates, problem_testcases, problems, user_roles, users
             RESTART IDENTITY CASCADE
             """,
         ).update()

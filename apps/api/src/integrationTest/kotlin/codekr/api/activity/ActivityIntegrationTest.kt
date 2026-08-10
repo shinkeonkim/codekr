@@ -27,7 +27,7 @@ class ActivityIntegrationTest : IntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-        val user = userRepository.save(User("solver@codekr.dev", "x", "풀이왕", UserRole.USER))
+        val user = userRepository.save(User("solver@codekr.dev", "x", "풀이왕", setOf(UserRole.USER)))
         userId = user.id
         token = tokenProvider.issueAccessToken(user)
         // 문제 하나를 만들어 제출이 참조할 수 있게 한다.

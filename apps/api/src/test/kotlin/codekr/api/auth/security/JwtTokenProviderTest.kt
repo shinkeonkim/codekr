@@ -6,6 +6,7 @@ import codekr.api.user.entity.UserRole
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.test.assertNull
 
 class JwtTokenProviderTest {
@@ -16,7 +17,12 @@ class JwtTokenProviderTest {
         refreshTtlSeconds = 120,
     )
     private val provider = JwtTokenProvider(properties)
-    private val user = User(email = "user@codekr.dev", passwordHash = "hash", nickname = "코더", role = UserRole.ADMIN)
+    private val user = User(
+        email = "user@codekr.dev",
+        passwordHash = "hash",
+        nickname = "코더",
+        roles = setOf(UserRole.USER, UserRole.ADMIN),
+    )
 
     @Test
     fun `액세스 토큰을 발급하고 다시 파싱한다`() {
@@ -26,7 +32,9 @@ class JwtTokenProviderTest {
 
         assertNotNull(principal)
         assertEquals("user@codekr.dev", principal.email)
-        assertEquals(UserRole.ADMIN, principal.role)
+        // 역할이 여럿이므로 전부 실려야 한다 (#103). 하나만 실으면 권한이 조용히 줄어든다.
+        assertEquals(setOf(UserRole.USER, UserRole.ADMIN), principal.roles)
+        assertTrue(principal.isAdmin)
     }
 
     @Test

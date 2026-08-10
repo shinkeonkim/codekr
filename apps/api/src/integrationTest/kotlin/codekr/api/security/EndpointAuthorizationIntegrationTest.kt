@@ -15,6 +15,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
@@ -35,10 +36,23 @@ class EndpointAuthorizationIntegrationTest : IntegrationTestBase() {
 
     private lateinit var userToken: String
 
+    /**
+     * 역할별 토큰. `@TestFactory` 의 동적 테스트는 **하나의 테스트 메서드 안에서** 돌기
+     * 때문에 매번 사용자를 만들면 이메일·닉네임이 겹친다. 역할당 한 명만 만든다.
+     */
+    private val tokensByRole = mutableMapOf<UserRole, String>()
+
     @BeforeEach
     fun issueUserToken() {
-        userToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("member@codekr.dev", "x", "일반유저", UserRole.USER)),
+        tokensByRole.clear()
+        userToken = tokenFor(UserRole.USER)
+    }
+
+    private fun tokenFor(role: UserRole): String = tokensByRole.getOrPut(role) {
+        tokenProvider.issueAccessToken(
+            userRepository.save(
+                User("${role.name.lowercase()}@codekr.dev", "x", "계정-${role.name}", setOf(role, UserRole.USER)),
+            ),
         )
     }
 
@@ -85,6 +99,51 @@ class EndpointAuthorizationIntegrationTest : IntegrationTestBase() {
             DynamicTest.dynamicTest(endpoint.toString()) {
                 assertEquals(403, call(endpoint, token = userToken), "$endpoint 는 일반 사용자에게 막혀야 합니다")
             }
+        }
+
+    /**
+     * 역할이 다른 어드민은 남의 영역에 못 들어간다 (#103).
+     *
+     * **이게 이 이슈의 핵심이다.** 어드민이면 전부 할 수 있던 것을 나누는 것이 목적이므로,
+     * "어드민이 아니면 막힌다" 가 아니라 "역할이 다르면 막힌다" 를 확인해야 한다.
+     */
+    @TestFactory
+    fun `역할이 다르면 어드민 엔드포인트에 접근할 수 없다`(): List<DynamicTest> =
+        ApiEndpointInventory.ADMIN_ONLY.mapNotNull { endpoint ->
+            val other = otherAdminRole(requireNotNull(endpoint.role)) ?: return@mapNotNull null
+            DynamicTest.dynamicTest("$endpoint ← ${other.name}") {
+                assertEquals(403, call(endpoint, tokenFor(other)), "$endpoint 는 ${other.name} 에게 막혀야 합니다")
+            }
+        }
+
+    @TestFactory
+    fun `요구하는 역할을 가지면 인가를 통과한다`(): List<DynamicTest> =
+        ApiEndpointInventory.ADMIN_ONLY.map { endpoint ->
+            DynamicTest.dynamicTest(endpoint.toString()) {
+                val role = requireNotNull(endpoint.role)
+                // 자원이 없어 404/400 이 날 수는 있어도 **인가로 막히면 안 된다.**
+                assertNotEquals(403, call(endpoint, tokenFor(role)), "$endpoint 는 ${role.name} 에게 열려야 합니다")
+            }
+        }
+
+    @Test
+    fun `최고 관리자는 모든 어드민 엔드포인트를 통과한다`() {
+        val token = tokenFor(UserRole.SUPERUSER)
+
+        // 위계가 없으면 최고 관리자에게 모든 역할을 일일이 붙여야 한다.
+        val blocked = ApiEndpointInventory.ADMIN_ONLY.filter { call(it, token) == 403 }
+
+        assertTrue(blocked.isEmpty(), "최고 관리자가 막힌 엔드포인트: $blocked")
+    }
+
+    /** 그 엔드포인트가 요구하지 않는 다른 어드민 역할 하나. 위계상 상위 역할은 제외한다. */
+    private fun otherAdminRole(required: UserRole): UserRole? =
+        when (required) {
+            // ADMIN 이 필요한 곳에는 담당 역할(하위)로 들어갈 수 없어야 한다.
+            UserRole.ADMIN -> UserRole.PROBLEM_SETTER
+            // 출제자 영역에는 다른 담당 역할로 들어갈 수 없어야 한다.
+            UserRole.PROBLEM_SETTER -> UserRole.BOARD_MANAGER
+            else -> null
         }
 
     /** 실제 등록된 매핑을 "METHOD /경로" 집합으로 만든다. */

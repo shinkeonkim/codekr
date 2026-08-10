@@ -2,13 +2,22 @@ import type { DifficultyTier } from "@/entities/problem";
 
 /** 서버가 내려주는 사용자 표현. */
 
-export type UserRole = "USER" | "ADMIN";
+/** 전역 역할 (#103). 한 사람이 여럿을 가질 수 있다. */
+export type UserRole =
+  | "USER"
+  | "SUPERUSER"
+  | "ADMIN"
+  | "PROBLEM_SETTER"
+  | "CONTEST_MANAGER"
+  | "BOARD_MANAGER";
 
 export interface User {
   id: number;
   email: string;
   nickname: string;
-  role: UserRole;
+  roles: UserRole[];
+  /** 어드민 영역 진입 가능 여부. 역할 목록을 화면이 매번 해석하지 않게 서버가 함께 내린다. */
+  isAdmin: boolean;
 }
 
 export interface TokenResponse {

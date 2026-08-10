@@ -45,13 +45,13 @@ class SubmissionVisibilityIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setUp() {
         ownerToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("owner@codekr.dev", "x", "제출자", UserRole.USER)),
+            userRepository.save(User("owner@codekr.dev", "x", "제출자", setOf(UserRole.USER))),
         )
         otherToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("other@codekr.dev", "x", "타인", UserRole.USER)),
+            userRepository.save(User("other@codekr.dev", "x", "타인", setOf(UserRole.USER))),
         )
         adminToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("admin@codekr.dev", "x", "관리자", UserRole.ADMIN)),
+            userRepository.save(User("admin@codekr.dev", "x", "관리자", setOf(UserRole.ADMIN))),
         )
         transactionTemplate.executeWithoutResult {
             problemRepository.save(

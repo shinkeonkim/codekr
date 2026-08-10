@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 정리 배치를 수동으로 돌린다. 접근 제어는 SecurityConfig 의 admin 경로 규칙이 담당한다.
+ * 정리 배치를 수동으로 돌린다. 접근 제어는 SecurityConfig 의 경로·역할 규칙이 담당한다 (#103).
  *
  * 자동 실행(새벽 4시)을 기다리지 않고 결과를 확인해야 할 때 쓴다.
  */

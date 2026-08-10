@@ -31,10 +31,10 @@ class SolutionVerificationIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setUp() {
         adminToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("admin@codekr.dev", "x", "관리자", UserRole.ADMIN)),
+            userRepository.save(User("admin@codekr.dev", "x", "관리자", setOf(UserRole.ADMIN))),
         )
         userToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("member@codekr.dev", "x", "일반유저", UserRole.USER)),
+            userRepository.save(User("member@codekr.dev", "x", "일반유저", setOf(UserRole.USER))),
         )
     }
 
