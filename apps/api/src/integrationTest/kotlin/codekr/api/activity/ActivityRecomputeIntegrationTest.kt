@@ -104,6 +104,63 @@ class ActivityRecomputeIntegrationTest : IntegrationTestBase() {
         assertEquals(0, countOn(today))
     }
 
+    @Test
+    fun `맞힌 문제 수는 서로 다른 문제로 센다`() {
+        val today = LocalDate.now(zone)
+        // 같은 문제를 두 번 맞히고, 다른 문제를 한 번 맞힌다.
+        acceptedOn(today, problemId = 1)
+        acceptedOn(today, problemId = 1)
+        acceptedOn(today, problemId = 2)
+        submissionOn(today)
+
+        activityRepository.recomputeAll(userId)
+
+        val day = activityRepository.findDailyCounts(userId, today, today).first()
+        assertEquals(4, day.count, "제출 수는 전부 센다")
+        // 진한 칸이 '한 문제를 20번 틀린 날' 인지 '20문제를 푼 날' 인지 구분되어야 한다 (#133).
+        assertEquals(2, day.solvedCount, "맞힌 문제는 서로 다른 문제로 센다")
+    }
+
+    @Test
+    fun `집계와 재계산이 같은 값을 낸다`() {
+        // **한쪽만 고치면 재계산이 값을 지운다** (#133).
+        val today = LocalDate.now(zone)
+        acceptedOn(today, problemId = 1)
+        acceptedOn(today, problemId = 2)
+
+        recorder.recordCompletion(userId, today.atTime(12, 0).atZone(zone).toInstant())
+        val incremental = activityRepository.findDailyCounts(userId, today, today).first()
+
+        activityRepository.recomputeAll(userId)
+        val recomputed = activityRepository.findDailyCounts(userId, today, today).first()
+
+        assertEquals(incremental.solvedCount, recomputed.solvedCount)
+        assertEquals(2, recomputed.solvedCount)
+    }
+
+    private fun acceptedOn(date: LocalDate, problemId: Long) {
+        jdbcClient.sql(
+            """
+            INSERT INTO problems (id, slug, title, category, difficulty_level, description, published)
+            VALUES (:problemId, 'p-' || :problemId, '문제', 'ALGORITHM', 1, '설명', true)
+            ON CONFLICT (id) DO NOTHING
+            """,
+        ).param("problemId", problemId).update()
+
+        jdbcClient.sql(
+            """
+            INSERT INTO submissions
+                (user_id, problem_id, runtime_id, source_code, status, verdict, kind, created_at, updated_at)
+            VALUES (:userId, :problemId, 'python:3.12', 'print(3)', 'COMPLETED', 'ACCEPTED', 'USER',
+                    :createdAt::timestamptz, now())
+            """,
+        )
+            .param("userId", userId)
+            .param("problemId", problemId)
+            .param("createdAt", date.atTime(12, 0).atZone(zone).toInstant().toString())
+            .update()
+    }
+
     private fun submissionOn(date: LocalDate) {
         jdbcClient.sql(
             """
