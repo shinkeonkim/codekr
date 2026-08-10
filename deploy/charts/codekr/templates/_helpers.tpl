@@ -34,3 +34,16 @@ Pod Security 의 baseline 을 위반하므로, 그 네임스페이스만 privile
 {{- define "codekr.redisAddr" -}}
 codekr-redis.{{ .Release.Namespace }}.svc.cluster.local:6379
 {{- end }}
+
+{{/*
+비공개 레지스트리에서 이미지를 받을 때 쓰는 시크릿. 값이 없으면 아무것도 렌더링하지
+않으므로 공개 이미지에는 영향이 없다.
+*/}}
+{{- define "codekr.imagePullSecrets" -}}
+{{- with .Values.global.imagePullSecrets }}
+imagePullSecrets:
+{{- range . }}
+  - name: {{ . }}
+{{- end }}
+{{- end }}
+{{- end }}

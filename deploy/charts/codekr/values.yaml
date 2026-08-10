@@ -5,6 +5,9 @@ global:
   registry: ghcr.io/shinkeonkim
   imageTag: latest
   domainSuffix: homelab.shinkeonkim.com
+  # 비공개 레지스트리에서 받을 때만 필요하다. 저장소가 비공개면 ghcr 패키지도
+  # 기본이 비공개라서 이 시크릿이 없으면 ImagePullBackOff 로 멈춘다.
+  imagePullSecrets: []
 
 ingress:
   enabled: true

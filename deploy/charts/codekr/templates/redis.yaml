@@ -16,6 +16,7 @@ spec:
         app.kubernetes.io/name: codekr
         app.kubernetes.io/component: redis
     spec:
+      {{- include "codekr.imagePullSecrets" . | nindent 6 }}
       securityContext:
         fsGroup: 999
       containers:
