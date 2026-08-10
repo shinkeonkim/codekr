@@ -79,6 +79,8 @@ class SecurityConfig(
                         // 순위표는 관전자도 본다 (#63).
                         "/api/v1/contests/*/scoreboard",
                     ).permitAll()
+                    // 링크 공유 문제집은 로그인 없이도 열린다 (#87).
+                    .requestMatchers(HttpMethod.GET, "/api/v1/collections/shared/*").permitAll()
                     .requestMatchers("/ws/**").permitAll()
                     // 어드민 영역의 역할 규칙 (#103).
                     //

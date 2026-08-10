@@ -60,6 +60,7 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/contests", Access.PUBLIC),
         Endpoint("GET", "/api/v1/contests/{slug}", Access.PUBLIC),
         Endpoint("GET", "/api/v1/contests/{slug}/scoreboard", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/collections/shared/{shareToken}", Access.PUBLIC),
         Endpoint("POST", "/api/v1/contests/{slug}/registrations", Access.AUTHENTICATED),
         Endpoint(
             "POST",
@@ -79,6 +80,11 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/users/me/activity", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/users/{nickname}", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/users/{nickname}/activity", Access.AUTHENTICATED),
+        Endpoint("GET", "/api/v1/collections/me", Access.AUTHENTICATED),
+        Endpoint("GET", "/api/v1/collections/{id}", Access.AUTHENTICATED),
+        Endpoint("POST", "/api/v1/collections", Access.AUTHENTICATED),
+        Endpoint("PUT", "/api/v1/collections/{id}", Access.AUTHENTICATED),
+        Endpoint("DELETE", "/api/v1/collections/{id}", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/users/me/settings", Access.AUTHENTICATED),
         Endpoint("PATCH", "/api/v1/users/me/settings", Access.AUTHENTICATED),
 
