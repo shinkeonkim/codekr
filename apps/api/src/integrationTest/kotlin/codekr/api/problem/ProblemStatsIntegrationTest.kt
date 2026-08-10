@@ -78,7 +78,7 @@ class ProblemStatsIntegrationTest : IntegrationTestBase() {
 
     private fun insertUser(id: Long, email: String, nickname: String) {
         jdbcClient.sql(
-            "INSERT INTO users (id, email, password_hash, nickname, role) VALUES (:id, :email, 'x', :nickname, 'USER')",
+            "INSERT INTO users (id, email, password_hash, nickname) VALUES (:id, :email, 'x', :nickname)",
         ).param("id", id).param("email", email).param("nickname", nickname).update()
     }
 

@@ -18,7 +18,8 @@ class AuthIntegrationTest : IntegrationTestBase() {
         mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer $accessToken"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.email").value("member@codekr.dev"))
-            .andExpect(jsonPath("$.role").value("USER"))
+            .andExpect(jsonPath("$.roles[0]").value("USER"))
+            .andExpect(jsonPath("$.isAdmin").value(false))
     }
 
     @Test

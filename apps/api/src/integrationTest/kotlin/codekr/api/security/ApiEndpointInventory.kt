@@ -1,5 +1,7 @@
 package codekr.api.security
 
+import codekr.api.user.entity.UserRole
+
 /**
  * 이 API 가 노출하는 **모든** 엔드포인트와 그 접근 수준.
  *
@@ -15,12 +17,29 @@ enum class Access {
     /** 로그인한 사용자면 누구나. 자원 소유권 검사는 서비스가 따로 한다. */
     AUTHENTICATED,
 
-    /** ADMIN 역할만. */
+    /** 특정 어드민 역할만. 어떤 역할인지는 [Endpoint.role] 에 적는다. */
     ADMIN,
 }
 
-data class Endpoint(val method: String, val pattern: String, val access: Access) {
-    override fun toString() = "$method $pattern (${access.name})"
+/**
+ * [role] 은 `access == ADMIN` 일 때 **반드시** 적어야 한다 (#103).
+ *
+ * 역할을 적지 않고는 어드민 API 를 늘릴 수 없게 만드는 것이 목적이다 —
+ * 적는 순간 "이건 누가 쓰는가" 를 한 번은 답하게 된다.
+ */
+data class Endpoint(
+    val method: String,
+    val pattern: String,
+    val access: Access,
+    val role: UserRole? = null,
+) {
+    init {
+        require((access == Access.ADMIN) == (role != null)) {
+            "어드민 엔드포인트는 역할을 적어야 하고, 그 외에는 적으면 안 됩니다: $method $pattern"
+        }
+    }
+
+    override fun toString() = "$method $pattern (${role?.name ?: access.name})"
 }
 
 object ApiEndpointInventory {
@@ -50,16 +69,18 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/users/{nickname}", Access.AUTHENTICATED),
 
         // --- 어드민 ---
-        Endpoint("GET", "/api/v1/admin/problems", Access.ADMIN),
-        Endpoint("POST", "/api/v1/admin/problems", Access.ADMIN),
-        Endpoint("GET", "/api/v1/admin/problems/{id}", Access.ADMIN),
-        Endpoint("PUT", "/api/v1/admin/problems/{id}", Access.ADMIN),
-        Endpoint("DELETE", "/api/v1/admin/problems/{id}", Access.ADMIN),
-        Endpoint("POST", "/api/v1/admin/problems/{id}/verify", Access.ADMIN),
-        Endpoint("GET", "/api/v1/admin/queues", Access.ADMIN),
-        Endpoint("GET", "/api/v1/admin/executors", Access.ADMIN),
-        Endpoint("POST", "/api/v1/admin/executors/scale", Access.ADMIN),
-        Endpoint("POST", "/api/v1/admin/retention/cleanup", Access.ADMIN),
+        Endpoint("GET", "/api/v1/admin/problems", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("POST", "/api/v1/admin/problems", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("GET", "/api/v1/admin/problems/{id}", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("PUT", "/api/v1/admin/problems/{id}", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("DELETE", "/api/v1/admin/problems/{id}", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("POST", "/api/v1/admin/problems/{id}/verify", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("GET", "/api/v1/admin/queues", Access.ADMIN, UserRole.ADMIN),
+        Endpoint("GET", "/api/v1/admin/executors", Access.ADMIN, UserRole.ADMIN),
+        Endpoint("POST", "/api/v1/admin/executors/scale", Access.ADMIN, UserRole.ADMIN),
+        Endpoint("POST", "/api/v1/admin/retention/cleanup", Access.ADMIN, UserRole.ADMIN),
+        // 경로 규칙에 적지 않아 안전한 기본값(최고 관리자)이 적용된다.
+        Endpoint("PUT", "/api/v1/admin/users/{id}/roles", Access.ADMIN, UserRole.SUPERUSER),
     )
 
     /** 인증이 필요한(=비공개) 엔드포인트. */

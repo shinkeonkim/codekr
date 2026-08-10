@@ -4,11 +4,14 @@ import codekr.api.auth.security.JwtAuthenticationFilter
 import codekr.api.common.error.ErrorCode
 import codekr.api.common.error.ErrorResponse
 import codekr.api.config.properties.CorsProperties
+import codekr.api.user.entity.UserRole
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -32,6 +35,25 @@ class SecurityConfig(
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
+    /**
+     * 역할 위계 (#103).
+     *
+     * SUPERUSER 는 ADMIN 이 할 수 있는 것을 모두 할 수 있고, ADMIN 은 각 담당 역할이
+     * 할 수 있는 것을 모두 할 수 있다. 위계가 없으면 최고 관리자에게 모든 역할을 일일이
+     * 붙여야 하고, 역할을 하나 늘릴 때마다 기존 계정을 전부 손봐야 한다.
+     *
+     * 반대 방향은 없다 — 문제 출제자가 인프라를 만질 수 없다는 것이 이 이슈의 목적이다.
+     */
+    @Bean
+    fun roleHierarchy(): RoleHierarchy = RoleHierarchyImpl.withDefaultRolePrefix()
+        .role(UserRole.SUPERUSER.name).implies(UserRole.ADMIN.name)
+        .role(UserRole.ADMIN.name).implies(
+            UserRole.PROBLEM_SETTER.name,
+            UserRole.CONTEST_MANAGER.name,
+            UserRole.BOARD_MANAGER.name,
+        )
+        .build()
+
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
@@ -48,7 +70,25 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/api/v1/problems", "/api/v1/problems/*").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/runtimes").permitAll()
                     .requestMatchers("/ws/**").permitAll()
-                    .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                    // 어드민 영역의 역할 규칙 (#103).
+                    //
+                    // 메서드 보안(@PreAuthorize)이 아니라 여기에 두는 이유:
+                    //   1. 메서드 보안은 **본문 바인딩 뒤에** 돈다. 권한 없는 요청이
+                    //      400(검증 실패)을 먼저 받아, 막혔다는 사실조차 알 수 없다
+                    //   2. 인가가 두 곳에 흩어지면 새 컨트롤러에서 어느 쪽을 써야 하는지 헷갈린다
+                    .requestMatchers("/api/v1/admin/problems/**")
+                    .hasRole(UserRole.PROBLEM_SETTER.name)
+                    .requestMatchers(
+                        "/api/v1/admin/queues/**",
+                        "/api/v1/admin/executors/**",
+                        "/api/v1/admin/retention/**",
+                    )
+                    .hasRole(UserRole.ADMIN.name)
+                    // **위에 적히지 않은 어드민 경로는 최고 관리자만.**
+                    // 규칙을 적지 않고 어드민 API 를 늘리면 아무도 못 쓰게 되지,
+                    // 모두가 쓸 수 있게 되지 않는다 (안전한 기본값).
+                    .requestMatchers("/api/v1/admin/**")
+                    .hasRole(UserRole.SUPERUSER.name)
                     .anyRequest().authenticated()
             }
             .exceptionHandling { handling ->

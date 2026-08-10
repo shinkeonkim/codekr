@@ -42,6 +42,6 @@ class JwtAuthenticationFilter(private val tokenProvider: JwtTokenProvider) : Onc
     private fun toAuthentication(principal: AuthPrincipal) = UsernamePasswordAuthenticationToken(
         principal,
         null,
-        listOf(SimpleGrantedAuthority("ROLE_${principal.role.name}")),
+        principal.roles.map { SimpleGrantedAuthority("ROLE_${it.name}") },
     )
 }

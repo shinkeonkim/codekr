@@ -25,9 +25,9 @@ class UserProfileIntegrationTest : IntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-        targetId = userRepository.save(User("solver@codekr.dev", "x", "풀이왕", UserRole.USER)).id
+        targetId = userRepository.save(User("solver@codekr.dev", "x", "풀이왕", setOf(UserRole.USER))).id
         token = tokenProvider.issueAccessToken(
-            userRepository.save(User("viewer@codekr.dev", "x", "구경꾼", UserRole.USER)),
+            userRepository.save(User("viewer@codekr.dev", "x", "구경꾼", setOf(UserRole.USER))),
         )
         insertProblem(1, "two-sum", level = 1) // 브론즈 5
         insertProblem(2, "reverse", level = 9) // 실버 2

@@ -29,7 +29,9 @@ class JwtTokenProvider(private val properties: JwtProperties) {
             AuthPrincipal(
                 userId = claims.subject.toLong(),
                 email = claims["email"] as String,
-                role = UserRole.valueOf(claims["role"] as String),
+                // 역할은 여러 개다 (#103). 알 수 없는 값은 버린다 —
+                // 역할을 지운 뒤에도 예전 토큰이 살아 있을 수 있다.
+                roles = readRoles(claims["roles"]),
             )
         }
     } catch (e: JwtException) {
@@ -43,11 +45,18 @@ class JwtTokenProvider(private val properties: JwtProperties) {
         return Jwts.builder()
             .subject(user.id.toString())
             .claim("email", user.email)
-            .claim("role", user.role.name)
+            .claim("roles", user.roles.map { it.name })
             .claim("type", type.name)
             .issuedAt(Date.from(now))
             .expiration(Date.from(now.plusSeconds(ttlSeconds)))
             .signWith(key)
             .compact()
+    }
+
+    private fun readRoles(raw: Any?): Set<UserRole> {
+        val names = (raw as? Collection<*>)?.mapNotNull { it as? String } ?: emptyList()
+        return names.mapNotNull { name -> UserRole.entries.firstOrNull { it.name == name } }
+            .toSet()
+            .ifEmpty { setOf(UserRole.USER) }
     }
 }

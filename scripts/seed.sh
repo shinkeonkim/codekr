@@ -40,10 +40,13 @@ login_token() {
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["accessToken"])'
 }
 
-# 어드민 권한은 API 로 올릴 수 없다 — 가입 후 DB 에서 한 번만 승격한다.
+# 첫 최고 관리자는 API 로 만들 수 없다 — 역할을 줄 수 있는 사람이 아직 없다.
+# 그래서 가입 후 DB 에서 한 번만 올린다. 이후의 역할 부여는 API 로 한다 (#103).
 promote_admin() {
   docker exec codekr-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
-    -c "UPDATE users SET role='ADMIN' WHERE email='${ADMIN_EMAIL}';" > /dev/null
+    -c "INSERT INTO user_roles (user_id, role)
+        SELECT id, 'SUPERUSER' FROM users WHERE email='${ADMIN_EMAIL}'
+        ON CONFLICT DO NOTHING;" > /dev/null
 }
 
 create_problem() {

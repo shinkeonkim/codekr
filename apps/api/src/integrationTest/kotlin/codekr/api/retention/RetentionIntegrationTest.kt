@@ -103,8 +103,8 @@ class RetentionIntegrationTest : IntegrationTestBase() {
     private fun insertUser() {
         jdbcClient.sql(
             """
-            INSERT INTO users (id, email, password_hash, nickname, role)
-            VALUES (1, 'solver@codekr.dev', 'x', '풀이왕', 'USER')
+            INSERT INTO users (id, email, password_hash, nickname)
+            VALUES (1, 'solver@codekr.dev', 'x', '풀이왕')
             """,
         ).update()
     }

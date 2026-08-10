@@ -37,10 +37,10 @@ class SubmissionExploreIntegrationTest : IntegrationTestBase() {
     @BeforeEach
     fun setUp() {
         aliceToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("alice@codekr.dev", "x", "앨리스", UserRole.USER)),
+            userRepository.save(User("alice@codekr.dev", "x", "앨리스", setOf(UserRole.USER))),
         )
         bobToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("bob@codekr.dev", "x", "밥", UserRole.USER)),
+            userRepository.save(User("bob@codekr.dev", "x", "밥", setOf(UserRole.USER))),
         )
         transactionTemplate.executeWithoutResult {
             listOf("two-sum", "reverse-words").forEach { slug ->
