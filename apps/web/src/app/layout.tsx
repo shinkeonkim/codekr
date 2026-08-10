@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/features/auth";
+import { ToastProvider, ToastViewport } from "@/shared/ui";
 import { SiteHeader } from "@/widgets/site-header";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -21,13 +22,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         100vh 가 아니라 100dvh 인 이유: 모바일 주소창 때문에 vh 는 실제 높이와 어긋난다.
       */}
       <body className="flex min-h-[100dvh] flex-col bg-surface text-ink">
-        <AuthProvider>
-          <SiteHeader />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-          <footer className="border-t border-border py-6 text-center text-xs text-ink-muted">
-            코드.kr · 오픈소스 코딩 테스트 플랫폼
-          </footer>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <SiteHeader />
+            <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+            <footer className="border-t border-border py-6 text-center text-xs text-ink-muted">
+              코드.kr · 오픈소스 코딩 테스트 플랫폼
+            </footer>
+          </AuthProvider>
+          {/* 화면을 넘어가도 살아남아야 하므로 라우트 바깥, 최상위에 둔다 (#112). */}
+          <ToastViewport />
+        </ToastProvider>
       </body>
     </html>
   );

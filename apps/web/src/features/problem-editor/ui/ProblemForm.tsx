@@ -9,7 +9,7 @@ import type { FormEvent } from "react";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
-import { Alert, Button, Card, Field, Input, Select, Textarea } from "@/shared/ui";
+import { Alert, Button, Card, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
 
 export interface ProblemFormValues {
   slug: string;
@@ -77,6 +77,7 @@ interface Props {
 
 /** 문제 등록과 수정이 같은 폼을 쓴다 — 요청 본문 모양이 동일하기 때문이다. */
 export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verification }: Props) {
+  const toast = useToast();
   const router = useRouter();
   const [values, setValues] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -115,9 +116,14 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
     setError(null);
     try {
       await onSubmit(values);
+      // 저장 직후 목록으로 떠나므로 화면 안의 안내는 보이지 않는다 — 토스트여야 한다 (#112).
+      toast.success(`"${values.title}" 문제를 저장했습니다.`);
       router.push("/admin/problems");
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "저장에 실패했습니다.");
+      // 저장 실패는 이 화면에 남아 고쳐야 하는 일이라 인라인으로도 남긴다.
+      const message = caught instanceof ApiError ? caught.message : "저장에 실패했습니다.";
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

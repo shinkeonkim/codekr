@@ -6,7 +6,8 @@ import { UserLink } from "@/entities/user";
 import { RequireAuth, useAuth } from "@/features/auth";
 import { JudgeProgressPanel, useJudgeStream } from "@/features/judge-stream";
 import { formatDateTime, formatMemory } from "@/shared/lib";
-import { Badge, Card, EmptyState } from "@/shared/ui";
+import { ApiError } from "@/shared/api";
+import { Badge, Card, EmptyState, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
@@ -27,10 +28,17 @@ function SubmissionView({ id }: { id: number }) {
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { progress, watch } = useJudgeStream();
+  const toast = useToast();
 
   const changeVisibility = async (visibility: SubmissionVisibility) => {
-    await submissionApi.changeVisibility(id, visibility);
-    setSubmission((previous) => (previous ? { ...previous, visibility } : previous));
+    try {
+      await submissionApi.changeVisibility(id, visibility);
+      setSubmission((previous) => (previous ? { ...previous, visibility } : previous));
+      // 공개 범위는 되돌리기 어려운 결정이라, 바뀐 사실을 분명히 알린다.
+      toast.success(`공개 범위를 "${VISIBILITY_LABELS[visibility]}" 로 바꿨습니다.`);
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "공개 범위를 바꾸지 못했습니다.");
+    }
   };
 
   // 화면 데이터는 폴링이 채운다. 채점이 끝나면 스스로 멈춘다.
