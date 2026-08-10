@@ -20,6 +20,8 @@ export interface PostSummary {
   createdAt: string;
   updatedAt: string;
   edited: boolean;
+  /** 댓글 수 (#138). */
+  commentCount: number;
 }
 
 export interface PostDetail {

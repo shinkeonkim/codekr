@@ -94,6 +94,10 @@ export function PostListPage() {
                 <Avatar nickname={post.authorNickname} avatarUrl={post.authorAvatarUrl} size="sm" />
                 {post.authorNickname}
               </span>
+              {/* 답이 달렸는지가 목록에서 보여야 질문 글이 쓸모가 있다 (#138). */}
+              {post.commentCount > 0 ? (
+                <span className="text-xs text-ink-muted">댓글 {post.commentCount}</span>
+              ) : null}
               <span className="text-xs text-ink-muted">{formatDateTime(post.createdAt)}</span>
             </Card>
           </Link>

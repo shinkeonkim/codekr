@@ -3,6 +3,7 @@
 import { postApi } from "@/entities/post";
 import type { PostDetail } from "@/entities/post";
 import { Avatar } from "@/entities/user";
+import { CommentTree } from "@/features/comments";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
 import { Badge, Button, Card, EmptyState, Markdown, useToast } from "@/shared/ui";
@@ -83,6 +84,8 @@ function Detail({ id }: { id: number }) {
           </Button>
         ) : null}
       </div>
+
+      <CommentTree postId={id} />
     </article>
   );
 }

@@ -42,7 +42,8 @@ class PostService(
             else -> postRepository.findByDeletedAtIsNullOrderByIdDesc(pageable)
         }
         val authors = authorsOf(page.content)
-        return PageResponse.from(page.map { summaryOf(it, authors) })
+        val comments = commentCountsOf(page.content)
+        return PageResponse.from(page.map { summaryOf(it, authors, comments[it.id] ?: 0) })
     }
 
     fun findDetail(id: Long, principal: AuthPrincipal?): PostDetailResponse {
@@ -50,7 +51,7 @@ class PostService(
         val authors = authorsOf(listOf(post))
 
         return PostDetailResponse(
-            summary = summaryOf(post, authors),
+            summary = summaryOf(post, authors, commentCountsOf(listOf(post))[post.id] ?: 0),
             body = post.body,
             // 어드민은 지울 수는 있어도 남의 글을 **고칠 수는 없다** —
             // 고치면 그 사람이 쓴 것으로 남는데, 실제로 쓴 사람은 다른 사람이다.
@@ -117,12 +118,20 @@ class PostService(
     private fun authorsOf(posts: List<Post>): Map<Long, User> =
         userRepository.findAllById(posts.map { it.authorId }).associateBy { it.id }
 
-    private fun summaryOf(post: Post, authors: Map<Long, User>): PostSummaryResponse {
+    /** 목록의 댓글 수를 한 번에 센다. 글마다 세면 질의가 20번 더 나간다. */
+    private fun commentCountsOf(posts: List<Post>): Map<Long, Long> {
+        if (posts.isEmpty()) return emptyMap()
+        return postRepository.countCommentsByPostIds(posts.map { it.id })
+            .associate { it[0] as Long to it[1] as Long }
+    }
+
+    private fun summaryOf(post: Post, authors: Map<Long, User>, commentCount: Long): PostSummaryResponse {
         val author = authors[post.authorId]
         return PostSummaryResponse.of(
             post,
             author?.nickname ?: "(탈퇴한 사용자)",
             AvatarService.urlOf(author?.avatarKey),
+            commentCount,
         )
     }
 }
