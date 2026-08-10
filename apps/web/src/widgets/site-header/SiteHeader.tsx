@@ -1,5 +1,6 @@
 "use client";
 
+import { UserLink } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -51,7 +52,7 @@ export function SiteHeader() {
           {loading ? null : user ? (
             <>
               <span className="text-ink-muted">
-                {user.nickname}
+                <UserLink nickname={user.nickname} />
                 {isAdmin ? " (관리자)" : ""}
               </span>
               <Button variant="ghost" onClick={signOut}>

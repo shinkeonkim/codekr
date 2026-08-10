@@ -2,6 +2,7 @@
 
 import { STATUS_LABELS, VERDICT_LABELS, VISIBILITY_LABELS, submissionApi, verdictTone } from "@/entities/submission";
 import type { SubmissionDetail, SubmissionVisibility } from "@/entities/submission";
+import { UserLink } from "@/entities/user";
 import { RequireAuth, useAuth } from "@/features/auth";
 import { JudgeProgressPanel, useJudgeStream } from "@/features/judge-stream";
 import { formatDateTime, formatMemory } from "@/shared/lib";
@@ -76,7 +77,8 @@ function SubmissionView({ id }: { id: number }) {
           </Link>
           <h1 className="text-2xl font-bold text-ink">제출 #{submission.id}</h1>
           <p className="mt-1 text-xs text-ink-muted">
-            {submission.nickname} · {submission.runtimeId} · {formatDateTime(submission.createdAt)}
+            <UserLink nickname={submission.nickname} /> · {submission.runtimeId} ·{" "}
+            {formatDateTime(submission.createdAt)}
           </p>
         </div>
         {submission.verdict ? (

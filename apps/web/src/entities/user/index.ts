@@ -1,2 +1,3 @@
 export { userApi } from "./api";
-export type { TokenResponse, User, UserRole } from "./model/types";
+export type { SolvedByTier, TokenResponse, User, UserProfile, UserRole } from "./model/types";
+export { UserLink } from "./ui/UserLink";
