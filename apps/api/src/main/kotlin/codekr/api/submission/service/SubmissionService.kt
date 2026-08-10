@@ -1,0 +1,120 @@
+package codekr.api.submission.service
+
+import codekr.api.auth.security.AuthPrincipal
+import codekr.api.common.dto.PageResponse
+import codekr.api.common.error.ApiException
+import codekr.api.common.error.ErrorCode
+import codekr.api.config.properties.SubmissionProperties
+import codekr.api.problem.entity.Problem
+import codekr.api.problem.repository.ProblemRepository
+import codekr.api.problem.service.ProblemService
+import codekr.api.queue.QueuePublisher
+import codekr.api.queue.message.JudgeJobMessage
+import codekr.api.runtime.RuntimeRegistry
+import codekr.api.submission.dto.RunRequest
+import codekr.api.submission.dto.RunResponse
+import codekr.api.submission.dto.SubmissionDetailResponse
+import codekr.api.submission.dto.SubmissionSummaryResponse
+import codekr.api.submission.dto.SubmitRequest
+import codekr.api.submission.dto.SubmitResponse
+import codekr.api.submission.entity.Submission
+import codekr.api.submission.repository.SubmissionRepository
+import codekr.api.submission.repository.SubmissionTestcaseResultRepository
+import org.springframework.data.domain.Pageable
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
+
+@Service
+@Transactional(readOnly = true)
+class SubmissionService(
+    private val submissionRepository: SubmissionRepository,
+    private val resultRepository: SubmissionTestcaseResultRepository,
+    private val problemRepository: ProblemRepository,
+    private val problemService: ProblemService,
+    private val runtimeRegistry: RuntimeRegistry,
+    private val queuePublisher: QueuePublisher,
+    private val properties: SubmissionProperties,
+) {
+
+    /** 임의 입력으로 1회 실행한다. 채점하지 않으므로 제출 이력을 남기지 않는다. */
+    fun run(slug: String, request: RunRequest): RunResponse {
+        val problem = problemService.requirePublished(slug)
+        validate(request.runtimeId, request.sourceCode)
+
+        return RunResponse.from(
+            queuePublisher.runOnce(
+                runtimeId = request.runtimeId,
+                sourceCode = request.sourceCode,
+                stdin = request.stdin,
+                timeLimitMs = problem.timeLimitMs,
+                memoryLimitMb = problem.memoryLimitMb,
+                waitTimeout = Duration.ofSeconds(RUN_WAIT_SECONDS),
+            ),
+        )
+    }
+
+    @Transactional
+    fun submit(slug: String, userId: Long, request: SubmitRequest): SubmitResponse {
+        val problem = problemService.requirePublished(slug)
+        validate(request.runtimeId, request.sourceCode)
+        if (problem.testcases.isEmpty()) throw ApiException(ErrorCode.TESTCASE_REQUIRED)
+
+        val submission = submissionRepository.save(
+            Submission(
+                userId = userId,
+                problemId = problem.id,
+                runtimeId = request.runtimeId,
+                sourceCode = request.sourceCode,
+                totalCount = problem.testcases.size,
+            ),
+        )
+
+        queuePublisher.publishJudgeJob(JudgeJobMessage.of(submission, problem))
+        return SubmitResponse.from(submission)
+    }
+
+    fun findDetail(id: Long, principal: AuthPrincipal): SubmissionDetailResponse {
+        val submission = submissionRepository.findByIdAndDeletedAtIsNull(id)
+            ?: throw ApiException(ErrorCode.SUBMISSION_NOT_FOUND)
+        if (submission.userId != principal.userId && !principal.isAdmin) {
+            throw ApiException(ErrorCode.FORBIDDEN)
+        }
+
+        return SubmissionDetailResponse.of(
+            submission = submission,
+            // 삭제된 문제라도 이력에는 보여야 하므로 소프트 삭제 여부를 따지지 않고 조회한다.
+            problem = problemRepository.findById(submission.problemId).orElse(null),
+            results = resultRepository.findBySubmissionIdOrderBySeqAsc(id),
+        )
+    }
+
+    fun findMine(userId: Long, problemSlug: String?, pageable: Pageable): PageResponse<SubmissionSummaryResponse> {
+        val page = problemSlug
+            ?.let {
+                problemRepository.findBySlugAndDeletedAtIsNull(it)
+                    ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
+            }
+            ?.let { submissionRepository.findByUserIdAndProblemIdAndDeletedAtIsNullOrderByIdDesc(userId, it.id, pageable) }
+            ?: submissionRepository.findByUserIdAndDeletedAtIsNullOrderByIdDesc(userId, pageable)
+
+        // 목록에 필요한 문제 정보만 한 번에 모아 N+1 조회를 피한다.
+        val problems: Map<Long, Problem> =
+            problemRepository.findAllById(page.content.map { it.problemId }).associateBy { it.id }
+
+        return PageResponse.from(
+            page.map { submission -> SubmissionSummaryResponse.of(submission, problems[submission.problemId]) },
+        )
+    }
+
+    private fun validate(runtimeId: String, sourceCode: String) {
+        runtimeRegistry.require(runtimeId)
+        if (sourceCode.toByteArray().size > properties.maxSourceCodeBytes) {
+            throw ApiException(ErrorCode.SOURCE_CODE_TOO_LARGE)
+        }
+    }
+
+    private companion object {
+        const val RUN_WAIT_SECONDS = 30L
+    }
+}
