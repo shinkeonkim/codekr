@@ -1,43 +1,25 @@
-import { Card } from "@/shared/ui";
+import { StartHere } from "./StartHere";
 
-import { HomeCta } from "./HomeCta";
-
-const FEATURES = [
-  {
-    title: "폭넓은 문제 유형",
-    body: "알고리즘과 자료구조는 물론 SQL, 네트워크, 운영체제, 시스템 설계까지 한 곳에서 준비합니다.",
-  },
-  {
-    title: "실시간 채점 과정",
-    body: "제출하면 테스트케이스가 하나씩 채점되는 과정이 화면에 그대로 흐릅니다. 결과를 기다리지 않아도 됩니다.",
-  },
-  {
-    title: "격리된 실행 환경",
-    body: "모든 코드는 네트워크가 차단된 샌드박스 컨테이너에서 실행되며, 시간·메모리 제한이 정확히 적용됩니다.",
-  },
-];
-
+/**
+ * 첫 화면 (#72).
+ *
+ * 방문자가 알고 싶은 것은 "이 사이트가 나에게 무엇을 해주는가" 이지 "이 사이트가 어떻게
+ * 동작하는가"가 아니다. 그래서 기능을 나열하는 대신 **지금 풀 문제**를 바로 보여준다.
+ * 샌드박스나 실시간 채점 같은 이야기는 소개 문서의 몫이다.
+ */
 export function HomePage() {
   return (
-    <div className="space-y-16">
-      <section className="pt-8 text-center">
+    <div className="space-y-12">
+      <section className="pt-6 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-ink sm:text-5xl">
-          코드를 쓰고, <span className="text-brand">채점 과정을 지켜보세요</span>
+          코딩 테스트, <span className="text-brand">오늘 한 문제부터</span>
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base text-ink-muted">
-          코드.kr 은 다양한 유형의 코딩 테스트 문제와 실시간 채점 환경을 제공하는 오픈소스 플랫폼입니다.
+        <p className="mx-auto mt-4 max-w-xl text-base text-ink-muted">
+          알고리즘부터 SQL·네트워크·운영체제까지, 난이도별로 골라 풀고 매일 이어가세요.
         </p>
-        <HomeCta />
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
-        {FEATURES.map((feature) => (
-          <Card key={feature.title} className="p-5">
-            <h2 className="font-semibold text-ink">{feature.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-ink-muted">{feature.body}</p>
-          </Card>
-        ))}
-      </section>
+      <StartHere />
     </div>
   );
 }
