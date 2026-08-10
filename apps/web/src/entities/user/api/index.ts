@@ -1,5 +1,5 @@
 import { request } from "@/shared/api";
-import type { TokenResponse, User } from "../model/types";
+import type { TokenResponse, User, UserProfile } from "../model/types";
 
 /** 인증 관련 서버 호출. 토큰 저장은 features/auth 가 한다. */
 export const userApi = {
@@ -13,4 +13,8 @@ export const userApi = {
     request<TokenResponse>("/api/v1/auth/refresh", { method: "POST", body: { refreshToken } }),
 
   me: () => request<User>("/api/v1/auth/me", { auth: true }),
+
+  /** 회원 프로필 (#83). 로그인 사용자만 볼 수 있다 — 전체 제출 목록과 같은 범위. */
+  profile: (nickname: string) =>
+    request<UserProfile>(`/api/v1/users/${encodeURIComponent(nickname)}`, { auth: true }),
 };

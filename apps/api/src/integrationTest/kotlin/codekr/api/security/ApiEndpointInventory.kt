@@ -45,8 +45,9 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/submissions/{id}", Access.AUTHENTICATED),
         Endpoint("PATCH", "/api/v1/submissions/{id}/visibility", Access.AUTHENTICATED),
 
-        // --- 활동 ---
+        // --- 활동·프로필 ---
         Endpoint("GET", "/api/v1/users/me/activity", Access.AUTHENTICATED),
+        Endpoint("GET", "/api/v1/users/{nickname}", Access.AUTHENTICATED),
 
         // --- 어드민 ---
         Endpoint("GET", "/api/v1/admin/problems", Access.ADMIN),

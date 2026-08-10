@@ -3,6 +3,7 @@
 import { problemApi } from "@/entities/problem";
 import type { Runtime } from "@/entities/problem";
 import { SubmissionResult, VERDICT_LABELS, submissionApi } from "@/entities/submission";
+import { UserLink } from "@/entities/user";
 import type { SubmissionSummary, Verdict } from "@/entities/submission";
 import type { Page } from "@/shared/api";
 import { formatDateTime, formatMemory } from "@/shared/lib";
@@ -36,10 +37,12 @@ type Filters = Partial<Record<FilterKey, string>>;
 interface Props {
   /** 문제 상세 안에서 쓸 때는 그 문제로 범위를 고정한다. */
   fixedProblemSlug?: string;
+  /** 프로필 안에서 쓸 때는 그 사람으로 범위를 고정한다 (#83). */
+  fixedNickname?: string;
   emptyMessage?: string;
 }
 
-export function SubmissionExplorer({ fixedProblemSlug, emptyMessage }: Props) {
+export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessage }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -70,7 +73,12 @@ export function SubmissionExplorer({ fixedProblemSlug, emptyMessage }: Props) {
 
   useEffect(() => {
     submissionApi
-      .explore({ ...filters, problemSlug: fixedProblemSlug ?? filters.problemSlug, size: 20 })
+      .explore({
+        ...filters,
+        problemSlug: fixedProblemSlug ?? filters.problemSlug,
+        nickname: fixedNickname ?? filters.nickname,
+        size: 20,
+      })
       .then((response) => {
         setResult(response);
         setError(null);
@@ -78,7 +86,7 @@ export function SubmissionExplorer({ fixedProblemSlug, emptyMessage }: Props) {
       .catch(() => setError("제출 내역을 불러오지 못했습니다."));
     // searchParams 문자열이 바뀔 때만 다시 조회한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.toString(), fixedProblemSlug]);
+  }, [searchParams.toString(), fixedProblemSlug, fixedNickname]);
 
   const hasFilters = FILTER_KEYS.some((key) => key !== "page" && filters[key]);
 
@@ -92,11 +100,13 @@ export function SubmissionExplorer({ fixedProblemSlug, emptyMessage }: Props) {
             onChange={(event) => setFilter("problemSlug", event.target.value)}
           />
         )}
-        <Input
-          placeholder="닉네임"
-          value={filters.nickname ?? ""}
-          onChange={(event) => setFilter("nickname", event.target.value)}
-        />
+        {fixedNickname ? null : (
+          <Input
+            placeholder="닉네임"
+            value={filters.nickname ?? ""}
+            onChange={(event) => setFilter("nickname", event.target.value)}
+          />
+        )}
         <Select value={filters.runtimeId ?? ""} onChange={(event) => setFilter("runtimeId", event.target.value)}>
           <option value="">전체 언어</option>
           {runtimes.map((runtime) => (
@@ -159,7 +169,9 @@ export function SubmissionExplorer({ fixedProblemSlug, emptyMessage }: Props) {
               {
                 key: "nickname",
                 header: "제출자",
-                render: (submission) => <span className="text-ink-muted">{submission.nickname}</span>,
+                render: (submission) => (
+                  <UserLink nickname={submission.nickname} className="text-ink-muted" />
+                ),
               },
               {
                 key: "runtime",
