@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 같은 브랜치에 새 커밋이 오면 진행 중이던 실행은 취소한다.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: 변경 영역 판별
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+      go: ${{ steps.filter.outputs.go }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'infra/runtimes/**'
+            web:
+              - 'apps/web/**'
+            go:
+              - 'apps/executor/**'
+              - 'apps/judge/**'
+              - 'libs/gocontract/**'
+
+  api-test:
+    name: api 단위 테스트
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      # Testcontainers 가 필요한 통합 테스트는 아래 별도 잡에서 돌린다.
+      - run: ./gradlew test
+
+  api-integration-test:
+    name: api 통합 테스트 (Testcontainers)
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew integrationTest
+
+  go-check:
+    name: executor · judge 린트 · 테스트
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: [executor, judge]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: apps/${{ matrix.module }}/go.sum
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.6
+          working-directory: apps/${{ matrix.module }}
+          args: --config ${{ github.workspace }}/.golangci.yml
+      # 컨테이너 런타임이 필요한 라이브 샌드박스 테스트는 CODEKR_SANDBOX_TEST 로 분리돼 있다.
+      - run: go test ./...
+        working-directory: apps/${{ matrix.module }}
+
+  web-check:
+    name: web 린트 · 타입 체크 · 빌드
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3"
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run build
+
+  images:
+    name: 컨테이너 이미지 빌드·푸시
+    needs: [api-test, go-check, web-check]
+    # main 에 머지된 변경만 이미지로 만든다. 앞선 잡이 건너뛰어도 진행한다.
+    if: github.ref == 'refs/heads/main' && !cancelled() && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        app: [api, web, judge, executor]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          # 빌드 컨텍스트는 저장소 루트다 — Go 앱이 libs/gocontract 를 공유한다.
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/codekr-${{ matrix.app }}:latest
+            ghcr.io/${{ github.repository_owner }}/codekr-${{ matrix.app }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
