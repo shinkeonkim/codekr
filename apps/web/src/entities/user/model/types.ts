@@ -80,4 +80,10 @@ export interface UserSettings {
   notificationCategories: NotificationCategoryOption[];
   /** 켜면 랭킹 목록에서 빠진다 (#58). 점수는 계속 쌓인다. */
   rankingOptOut: boolean;
+  /**
+   * 내 공개 코드를 누가 읽었는지 알림받을지 (#136). **기본은 끔.**
+   *
+   * 꺼져 있으면 아예 기록하지 않는다 — 켜는 것이 곧 추적에 대한 동의다.
+   */
+  viewNotificationEnabled: boolean;
 }

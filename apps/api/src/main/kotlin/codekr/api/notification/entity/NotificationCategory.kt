@@ -13,6 +13,14 @@ enum class NotificationCategory(val label: String, val mutable: Boolean) {
     CONTEST("대회", mutable = true),
 
     /**
+     * 내 공개 코드를 누가 읽었는지 (#136).
+     *
+     * 채점에 얹지 않고 따로 둔 이유: 채점 알림은 **내 기록이 바뀐 것**이고 이것은
+     * **남이 내 것을 본 것**이다. 뜻이 다르면 끄고 켜는 단위도 달라야 한다.
+     */
+    SUBMISSION_VIEW("코드 열람", mutable = true),
+
+    /**
      * 점검·정책 변경. **끌 수 없다.**
      *
      * 서비스가 사용자에게 반드시 전해야 하는 것만 여기 넣는다. 끌 수 있게 하면

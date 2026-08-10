@@ -156,6 +156,16 @@ function SubmissionView({ id }: { id: number }) {
             <Badge>{VISIBILITY_LABELS[submission.visibility]}</Badge>
           )}
         </div>
+        {/*
+          보기 전에 알아야 한다 (#136). 남의 코드를 보는 것이 기록에 남는다면,
+          그 사실을 모른 채 보게 두는 것은 조회자 쪽에 불공정하다.
+        */}
+        {submission.viewNotified ? (
+          <p className="text-xs text-ink-muted">
+            작성자가 열람 알림을 켜 두었습니다. 이 코드를 본 사실이 작성자에게 전해집니다
+            (누가 봤는지는 알려지지 않습니다).
+          </p>
+        ) : null}
         {submission.sourceVisible && submission.sourceCode !== null ? (
           <pre className="max-h-96 overflow-auto rounded-lg bg-surface-muted p-3 text-xs text-ink">
             {submission.sourceCode}

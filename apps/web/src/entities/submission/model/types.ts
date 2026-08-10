@@ -40,6 +40,8 @@ export interface SubmissionDetail {
   /** 볼 권한이 없으면 아예 내려오지 않는다. */
   sourceCode: string | null;
   sourceVisible: boolean;
+  /** 이 열람이 작성자에게 알려지는가 (#136). 보기 전에 알아야 한다. */
+  viewNotified?: boolean;
   nickname: string;
   results: TestcaseResult[];
   createdAt: string;
@@ -58,6 +60,8 @@ export interface SubmissionSummary {
   maxMemoryKb: number;
   visibility: SubmissionVisibility;
   sourceVisible: boolean;
+  /** 이 열람이 작성자에게 알려지는가 (#136). 보기 전에 알아야 한다. */
+  viewNotified?: boolean;
   nickname: string;
   createdAt: string;
 }
