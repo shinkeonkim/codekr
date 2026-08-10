@@ -133,6 +133,8 @@ export interface TestcaseResult {
   stderrExcerpt: string | null;
 }
 
+export type SubmissionVisibility = "PUBLIC" | "PRIVATE" | "ACCEPTED_ONLY";
+
 export interface SubmissionDetail {
   id: number;
   problemSlug: string;
@@ -145,7 +147,11 @@ export interface SubmissionDetail {
   maxRuntimeMs: number;
   maxMemoryKb: number;
   compileError: string | null;
-  sourceCode: string;
+  visibility: SubmissionVisibility;
+  /** 볼 권한이 없으면 아예 내려오지 않는다. */
+  sourceCode: string | null;
+  sourceVisible: boolean;
+  nickname: string;
   results: TestcaseResult[];
   createdAt: string;
 }
@@ -159,6 +165,9 @@ export interface SubmissionSummary {
   verdict: Verdict | null;
   passedCount: number;
   totalCount: number;
+  visibility: SubmissionVisibility;
+  sourceVisible: boolean;
+  nickname: string;
   createdAt: string;
 }
 

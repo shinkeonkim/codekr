@@ -129,16 +129,47 @@
 
 ```json
 // 요청
-{ "runtimeId": "python:3.12", "sourceCode": "..." }
+{ "runtimeId": "python:3.12", "sourceCode": "...", "visibility": "PRIVATE" }
 // 202
 { "submissionId": 1024, "status": "PENDING" }
 ```
 
+`visibility` 는 소스 코드 공개 범위이며 생략하면 `PRIVATE` 이다 (아래 3.1).
 이후 진행은 WebSocket 으로 받는다.
 
 ---
 
 ## 3. 제출 `/api/v1/submissions`
+
+### 3.1 소스 코드 공개 범위 (#33)
+
+**메타데이터와 소스 코드를 분리해서 다룬다.** 문제·판정·실행 시간 같은 메타데이터는
+로그인한 회원에게 보인다(전체 제출 목록의 전제). 소스 코드만 공개 범위로 가린다.
+
+| 값 | 소스 코드를 볼 수 있는 사람 |
+|---|---|
+| `PUBLIC` | 모든 회원 |
+| `PRIVATE` | 작성자, 관리자 |
+| `ACCEPTED_ONLY` | 최종 판정이 `ACCEPTED` 로 확정된 뒤의 모든 회원 |
+
+작성자와 관리자는 공개 범위와 무관하게 항상 볼 수 있다.
+
+**설계 결정**
+
+- **기본값은 `PRIVATE`.** 공개는 사용자가 명시적으로 선택해야 하는 행위다. 한 번 공개된 코드는
+  되돌려도 이미 읽힌 뒤일 수 있다.
+- **변경은 작성자만, 시점 제한 없음.** 관리자도 남의 공개 범위를 바꿀 수 없다 — 그것은
+  작성자의 결정이다. 채점 전에 골라 둔 값을 나중에 바꾸고 싶은 경우가 자연스럽다.
+- 응답에서 볼 권한이 없으면 `sourceCode` 를 **빈 문자열이 아니라 아예 내리지 않고**,
+  `sourceVisible: false` 로 알린다.
+
+### PATCH `/{id}/visibility` 🔒 (작성자만)
+
+```json
+{ "visibility": "PUBLIC" }
+```
+
+→ 204. 남의 제출이면 403.
 
 ### GET `/{id}` 🔒 (본인 또는 ADMIN)
 
@@ -147,7 +178,8 @@
   "id": 1024, "problemSlug": "two-sum", "problemTitle": "두 수의 합",
   "runtimeId": "python:3.12", "status": "COMPLETED", "verdict": "ACCEPTED",
   "passedCount": 10, "totalCount": 10, "maxRuntimeMs": 31, "maxMemoryKb": 9012,
-  "compileError": null, "sourceCode": "...",
+  "compileError": null,
+  "visibility": "PRIVATE", "sourceVisible": true, "sourceCode": "...", "nickname": "코더",
   "results": [ { "seq": 1, "verdict": "ACCEPTED", "runtimeMs": 24, "memoryKb": 8192, "stderrExcerpt": null } ],
   "createdAt": "2026-08-10T12:00:00Z"
 }

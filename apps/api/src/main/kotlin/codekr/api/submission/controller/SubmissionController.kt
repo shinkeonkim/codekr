@@ -8,12 +8,14 @@ import codekr.api.submission.dto.SubmissionDetailResponse
 import codekr.api.submission.dto.SubmissionSummaryResponse
 import codekr.api.submission.dto.SubmitRequest
 import codekr.api.submission.dto.SubmitResponse
+import codekr.api.submission.dto.VisibilityChangeRequest
 import codekr.api.submission.service.SubmissionService
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -42,6 +44,14 @@ class SubmissionController(private val submissionService: SubmissionService) {
     @GetMapping("/submissions/{id}")
     fun findOne(@PathVariable id: Long, principal: AuthPrincipal): SubmissionDetailResponse =
         submissionService.findDetail(id, principal)
+
+    @PatchMapping("/submissions/{id}/visibility")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun changeVisibility(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: VisibilityChangeRequest,
+        principal: AuthPrincipal,
+    ) = submissionService.changeVisibility(id, principal, request)
 
     @GetMapping("/submissions")
     fun findMine(

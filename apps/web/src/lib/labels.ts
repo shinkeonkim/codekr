@@ -4,6 +4,7 @@ import type {
   DifficultyTier,
   ProblemCategory,
   SubmissionStatus,
+  SubmissionVisibility,
   Verdict,
 } from "./types";
 
@@ -54,6 +55,19 @@ export const VERDICT_LABELS: Record<Verdict, string> = {
   COMPILE_ERROR: "컴파일 에러",
   OUTPUT_LIMIT_EXCEEDED: "출력 초과",
   SYSTEM_ERROR: "채점 오류",
+};
+
+export const VISIBILITY_LABELS: Record<SubmissionVisibility, string> = {
+  PUBLIC: "전체 공개",
+  PRIVATE: "비공개",
+  ACCEPTED_ONLY: "정답일 때만 공개",
+};
+
+/** 공개 옵션을 고를 때 각 선택이 무엇을 뜻하는지 함께 보여준다. */
+export const VISIBILITY_DESCRIPTIONS: Record<SubmissionVisibility, string> = {
+  PUBLIC: "판정과 관계없이 다른 회원이 코드를 볼 수 있습니다.",
+  PRIVATE: "나와 관리자만 코드를 볼 수 있습니다.",
+  ACCEPTED_ONLY: "정답으로 확정된 뒤에만 코드가 공개됩니다.",
 };
 
 export const STATUS_LABELS: Record<SubmissionStatus, string> = {

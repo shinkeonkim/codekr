@@ -73,11 +73,14 @@ class SubmissionIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `남의 제출은 조회할 수 없다`() {
+    fun `남의 제출은 메타데이터만 보이고 소스는 가려진다`() {
+        // 공개 범위 정책(#33) 이후로 메타데이터는 회원에게 열려 있고 소스만 가려진다.
         val submissionId = submit()
 
         mockMvc.perform(get("/api/v1/submissions/$submissionId").header("Authorization", "Bearer $otherToken"))
-            .andExpect(status().isForbidden)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.sourceVisible").value(false))
+            .andExpect(jsonPath("$.sourceCode").doesNotExist())
     }
 
     @Test

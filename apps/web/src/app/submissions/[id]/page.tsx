@@ -5,8 +5,16 @@ import { use, useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { api } from "@/lib/api";
-import { STATUS_LABELS, VERDICT_LABELS, formatDateTime, formatMemory, verdictTone } from "@/lib/labels";
-import type { SubmissionDetail } from "@/lib/types";
+import {
+  STATUS_LABELS,
+  VERDICT_LABELS,
+  VISIBILITY_LABELS,
+  formatDateTime,
+  formatMemory,
+  verdictTone,
+} from "@/lib/labels";
+import { useAuth } from "@/lib/auth";
+import type { SubmissionDetail, SubmissionVisibility } from "@/lib/types";
 
 /** 채점이 끝나지 않았다면 짧게 폴링한다 (이 화면에 늦게 들어온 경우). */
 const POLL_INTERVAL_MS = 2000;
@@ -21,8 +29,14 @@ export default function SubmissionDetailPage({ params }: { params: Promise<{ id:
 }
 
 function SubmissionView({ id }: { id: number }) {
+  const { user } = useAuth();
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const changeVisibility = async (visibility: SubmissionVisibility) => {
+    await api.changeSubmissionVisibility(id, visibility);
+    setSubmission((previous) => (previous ? { ...previous, visibility } : previous));
+  };
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -55,7 +69,7 @@ function SubmissionView({ id }: { id: number }) {
           </Link>
           <h1 className="text-2xl font-bold text-ink">제출 #{submission.id}</h1>
           <p className="mt-1 text-xs text-ink-muted">
-            {submission.runtimeId} · {formatDateTime(submission.createdAt)}
+            {submission.nickname} · {submission.runtimeId} · {formatDateTime(submission.createdAt)}
           </p>
         </div>
         {submission.verdict ? (
@@ -102,10 +116,34 @@ function SubmissionView({ id }: { id: number }) {
       ) : null}
 
       <Card className="p-5">
-        <h2 className="mb-2 text-sm font-semibold text-ink">제출한 코드</h2>
-        <pre className="max-h-96 overflow-auto rounded-lg bg-surface-muted p-3 text-xs text-ink">
-          {submission.sourceCode}
-        </pre>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink">제출한 코드</h2>
+          {/* 공개 범위는 작성자만 바꿀 수 있다. */}
+          {user?.nickname === submission.nickname ? (
+            <select
+              className="ml-auto rounded-lg border border-border bg-surface px-2 py-1 text-xs text-ink"
+              value={submission.visibility}
+              onChange={(event) => changeVisibility(event.target.value as SubmissionVisibility)}
+            >
+              {Object.entries(VISIBILITY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Badge>{VISIBILITY_LABELS[submission.visibility]}</Badge>
+          )}
+        </div>
+        {submission.sourceVisible && submission.sourceCode !== null ? (
+          <pre className="max-h-96 overflow-auto rounded-lg bg-surface-muted p-3 text-xs text-ink">
+            {submission.sourceCode}
+          </pre>
+        ) : (
+          <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-ink-muted">
+            작성자가 공개하지 않은 코드입니다.
+          </p>
+        )}
       </Card>
     </div>
   );

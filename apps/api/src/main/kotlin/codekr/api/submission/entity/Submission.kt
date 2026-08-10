@@ -35,6 +35,10 @@ class Submission(
 
 ) : SoftDeletableEntity() {
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    var visibility: SubmissionVisibility = SubmissionVisibility.PRIVATE
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0
@@ -85,4 +89,28 @@ class Submission(
 
     val isFinished: Boolean
         get() = status == SubmissionStatus.COMPLETED || status == SubmissionStatus.FAILED
+
+    /**
+     * 이 제출의 소스 코드를 [viewerId] 가 볼 수 있는가.
+     *
+     * 접근 판단을 엔티티에 두는 이유는, 목록·상세·검색 등 여러 경로가 **같은 규칙**을 써야
+     * 하기 때문이다. 규칙이 흩어지면 한 경로에서만 새는 사고가 난다.
+     */
+    fun isSourceVisibleTo(viewerId: Long?, isAdmin: Boolean): Boolean {
+        if (isAdmin) return true
+        if (viewerId != null && viewerId == userId) return true
+        // 검증 제출의 소스는 정답 코드다 — 공개 범위와 무관하게 어드민만 본다.
+        if (kind != SubmissionKind.USER) return false
+
+        return when (visibility) {
+            SubmissionVisibility.PUBLIC -> true
+            SubmissionVisibility.PRIVATE -> false
+            SubmissionVisibility.ACCEPTED_ONLY -> status == SubmissionStatus.COMPLETED &&
+                verdict == Verdict.ACCEPTED
+        }
+    }
+
+    fun changeVisibility(next: SubmissionVisibility) {
+        visibility = next
+    }
 }

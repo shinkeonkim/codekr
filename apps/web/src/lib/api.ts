@@ -9,6 +9,7 @@ import type {
   Runtime,
   SubmissionDetail,
   SubmissionSummary,
+  SubmissionVisibility,
   TokenResponse,
   User,
 } from "./types";
@@ -110,7 +111,7 @@ export const api = {
   run: (slug: string, body: { runtimeId: string; sourceCode: string; stdin: string }) =>
     request<RunResult>(`/api/v1/problems/${slug}/run`, { method: "POST", body, auth: true }),
 
-  submit: (slug: string, body: { runtimeId: string; sourceCode: string }) =>
+  submit: (slug: string, body: { runtimeId: string; sourceCode: string; visibility?: SubmissionVisibility }) =>
     request<{ submissionId: number; status: string }>(`/api/v1/problems/${slug}/submissions`, {
       method: "POST",
       body,
@@ -118,6 +119,13 @@ export const api = {
     }),
 
   submission: (id: number) => request<SubmissionDetail>(`/api/v1/submissions/${id}`, { auth: true }),
+
+  changeSubmissionVisibility: (id: number, visibility: SubmissionVisibility) =>
+    request<void>(`/api/v1/submissions/${id}/visibility`, {
+      method: "PATCH",
+      body: { visibility },
+      auth: true,
+    }),
 
   submissions: (query: Record<string, string | number | undefined>) =>
     request<Page<SubmissionSummary>>("/api/v1/submissions", { auth: true, query }),
