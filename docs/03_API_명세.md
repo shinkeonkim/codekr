@@ -301,6 +301,21 @@ POST 와 동일한 바디. 테스트케이스와 초기 코드는 **전체 치�
 → 204. **소프트 삭제**다 — 행은 남고 `deleted_at` 만 채워진다 (ADR-0007).
 따라서 그 문제로 남긴 제출 이력은 그대로 조회되며, 삭제한 slug 는 다시 쓸 수 있다.
 
+### POST `/retention/cleanup` (#46)
+
+보관 기간이 지난 소프트 삭제 행을 실제로 지운다. 자동 실행(매일 04:00 KST)을 기다리지 않고
+결과를 확인해야 할 때 쓴다.
+
+```json
+{
+  "executedAt": "2026-08-10T19:00:00Z",
+  "deletedProblems": 2, "deletedTestcases": 41, "deletedTemplates": 7,
+  "truncated": false
+}
+```
+
+`truncated` 가 true 면 한 번에 지울 상한에 걸린 것이다 — 다음 실행에서 이어서 지운다.
+
 ### GET `/queues`
 
 ```json
