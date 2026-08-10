@@ -24,12 +24,16 @@ class AdminProblemService(
     private val problemRepository: ProblemRepository,
     private val problemSearchRepository: ProblemSearchRepository,
     private val runtimeRegistry: RuntimeRegistry,
+    private val verificationService: SolutionVerificationService,
 ) {
 
     fun search(condition: ProblemSearchCondition, pageable: Pageable): PageResponse<ProblemSummaryResponse> =
         PageResponse.from(problemSearchRepository.search(condition, pageable).map(ProblemSummaryResponse::from))
 
-    fun findDetail(id: Long): AdminProblemDetailResponse = AdminProblemDetailResponse.from(require(id))
+    fun findDetail(id: Long): AdminProblemDetailResponse {
+        val problem = require(id)
+        return AdminProblemDetailResponse.from(problem, verificationService.findLatest(problem))
+    }
 
     @Transactional
     fun create(request: ProblemUpsertRequest, createdBy: Long): ProblemCreatedResponse {
@@ -53,6 +57,7 @@ class AdminProblemService(
         ).apply {
             addTestcases(request.testcases.map(TestcaseRequest::toEntity))
             addTemplates(request.templates.map(TemplateRequest::toEntity))
+            replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
         }
 
         val saved = problemRepository.save(problem)
@@ -86,7 +91,8 @@ class AdminProblemService(
 
         problem.addTestcases(request.testcases.map(TestcaseRequest::toEntity))
         problem.addTemplates(request.templates.map(TemplateRequest::toEntity))
-        return AdminProblemDetailResponse.from(problem)
+        problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
+        return AdminProblemDetailResponse.from(problem, verificationService.findLatest(problem))
     }
 
     /**
@@ -111,5 +117,6 @@ class AdminProblemService(
         request.templates.firstOrNull { !runtimeRegistry.exists(it.runtimeId) }?.let {
             throw ApiException(ErrorCode.RUNTIME_NOT_FOUND, "지원하지 않는 실행 환경입니다: ${it.runtimeId}")
         }
+        request.solution?.let { runtimeRegistry.require(it.runtimeId) }
     }
 }

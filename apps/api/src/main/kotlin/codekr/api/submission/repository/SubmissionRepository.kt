@@ -1,6 +1,7 @@
 package codekr.api.submission.repository
 
 import codekr.api.submission.entity.Submission
+import codekr.api.submission.entity.SubmissionKind
 import codekr.api.submission.entity.SubmissionStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -11,11 +12,17 @@ interface SubmissionRepository : JpaRepository<Submission, Long> {
 
     fun findByIdAndDeletedAtIsNull(id: Long): Submission?
 
-    fun findByUserIdAndDeletedAtIsNullOrderByIdDesc(userId: Long, pageable: Pageable): Page<Submission>
+    // 사용자에게 보이는 목록은 항상 kind 로 걸러 검증 제출이 섞이지 않게 한다.
+    fun findByUserIdAndKindAndDeletedAtIsNullOrderByIdDesc(
+        userId: Long,
+        kind: SubmissionKind,
+        pageable: Pageable,
+    ): Page<Submission>
 
-    fun findByUserIdAndProblemIdAndDeletedAtIsNullOrderByIdDesc(
+    fun findByUserIdAndProblemIdAndKindAndDeletedAtIsNullOrderByIdDesc(
         userId: Long,
         problemId: Long,
+        kind: SubmissionKind,
         pageable: Pageable,
     ): Page<Submission>
 

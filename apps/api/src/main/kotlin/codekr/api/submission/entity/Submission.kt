@@ -29,6 +29,10 @@ class Submission(
     @Column(name = "total_count", nullable = false)
     var totalCount: Int = 0,
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    val kind: SubmissionKind = SubmissionKind.USER,
+
 ) : SoftDeletableEntity() {
 
     @Id

@@ -21,6 +21,7 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
 
     SOURCE_CODE_TOO_LARGE(HttpStatus.BAD_REQUEST, "소스 코드가 너무 큽니다."),
     TESTCASE_REQUIRED(HttpStatus.BAD_REQUEST, "테스트케이스가 최소 1개 필요합니다."),
+    SOLUTION_REQUIRED(HttpStatus.BAD_REQUEST, "검증하려면 정답 코드를 먼저 등록해야 합니다."),
 
     EXECUTION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "코드 실행에 실패했습니다. 잠시 후 다시 시도해 주세요."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),

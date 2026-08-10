@@ -4,10 +4,18 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
+import { SolutionVerifier } from "./SolutionVerifier";
 import { Alert, Button, Card, Field, Input, Select, Textarea } from "./ui";
 import { ApiError } from "@/lib/api";
 import { ALL_DIFFICULTIES, CATEGORY_LABELS, difficultyLabel } from "@/lib/labels";
-import type { AdminProblemDetail, Difficulty, ProblemTemplate, Testcase } from "@/lib/types";
+import type {
+  AdminProblemDetail,
+  Difficulty,
+  ProblemSolution,
+  ProblemTemplate,
+  ProblemVerification,
+  Testcase,
+} from "@/lib/types";
 
 export interface ProblemFormValues {
   slug: string;
@@ -22,6 +30,7 @@ export interface ProblemFormValues {
   published: boolean;
   testcases: Testcase[];
   templates: ProblemTemplate[];
+  solution: ProblemSolution | null;
 }
 
 const EMPTY_TESTCASE: Testcase = { seq: 1, input: "", expectedOutput: "", visibility: "PUBLIC" };
@@ -40,6 +49,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     published: problem.published,
     testcases: problem.testcases,
     templates: problem.templates,
+    solution: problem.solution,
   };
 }
 
@@ -56,16 +66,20 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   published: false,
   testcases: [EMPTY_TESTCASE],
   templates: [],
+  solution: null,
 };
 
 interface Props {
   initial: ProblemFormValues;
   submitLabel: string;
   onSubmit: (values: ProblemFormValues) => Promise<unknown>;
+  /** 수정 화면에서만 주어진다 — 검증은 저장된 문제에 대해서만 실행할 수 있다. */
+  problemId?: number;
+  verification?: ProblemVerification | null;
 }
 
 /** 문제 등록과 수정이 같은 폼을 쓴다 — 요청 본문 모양이 동일하기 때문이다. */
-export function ProblemForm({ initial, submitLabel, onSubmit }: Props) {
+export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verification }: Props) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -245,6 +259,13 @@ export function ProblemForm({ initial, submitLabel, onSubmit }: Props) {
       <ProblemTemplateEditor
         templates={values.templates}
         onChange={(templates) => update("templates", templates)}
+      />
+
+      <SolutionVerifier
+        problemId={problemId ?? null}
+        solution={values.solution}
+        verification={verification ?? null}
+        onChange={(solution) => update("solution", solution)}
       />
 
       <div className="flex items-center gap-3">

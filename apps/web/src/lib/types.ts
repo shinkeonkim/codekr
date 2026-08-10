@@ -84,12 +84,33 @@ export interface ProblemTemplate {
   sourceCode: string;
 }
 
+/** 문제의 정답 코드. 어드민 응답에만 실린다. */
+export interface ProblemSolution {
+  runtimeId: string;
+  sourceCode: string;
+}
+
+/** 정답 코드로 전체 테스트케이스를 검증한 결과. */
+export interface ProblemVerification {
+  submissionId: number;
+  status: SubmissionStatus;
+  verdict: Verdict | null;
+  passedCount: number;
+  totalCount: number;
+  compileError: string | null;
+  /** 검증 이후 테스트케이스나 실행 제한이 바뀌었으면 true. */
+  stale: boolean;
+  results: TestcaseResult[];
+}
+
 export interface AdminProblemDetail extends ProblemSummary {
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;
   testcases: Testcase[];
   templates: ProblemTemplate[];
+  solution: ProblemSolution | null;
+  verification: ProblemVerification | null;
 }
 
 export type SubmissionStatus = "PENDING" | "JUDGING" | "COMPLETED" | "FAILED";
