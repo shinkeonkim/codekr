@@ -21,7 +21,7 @@ export function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur">
+    <header className="sticky top-0 z-header border-b border-border bg-surface/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
         <Link href="/" className="text-lg font-bold tracking-tight text-ink">
           코드<span className="text-brand">.kr</span>

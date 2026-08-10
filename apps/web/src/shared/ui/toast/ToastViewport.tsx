@@ -1,5 +1,6 @@
 "use client";
 
+import { OVERLAY } from "../overlay";
 import { useToast, useToastList } from "./ToastContext";
 import type { ToastTone } from "./ToastContext";
 
@@ -11,10 +12,16 @@ const TONES: Record<ToastTone, { className: string; icon: string; label: string 
 };
 
 /**
- * 토스트가 쌓이는 자리 (#112).
+ * 토스트가 쌓이는 자리 (#112, #134).
  *
  * `aria-live="polite"` 로 스크린 리더에 전달한다. `assertive` 를 쓰지 않는 이유는
  * 읽고 있던 내용을 끊기 때문이다 — 토스트는 대개 그만큼 급하지 않다.
+ *
+ * **위치를 바꿔도 DOM 순서는 그대로 둔다** (#134). 읽는 순서는 시각적 위치가 아니라
+ * DOM 이 정하므로, 옮기면 스크린 리더가 듣는 순서가 달라진다.
+ *
+ * 새 토스트는 **아래에 붙는다.** 위에서 밀어 올리면 읽던 토스트가 움직이고,
+ * 우측 하단에서는 가장 아래가 가장 최근이라는 것이 자연스럽다.
  */
 export function ToastViewport() {
   const toasts = useToastList();
@@ -22,7 +29,7 @@ export function ToastViewport() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4"
+      className={OVERLAY.toastViewport}
       role="status"
       aria-live="polite"
     >
@@ -31,7 +38,7 @@ export function ToastViewport() {
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg backdrop-blur ${tone.className}`}
+            className={`pointer-events-auto flex items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg backdrop-blur ${OVERLAY.toastItem} ${tone.className}`}
           >
             <span aria-hidden className="mt-0.5 font-bold">
               {tone.icon}
