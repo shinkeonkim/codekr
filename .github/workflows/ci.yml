@@ -14,6 +14,12 @@ jobs:
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest
+    # paths-filter 는 PR 의 변경 파일 목록을 API 로 가져온다. 이 권한이 없으면
+    # "Resource not accessible by integration" 으로 실패하고, 뒤따르는 테스트 잡이
+    # 전부 skip 된다 — CI 가 통과한 것처럼 보이지만 아무것도 검증하지 않는 상태가 된다.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
