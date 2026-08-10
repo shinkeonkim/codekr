@@ -1,0 +1,45 @@
+{{- if .Values.executor.networkPolicy.enabled }}
+# 실행기 침해 시 확산 경로를 줄인다 (docs/07 잔여 위험 R1, 이슈 #47).
+#
+# **egress 만 막는다.** 위험은 침해된 실행기가 밖으로 나가는 것이지, 밖에서 들어오는
+# 것이 아니다 — 실행기는 큐를 소비할 뿐 아무도 호출하지 않는다. ingress 를 막으면
+# CNI 에 따라 kubelet 의 readiness 프로브까지 끊기고, 그것을 되돌리려 예외를 늘리다
+# 보면 결국 아무것도 막지 않는 규칙이 된다.
+#
+# 나갈 곳은 둘뿐이다.
+#   - DNS       — Redis 주소를 풀어야 한다
+#   - Redis     — 작업을 받고 결과를 돌려준다
+#
+# **레지스트리는 필요 없다.** 런타임 이미지를 받는 것은 노드의 컨테이너 런타임이지
+# 실행기 파드가 아니다. 소켓 너머에서 일어나는 일이라 이 정책이 닿지 않는다.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: codekr-executor-egress
+  namespace: {{ include "codekr.executorNamespace" . }}
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: codekr
+      app.kubernetes.io/component: executor
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: codekr
+              app.kubernetes.io/component: redis
+      ports:
+        - { protocol: TCP, port: 6379 }
+{{- end }}
