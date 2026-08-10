@@ -47,3 +47,11 @@ imagePullSecrets:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+사용자가 접근하는 주소들. 공개(터널)와 내부(Traefik+Tailscale) 둘 다다.
+비어 있는 값과 중복은 걸러낸다 — 둘을 같게 설정할 수도 있다.
+*/}}
+{{- define "codekr.hosts" -}}
+{{- list .Values.ingress.publicHost .Values.ingress.internalHost | compact | uniq | toJson }}
+{{- end }}

@@ -8,7 +8,10 @@ metadata:
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    # 공개 주소와 내부 주소가 같은 서비스를 가리킨다. 경로 규칙은 하나로 유지한다 —
+    # 둘이 갈라지면 "터널로는 되는데 내부로는 안 되는" 차이가 생긴다.
+    {{- range (include "codekr.hosts" . | fromJsonArray) }}
+    - host: {{ . }}
       http:
         paths:
           # API 와 WebSocket 을 먼저 매칭하고, 나머지는 웹으로 보낸다.
@@ -30,4 +33,5 @@ spec:
               service:
                 name: codekr-web
                 port: { name: http }
+    {{- end }}
 {{- end }}

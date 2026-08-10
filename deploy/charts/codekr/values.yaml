@@ -12,8 +12,13 @@ global:
 ingress:
   enabled: true
   className: traefik
-  # 사용자에게 보이는 주소. 코드.kr 도메인은 외부 터널이 붙은 뒤 여기에 추가한다.
-  host: codekr.homelab.shinkeonkim.com
+  # 사용자에게 보이는 주소. Cloudflare Tunnel 의 public hostname 이 이 이름으로 붙는다.
+  #
+  # 퓨니코드로 적는 이유: Ingress 의 host 와 CORS 의 Origin 은 아스키만 받는다.
+  # 브라우저는 주소창에 코드.kr 을 보여주지만 실제로 보내는 Host/Origin 헤더는 이 값이다.
+  publicHost: xn--hy1by51c.kr # 코드.kr
+  # 내부 관리용 주소 (Traefik + Tailscale). 터널을 거치지 않고 접근할 때 쓴다.
+  internalHost: codekr.homelab.shinkeonkim.com
   annotations: {}
 
 api:
@@ -41,9 +46,9 @@ executor:
   # 실행기는 컨테이너 런타임 소켓을 쓴다. 이 권한은 노드 root 와 동등하므로
   # 반드시 실행 전용 노드에만 배치한다 (docs/07 의 잔여 위험 R1, 이슈 #47).
   nodeSelector:
-    codekr.kr/workload: executor
+    codekr/workload: executor
   tolerations:
-    - key: codekr.kr/executor
+    - key: codekr/executor
       operator: Exists
       effect: NoSchedule
   # 런타임 소켓 경로. containerd 노드 기준.
