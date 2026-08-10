@@ -79,6 +79,9 @@ class SecurityConfig(
                         // 순위표는 관전자도 본다 (#63).
                         "/api/v1/contests/*/scoreboard",
                     ).permitAll()
+                    // 게시판 읽기는 공개다 (#137). 로그인해야 읽을 수 있으면
+                    // 검색으로 들어온 사람이 아무것도 볼 수 없다.
+                    .requestMatchers(HttpMethod.GET, "/api/v1/posts", "/api/v1/posts/*").permitAll()
                     // 이미지는 공개다 (#115). 키에 내용 해시가 들어 있어 추측할 수 없다.
                     .requestMatchers(HttpMethod.GET, "/api/v1/files/**").permitAll()
                     // 링크 공유 문제집은 로그인 없이도 열린다 (#87).

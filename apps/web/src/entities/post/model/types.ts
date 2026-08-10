@@ -1,0 +1,31 @@
+/** 게시판 (#137). */
+
+export type Board = "FREE" | "QUESTION" | "NOTICE";
+
+export interface BoardOption {
+  value: Board;
+  label: string;
+  description: string;
+  /** 이 사람이 이 게시판에 쓸 수 있는가. 쓸 수 없는 곳에 버튼을 보이면 눌렀을 때 거부당한다. */
+  writable: boolean;
+}
+
+export interface PostSummary {
+  id: number;
+  board: Board;
+  boardLabel: string;
+  title: string;
+  authorNickname: string;
+  authorAvatarUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+  edited: boolean;
+}
+
+export interface PostDetail {
+  summary: PostSummary;
+  /** 마크다운 원문. 렌더링은 화면이 한다 — 서버가 HTML 을 만들지 않는다. */
+  body: string;
+  editable: boolean;
+  deletable: boolean;
+}

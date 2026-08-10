@@ -36,7 +36,7 @@ abstract class IntegrationTestBase {
         scoreboardCache.clear()
         jdbcClient.sql(
             """
-            TRUNCATE submission_views, problem_collection_items, problem_collections,
+            TRUNCATE posts, submission_views, problem_collection_items, problem_collections,
                      contest_registrations, contest_problems, contests,
                      submission_testcase_results, submissions, problem_runtime_limits,
                      problem_sql_specs,

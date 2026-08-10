@@ -11,6 +11,7 @@ import { Button } from "@/shared/ui";
 const NAV_ITEMS = [
   { href: "/problems", label: "문제" },
   { href: "/submissions/explore", label: "전체 제출" },
+  { href: "/posts", label: "게시판" },
   { href: "/collections", label: "문제집" },
   { href: "/contests", label: "대회" },
   { href: "/ranking", label: "랭킹" },
