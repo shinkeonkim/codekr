@@ -1,5 +1,6 @@
 import type { NotificationCategory, NotificationCategoryOption } from "@/entities/notification";
 import type { SubmissionVisibility } from "@/entities/submission";
+import type { AwardedBadge, SkillTier } from "@/entities/ranking";
 import type { DifficultyTier } from "@/entities/problem";
 
 /** 서버가 내려주는 사용자 표현. */
@@ -49,6 +50,17 @@ export interface UserProfile {
   /** 전체 기간 기준 (#81). */
   currentStreak: number;
   longestStreak: number;
+  /** 랭킹 점수 (#57). 가장 어려운 100문제의 합이다. */
+  score: number;
+  /**
+   * 실력 티어 (#58). 아직 한 문제도 못 풀었으면 null — 브론즈 5 가 아니라 **티어가 없다**.
+   *
+   * **도달했던 최고 점수로 정한다.** 강등이 없어서 `score` 와 갈라질 수 있다.
+   */
+  skillTier: SkillTier | null;
+  /** 랭킹을 껐거나 푼 문제가 없으면 null — 꼴찌가 아니라 순위가 없는 것이다. */
+  rank: number | null;
+  badges: AwardedBadge[];
 }
 
 /**
@@ -63,4 +75,6 @@ export interface UserSettings {
   mutedNotificationCategories: NotificationCategory[];
   /** 전체 카테고리와 라벨. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
   notificationCategories: NotificationCategoryOption[];
+  /** 켜면 랭킹 목록에서 빠진다 (#58). 점수는 계속 쌓인다. */
+  rankingOptOut: boolean;
 }
