@@ -1,6 +1,7 @@
 package codekr.api.submission.service
 
 import codekr.api.queue.message.JudgeEventMessage
+import codekr.api.rejudge.service.RejudgeCompletion
 import codekr.api.submission.entity.SubmissionTestcaseResult
 import codekr.api.submission.repository.SubmissionRepository
 import codekr.api.submission.repository.SubmissionTestcaseResultRepository
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 class JudgeResultRecorder(
     private val submissionRepository: SubmissionRepository,
     private val resultRepository: SubmissionTestcaseResultRepository,
+    private val rejudgeCompletion: RejudgeCompletion,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -32,7 +34,12 @@ class JudgeResultRecorder(
         when (event.type) {
             JudgeEventMessage.TYPE_JUDGING -> submission.markJudging(event.totalCount)
             JudgeEventMessage.TYPE_TESTCASE -> upsertTestcaseResult(event)
-            JudgeEventMessage.TYPE_COMPLETED -> submission.complete(event.toOutcome())
+            JudgeEventMessage.TYPE_COMPLETED -> {
+                submission.complete(event.toOutcome())
+                // 재채점이었으면 판정이 바뀌었는지 보고 알린다 (#107).
+                // 여기서 부르는 이유: 결과가 확정되는 유일한 지점이다.
+                if (submission.isRejudging) rejudgeCompletion.completeOne(submission.id)
+            }
             else -> log.warn("알 수 없는 채점 이벤트 유형: {}", event.type)
         }
     }
