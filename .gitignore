@@ -33,3 +33,6 @@ vendor/
 # --- Local runtime data ---
 infra/docker/data/
 coverage/
+
+# Gradle wrapper jar 는 커밋한다 (재현 가능한 빌드)
+!apps/api/gradle/wrapper/gradle-wrapper.jar
