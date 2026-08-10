@@ -54,6 +54,8 @@ export interface SubmissionSummary {
   verdict: Verdict | null;
   passedCount: number;
   totalCount: number;
+  maxRuntimeMs: number;
+  maxMemoryKb: number;
   visibility: SubmissionVisibility;
   sourceVisible: boolean;
   nickname: string;

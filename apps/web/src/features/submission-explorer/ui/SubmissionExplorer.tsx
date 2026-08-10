@@ -2,14 +2,13 @@
 
 import { problemApi } from "@/entities/problem";
 import type { Runtime } from "@/entities/problem";
-import { STATUS_LABELS, VERDICT_LABELS, submissionApi, verdictTone } from "@/entities/submission";
+import { SubmissionResult, VERDICT_LABELS, submissionApi } from "@/entities/submission";
 import type { SubmissionSummary, Verdict } from "@/entities/submission";
 import type { Page } from "@/shared/api";
-import { formatDateTime } from "@/shared/lib";
-import Link from "next/link";
+import { formatDateTime, formatMemory } from "@/shared/lib";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Button, Card, EmptyState, Input, Select } from "@/shared/ui";
+import { Button, EmptyState, Input, Pagination, Select, Table } from "@/shared/ui";
 
 const VERDICTS: Verdict[] = [
   "ACCEPTED",
@@ -149,51 +148,66 @@ export function SubmissionExplorer({ fixedProblemSlug, emptyMessage }: Props) {
         />
       ) : null}
 
-      <div className="space-y-2">
-        {result?.content.map((submission) => (
-          <Card key={submission.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
-            <Link href={`/submissions/${submission.id}`} className="min-w-0 flex-1">
-              <p className="truncate font-medium text-ink">{submission.problemTitle}</p>
-              <p className="mt-0.5 text-xs text-ink-muted">
-                {submission.nickname} · {submission.runtimeId} · {formatDateTime(submission.createdAt)}
-              </p>
-            </Link>
-            {submission.sourceVisible ? null : (
-              <span className="text-xs text-ink-muted" title="작성자가 코드를 공개하지 않았습니다">
-                코드 비공개
-              </span>
-            )}
-            {submission.verdict ? (
-              <Badge tone={verdictTone(submission.verdict)}>
-                {VERDICT_LABELS[submission.verdict]} · {submission.passedCount}/{submission.totalCount}
-              </Badge>
-            ) : (
-              <Badge>{STATUS_LABELS[submission.status]}</Badge>
-            )}
-          </Card>
-        ))}
-      </div>
-
-      {result && result.totalPages > 1 ? (
-        <div className="flex items-center justify-center gap-2 text-sm">
-          <Button
-            variant="secondary"
-            disabled={result.page === 0}
-            onClick={() => setFilter("page", String(result.page - 1))}
-          >
-            이전
-          </Button>
-          <span className="text-ink-muted">
-            {result.page + 1} / {result.totalPages}
-          </span>
-          <Button
-            variant="secondary"
-            disabled={result.page + 1 >= result.totalPages}
-            onClick={() => setFilter("page", String(result.page + 1))}
-          >
-            다음
-          </Button>
-        </div>
+      {result && result.content.length > 0 ? (
+        <>
+          <Table
+            rows={result.content}
+            rowKey={(submission) => submission.id}
+            href={(submission) => `/submissions/${submission.id}`}
+            columns={[
+              { key: "problem", header: "문제", render: (submission) => submission.problemTitle },
+              {
+                key: "nickname",
+                header: "제출자",
+                render: (submission) => <span className="text-ink-muted">{submission.nickname}</span>,
+              },
+              {
+                key: "runtime",
+                header: "언어",
+                hideOnMobile: true,
+                render: (submission) => (
+                  <span className="whitespace-nowrap text-xs text-ink-muted">{submission.runtimeId}</span>
+                ),
+              },
+              {
+                key: "result",
+                header: "결과",
+                render: (submission) => <SubmissionResult submission={submission} />,
+              },
+              {
+                key: "cost",
+                header: "시간 · 메모리",
+                hideOnMobile: true,
+                align: "right",
+                render: (submission) =>
+                  submission.status === "COMPLETED" ? (
+                    <span className="whitespace-nowrap text-xs text-ink-muted">
+                      {submission.maxRuntimeMs}ms · {formatMemory(submission.maxMemoryKb)}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-ink-muted">-</span>
+                  ),
+              },
+              {
+                key: "createdAt",
+                header: "제출 시각",
+                hideOnMobile: true,
+                align: "right",
+                render: (submission) => (
+                  <span className="whitespace-nowrap text-xs text-ink-muted">
+                    {formatDateTime(submission.createdAt)}
+                  </span>
+                ),
+              },
+            ]}
+          />
+          <Pagination
+            page={result.page}
+            totalPages={result.totalPages}
+            totalElements={result.totalElements}
+            onChange={(page) => setFilter("page", String(page))}
+          />
+        </>
       ) : null}
     </div>
   );

@@ -15,3 +15,4 @@ export type {
   TestcaseResult,
   Verdict,
 } from "./model/types";
+export { SubmissionResult } from "./ui/SubmissionResult";

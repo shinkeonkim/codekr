@@ -16,6 +16,9 @@ data class SubmissionSummaryResponse(
     val verdict: Verdict?,
     val passedCount: Int,
     val totalCount: Int,
+    /** 목록에서 실행 시간·메모리로 정렬할 수 있으므로 값도 함께 내려준다. */
+    val maxRuntimeMs: Int,
+    val maxMemoryKb: Int,
     val visibility: SubmissionVisibility,
     /** 목록에서 상세로 들어갔을 때 소스를 볼 수 있는지 미리 알려준다. */
     val sourceVisible: Boolean,
@@ -38,6 +41,8 @@ data class SubmissionSummaryResponse(
             verdict = submission.verdict,
             passedCount = submission.passedCount,
             totalCount = submission.totalCount,
+            maxRuntimeMs = submission.maxRuntimeMs,
+            maxMemoryKb = submission.maxMemoryKb,
             visibility = submission.visibility,
             sourceVisible = sourceVisible,
             nickname = nickname,
