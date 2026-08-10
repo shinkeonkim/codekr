@@ -1,0 +1,43 @@
+name: codekr
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: codekr-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-codekr}
+      POSTGRES_USER: ${POSTGRES_USER:-codekr}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codekr_local_pw}
+    ports:
+      - "${POSTGRES_HOST_PORT:-15432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codekr} -d ${POSTGRES_DB:-codekr}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [codekr]
+
+  redis:
+    image: redis:7-alpine
+    container_name: codekr-redis
+    command: ["redis-server", "--appendonly", "yes", "--save", ""]
+    ports:
+      - "${REDIS_HOST_PORT:-16379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [codekr]
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  codekr:
+    name: codekr

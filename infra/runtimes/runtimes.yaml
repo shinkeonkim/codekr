@@ -1,0 +1,57 @@
+# 코드 실행 런타임 레지스트리 — api 와 executor 가 공유하는 단일 정의.
+#
+# 언어나 버전을 추가할 때는 이미지 하나와 아래 항목 하나만 늘리면 된다 (ADR-0003).
+#   id            : 제출/실행 요청에서 쓰는 식별자
+#   label         : 화면에 보여줄 이름
+#   monacoLanguage: 에디터 문법 강조용 언어 키
+#   image         : 샌드박스 컨테이너 이미지
+#   sourceFile    : 작업 디렉터리에 기록할 소스 파일명
+#   compile       : (선택) 컴파일 명령. 없으면 인터프리터 언어로 취급한다
+#   run           : 실행 명령
+#   template      : 에디터 초기 코드
+
+runtimes:
+  - id: "python:3.12"
+    label: "Python 3.12"
+    monacoLanguage: "python"
+    image: "python:3.12-alpine"
+    sourceFile: "main.py"
+    run: ["python3", "main.py"]
+    template: |
+      import sys
+
+      def main():
+          data = sys.stdin.read().split()
+          print(sum(map(int, data)))
+
+      main()
+
+  - id: "javascript:22"
+    label: "JavaScript (Node 22)"
+    monacoLanguage: "javascript"
+    image: "node:22-alpine"
+    sourceFile: "main.js"
+    run: ["node", "main.js"]
+    template: |
+      const data = require('fs').readFileSync(0, 'utf8').trim().split(/\s+/);
+      console.log(data.map(Number).reduce((a, b) => a + b, 0));
+
+  - id: "cpp:17"
+    label: "C++17 (GCC 13)"
+    monacoLanguage: "cpp"
+    image: "gcc:13"
+    sourceFile: "main.cpp"
+    compile: ["g++", "-O2", "-std=c++17", "-o", "main", "main.cpp"]
+    run: ["./main"]
+    template: |
+      #include <bits/stdc++.h>
+      using namespace std;
+
+      int main() {
+          ios::sync_with_stdio(false);
+          cin.tie(nullptr);
+          long long a, b;
+          cin >> a >> b;
+          cout << a + b << '\n';
+          return 0;
+      }
