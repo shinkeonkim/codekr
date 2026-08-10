@@ -86,6 +86,8 @@ object ApiEndpointInventory {
         Endpoint("POST", "/api/v1/collections", Access.AUTHENTICATED),
         Endpoint("PUT", "/api/v1/collections/{id}", Access.AUTHENTICATED),
         Endpoint("DELETE", "/api/v1/collections/{id}", Access.AUTHENTICATED),
+        Endpoint("PUT", "/api/v1/users/me/avatar", Access.AUTHENTICATED),
+        Endpoint("DELETE", "/api/v1/users/me/avatar", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/users/me/settings", Access.AUTHENTICATED),
         Endpoint("PATCH", "/api/v1/users/me/settings", Access.AUTHENTICATED),
 

@@ -5,6 +5,8 @@ import type { SubmissionVisibility } from "@/entities/submission";
 import type { NotificationCategory } from "@/entities/notification";
 import { userApi } from "@/entities/user";
 import type { UserSettings } from "@/entities/user";
+import { AvatarEditor } from "@/features/avatar-editor";
+import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, EmptyState, Select, useToast } from "@/shared/ui";
@@ -20,6 +22,7 @@ export function SettingsPage() {
 
 function SettingsView() {
   const toast = useToast();
+  const { user, refresh } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +75,23 @@ function SettingsView() {
       </header>
 
       {error ? <Alert>{error}</Alert> : null}
+
+      <Card className="space-y-3 p-5">
+        <div>
+          <h2 className="text-sm font-semibold text-ink">프로필 이미지</h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            목록과 순위표에서 사람을 구분하는 데 쓰입니다. 올리지 않으면 닉네임 첫 글자가 보입니다.
+          </p>
+        </div>
+        {user ? (
+          <AvatarEditor
+            nickname={user.nickname}
+            avatarUrl={user.avatarUrl}
+            // 헤더와 프로필이 같은 값을 쓰므로 바뀌면 사용자 정보를 다시 받는다.
+            onChange={() => refresh()}
+          />
+        ) : null}
+      </Card>
 
       <Card className="space-y-3 p-5">
         <div>

@@ -21,6 +21,8 @@ export interface User {
   roles: UserRole[];
   /** 어드민 영역 진입 가능 여부. 역할 목록을 화면이 매번 해석하지 않게 서버가 함께 내린다. */
   isAdmin: boolean;
+  /** 아바타 주소 (#116). 올리지 않았으면 null — 화면이 기본 표현을 그린다. */
+  avatarUrl: string | null;
 }
 
 export interface TokenResponse {
@@ -43,6 +45,7 @@ export interface SolvedByTier {
  */
 export interface UserProfile {
   nickname: string;
+  avatarUrl: string | null;
   joinedAt: string;
   solvedCount: number;
   submissionCount: number;

@@ -9,6 +9,7 @@ import codekr.api.ranking.entity.RankingPeriod
 import codekr.api.ranking.entity.SkillTier
 import codekr.api.ranking.repository.UserProblemScoreRepository
 import codekr.api.ranking.service.RankingService
+import codekr.api.user.avatar.AvatarService
 import codekr.api.user.dto.SkillTierResponse
 import codekr.api.user.dto.UserProfileResponse
 import codekr.api.user.repository.UserProfileRepository
@@ -42,6 +43,7 @@ class UserProfileService(
 
         return UserProfileResponse(
             nickname = user.nickname,
+            avatarUrl = AvatarService.urlOf(user.avatarKey),
             joinedAt = user.createdAt,
             solvedCount = profileRepository.countSolvedProblems(user.id),
             submissionCount = profileRepository.countSubmissions(user.id),

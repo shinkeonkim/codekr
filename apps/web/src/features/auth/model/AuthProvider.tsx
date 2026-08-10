@@ -13,6 +13,8 @@ interface AuthState {
   isAdmin: boolean;
   signIn: (tokens: TokenResponse) => void;
   signOut: () => void;
+  /** 서버의 내 정보를 다시 읽는다. 아바타처럼 헤더와 화면이 함께 쓰는 값이 바뀌면 부른다 (#116). */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -56,9 +58,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const refresh = useCallback(async () => {
+    if (!tokenStore.read()) return;
+    // 실패해도 로그아웃시키지 않는다 — 아바타를 못 읽었다고 세션을 끊을 이유는 없다.
+    await userApi
+      .me()
+      .then(setUser)
+      .catch(() => undefined);
+  }, []);
+
   const value = useMemo<AuthState>(
-    () => ({ user, loading, isAdmin: user?.isAdmin ?? false, signIn, signOut }),
-    [user, loading, signIn, signOut],
+    () => ({ user, loading, isAdmin: user?.isAdmin ?? false, signIn, signOut, refresh }),
+    [user, loading, signIn, signOut, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

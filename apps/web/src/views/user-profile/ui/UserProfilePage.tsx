@@ -4,7 +4,7 @@ import { ActivityGraph, activityApi } from "@/entities/activity";
 import type { ActivityResponse } from "@/entities/activity";
 import { TIER_BADGE_CLASSES, TIER_LABELS } from "@/entities/problem";
 import { SkillTierBadge } from "@/entities/ranking";
-import { userApi } from "@/entities/user";
+import { Avatar, userApi } from "@/entities/user";
 import type { UserProfile } from "@/entities/user";
 import { RequireAuth } from "@/features/auth";
 import { SubmissionExplorer } from "@/features/submission-explorer";
@@ -50,7 +50,8 @@ function ProfileView({ nickname }: { nickname: string }) {
   return (
     <div className="space-y-5">
       <header>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <Avatar nickname={profile.nickname} avatarUrl={profile.avatarUrl} size="lg" />
           <h1 className="text-2xl font-bold text-ink">{profile.nickname}</h1>
           {/* 실력 티어는 아래 '난이도 분포'의 문제 티어와 다른 개념이다. 뱃지가 그것을 명시한다. */}
           <SkillTierBadge tier={profile.skillTier} />
