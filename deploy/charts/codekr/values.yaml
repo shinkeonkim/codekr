@@ -48,6 +48,9 @@ executor:
       effect: NoSchedule
   # 런타임 소켓 경로. containerd 노드 기준.
   runtimeSocket: /run/containerd/containerd.sock
+  # 샌드박스 구현 (#45). containerd 네이티브 구현이 생기기 전까지는 엔진 API 뿐이다.
+  # 값이 틀리면 실행기가 기동에서 실패한다 — 첫 제출에서 드러나지 않게.
+  sandboxRuntime: engine-api
   # 실행기만 다른 네임스페이스에 둘 수 있다. hostPath 마운트 때문에 그 네임스페이스는
   # Pod Security 를 privileged 로 열어야 하는데, 나머지 워크로드까지 함께 열리지 않게
   # 분리한다. 비워 두면 릴리스 네임스페이스에 함께 배치된다.

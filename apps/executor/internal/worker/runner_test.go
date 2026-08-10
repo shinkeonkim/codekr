@@ -27,6 +27,8 @@ func (s *stubSandbox) Run(_ context.Context, spec sandbox.Spec) (sandbox.Outcome
 	return s.outcome, s.err
 }
 
+func (s *stubSandbox) Preflight(_ context.Context) error { return nil }
+
 func (s *stubSandbox) Close() error { return nil }
 
 func newTestRunner(t *testing.T, box sandbox.Sandbox) *Runner {

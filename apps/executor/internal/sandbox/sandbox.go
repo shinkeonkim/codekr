@@ -43,6 +43,12 @@ type Outcome struct {
 
 // Sandbox 는 코드 한 벌을 격리 실행한다.
 type Sandbox interface {
+	// Preflight 는 런타임에 실제로 닿는지 확인한다.
+	//
+	// 기동 시점에 부르는 것이 목적이다. 이것이 없으면 런타임을 못 붙잡은 실행기가
+	// healthy 로 뜬 뒤 모든 제출을 실패시킨다 — 운영 노드와 로컬 개발 환경의 런타임이
+	// 다를 수 있으므로(#45) 실패는 첫 제출이 아니라 기동에서 드러나야 한다.
+	Preflight(ctx context.Context) error
 	Run(ctx context.Context, spec Spec) (Outcome, error)
 	// Close 는 백그라운드 자원을 정리한다.
 	Close() error
