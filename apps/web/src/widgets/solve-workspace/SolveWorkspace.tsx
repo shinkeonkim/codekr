@@ -4,11 +4,10 @@ import type { ProblemDetail } from "@/entities/problem";
 import { VISIBILITY_DESCRIPTIONS, VISIBILITY_LABELS, submissionApi } from "@/entities/submission";
 import type { RunResult, SubmissionVisibility } from "@/entities/submission";
 import { useAuth } from "@/features/auth";
-import { useJudgeStream } from "@/features/judge-stream";
 import { ApiError } from "@/shared/api";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CodeEditor } from "@/shared/ui";
-import { JudgeProgressPanel } from "@/features/judge-stream";
 import { Alert, Button, Card, Select, Textarea } from "@/shared/ui";
 
 /** 작성 중인 코드를 문제·언어별로 브라우저에 남겨, 새로고침해도 잃지 않게 한다. */
@@ -21,6 +20,7 @@ function readDraft(slug: string, runtimeId: string): string | null {
 }
 
 export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
+  const router = useRouter();
   const { user } = useAuth();
   const [runtimeId, setRuntimeId] = useState(problem.runtimes[0]?.id ?? "");
   const [source, setSource] = useState("");
@@ -29,7 +29,6 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"run" | "submit" | null>(null);
   const [visibility, setVisibility] = useState<SubmissionVisibility>("PRIVATE");
-  const { progress, watch, reset } = useJudgeStream();
 
   const runtime = useMemo(
     () => problem.runtimes.find((it) => it.id === runtimeId) ?? problem.runtimes[0],
@@ -56,7 +55,7 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
   };
 
   const handleRun = async () => {
-    if (!runtime || !guardLogin()) return;
+    if (!runtime || !guardLogin() || busy !== null) return;
     setBusy("run");
     setError(null);
     setRunResult(null);
@@ -69,22 +68,27 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
     }
   };
 
+  /**
+   * 제출하고 그 제출의 상세 화면으로 옮긴다 (#80).
+   *
+   * 화면에 남아 있으면 접수됐는지 알기 어렵고, 반응이 없어 보이면 한 번 더 누르게 된다.
+   * 그리고 **성공했을 때는 busy 를 풀지 않는다** — 응답이 온 뒤 이동이 끝나기 전 사이에
+   * 다시 눌릴 수 있기 때문이다. 이동하면 컴포넌트가 사라지므로 그대로 두는 편이 맞다.
+   */
   const handleSubmit = async () => {
-    if (!runtime || !guardLogin()) return;
+    if (!runtime || !guardLogin() || busy !== null) return;
     setBusy("submit");
     setError(null);
     setRunResult(null);
-    reset();
     try {
       const { submissionId } = await submissionApi.submit(problem.slug, {
         runtimeId: runtime.id,
         sourceCode: source,
         visibility,
       });
-      watch(submissionId, 0);
+      router.push(`/submissions/${submissionId}`);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "제출에 실패했습니다.");
-    } finally {
       setBusy(null);
     }
   };
@@ -142,8 +146,6 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
         <Textarea rows={3} value={stdin} onChange={(event) => setStdin(event.target.value)} />
         {runResult ? <RunResultView result={runResult} /> : null}
       </Card>
-
-      <JudgeProgressPanel progress={progress} />
     </div>
   );
 }
