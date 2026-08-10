@@ -7,7 +7,8 @@ import { Alert, Button, Card, Select, Textarea } from "./ui";
 import { ApiError, api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useJudgeStream } from "@/lib/useJudgeStream";
-import type { ProblemDetail, RunResult } from "@/lib/types";
+import { VISIBILITY_DESCRIPTIONS, VISIBILITY_LABELS } from "@/lib/labels";
+import type { ProblemDetail, RunResult, SubmissionVisibility } from "@/lib/types";
 
 /** 작성 중인 코드를 문제·언어별로 브라우저에 남겨, 새로고침해도 잃지 않게 한다. */
 const draftKey = (slug: string, runtimeId: string) => `codekr.draft.${slug}.${runtimeId}`;
@@ -26,6 +27,7 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"run" | "submit" | null>(null);
+  const [visibility, setVisibility] = useState<SubmissionVisibility>("PRIVATE");
   const { progress, watch, reset } = useJudgeStream();
 
   const runtime = useMemo(
@@ -73,7 +75,11 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
     setRunResult(null);
     reset();
     try {
-      const { submissionId } = await api.submit(problem.slug, { runtimeId: runtime.id, sourceCode: source });
+      const { submissionId } = await api.submit(problem.slug, {
+        runtimeId: runtime.id,
+        sourceCode: source,
+        visibility,
+      });
       watch(submissionId, 0);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "제출에 실패했습니다.");
@@ -111,6 +117,24 @@ export function SolveWorkspace({ problem }: { problem: ProblemDetail }) {
         value={source}
         onChange={setSource}
       />
+
+      <Card className="space-y-2 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold text-ink">소스 코드 공개 범위</h3>
+          <Select
+            className="ml-auto w-56"
+            value={visibility}
+            onChange={(event) => setVisibility(event.target.value as SubmissionVisibility)}
+          >
+            {Object.entries(VISIBILITY_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <p className="text-xs text-ink-muted">{VISIBILITY_DESCRIPTIONS[visibility]}</p>
+      </Card>
 
       <Card className="space-y-2 p-4">
         <h3 className="text-sm font-semibold text-ink">입력 (실행에만 사용)</h3>

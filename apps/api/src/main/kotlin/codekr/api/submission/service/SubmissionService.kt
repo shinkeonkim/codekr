@@ -11,12 +11,14 @@ import codekr.api.problem.service.ProblemService
 import codekr.api.queue.QueuePublisher
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.runtime.RuntimeRegistry
+import codekr.api.user.repository.UserRepository
 import codekr.api.submission.dto.RunRequest
 import codekr.api.submission.dto.RunResponse
 import codekr.api.submission.dto.SubmissionDetailResponse
 import codekr.api.submission.dto.SubmissionSummaryResponse
 import codekr.api.submission.dto.SubmitRequest
 import codekr.api.submission.dto.SubmitResponse
+import codekr.api.submission.dto.VisibilityChangeRequest
 import codekr.api.submission.entity.Submission
 import codekr.api.submission.entity.SubmissionKind
 import codekr.api.submission.repository.SubmissionRepository
@@ -35,6 +37,7 @@ class SubmissionService(
     private val problemService: ProblemService,
     private val runtimeRegistry: RuntimeRegistry,
     private val queuePublisher: QueuePublisher,
+    private val userRepository: UserRepository,
     private val properties: SubmissionProperties,
 ) {
 
@@ -68,7 +71,7 @@ class SubmissionService(
                 runtimeId = request.runtimeId,
                 sourceCode = request.sourceCode,
                 totalCount = problem.testcases.size,
-            ),
+            ).apply { changeVisibility(request.visibility) },
         )
 
         queuePublisher.publishJudgeJob(JudgeJobMessage.of(submission, problem))
@@ -82,17 +85,29 @@ class SubmissionService(
         if (submission.kind != SubmissionKind.USER && !principal.isAdmin) {
             throw ApiException(ErrorCode.SUBMISSION_NOT_FOUND)
         }
-        if (submission.userId != principal.userId && !principal.isAdmin) {
-            throw ApiException(ErrorCode.FORBIDDEN)
-        }
 
         return SubmissionDetailResponse.of(
             submission = submission,
             // 삭제된 문제라도 이력에는 보여야 하므로 소프트 삭제 여부를 따지지 않고 조회한다.
             problem = problemRepository.findById(submission.problemId).orElse(null),
             results = resultRepository.findBySubmissionIdOrderBySeqAsc(id),
+            nickname = nicknameOf(submission.userId),
+            sourceVisible = submission.isSourceVisibleTo(principal.userId, principal.isAdmin),
         )
     }
+
+    /** 공개 범위는 작성자만 바꿀 수 있다. 시점 제한은 두지 않는다 (docs/03 참고). */
+    @Transactional
+    fun changeVisibility(id: Long, principal: AuthPrincipal, request: VisibilityChangeRequest) {
+        val submission = submissionRepository.findByIdAndDeletedAtIsNull(id)
+            ?: throw ApiException(ErrorCode.SUBMISSION_NOT_FOUND)
+        if (submission.userId != principal.userId) throw ApiException(ErrorCode.FORBIDDEN)
+
+        submission.changeVisibility(request.visibility)
+    }
+
+    private fun nicknameOf(userId: Long): String =
+        userRepository.findById(userId).map { it.nickname }.orElse("(탈퇴한 사용자)")
 
     fun findMine(userId: Long, problemSlug: String?, pageable: Pageable): PageResponse<SubmissionSummaryResponse> {
         val page = problemSlug
@@ -112,9 +127,18 @@ class SubmissionService(
         // 목록에 필요한 문제 정보만 한 번에 모아 N+1 조회를 피한다.
         val problems: Map<Long, Problem> =
             problemRepository.findAllById(page.content.map { it.problemId }).associateBy { it.id }
+        val nickname = nicknameOf(userId)
 
         return PageResponse.from(
-            page.map { submission -> SubmissionSummaryResponse.of(submission, problems[submission.problemId]) },
+            page.map { submission ->
+                SubmissionSummaryResponse.of(
+                    submission = submission,
+                    problem = problems[submission.problemId],
+                    nickname = nickname,
+                    // 자기 제출이므로 항상 볼 수 있다.
+                    sourceVisible = true,
+                )
+            },
         )
     }
 
