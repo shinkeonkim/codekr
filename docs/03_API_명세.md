@@ -189,6 +189,26 @@
 
 내 제출 목록. 쿼리: `problemSlug`, `page`, `size`.
 
+### GET `/explore` 🔒 (#34)
+
+전체 회원의 제출 목록. **소스 코드는 담기지 않으며**, 상세에서 볼 수 있는지를
+`sourceVisible` 로 미리 알려준다.
+
+| 쿼리 | 설명 |
+|---|---|
+| `problemSlug` | 문제 |
+| `nickname` | 회원 닉네임 부분 일치 |
+| `runtimeId` | 실행 환경 |
+| `verdict` | 판정 |
+| `from`, `to` | 제출일 범위 (`YYYY-MM-DD`, **종료일 당일 포함**) |
+| `sort` | `LATEST`(기본) \| `OLDEST` \| `RUNTIME` \| `MEMORY` |
+| `page`, `size` | size 최대 50 |
+
+- 날짜 경계는 **Asia/Seoul** 기준이다.
+- 정렬은 항상 `id` 를 마지막 키로 둔다 — 같은 값이 여럿일 때 페이지 사이에서 순서가 흔들리면
+  중복·누락이 생긴다.
+- 정답 코드 검증 제출(#39)은 어떤 조건으로도 조회되지 않는다.
+
 ---
 
 ## 4. 실시간 — WebSocket `/ws/submissions`

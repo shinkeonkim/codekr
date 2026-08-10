@@ -22,6 +22,8 @@ import codekr.api.submission.dto.VisibilityChangeRequest
 import codekr.api.submission.entity.Submission
 import codekr.api.submission.entity.SubmissionKind
 import codekr.api.submission.repository.SubmissionRepository
+import codekr.api.submission.repository.SubmissionSearchCondition
+import codekr.api.submission.repository.SubmissionSearchRepository
 import codekr.api.submission.repository.SubmissionTestcaseResultRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -33,6 +35,7 @@ import java.time.Duration
 class SubmissionService(
     private val submissionRepository: SubmissionRepository,
     private val resultRepository: SubmissionTestcaseResultRepository,
+    private val searchRepository: SubmissionSearchRepository,
     private val problemRepository: ProblemRepository,
     private val problemService: ProblemService,
     private val runtimeRegistry: RuntimeRegistry,
@@ -104,6 +107,34 @@ class SubmissionService(
         if (submission.userId != principal.userId) throw ApiException(ErrorCode.FORBIDDEN)
 
         submission.changeVisibility(request.visibility)
+    }
+
+    /**
+     * 전체 회원의 제출 목록 (#34).
+     * 소스 코드는 담지 않고, 상세로 들어갔을 때 볼 수 있는지만 `sourceVisible` 로 알린다.
+     */
+    fun search(
+        condition: SubmissionSearchCondition,
+        pageable: Pageable,
+        principal: AuthPrincipal,
+    ): PageResponse<SubmissionSummaryResponse> {
+        val page = searchRepository.search(condition, pageable)
+
+        // 목록에 필요한 문제·회원 정보를 한 번에 모아 N+1 을 피한다.
+        val problems = problemRepository.findAllById(page.content.map { it.problemId }).associateBy { it.id }
+        val nicknames = userRepository.findAllById(page.content.map { it.userId })
+            .associate { it.id to it.nickname }
+
+        return PageResponse.from(
+            page.map { submission ->
+                SubmissionSummaryResponse.of(
+                    submission = submission,
+                    problem = problems[submission.problemId],
+                    nickname = nicknames[submission.userId] ?: "(탈퇴한 사용자)",
+                    sourceVisible = submission.isSourceVisibleTo(principal.userId, principal.isAdmin),
+                )
+            },
+        )
     }
 
     private fun nicknameOf(userId: Long): String =

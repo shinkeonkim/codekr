@@ -1,0 +1,178 @@
+package codekr.api.submission
+
+import codekr.api.auth.security.JwtTokenProvider
+import codekr.api.problem.entity.Difficulty
+import codekr.api.problem.entity.Problem
+import codekr.api.problem.entity.ProblemCategory
+import codekr.api.problem.entity.ProblemTestcase
+import codekr.api.problem.entity.TestcaseVisibility
+import codekr.api.problem.repository.ProblemRepository
+import codekr.api.queue.message.JudgeEventMessage
+import codekr.api.submission.service.JudgeResultRecorder
+import codekr.api.support.IntegrationTestBase
+import codekr.api.user.entity.User
+import codekr.api.user.entity.UserRole
+import codekr.api.user.repository.UserRepository
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.transaction.support.TransactionTemplate
+
+class SubmissionExploreIntegrationTest : IntegrationTestBase() {
+
+    @Autowired private lateinit var userRepository: UserRepository
+    @Autowired private lateinit var problemRepository: ProblemRepository
+    @Autowired private lateinit var recorder: JudgeResultRecorder
+    @Autowired private lateinit var tokenProvider: JwtTokenProvider
+    @Autowired private lateinit var transactionTemplate: TransactionTemplate
+
+    private lateinit var aliceToken: String
+    private lateinit var bobToken: String
+
+    @BeforeEach
+    fun setUp() {
+        aliceToken = tokenProvider.issueAccessToken(
+            userRepository.save(User("alice@codekr.dev", "x", "앨리스", UserRole.USER)),
+        )
+        bobToken = tokenProvider.issueAccessToken(
+            userRepository.save(User("bob@codekr.dev", "x", "밥", UserRole.USER)),
+        )
+        transactionTemplate.executeWithoutResult {
+            listOf("two-sum", "reverse-words").forEach { slug ->
+                problemRepository.save(
+                    Problem(
+                        slug = slug, title = slug,
+                        category = ProblemCategory.ALGORITHM, difficultyLevel = Difficulty.BRONZE_5.level,
+                        description = "설명", published = true,
+                    ),
+                ).addTestcases(listOf(ProblemTestcase(1, "1 2\n", "3\n", TestcaseVisibility.PUBLIC)))
+            }
+        }
+    }
+
+    @Test
+    fun `다른 회원의 제출도 목록에 보인다`() {
+        submit(aliceToken, "two-sum")
+        submit(bobToken, "two-sum")
+
+        mockMvc.perform(get("/api/v1/submissions/explore").header("Authorization", "Bearer $aliceToken"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(2))
+            // 내 제출 목록(GET /submissions)은 여전히 내 것만 보여준다.
+            .andExpect(jsonPath("$.content[*].nickname").value(org.hamcrest.Matchers.hasItem("밥")))
+    }
+
+    @Test
+    fun `내 제출 목록은 여전히 내 것만 보여준다`() {
+        submit(aliceToken, "two-sum")
+        submit(bobToken, "two-sum")
+
+        mockMvc.perform(get("/api/v1/submissions").header("Authorization", "Bearer $aliceToken"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(1))
+    }
+
+    @Test
+    fun `문제 회원 런타임 판정 필터가 각각 동작한다`() {
+        val aliceId = submit(aliceToken, "two-sum")
+        submit(bobToken, "reverse-words")
+        complete(aliceId, "ACCEPTED")
+
+        fun explore(query: String) =
+            mockMvc.perform(get("/api/v1/submissions/explore?$query").header("Authorization", "Bearer $aliceToken"))
+                .andExpect(status().isOk)
+
+        explore("problemSlug=two-sum").andExpect(jsonPath("$.totalElements").value(1))
+        explore("nickname=밥").andExpect(jsonPath("$.totalElements").value(1))
+        explore("runtimeId=python:3.12").andExpect(jsonPath("$.totalElements").value(2))
+        explore("runtimeId=ruby:3.4").andExpect(jsonPath("$.totalElements").value(0))
+        explore("verdict=ACCEPTED").andExpect(jsonPath("$.totalElements").value(1))
+    }
+
+    @Test
+    fun `필터를 조합해도 결과와 전체 건수가 일치한다`() {
+        val aliceId = submit(aliceToken, "two-sum")
+        submit(bobToken, "two-sum")
+        complete(aliceId, "ACCEPTED")
+
+        mockMvc.perform(
+            get("/api/v1/submissions/explore?problemSlug=two-sum&nickname=앨리스&verdict=ACCEPTED")
+                .header("Authorization", "Bearer $aliceToken"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].nickname").value("앨리스"))
+    }
+
+    @Test
+    fun `제출일 범위 필터는 종료일 당일을 포함한다`() {
+        submit(aliceToken, "two-sum")
+        val today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"))
+
+        mockMvc.perform(
+            get("/api/v1/submissions/explore?from=$today&to=$today")
+                .header("Authorization", "Bearer $aliceToken"),
+        ).andExpect(status().isOk).andExpect(jsonPath("$.totalElements").value(1))
+
+        mockMvc.perform(
+            get("/api/v1/submissions/explore?from=${today.plusDays(1)}")
+                .header("Authorization", "Bearer $aliceToken"),
+        ).andExpect(status().isOk).andExpect(jsonPath("$.totalElements").value(0))
+    }
+
+    @Test
+    fun `페이지 경계에서 중복이나 누락이 없다`() {
+        repeat(5) { submit(aliceToken, "two-sum") }
+
+        val firstPage = idsOf("size=2&page=0")
+        val secondPage = idsOf("size=2&page=1")
+        val thirdPage = idsOf("size=2&page=2")
+
+        val all = firstPage + secondPage + thirdPage
+        assert(all.size == 5) { "총 5건이어야 합니다: $all" }
+        assert(all.toSet().size == 5) { "페이지 간 중복이 있습니다: $all" }
+    }
+
+    @Test
+    fun `목록에는 소스 코드가 담기지 않는다`() {
+        submit(bobToken, "two-sum")
+
+        mockMvc.perform(get("/api/v1/submissions/explore").header("Authorization", "Bearer $aliceToken"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content[0].sourceCode").doesNotExist())
+            .andExpect(jsonPath("$.content[0].sourceVisible").value(false))
+    }
+
+    private fun idsOf(query: String): List<Int> {
+        val body = mockMvc.perform(
+            get("/api/v1/submissions/explore?$query").header("Authorization", "Bearer $aliceToken"),
+        ).andExpect(status().isOk).andReturn().response.contentAsString
+        return Regex("\"id\":(\\d+)").findAll(body).map { it.groupValues[1].toInt() }.toList()
+    }
+
+    private fun complete(submissionId: Long, verdict: String) {
+        recorder.record(
+            JudgeEventMessage(
+                type = "COMPLETED", submissionId = submissionId,
+                verdict = verdict, passedCount = 1, totalCount = 1,
+            ),
+        )
+    }
+
+    private fun submit(token: String, slug: String): Long {
+        val response = mockMvc.perform(
+            post("/api/v1/problems/$slug/submissions")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"runtimeId":"python:3.12","sourceCode":"print(3)"}"""),
+        ).andExpect(status().isAccepted).andReturn().response.contentAsString
+
+        return Regex("\"submissionId\":(\\d+)").find(response)!!.groupValues[1].toLong()
+    }
+}
