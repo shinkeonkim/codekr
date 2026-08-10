@@ -22,6 +22,7 @@ import codekr.api.submission.dto.SubmitResponse
 import codekr.api.submission.dto.VisibilityChangeRequest
 import codekr.api.submission.entity.Submission
 import codekr.api.submission.entity.SubmissionKind
+import codekr.api.submission.entity.SubmissionVisibility
 import codekr.api.submission.repository.SubmissionRepository
 import codekr.api.submission.repository.SubmissionSearchCondition
 import codekr.api.submission.repository.SubmissionSearchRepository
@@ -78,7 +79,9 @@ class SubmissionService(
                 runtimeId = request.runtimeId,
                 sourceCode = request.sourceCode,
                 totalCount = problem.testcases.size,
-            ).apply { changeVisibility(request.visibility) },
+                // 요청에 없으면 사용자 기본값을 쓴다 (#104).
+                // **서버에서 채운다** — 화면이 기본값을 알고 보내는 방식이면 화면마다 어긋난다.
+            ).apply { changeVisibility(request.visibility ?: defaultVisibilityOf(userId)) },
         )
 
         queuePublisher.publishJudgeJob(
@@ -143,6 +146,11 @@ class SubmissionService(
             },
         )
     }
+
+    private fun defaultVisibilityOf(userId: Long): SubmissionVisibility =
+        userRepository.findById(userId)
+            .map { it.defaultSubmissionVisibility }
+            .orElse(SubmissionVisibility.PRIVATE)
 
     private fun nicknameOf(userId: Long): String =
         userRepository.findById(userId).map { it.nickname }.orElse("(탈퇴한 사용자)")

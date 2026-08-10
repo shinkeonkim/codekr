@@ -55,6 +55,9 @@ export function SiteHeader() {
                 <UserLink nickname={user.nickname} />
                 {isAdmin ? " (관리자)" : ""}
               </span>
+              <Link href="/settings">
+                <Button variant="ghost">설정</Button>
+              </Link>
               <Button variant="ghost" onClick={signOut}>
                 로그아웃
               </Button>

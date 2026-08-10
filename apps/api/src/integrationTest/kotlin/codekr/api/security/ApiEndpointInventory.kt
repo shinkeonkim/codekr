@@ -67,6 +67,8 @@ object ApiEndpointInventory {
         // --- 활동·프로필 ---
         Endpoint("GET", "/api/v1/users/me/activity", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/users/{nickname}", Access.AUTHENTICATED),
+        Endpoint("GET", "/api/v1/users/me/settings", Access.AUTHENTICATED),
+        Endpoint("PATCH", "/api/v1/users/me/settings", Access.AUTHENTICATED),
 
         // --- 어드민 ---
         Endpoint("GET", "/api/v1/admin/problems", Access.ADMIN, UserRole.PROBLEM_SETTER),

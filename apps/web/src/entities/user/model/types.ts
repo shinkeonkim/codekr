@@ -1,3 +1,4 @@
+import type { SubmissionVisibility } from "@/entities/submission";
 import type { DifficultyTier } from "@/entities/problem";
 
 /** 서버가 내려주는 사용자 표현. */
@@ -47,4 +48,14 @@ export interface UserProfile {
   /** 전체 기간 기준 (#81). */
   currentStreak: number;
   longestStreak: number;
+}
+
+/**
+ * 내 설정 (#104).
+ *
+ * 지금은 항목이 하나지만 앞으로 들어올 것들의 자리이기도 하다 —
+ * 알림 카테고리별 수신 설정(#106)이 여기 붙는다.
+ */
+export interface UserSettings {
+  defaultSubmissionVisibility: SubmissionVisibility;
 }

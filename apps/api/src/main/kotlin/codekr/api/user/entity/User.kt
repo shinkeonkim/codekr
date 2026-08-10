@@ -1,6 +1,7 @@
 package codekr.api.user.entity
 
 import codekr.api.common.entity.BaseTimeEntity
+import codekr.api.submission.entity.SubmissionVisibility
 import jakarta.persistence.CollectionTable
 import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
@@ -28,6 +29,16 @@ class User(
     var nickname: String,
 
     roles: Set<UserRole> = setOf(UserRole.USER),
+
+    /**
+     * 제출할 때 기본으로 적용할 소스 공개 범위 (#104).
+     *
+     * 제출마다 바꾸는 것은 그대로 가능하다. 이 값은 **앞으로의 제출**에만 쓰인다 —
+     * 이미 낸 제출의 범위를 소급해서 바꾸지 않는다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "default_submission_visibility", nullable = false, length = 20)
+    var defaultSubmissionVisibility: SubmissionVisibility = SubmissionVisibility.PRIVATE,
 
 ) : BaseTimeEntity() {
 

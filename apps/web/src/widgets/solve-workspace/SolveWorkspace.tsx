@@ -3,6 +3,7 @@
 import type { ProblemDetail, Runtime } from "@/entities/problem";
 import { VISIBILITY_DESCRIPTIONS, VISIBILITY_LABELS, submissionApi } from "@/entities/submission";
 import type { RunResult, SubmissionVisibility } from "@/entities/submission";
+import { userApi } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
@@ -34,6 +35,8 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"run" | "submit" | null>(null);
+  // 사용자 기본값에서 시작한다 (#104). 불러오기 전에는 가장 좁은 범위를 보여준다 —
+  // 잠깐이라도 실제보다 넓은 범위가 보이면 그걸 믿고 제출하게 된다.
   const [visibility, setVisibility] = useState<SubmissionVisibility>("PRIVATE");
 
   const runtime = useMemo(
@@ -44,6 +47,14 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
   useEffect(() => {
     if (runtime) onRuntimeChange?.(runtime);
   }, [runtime, onRuntimeChange]);
+
+  useEffect(() => {
+    if (!user) return;
+    userApi
+      .settings()
+      .then((settings) => setVisibility(settings.defaultSubmissionVisibility))
+      .catch(() => undefined);
+  }, [user]);
 
   // 언어가 바뀌면 저장해 둔 초안을 불러오고, 없으면 템플릿에서 시작한다.
   // 렌더 중 상태를 맞추는 방식이라 이펙트로 인한 추가 렌더가 생기지 않는다.
