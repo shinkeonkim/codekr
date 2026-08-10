@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/*
+ * 디자인 토큰. 색은 여기서만 정의하고 화면에서는 시맨틱 이름으로만 쓴다.
+ * 라이트/다크 모두 같은 토큰 이름을 쓰므로 컴포넌트는 테마를 알 필요가 없다.
+ */
+@theme {
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f7f9;
+  --color-border: #e4e7ec;
+  --color-ink: #14181f;
+  --color-ink-muted: #5b6472;
+  --color-brand: #2f5bea;
+  --color-brand-ink: #ffffff;
+
+  /* 난이도 티어 색 (solved.ac 체계) */
+  --color-tier-bronze: #9c6644;
+  --color-tier-silver: #6b7684;
+  --color-tier-gold: #b78500;
+  --color-tier-platinum: #1a917f;
+  --color-tier-diamond: #1f6fd6;
+  --color-tier-ruby: #c2185b;
+
+  --color-ok: #0f8a4d;
+  --color-warn: #b7791f;
+  --color-danger: #c62f2f;
+  --color-info: #2f5bea;
+
+  --radius-card: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-surface: #12151b;
+    --color-surface-muted: #1a1f28;
+    --color-border: #2a313d;
+    --color-ink: #eef1f6;
+    --color-ink-muted: #98a2b3;
+    --color-brand: #7c9bff;
+    --color-brand-ink: #0b0e13;
+
+    --color-tier-bronze: #c08552;
+    --color-tier-silver: #9aa5b4;
+    --color-tier-gold: #e5b100;
+    --color-tier-platinum: #2bc4aa;
+    --color-tier-diamond: #5ba4f5;
+    --color-tier-ruby: #f2558a;
+
+    --color-ok: #4ade80;
+    --color-warn: #fbbf24;
+    --color-danger: #f87171;
+    --color-info: #7c9bff;
+  }
+}
+
+html,
+body {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+}
+
+body {
+  font-family:
+    "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 문제 지문(마크다운 유사 텍스트)의 기본 리듬 */
+.prose-kr {
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
