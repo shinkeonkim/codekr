@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.support.TransactionTemplate
+import kotlin.test.assertEquals
 
 class ProblemSearchIntegrationTest : IntegrationTestBase() {
 
@@ -133,4 +134,29 @@ class ProblemSearchIntegrationTest : IntegrationTestBase() {
         description = "설명",
         published = published,
     )
+
+    @Test
+    fun `정렬 기준마다 순서가 달라진다`() {
+        // 웹이 이 파라미터를 보내지 않아 목록이 늘 최신순이었다 (#132).
+        mockMvc.perform(get("/api/v1/problems").param("sort", "DIFFICULTY"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content[0].difficultyLevel").value(1))
+
+        mockMvc.perform(get("/api/v1/problems").param("sort", "TITLE"))
+            .andExpect(status().isOk)
+
+        // 기본은 최신순이다 — 인자를 보내지 않던 화면이 그대로 돌아야 한다.
+        val latest = mockMvc.perform(get("/api/v1/problems"))
+            .andReturn().response.contentAsString
+        val explicit = mockMvc.perform(get("/api/v1/problems").param("sort", "LATEST"))
+            .andReturn().response.contentAsString
+        assertEquals(latest, explicit)
+    }
+
+    @Test
+    fun `알 수 없는 정렬 기준은 거부한다`() {
+        // 조용히 최신순으로 넘어가면 사용자는 정렬이 안 먹는다고 느낀다.
+        mockMvc.perform(get("/api/v1/problems").param("sort", "POPULAR"))
+            .andExpect(status().isBadRequest)
+    }
 }

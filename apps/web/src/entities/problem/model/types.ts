@@ -121,6 +121,20 @@ export interface ProblemVerification {
  */
 export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "QUIZ" | "MANUAL";
 
+/**
+ * 문제 목록 정렬 (#132). 서버의 `ProblemSort` 와 같은 값이다.
+ *
+ * **방향은 기준마다 하나로 고정한다.** 오름/내림을 열면 값이 두 배가 되는데,
+ * "제목 내림차순" 처럼 아무도 쓰지 않는 조합이 절반이다.
+ */
+export type ProblemSort = "LATEST" | "TITLE" | "DIFFICULTY";
+
+export const PROBLEM_SORTS: { value: ProblemSort; label: string }[] = [
+  { value: "LATEST", label: "최신순" },
+  { value: "DIFFICULTY", label: "쉬운순" },
+  { value: "TITLE", label: "제목순" },
+];
+
 /** 지금 고를 수 있는 채점 방식. 나머지는 채점기 구현이 없어 서버가 거절한다. */
 export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_STDIO: "코드 실행 (stdin/stdout)",
