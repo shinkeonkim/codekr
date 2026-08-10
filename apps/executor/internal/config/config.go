@@ -13,7 +13,9 @@ type Config struct {
 	RuntimesPath     string
 	Concurrency      int
 	CompileTimeoutMs int
-	MaxOutputBytes   int
+	// 컴파일 단계에 허용할 메모리. 툴체인은 사용자 프로그램보다 훨씬 많이 쓴다.
+	CompileMemoryLimitMb int
+	MaxOutputBytes       int
 	// ConsumerName 은 Redis consumer group 안에서 이 인스턴스를 식별한다.
 	ConsumerName string
 }
@@ -25,13 +27,14 @@ func Load() Config {
 		hostname = "executor"
 	}
 	return Config{
-		RedisAddr:        env("CODEKR_REDIS_ADDR", "localhost:16379"),
-		HTTPAddr:         env("CODEKR_HTTP_ADDR", ":8081"),
-		RuntimesPath:     env("CODEKR_RUNTIMES_PATH", "/etc/codekr/runtimes.yaml"),
-		Concurrency:      envInt("EXECUTOR_CONCURRENCY", 4),
-		CompileTimeoutMs: envInt("EXECUTOR_COMPILE_TIMEOUT_MS", 15000),
-		MaxOutputBytes:   envInt("EXECUTOR_MAX_OUTPUT_BYTES", 65536),
-		ConsumerName:     env("CODEKR_CONSUMER_NAME", hostname),
+		RedisAddr:            env("CODEKR_REDIS_ADDR", "localhost:16379"),
+		HTTPAddr:             env("CODEKR_HTTP_ADDR", ":8081"),
+		RuntimesPath:         env("CODEKR_RUNTIMES_PATH", "/etc/codekr/runtimes.yaml"),
+		Concurrency:          envInt("EXECUTOR_CONCURRENCY", 4),
+		CompileTimeoutMs:     envInt("EXECUTOR_COMPILE_TIMEOUT_MS", 15000),
+		CompileMemoryLimitMb: envInt("EXECUTOR_COMPILE_MEMORY_MB", 1024),
+		MaxOutputBytes:       envInt("EXECUTOR_MAX_OUTPUT_BYTES", 65536),
+		ConsumerName:         env("CODEKR_CONSUMER_NAME", hostname),
 	}
 }
 

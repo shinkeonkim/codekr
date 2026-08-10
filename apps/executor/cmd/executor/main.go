@@ -52,7 +52,7 @@ func main() {
 		"redis", cfg.RedisAddr, "http", cfg.HTTPAddr,
 		"concurrency", cfg.Concurrency, "runtimes", registry.Images())
 
-	runner := worker.NewRunner(registry, box, cfg.CompileTimeoutMs, cfg.MaxOutputBytes)
+	runner := worker.NewRunner(registry, box, cfg.CompileTimeoutMs, cfg.CompileMemoryLimitMb, cfg.MaxOutputBytes)
 	consumer := worker.NewConsumer(redisClient, runner, cfg.ConsumerName, cfg.Concurrency, log)
 	if err := consumer.Start(ctx); err != nil {
 		log.Error("실행 큐 소비 실패", "error", err)

@@ -17,6 +17,9 @@ type Definition struct {
 	SourceFile string   `yaml:"sourceFile"`
 	Compile    []string `yaml:"compile"`
 	Run        []string `yaml:"run"`
+	// Template 은 실행에 쓰이지 않지만, "기본 템플릿이 실제로 컴파일·실행되는가"를
+	// 검증하는 데 필요해 함께 읽는다.
+	Template string `yaml:"template"`
 }
 
 // NeedsCompile 은 실행 전 컴파일 단계가 필요한지 알려준다.
@@ -66,11 +69,25 @@ func (r *Registry) Find(id string) (Definition, bool) {
 	return def, ok
 }
 
-// Images 는 등록된 모든 런타임 이미지 목록을 돌려준다 (사전 pull 확인용).
+// Images 는 등록된 모든 런타임 이미지 목록을 돌려준다 (사전 pull 확인용). 중복은 제거한다.
 func (r *Registry) Images() []string {
+	seen := make(map[string]struct{}, len(r.byID))
 	images := make([]string, 0, len(r.byID))
 	for _, def := range r.byID {
+		if _, ok := seen[def.Image]; ok {
+			continue
+		}
+		seen[def.Image] = struct{}{}
 		images = append(images, def.Image)
 	}
 	return images
+}
+
+// All 은 등록된 모든 런타임 정의를 돌려준다.
+func (r *Registry) All() []Definition {
+	all := make([]Definition, 0, len(r.byID))
+	for _, def := range r.byID {
+		all = append(all, def)
+	}
+	return all
 }

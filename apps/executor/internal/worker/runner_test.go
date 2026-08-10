@@ -42,7 +42,7 @@ runtimes:
 	if err != nil {
 		t.Fatalf("테스트 레지스트리 준비 실패: %v", err)
 	}
-	return NewRunner(registry, box, 15000, 65536)
+	return NewRunner(registry, box, 15000, 1024, 65536)
 }
 
 func TestRunReturnsSystemErrorForUnknownRuntime(t *testing.T) {

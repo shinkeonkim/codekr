@@ -83,7 +83,8 @@ class ProblemSearchIntegrationTest : IntegrationTestBase() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.examples.length()").value(1))
             .andExpect(jsonPath("$.examples[0].input").value("1 2\n"))
-            .andExpect(jsonPath("$.runtimes.length()").value(3))
+            // 런타임 개수는 정의 파일이 늘어나면 바뀐다 — 개수가 아니라 존재를 확인한다.
+            .andExpect(jsonPath("$.runtimes[?(@.id == 'python:3.12')]").exists())
     }
 
     @Test

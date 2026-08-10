@@ -26,25 +26,39 @@ const (
 	stdinFile = "/work/input.txt"
 )
 
-// buildScript 는 컨테이너 안에서 실행할 래퍼 스크립트를 만든다.
+// buildCompileScript 는 소스를 컴파일하는 단계의 스크립트를 만든다.
 //
-// 래퍼가 필요한 이유는 세 가지다.
-//   - 컴파일 실패를 실행 실패와 구분해야 한다 (약속된 종료 코드 91).
-//   - 시간 제한은 컴파일 시간을 포함하지 않아야 한다 (실행 단계에만 timeout 적용).
-//   - 실행 시간과 최대 메모리는 컨테이너 안에서 재야 정확하다 (컨테이너 기동 시간 제외).
-func buildScript(spec Spec, nonce string) string {
-	var b strings.Builder
-	b.WriteString("set -u\ncd " + workDir + "\n")
-
-	if len(spec.Compile) > 0 {
-		compileSeconds := seconds(spec.CompileTimeoutMs)
-		b.WriteString("if ! timeout -k 1 " + compileSeconds + " " + quoteAll(spec.Compile) + " >/work/.compile 2>&1; then\n")
-		b.WriteString("  cat /work/.compile >&2\n")
-		fmt.Fprintf(&b, "  printf '\\n%s exit=%d wall_ms=0 mem_bytes=0\\n'\n", nonce, compileFailedExitCode)
-		fmt.Fprintf(&b, "  exit %d\n", compileFailedExitCode)
-		b.WriteString("fi\n")
+// 컴파일을 실행과 분리한 이유는 자원 한도가 다르기 때문이다. 툴체인(go build, dotnet build,
+// kotlinc)은 사용자 프로그램보다 훨씬 많은 메모리와 임시 공간을 쓴다. 문제의 메모리 제한을
+// 컴파일에까지 적용하면 "256MB 문제"는 Go 로 아예 풀 수 없게 된다 — 제한의 의미가 왜곡된다.
+// 그래서 컴파일은 넉넉한 한도에서 돌리고, 끝난 뒤 문제의 한도로 낮춘 다음 실행한다.
+//
+// 컴파일이 필요 없는 런타임이면 빈 문자열을 돌려준다.
+func buildCompileScript(spec Spec, nonce string) string {
+	if len(spec.Compile) == 0 {
+		return ""
 	}
 
+	var b strings.Builder
+	b.WriteString("set -u\ncd " + workDir + "\n")
+	b.WriteString("if ! timeout -k 1 " + seconds(spec.CompileTimeoutMs) + " " +
+		quoteAll(spec.Compile) + " >/work/.compile 2>&1; then\n")
+	b.WriteString("  cat /work/.compile >&2\n")
+	fmt.Fprintf(&b, "  printf '\\n%s exit=%d wall_ms=0 mem_bytes=0\\n'\n", nonce, compileFailedExitCode)
+	fmt.Fprintf(&b, "  exit %d\n", compileFailedExitCode)
+	b.WriteString("fi\n")
+	// 빌드 캐시는 실행 단계의 메모리 한도를 잡아먹는다 (작업 디렉터리가 tmpfs 다).
+	b.WriteString("rm -rf /work/.gocache /work/.compile /work/obj\n")
+	return b.String()
+}
+
+// buildRunScript 는 사용자 프로그램을 실행하고 계측 값을 남기는 단계의 스크립트를 만든다.
+//
+// 시간 제한은 이 단계에만 적용된다. 실행 시간과 최대 메모리도 컨테이너 안에서 재야
+// 컨테이너 기동 시간이 섞이지 않는다.
+func buildRunScript(spec Spec, nonce string) string {
+	var b strings.Builder
+	b.WriteString("set -u\ncd " + workDir + "\n")
 	b.WriteString("START=$(cut -d' ' -f1 /proc/uptime)\n")
 	b.WriteString("timeout -k 1 " + seconds(spec.TimeLimitMs) + " " + quoteAll(spec.Run) + " < " + stdinFile + "\n")
 	b.WriteString("CODE=$?\n")
@@ -61,6 +75,12 @@ func buildScript(spec Spec, nonce string) string {
 	return b.String()
 }
 
+// stageScripts 는 단계별 스크립트다. compile 은 컴파일이 필요 없으면 빈 문자열이다.
+type stageScripts struct {
+	compile string
+	run     string
+}
+
 // newNonce 는 계측 줄을 사용자 출력과 구분하기 위한 1회용 표식을 만든다.
 func newNonce() string {
 	buf := make([]byte, 12)
@@ -72,7 +92,7 @@ func newNonce() string {
 
 // buildInputArchive 는 소스, 표준 입력, 래퍼 스크립트를 담은 tar 를 base64 로 감싸 돌려준다.
 // 컨테이너 표준 입력으로 흘려 넣으면 작업 디렉터리에 그대로 풀린다.
-func buildInputArchive(spec Spec, script string) (io.Reader, error) {
+func buildInputArchive(spec Spec, scripts stageScripts) (io.Reader, error) {
 	var buf bytes.Buffer
 	writer := tar.NewWriter(&buf)
 
@@ -83,7 +103,8 @@ func buildInputArchive(spec Spec, script string) (io.Reader, error) {
 	}{
 		{spec.SourceFile, spec.SourceCode, 0o644},
 		{"input.txt", spec.Stdin, 0o644},
-		{"run.sh", script, 0o755},
+		{"compile.sh", scripts.compile, 0o755},
+		{"run.sh", scripts.run, 0o755},
 	}
 
 	for _, file := range files {

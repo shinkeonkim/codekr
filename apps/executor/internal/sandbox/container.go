@@ -23,9 +23,20 @@ type capturedOutput struct {
 	truncated bool
 }
 
-// 표준 입력으로 들어온 base64 tar 를 작업 디렉터리에 풀고 래퍼 스크립트를 실행한다.
-const unpackAndRunCommand = "cd " + workDir +
-	" && base64 -d > bundle.tar && tar xf bundle.tar && rm -f bundle.tar && exec sh run.sh"
+// runCommand 는 2단계에서 사용자 프로그램을 실행한다.
+const runCommand = "cd " + workDir + " && exec sh run.sh"
+
+const bytesPerMb = 1024 * 1024
+
+// unpackCommand 는 표준 입력으로 들어온 base64 tar 를 작업 디렉터리에 풀고,
+// 컴파일이 필요한 런타임이면 이어서 컴파일까지 수행한다.
+func unpackCommand(scripts stageScripts) string {
+	unpack := "cd " + workDir + " && base64 -d > bundle.tar && tar xf bundle.tar && rm -f bundle.tar"
+	if scripts.compile == "" {
+		return unpack
+	}
+	return unpack + " && exec sh compile.sh"
+}
 
 // containerSandbox 는 컨테이너 런타임에 형제 컨테이너를 띄워 코드를 실행한다.
 //
@@ -69,12 +80,27 @@ func (s *containerSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) 
 	}
 
 	nonce := newNonce()
-	payload, err := buildInputArchive(spec, buildScript(spec, nonce))
+	scripts := stageScripts{compile: buildCompileScript(spec, nonce), run: buildRunScript(spec, nonce)}
+	payload, err := buildInputArchive(spec, scripts)
 	if err != nil {
 		return Outcome{}, err
 	}
 
-	captured, err := s.exec(ctx, containerID, payload, spec.MaxOutputBytes)
+	// 1단계: 작업 파일을 심고, 필요하면 컴파일한다 (넉넉한 메모리 한도).
+	captured, err := s.exec(ctx, containerID, unpackCommand(scripts), payload, spec.MaxOutputBytes)
+	if err != nil {
+		return Outcome{}, err
+	}
+	if output, collected := splitMetrics(captured.stdout, nonce); collected.present {
+		// 계측 줄이 이 단계에서 나왔다면 컴파일이 실패한 것이다.
+		return toOutcome(collected, output, captured.stderr, captured.truncated, spec.TimeLimitMs), nil
+	}
+
+	// 2단계: 문제의 메모리 한도로 낮춘 뒤 사용자 프로그램을 실행한다.
+	if err := s.applyRunMemoryLimit(ctx, containerID, spec); err != nil {
+		return Outcome{}, err
+	}
+	captured, err = s.exec(ctx, containerID, runCommand, nil, spec.MaxOutputBytes)
 	if err != nil {
 		return Outcome{}, err
 	}
@@ -83,8 +109,25 @@ func (s *containerSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) 
 	return toOutcome(collected, userOutput, captured.stderr, captured.truncated, spec.TimeLimitMs), nil
 }
 
+// applyRunMemoryLimit 은 컴파일 단계에 열어 둔 여유를 걷고 문제의 메모리 제한을 건다.
+// 컴파일이 없었다면 이미 문제의 한도로 만들어졌으므로 아무것도 하지 않는다.
+func (s *containerSandbox) applyRunMemoryLimit(ctx context.Context, containerID string, spec Spec) error {
+	if len(spec.Compile) == 0 {
+		return nil
+	}
+	memoryBytes := int64(spec.MemoryLimitMb) * bytesPerMb
+	_, err := s.cli.ContainerUpdate(ctx, containerID, client.ContainerUpdateOptions{
+		Resources: &container.Resources{Memory: memoryBytes, MemorySwap: memoryBytes},
+	})
+	if err != nil {
+		return fmt.Errorf("실행 단계 메모리 제한 적용 실패: %w", err)
+	}
+	return nil
+}
+
 func (s *containerSandbox) create(ctx context.Context, spec Spec, budget time.Duration) (string, error) {
-	memoryBytes := int64(spec.MemoryLimitMb) * 1024 * 1024
+	// 컴파일 단계에 필요한 여유를 먼저 열어 두고, 실행 직전에 문제의 한도로 낮춘다.
+	memoryBytes := int64(startupMemoryLimitMb(spec)) * bytesPerMb
 	pidsLimit := int64(128)
 
 	created, err := s.cli.ContainerCreate(ctx, client.ContainerCreateOptions{
@@ -100,9 +143,11 @@ func (s *containerSandbox) create(ctx context.Context, spec Spec, budget time.Du
 			NetworkMode:    "none",
 			ReadonlyRootfs: true,
 			// 작업 디렉터리만 쓰기 가능하게 열고 나머지는 읽기 전용으로 둔다.
+			// 컴파일 산출물과 임시 파일이 여기 쌓인다. tmpfs 사용량은 메모리 한도에도
+			// 포함되므로, 실행 단계로 넘어가기 전에 컴파일 캐시를 지운다 (compile.sh).
 			Tmpfs: map[string]string{
-				workDir: "rw,exec,mode=1777,size=64m",
-				"/tmp":  "rw,mode=1777,size=32m",
+				workDir: "rw,exec,mode=1777,size=512m",
+				"/tmp":  "rw,mode=1777,size=256m",
 			},
 			Resources: container.Resources{
 				Memory: memoryBytes,
@@ -129,13 +174,14 @@ func (s *containerSandbox) create(ctx context.Context, spec Spec, budget time.Du
 func (s *containerSandbox) exec(
 	ctx context.Context,
 	containerID string,
+	command string,
 	payload io.Reader,
 	maxOutput int,
 ) (capturedOutput, error) {
 	created, err := s.cli.ExecCreate(ctx, containerID, client.ExecCreateOptions{
 		User:         sandboxUser,
-		Cmd:          []string{"sh", "-c", unpackAndRunCommand},
-		AttachStdin:  true,
+		Cmd:          []string{"sh", "-c", command},
+		AttachStdin:  payload != nil,
 		AttachStdout: true,
 		AttachStderr: true,
 	})
@@ -150,10 +196,12 @@ func (s *containerSandbox) exec(
 	defer attached.Close()
 
 	// 페이로드를 다 보내고 쓰기 방향을 닫아야 컨테이너 쪽 base64 가 EOF 를 본다.
-	go func() {
-		_, _ = io.Copy(attached.Conn, payload)
-		_ = attached.CloseWrite()
-	}()
+	if payload != nil {
+		go func() {
+			_, _ = io.Copy(attached.Conn, payload)
+			_ = attached.CloseWrite()
+		}()
+	}
 
 	var outBuf, errBuf strings.Builder
 	limit := int64(maxOutput)
@@ -177,6 +225,15 @@ func (s *containerSandbox) remove(containerID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	_, _ = s.cli.ContainerRemove(ctx, containerID, client.ContainerRemoveOptions{Force: true})
+}
+
+// startupMemoryLimitMb 는 컨테이너를 만들 때 걸 메모리 한도다.
+// 컴파일이 있는 런타임은 툴체인이 쓸 만큼 열어 둔다 (docs/06_실행_제약_계약.md).
+func startupMemoryLimitMb(spec Spec) int {
+	if len(spec.Compile) == 0 || spec.CompileMemoryLimitMb <= spec.MemoryLimitMb {
+		return spec.MemoryLimitMb
+	}
+	return spec.CompileMemoryLimitMb
 }
 
 // lifetime 은 컨테이너에 허용할 전체 수명이다. 컴파일 + 실행 + 여유를 더한다.
