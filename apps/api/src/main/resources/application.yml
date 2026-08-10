@@ -47,6 +47,12 @@ codekr:
     secret: ${CODEKR_JWT_SECRET:local-development-only-secret-change-me-please-32b}
     access-ttl-seconds: ${CODEKR_JWT_ACCESS_TTL_SECONDS:3600}
     refresh-ttl-seconds: ${CODEKR_JWT_REFRESH_TTL_SECONDS:1209600}
+  retention:
+    # 소프트 삭제된 행을 실제로 지우기까지의 유예 (#46)
+    enabled: ${CODEKR_RETENTION_ENABLED:true}
+    problem-days: ${CODEKR_RETENTION_PROBLEM_DAYS:90}
+    problem-child-days: ${CODEKR_RETENTION_PROBLEM_CHILD_DAYS:30}
+    batch-size: ${CODEKR_RETENTION_BATCH_SIZE:500}
   submission:
     max-source-code-bytes: 65536
     # 이 시간이 지나도 채점이 끝나지 않은 제출은 SYSTEM_ERROR 로 종결한다 (ADR-0004).
