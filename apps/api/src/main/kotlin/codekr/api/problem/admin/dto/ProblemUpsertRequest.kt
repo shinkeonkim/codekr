@@ -46,4 +46,8 @@ data class ProblemUpsertRequest(
 
     @field:Valid
     val templates: List<TemplateRequest> = emptyList(),
+
+    /** 선택 사항. 넣으면 전체 테스트케이스를 이 코드로 검증할 수 있다 (#39). */
+    @field:Valid
+    val solution: SolutionRequest? = null,
 )

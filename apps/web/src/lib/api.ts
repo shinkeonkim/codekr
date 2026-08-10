@@ -3,6 +3,7 @@ import type {
   Page,
   ProblemDetail,
   ProblemSummary,
+  ProblemVerification,
   QueueStatus,
   RunResult,
   Runtime,
@@ -131,6 +132,9 @@ export const api = {
 
   updateProblem: (id: number, body: unknown) =>
     request<AdminProblemDetail>(`/api/v1/admin/problems/${id}`, { method: "PUT", body, auth: true }),
+
+  verifyProblem: (id: number) =>
+    request<ProblemVerification>(`/api/v1/admin/problems/${id}/verify`, { method: "POST", auth: true }),
 
   deleteProblem: (id: number) =>
     request<void>(`/api/v1/admin/problems/${id}`, { method: "DELETE", auth: true }),

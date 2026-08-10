@@ -23,9 +23,11 @@ data class AdminProblemDetailResponse(
     val published: Boolean,
     val testcases: List<TestcaseResponse>,
     val templates: List<TemplateResponse>,
+    val solution: SolutionResponse?,
+    val verification: VerificationResponse?,
 ) {
     companion object {
-        fun from(problem: Problem) = AdminProblemDetailResponse(
+        fun from(problem: Problem, verification: VerificationResponse? = null) = AdminProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
             title = problem.title,
@@ -42,6 +44,8 @@ data class AdminProblemDetailResponse(
             published = problem.published,
             testcases = problem.testcases.map(TestcaseResponse::from),
             templates = problem.templates.map(TemplateResponse::from),
+            solution = SolutionResponse.from(problem),
+            verification = verification,
         )
     }
 }

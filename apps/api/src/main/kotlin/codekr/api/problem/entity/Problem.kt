@@ -12,6 +12,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.OrderBy
 import jakarta.persistence.Table
+import java.security.MessageDigest
 import java.time.Instant
 
 @Entity
@@ -58,6 +59,24 @@ class Problem(
     var createdBy: Long? = null,
 
 ) : SoftDeletableEntity() {
+
+    /**
+     * 어드민이 등록한 정답 코드. 선택 사항이며 공개 응답 DTO 에는 필드 자체를 만들지 않는다.
+     * 히든 테스트케이스와 같은 방식으로 구조에서 막는다.
+     */
+    @Column(name = "solution_runtime_id", length = 40)
+    var solutionRuntimeId: String? = null
+
+    @Column(name = "solution_source_code", columnDefinition = "text")
+    var solutionSourceCode: String? = null
+
+    /** 마지막 검증 실행(제출)의 ID. */
+    @Column(name = "verification_submission_id")
+    var verificationSubmissionId: Long? = null
+
+    /** 검증을 시작한 시점의 채점 관련 내용 지문. 지금 값과 다르면 그 결과는 낡은 것이다. */
+    @Column(name = "verified_signature", length = 64)
+    var verifiedSignature: String? = null
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -108,6 +127,50 @@ class Problem(
     fun addTemplates(templates: List<ProblemTemplate>) {
         templates.forEach { it.assignTo(this) }
         allTemplates.addAll(templates)
+    }
+
+    val hasSolution: Boolean get() = !solutionSourceCode.isNullOrBlank() && solutionRuntimeId != null
+
+    /**
+     * 채점 결과를 좌우하는 내용의 지문.
+     *
+     * 지문에 넣는 것은 **판정을 바꿀 수 있는 값만**이다 — 테스트케이스, 실행 제한, 정답 코드.
+     * 지문을 두는 이유는 수정 시각을 쓸 수 없기 때문이다. 검증 기록을 저장하는 순간
+     * `updatedAt` 이 바뀌어 결과가 항상 낡은 것으로 표시된다.
+     */
+    fun verificationSignature(): String {
+        val content = buildString {
+            append(timeLimitMs).append('|').append(memoryLimitMb).append('|')
+            append(solutionRuntimeId).append('|').append(solutionSourceCode).append('|')
+            testcases.sortedBy { it.seq }.forEach {
+                append(it.seq).append(':').append(it.input).append("=>").append(it.expectedOutput).append(';')
+            }
+        }
+        return MessageDigest.getInstance("SHA-256")
+            .digest(content.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+    }
+
+    /** 검증 이후 채점에 영향을 주는 내용이 바뀌었는지. */
+    val isVerificationStale: Boolean
+        get() = verificationSubmissionId != null && verifiedSignature != verificationSignature()
+
+    fun replaceSolution(runtimeId: String?, sourceCode: String?) {
+        val nextRuntimeId = runtimeId?.takeIf { !sourceCode.isNullOrBlank() }
+        val nextSourceCode = sourceCode?.takeIf { it.isNotBlank() }
+        if (nextRuntimeId == solutionRuntimeId && nextSourceCode == solutionSourceCode) return
+
+        solutionRuntimeId = nextRuntimeId
+        solutionSourceCode = nextSourceCode
+        // 정답 코드 자체가 바뀌면 이전 검증은 다른 코드에 대한 결과라 남길 이유가 없다.
+        // (테스트케이스만 바뀐 경우는 지우지 않고 '낡음'으로 표시한다 — 무엇이 달라졌는지 보이게)
+        verificationSubmissionId = null
+        verifiedSignature = null
+    }
+
+    fun startVerification(submissionId: Long) {
+        verificationSubmissionId = submissionId
+        verifiedSignature = verificationSignature()
     }
 
     /** 문제를 지우면 딸린 테스트케이스와 템플릿도 함께 지워진 것으로 본다. */

@@ -5,7 +5,9 @@ import codekr.api.common.dto.PageResponse
 import codekr.api.problem.admin.dto.AdminProblemDetailResponse
 import codekr.api.problem.admin.dto.ProblemCreatedResponse
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
+import codekr.api.problem.admin.dto.VerificationResponse
 import codekr.api.problem.admin.service.AdminProblemService
+import codekr.api.problem.admin.service.SolutionVerificationService
 import codekr.api.problem.dto.ProblemSummaryResponse
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.ProblemCategory
@@ -30,7 +32,10 @@ private const val MAX_PAGE_SIZE = 100
 /** 접근 제어는 SecurityConfig 의 admin 경로 규칙(hasRole("ADMIN"))이 담당한다. */
 @RestController
 @RequestMapping("/api/v1/admin/problems")
-class AdminProblemController(private val adminProblemService: AdminProblemService) {
+class AdminProblemController(
+    private val adminProblemService: AdminProblemService,
+    private val verificationService: SolutionVerificationService,
+) {
 
     @GetMapping
     fun search(
@@ -61,6 +66,15 @@ class AdminProblemController(private val adminProblemService: AdminProblemServic
         @PathVariable id: Long,
         @Valid @RequestBody request: ProblemUpsertRequest,
     ): AdminProblemDetailResponse = adminProblemService.update(id, request)
+
+    /**
+     * 등록한 정답 코드로 전체 테스트케이스를 검증한다.
+     * 진행 상황은 문제 상세의 `verification` 으로 확인한다 (사용자 제출과 같은 채점 큐를 쓴다).
+     */
+    @PostMapping("/{id}/verify")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    fun verify(@PathVariable id: Long, principal: AuthPrincipal): VerificationResponse =
+        verificationService.verify(id, principal.userId)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

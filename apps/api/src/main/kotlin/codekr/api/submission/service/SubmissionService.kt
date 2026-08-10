@@ -18,6 +18,7 @@ import codekr.api.submission.dto.SubmissionSummaryResponse
 import codekr.api.submission.dto.SubmitRequest
 import codekr.api.submission.dto.SubmitResponse
 import codekr.api.submission.entity.Submission
+import codekr.api.submission.entity.SubmissionKind
 import codekr.api.submission.repository.SubmissionRepository
 import codekr.api.submission.repository.SubmissionTestcaseResultRepository
 import org.springframework.data.domain.Pageable
@@ -77,6 +78,10 @@ class SubmissionService(
     fun findDetail(id: Long, principal: AuthPrincipal): SubmissionDetailResponse {
         val submission = submissionRepository.findByIdAndDeletedAtIsNull(id)
             ?: throw ApiException(ErrorCode.SUBMISSION_NOT_FOUND)
+        // 검증 제출의 소스는 정답 코드다 — 어드민만 볼 수 있어야 한다.
+        if (submission.kind != SubmissionKind.USER && !principal.isAdmin) {
+            throw ApiException(ErrorCode.SUBMISSION_NOT_FOUND)
+        }
         if (submission.userId != principal.userId && !principal.isAdmin) {
             throw ApiException(ErrorCode.FORBIDDEN)
         }
@@ -95,8 +100,14 @@ class SubmissionService(
                 problemRepository.findBySlugAndDeletedAtIsNull(it)
                     ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
             }
-            ?.let { submissionRepository.findByUserIdAndProblemIdAndDeletedAtIsNullOrderByIdDesc(userId, it.id, pageable) }
-            ?: submissionRepository.findByUserIdAndDeletedAtIsNullOrderByIdDesc(userId, pageable)
+            ?.let {
+                submissionRepository.findByUserIdAndProblemIdAndKindAndDeletedAtIsNullOrderByIdDesc(
+                    userId, it.id, SubmissionKind.USER, pageable,
+                )
+            }
+            ?: submissionRepository.findByUserIdAndKindAndDeletedAtIsNullOrderByIdDesc(
+                userId, SubmissionKind.USER, pageable,
+            )
 
         // 목록에 필요한 문제 정보만 한 번에 모아 N+1 조회를 피한다.
         val problems: Map<Long, Problem> =

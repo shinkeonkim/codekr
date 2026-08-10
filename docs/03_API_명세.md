@@ -201,18 +201,43 @@ WebSocket 을 사용할 수 없는 환경을 위해 `GET /submissions/{id}` 폴�
   ],
   "templates": [
     { "runtimeId": "python:3.12", "sourceCode": "import sys\n\ndef main():\n    pass\n" }
-  ]
+  ],
+  "solution": { "runtimeId": "python:3.12", "sourceCode": "print(3)" }
 }
 ```
 
 `difficulty` 는 `BRONZE_5` ~ `RUBY_1` 의 30단계 중 하나다 (docs/02 3장).
 `templates` 는 언어별 초기 코드이며, 등록하지 않은 언어는 런타임 기본 템플릿을 쓴다.
+`solution` 은 선택 사항이다 — 넣으면 전체 테스트케이스를 검증할 수 있고,
+**일반 사용자와 공개 API 는 그 존재조차 조회할 수 없다.**
 
 → 201 `{ "id": 1, "slug": "two-sum" }`. slug 중복 시 409.
 
 ### GET `/problems/{id}`
 
-히든 테스트케이스와 언어별 초기 코드를 모두 반환한다 (어드민 편집 화면용).
+히든 테스트케이스, 언어별 초기 코드, **정답 코드와 마지막 검증 결과**를 반환한다
+(어드민 편집 화면용).
+
+```json
+{
+  "solution": { "runtimeId": "python:3.12", "sourceCode": "print(3)" },
+  "verification": {
+    "submissionId": 91, "status": "COMPLETED", "verdict": "ACCEPTED",
+    "passedCount": 5, "totalCount": 5, "compileError": null,
+    "stale": false,
+    "results": [ { "seq": 1, "verdict": "ACCEPTED", "runtimeMs": 12, "memoryKb": 5000 } ]
+  }
+}
+```
+
+`stale` 이 true 면 검증 이후 테스트케이스나 실행 제한이 바뀐 것이다 — 결과를 믿을 수 없다.
+
+### POST `/problems/{id}/verify`
+
+등록된 정답 코드로 **전체 테스트케이스**(공개·히든 모두)를 검증한다.
+사용자 제출과 같은 채점 큐를 쓰므로 진행 상황은 문제 상세의 `verification` 으로 확인한다.
+
+→ 202. 정답 코드가 없으면 400 `SOLUTION_REQUIRED`.
 
 ### PUT `/problems/{id}`
 
