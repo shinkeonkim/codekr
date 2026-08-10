@@ -46,6 +46,18 @@ class PostController(private val postService: PostService) {
     @GetMapping("/boards")
     fun boards(principal: AuthPrincipal?): List<BoardOption> = postService.boards(principal)
 
+    /**
+     * 한 문제에 붙은 질문 (#139).
+     *
+     * 문제 상세의 질문 탭이 쓴다. 커뮤니티 목록에도 **함께 보인다** —
+     * 분리하면 질문이 두 곳에 흩어지고, "다음 사람이 먼저 읽고 간다" 는 목적이 약해진다.
+     */
+    @GetMapping("/by-problem/{problemId}")
+    fun findByProblem(
+        @PathVariable problemId: Long,
+        @PageableDefault(size = 20) pageable: Pageable,
+    ): PageResponse<PostSummaryResponse> = postService.findByProblem(problemId, pageable)
+
     @GetMapping("/{id}")
     fun findOne(@PathVariable id: Long, principal: AuthPrincipal?): PostDetailResponse =
         postService.findDetail(id, principal)

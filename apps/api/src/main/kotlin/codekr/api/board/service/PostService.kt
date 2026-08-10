@@ -11,6 +11,11 @@ import codekr.api.board.repository.PostRepository
 import codekr.api.common.dto.PageResponse
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.contest.entity.ContestPhase
+import codekr.api.contest.repository.ContestProblemRepository
+import codekr.api.contest.repository.ContestRepository
+import codekr.api.problem.entity.Problem
+import codekr.api.problem.repository.ProblemRepository
 import codekr.api.user.avatar.AvatarService
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
@@ -18,6 +23,7 @@ import codekr.api.user.repository.UserRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 /** 게시글 (#137). */
 @Service
@@ -25,7 +31,21 @@ import org.springframework.transaction.annotation.Transactional
 class PostService(
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
+    private val problemRepository: ProblemRepository,
+    private val contestProblemRepository: ContestProblemRepository,
+    private val contestRepository: ContestRepository,
 ) {
+
+    /** 한 문제에 붙은 질문 (#139). */
+    fun findByProblem(problemId: Long, pageable: Pageable): PageResponse<PostSummaryResponse> {
+        val page = postRepository.findByProblemIdAndDeletedAtIsNullOrderByIdDesc(problemId, pageable)
+        val authors = authorsOf(page.content)
+        val comments = commentCountsOf(page.content)
+        val problems = problemsOf(page.content)
+        return PageResponse.from(page.map { summaryOf(it, authors, comments[it.id] ?: 0, problems) })
+    }
+
+    fun countQuestions(problemId: Long): Long = postRepository.countByProblemIdAndDeletedAtIsNull(problemId)
 
     fun findPage(board: Board?, keyword: String?, pageable: Pageable): PageResponse<PostSummaryResponse> {
         val query = keyword?.trim().orEmpty()
@@ -43,7 +63,8 @@ class PostService(
         }
         val authors = authorsOf(page.content)
         val comments = commentCountsOf(page.content)
-        return PageResponse.from(page.map { summaryOf(it, authors, comments[it.id] ?: 0) })
+        val problems = problemsOf(page.content)
+        return PageResponse.from(page.map { summaryOf(it, authors, comments[it.id] ?: 0, problems) })
     }
 
     fun findDetail(id: Long, principal: AuthPrincipal?): PostDetailResponse {
@@ -51,7 +72,9 @@ class PostService(
         val authors = authorsOf(listOf(post))
 
         return PostDetailResponse(
-            summary = summaryOf(post, authors, commentCountsOf(listOf(post))[post.id] ?: 0),
+            summary = summaryOf(post, authors, commentCountsOf(listOf(post))[post.id] ?: 0, problemsOf(listOf(post))),
+            // 문제 질문에는 정답 코드가 그대로 올라온다. 기본으로 가리고 펼칠 수 있게 한다.
+            hideCode = post.problemId != null,
             body = post.body,
             // 어드민은 지울 수는 있어도 남의 글을 **고칠 수는 없다** —
             // 고치면 그 사람이 쓴 것으로 남는데, 실제로 쓴 사람은 다른 사람이다.
@@ -63,7 +86,10 @@ class PostService(
     @Transactional
     fun create(principal: AuthPrincipal, request: PostUpsertRequest): PostDetailResponse {
         requireWritable(request.board, principal)
-        val post = postRepository.save(Post(request.board, principal.userId, request.title, request.body))
+        request.problemId?.let { requireQuestionable(it) }
+        val post = postRepository.save(
+            Post(request.board, principal.userId, request.title, request.body, request.problemId),
+        )
         return findDetail(post.id, principal)
     }
 
@@ -125,13 +151,48 @@ class PostService(
             .associate { it[0] as Long to it[1] as Long }
     }
 
-    private fun summaryOf(post: Post, authors: Map<Long, User>, commentCount: Long): PostSummaryResponse {
+    private fun summaryOf(
+        post: Post,
+        authors: Map<Long, User>,
+        commentCount: Long,
+        problems: Map<Long, Problem>,
+    ): PostSummaryResponse {
         val author = authors[post.authorId]
+        val problem = post.problemId?.let { problems[it] }
         return PostSummaryResponse.of(
             post,
             author?.nickname ?: "(탈퇴한 사용자)",
             AvatarService.urlOf(author?.avatarKey),
             commentCount,
+            problem?.slug,
+            problem?.title,
         )
+    }
+
+    /** 목록의 문제를 한 번에 읽는다. 글마다 읽으면 질의가 20번 더 나간다. */
+    private fun problemsOf(posts: List<Post>): Map<Long, Problem> {
+        val ids = posts.mapNotNull { it.problemId }
+        if (ids.isEmpty()) return emptyMap()
+        return problemRepository.findAllById(ids).associateBy { it.id }
+    }
+
+    /**
+     * 이 문제에 지금 질문할 수 있는가 (#139).
+     *
+     * **대회가 진행 중인 문제에는 질문할 수 없다.** 질문이 곧 힌트가 되고,
+     * 참가자마다 그것을 본 사람과 못 본 사람이 갈린다.
+     */
+    private fun requireQuestionable(problemId: Long) {
+        problemRepository.findByIdAndDeletedAtIsNull(problemId)
+            ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
+
+        val now = Instant.now()
+        val running = contestProblemRepository.findByIdProblemId(problemId)
+            .mapNotNull { contestRepository.findByIdAndDeletedAtIsNull(it.id.contestId) }
+            .any { it.phaseAt(now) == ContestPhase.RUNNING }
+
+        if (running) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "대회가 진행 중인 문제에는 질문할 수 없습니다.")
+        }
     }
 }

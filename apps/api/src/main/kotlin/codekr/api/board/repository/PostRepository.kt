@@ -31,6 +31,11 @@ interface PostRepository : JpaRepository<Post, Long> {
 
     fun findByDeletedAtIsNullOrderByIdDesc(pageable: Pageable): Page<Post>
 
+    /** 문제에 붙은 질문 (#139). */
+    fun findByProblemIdAndDeletedAtIsNullOrderByIdDesc(problemId: Long, pageable: Pageable): Page<Post>
+
+    fun countByProblemIdAndDeletedAtIsNull(problemId: Long): Long
+
     fun findByBoardAndTitleContainingIgnoreCaseAndDeletedAtIsNullOrderByIdDesc(
         board: Board,
         title: String,

@@ -12,11 +12,13 @@ import type { ReactNode } from "react";
  *
  * 지원: 문단, 코드 블록(```), 인라인 코드, 링크, 불릿 목록, 제목(#).
  */
-export function Markdown({ source }: { source: string }) {
-  return <div className="space-y-3 text-sm leading-relaxed text-ink">{renderBlocks(source)}</div>;
+export function Markdown({ source, hideCode = false }: { source: string; hideCode?: boolean }) {
+  return (
+    <div className="space-y-3 text-sm leading-relaxed text-ink">{renderBlocks(source, hideCode)}</div>
+  );
 }
 
-function renderBlocks(source: string): ReactNode[] {
+function renderBlocks(source: string, hideCode: boolean): ReactNode[] {
   const blocks: ReactNode[] = [];
   const lines = source.replace(/\r\n/g, "\n").split("\n");
 
@@ -34,14 +36,26 @@ function renderBlocks(source: string): ReactNode[] {
         index += 1;
       }
       index += 1; // 닫는 ```
-      blocks.push(
+      const code = (
         <pre
-          key={key++}
           className="overflow-x-auto rounded-lg bg-surface-muted p-3 text-xs"
           data-language={language || undefined}
         >
           <code>{body.join("\n")}</code>
-        </pre>,
+        </pre>
+      );
+      blocks.push(
+        hideCode ? (
+          // 문제 질문에는 정답 코드가 그대로 올라온다 (#139). 기본으로 접고 펼칠 수 있게 한다.
+          <details key={key++} className="rounded-lg border border-border p-2">
+            <summary className="cursor-pointer text-xs text-ink-muted">
+              코드 보기 — 아직 풀지 않았다면 답이 보일 수 있습니다
+            </summary>
+            <div className="mt-2">{code}</div>
+          </details>
+        ) : (
+          <div key={key++}>{code}</div>
+        ),
       );
       continue;
     }

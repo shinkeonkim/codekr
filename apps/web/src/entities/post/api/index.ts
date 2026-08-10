@@ -7,6 +7,8 @@ export interface PostUpsert {
   board: Board;
   title: string;
   body: string;
+  /** 문제에 붙는 질문이면 그 문제 (#139). */
+  problemId?: number;
 }
 
 export const postApi = {
@@ -14,6 +16,12 @@ export const postApi = {
   list: (query: Query = {}) => request<Page<PostSummary>>("/api/v1/posts", { auth: true, query }),
 
   boards: () => request<BoardOption[]>("/api/v1/posts/boards", { auth: true }),
+
+  /** 한 문제에 붙은 질문 (#139). */
+  byProblem: (problemId: number, page = 0) =>
+    request<Page<PostSummary>>(`/api/v1/posts/by-problem/${problemId}?page=${page}&size=20`, {
+      auth: true,
+    }),
 
   detail: (id: number) => request<PostDetail>(`/api/v1/posts/${id}`, { auth: true }),
 

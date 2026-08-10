@@ -17,6 +17,8 @@ export function ProblemTabs({ slug }: { slug: string }) {
     { href: base, label: "문제 내용" },
     { href: `${base}/solve`, label: "코드 제출" },
     { href: `${base}/submissions`, label: "제출 내역" },
+    // 막히는 순간은 문제를 보고 있을 때다. 그 자리에서 물을 수 있어야 한다 (#139).
+    { href: `${base}/questions`, label: "질문" },
   ];
 
   return (

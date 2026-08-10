@@ -52,6 +52,12 @@ function Detail({ id }: { id: number }) {
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={summary.board === "NOTICE" ? "info" : "muted"}>{summary.boardLabel}</Badge>
+          {/* 어느 문제의 질문인지 보여야 한다 (#139). */}
+          {summary.problemSlug ? (
+            <Link href={`/problems/${summary.problemSlug}`} className="text-xs text-brand underline">
+              {summary.problemTitle}
+            </Link>
+          ) : null}
           <h1 className="text-2xl font-bold text-ink">{summary.title}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
@@ -68,7 +74,7 @@ function Detail({ id }: { id: number }) {
           마크다운을 React 엘리먼트로 직접 만든다 (#137).
           HTML 문자열을 만들지 않으므로 사용자가 쓴 <script> 는 글자로만 보인다.
         */}
-        <Markdown source={post.body} />
+        <Markdown source={post.body} hideCode={post.hideCode} />
       </Card>
 
       <div className="flex flex-wrap gap-2">
