@@ -1,6 +1,7 @@
 package codekr.api.problem.admin.dto
 
 import codekr.api.problem.entity.Difficulty
+import codekr.api.problem.entity.ExecutionLimits
 import codekr.api.problem.entity.ProblemCategory
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
@@ -30,11 +31,13 @@ data class ProblemUpsertRequest(
     val inputDescription: String? = null,
     val outputDescription: String? = null,
 
-    @field:Min(100) @field:Max(30_000)
-    val timeLimitMs: Int = 2000,
+    @field:Min(ExecutionLimits.MIN_TIME_LIMIT_MS.toLong())
+    @field:Max(ExecutionLimits.MAX_TIME_LIMIT_MS.toLong())
+    val timeLimitMs: Int = ExecutionLimits.DEFAULT_TIME_LIMIT_MS,
 
-    @field:Min(16) @field:Max(2048)
-    val memoryLimitMb: Int = 256,
+    @field:Min(ExecutionLimits.MIN_MEMORY_LIMIT_MB.toLong())
+    @field:Max(ExecutionLimits.MAX_MEMORY_LIMIT_MB.toLong())
+    val memoryLimitMb: Int = ExecutionLimits.DEFAULT_MEMORY_LIMIT_MB,
 
     val published: Boolean = false,
 

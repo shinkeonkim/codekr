@@ -1,0 +1,14 @@
+{
+  "type": "COMPLETED",
+  "submissionId": 1024,
+  "seq": 3,
+  "verdict": "WRONG_ANSWER",
+  "runtimeMs": 24,
+  "memoryKb": 8192,
+  "passedCount": 2,
+  "totalCount": 3,
+  "maxRuntimeMs": 31,
+  "maxMemoryKb": 9012,
+  "compileError": "",
+  "stderrExcerpt": ""
+}

@@ -1,0 +1,9 @@
+{
+  "jobId": "01JABCDEF",
+  "runtimeId": "python:3.12",
+  "sourceCode": "print(3)\n",
+  "stdin": "1 2\n",
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "replyStream": "codekr:exec:res:01JABCDEF"
+}

@@ -35,6 +35,10 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 	if !found {
 		return systemError(job, fmt.Sprintf("지원하지 않는 런타임입니다: %s", job.RuntimeID))
 	}
+	// 손상되거나 버전이 다른 메시지가 그대로 샌드박스 설정이 되지 않게 막는다.
+	if err := contract.ValidateLimits(job.TimeLimitMs, job.MemoryLimitMb); err != nil {
+		return systemError(job, err.Error())
+	}
 
 	outcome, err := r.box.Run(ctx, sandbox.Spec{
 		Image:            definition.Image,

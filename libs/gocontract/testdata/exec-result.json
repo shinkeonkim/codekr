@@ -1,0 +1,10 @@
+{
+  "jobId": "01JABCDEF",
+  "status": "OK",
+  "exitCode": 0,
+  "stdout": "3\n",
+  "stderr": "",
+  "runtimeMs": 24,
+  "memoryKb": 8192,
+  "truncated": false
+}

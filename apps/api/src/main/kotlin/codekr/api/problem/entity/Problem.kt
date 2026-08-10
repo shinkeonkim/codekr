@@ -46,10 +46,10 @@ class Problem(
     var outputDescription: String? = null,
 
     @Column(name = "time_limit_ms", nullable = false)
-    var timeLimitMs: Int = 2000,
+    var timeLimitMs: Int = ExecutionLimits.DEFAULT_TIME_LIMIT_MS,
 
     @Column(name = "memory_limit_mb", nullable = false)
-    var memoryLimitMb: Int = 256,
+    var memoryLimitMb: Int = ExecutionLimits.DEFAULT_MEMORY_LIMIT_MB,
 
     @Column(nullable = false)
     var published: Boolean = false,

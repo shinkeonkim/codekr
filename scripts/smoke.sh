@@ -79,4 +79,40 @@ VERDICT=$(await_verdict "$(submit 'while True: pass')")
 [[ "${VERDICT}" == "TIME_LIMIT_EXCEEDED" ]] || fail "시간 초과로 채점되지 않았습니다: ${VERDICT}"
 pass "TIME_LIMIT_EXCEEDED"
 
+step "8. 문제별 시간 제한이 실제로 강제되는지"
+# 같은 코드(1.5초 대기)를 제한만 다른 두 문제에 제출해, 문제 설정이 실제 판정을 가르는지 본다.
+SLEEPY="import time\ntime.sleep(1.5)\nprint('done')"
+ADMIN_TOKEN=$(curl -s -X POST "${API}/api/v1/auth/login" -H 'Content-Type: application/json' \
+  -d "{\"email\":\"${SEED_ADMIN_EMAIL:-admin@codekr.dev}\",\"password\":\"${SEED_ADMIN_PASSWORD:-admin1234}\"}" \
+  | json '["accessToken"]') || fail "어드민 로그인 실패 (make seed 를 먼저 실행하세요)"
+
+create_timed_problem() {
+  local slug="$1" limit="$2" status
+  status=$(curl -s -o /tmp/codekr-smoke-problem.json -w '%{http_code}' -X POST "${API}/api/v1/admin/problems" \
+    -H "Authorization: Bearer ${ADMIN_TOKEN}" -H 'Content-Type: application/json' \
+    -d "{\"slug\":\"${slug}\",\"title\":\"제한 검증 ${limit}ms\",\"category\":\"ALGORITHM\",
+         \"difficulty\":\"BRONZE_5\",\"description\":\"스모크 전용\",\"timeLimitMs\":${limit},
+         \"memoryLimitMb\":256,\"published\":true,
+         \"testcases\":[{\"seq\":1,\"input\":\"\",\"expectedOutput\":\"done\\n\",\"visibility\":\"HIDDEN\"}]}")
+  [[ "${status}" == "201" ]] || fail "검증용 문제 생성 실패(${status}): $(cat /tmp/codekr-smoke-problem.json)"
+}
+
+SUFFIX=$(date +%s)
+create_timed_problem "limit-generous-${SUFFIX}" 5000
+create_timed_problem "limit-tight-${SUFFIX}" 500
+
+submit_to() {
+  curl -s -X POST "${API}/api/v1/problems/$1/submissions" \
+    -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+    -d "{\"runtimeId\":\"python:3.12\",\"sourceCode\":\"${SLEEPY}\"}" | json '["submissionId"]'
+}
+
+VERDICT=$(await_verdict "$(submit_to "limit-generous-${SUFFIX}")")
+[[ "${VERDICT}" == "ACCEPTED" ]] || fail "여유 있는 제한(5000ms)에서 통과해야 합니다: ${VERDICT}"
+pass "5000ms 제한 → ACCEPTED"
+
+VERDICT=$(await_verdict "$(submit_to "limit-tight-${SUFFIX}")")
+[[ "${VERDICT}" == "TIME_LIMIT_EXCEEDED" ]] || fail "빠듯한 제한(500ms)에서 시간 초과여야 합니다: ${VERDICT}"
+pass "500ms 제한 → TIME_LIMIT_EXCEEDED (같은 코드)"
+
 printf '\n\033[32m스모크 테스트 통과\033[0m — 채점 파이프라인이 정상 동작합니다.\n'
