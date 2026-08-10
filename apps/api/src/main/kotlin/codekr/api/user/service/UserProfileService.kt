@@ -36,6 +36,8 @@ class UserProfileService(
 
     fun findByNickname(nickname: String): UserProfileResponse {
         val user = userRepository.findByNickname(nickname) ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
+        // 탈퇴한 계정의 프로필은 열리지 않는다. 남은 글에서도 링크가 걸리지 않는다 (#140).
+        if (user.isWithdrawn) throw ApiException(ErrorCode.USER_NOT_FOUND)
         // 스트릭은 활동 서비스 한 곳에서 받는다 (#117). 여기서 다시 계산하면 언젠가 어긋난다.
         val streaks = activityService.streaksOf(user.id)
         // 점수는 랭킹과 같은 규칙(상위 N개)으로 센다. 화면마다 다른 숫자가 보이면 안 된다.

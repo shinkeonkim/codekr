@@ -9,6 +9,7 @@ import { AvatarEditor } from "@/features/avatar-editor";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
 import { NotificationSettings } from "./NotificationSettings";
+import { WithdrawalCard } from "./WithdrawalCard";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, EmptyState, Select, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
@@ -138,6 +139,8 @@ function SettingsView() {
       </Card>
 
       <NotificationSettings settings={settings} onToggle={toggleCategory} />
+
+      <WithdrawalCard />
 
       <Card className="space-y-3 p-5">
         <div>

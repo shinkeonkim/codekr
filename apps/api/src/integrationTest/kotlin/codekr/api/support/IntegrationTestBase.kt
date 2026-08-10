@@ -3,6 +3,7 @@ package codekr.api.support
 import org.junit.jupiter.api.BeforeEach
 import codekr.api.contest.scoreboard.ScoreboardCache
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -30,10 +31,15 @@ abstract class IntegrationTestBase {
     /** 테스트 클래스 사이에 데이터가 새지 않도록 매 테스트 전에 전체를 비운다. */
     @Autowired private lateinit var scoreboardCache: ScoreboardCache
 
+    @Autowired private lateinit var redisTemplate: StringRedisTemplate
+
     @BeforeEach
     fun truncateAll() {
         // 순위표 캐시는 애플리케이션 전체가 공유한다. 비우지 않으면 앞 시험의 결과가 남는다.
         scoreboardCache.clear()
+        // 탈퇴 표시는 Redis 에 남는다 (#140). 시험마다 사용자 id 가 1 부터 다시 시작하므로,
+        // 비우지 않으면 앞 시험에서 탈퇴한 id 가 뒤 시험의 사용자를 막는다.
+        redisTemplate.keys("codekr:withdrawn:*").forEach(redisTemplate::delete)
         jdbcClient.sql(
             """
             TRUNCATE comments, posts, submission_views, problem_collection_items, problem_collections,

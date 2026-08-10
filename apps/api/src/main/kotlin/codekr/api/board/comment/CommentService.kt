@@ -7,6 +7,7 @@ import codekr.api.common.error.ErrorCode
 import codekr.api.user.avatar.AvatarService
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
+import codekr.api.user.entity.WithdrawnUser
 import codekr.api.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -95,8 +96,8 @@ class CommentService(
         return CommentResponse(
             id = comment.id,
             // 삭제된 댓글은 작성자도 내리지 않는다. 지운 사람이 누구인지 남길 이유가 없다.
-            authorNickname = if (deleted) null else author?.nickname ?: "(탈퇴한 사용자)",
-            authorAvatarUrl = if (deleted) null else AvatarService.urlOf(author?.avatarKey),
+            authorNickname = if (deleted) null else WithdrawnUser.nicknameOf(author),
+            authorAvatarUrl = if (deleted) null else AvatarService.urlOf(WithdrawnUser.avatarKeyOf(author)),
             body = if (deleted) null else comment.body,
             deleted = deleted,
             createdAt = comment.createdAt,
