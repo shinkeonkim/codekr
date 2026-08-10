@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/shinkeonkim/codekr/apps/executor/internal/runtimes"
@@ -13,11 +14,16 @@ import (
 type stubSandbox struct {
 	outcome  sandbox.Outcome
 	err      error
+	mu       sync.Mutex
 	lastSpec sandbox.Spec
+	specs    []sandbox.Spec
 }
 
 func (s *stubSandbox) Run(_ context.Context, spec sandbox.Spec) (sandbox.Outcome, error) {
+	s.mu.Lock()
 	s.lastSpec = spec
+	s.specs = append(s.specs, spec)
+	s.mu.Unlock()
 	return s.outcome, s.err
 }
 
@@ -68,7 +74,9 @@ func TestRunPassesProblemLimitsToSandbox(t *testing.T) {
 func TestRunConvertsSandboxErrorToSystemError(t *testing.T) {
 	runner := newTestRunner(t, &stubSandbox{err: errors.New("도커 없음")})
 
-	result := runner.Run(context.Background(), contract.ExecJob{JobID: "j1", RuntimeID: "python:3.12"})
+	result := runner.Run(context.Background(), contract.ExecJob{
+		JobID: "j1", RuntimeID: "python:3.12", TimeLimitMs: 2000, MemoryLimitMb: 256,
+	})
 
 	if result.Status != contract.StatusSystemError {
 		t.Fatalf("샌드박스 오류는 SYSTEM_ERROR 로 표현되어야 합니다: %+v", result)
@@ -91,6 +99,62 @@ func TestStatusOfPrefersCompileThenTimeThenMemory(t *testing.T) {
 	for _, c := range cases {
 		if got := statusOf(c.outcome); got != c.expected {
 			t.Errorf("statusOf(%+v) = %s, 기대값 %s", c.outcome, got, c.expected)
+		}
+	}
+}
+
+func TestRunRejectsLimitsOutsideAllowedRange(t *testing.T) {
+	box := &stubSandbox{}
+	runner := newTestRunner(t, box)
+
+	cases := map[string]contract.ExecJob{
+		"시간 제한 0":  {RuntimeID: "python:3.12", TimeLimitMs: 0, MemoryLimitMb: 256},
+		"시간 제한 초과": {RuntimeID: "python:3.12", TimeLimitMs: 60_000, MemoryLimitMb: 256},
+		"메모리 0":    {RuntimeID: "python:3.12", TimeLimitMs: 2000, MemoryLimitMb: 0},
+		"메모리 초과":   {RuntimeID: "python:3.12", TimeLimitMs: 2000, MemoryLimitMb: 8192},
+	}
+
+	for name, job := range cases {
+		result := runner.Run(context.Background(), job)
+		if result.Status != contract.StatusSystemError {
+			t.Errorf("%s: SYSTEM_ERROR 여야 합니다: %+v", name, result)
+		}
+	}
+	// 잘못된 제약은 샌드박스에 닿기 전에 걸러져야 한다.
+	if len(box.specs) != 0 {
+		t.Fatalf("샌드박스가 실행되지 않아야 합니다: %d 회", len(box.specs))
+	}
+}
+
+func TestRunAppliesEachJobsOwnLimitsUnderConcurrency(t *testing.T) {
+	box := &stubSandbox{}
+	runner := newTestRunner(t, box)
+
+	// 제한이 다른 작업을 동시에 흘려보내, 워커 사이에 설정이 섞이지 않는지 본다.
+	jobs := []contract.ExecJob{
+		{RuntimeID: "python:3.12", TimeLimitMs: 1000, MemoryLimitMb: 64},
+		{RuntimeID: "python:3.12", TimeLimitMs: 5000, MemoryLimitMb: 512},
+		{RuntimeID: "python:3.12", TimeLimitMs: 2000, MemoryLimitMb: 256},
+	}
+
+	var wg sync.WaitGroup
+	for _, job := range jobs {
+		wg.Add(1)
+		go func(job contract.ExecJob) {
+			defer wg.Done()
+			runner.Run(context.Background(), job)
+		}(job)
+	}
+	wg.Wait()
+
+	seen := map[int]int{}
+	for _, spec := range box.specs {
+		seen[spec.TimeLimitMs] = spec.MemoryLimitMb
+	}
+	for _, job := range jobs {
+		if seen[job.TimeLimitMs] != job.MemoryLimitMb {
+			t.Errorf("작업 설정이 섞였습니다: %dms 에 %dMB (기대 %dMB)",
+				job.TimeLimitMs, seen[job.TimeLimitMs], job.MemoryLimitMb)
 		}
 	}
 }

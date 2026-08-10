@@ -1,0 +1,11 @@
+{
+  "submissionId": 1024,
+  "problemId": 7,
+  "runtimeId": "python:3.12",
+  "sourceCode": "print(3)\n",
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "testcases": [
+    { "id": 31, "seq": 1, "input": "1 2\n", "expectedOutput": "3\n" }
+  ]
+}

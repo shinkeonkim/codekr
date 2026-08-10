@@ -38,6 +38,19 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 // 중요한 정보이기 때문이다. 다만 컴파일 실패는 이후 케이스가 전부 같은 결과이므로
 // 즉시 종료한다.
 func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
+	// 제약이 잘못된 작업은 테스트케이스를 하나도 돌리지 않고 즉시 종결한다.
+	// 실행기에서 케이스마다 같은 오류를 반복해 내는 것보다 낫다.
+	if err := contract.ValidateLimits(job.TimeLimitMs, job.MemoryLimitMb); err != nil {
+		s.log.Error("실행 제약이 올바르지 않습니다",
+			"submissionId", job.SubmissionID, "error", err)
+		// 상세 사유는 로그에만 남긴다 — 사용자에게는 채점 인프라 문제로 보이는 편이 정확하다.
+		s.complete(ctx, job, Summary{
+			Verdict:    contract.VerdictSystemError,
+			TotalCount: len(job.Testcases),
+		}, "")
+		return
+	}
+
 	total := len(job.Testcases)
 	s.publish(ctx, contract.Event{
 		Type: contract.EventJudging, SubmissionID: job.SubmissionID, TotalCount: total,
