@@ -2,31 +2,25 @@
 
 import { CATEGORY_LABELS, TierBadge, problemApi } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
-import { RequireAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import type { Page } from "@/shared/api";
-import { Alert, Badge, Button, Card, EmptyState } from "@/shared/ui";
+import { Alert, Badge, Button, Card, EmptyState, Pagination } from "@/shared/ui";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-export function AdminProblemListPage() {
-  return (
-    <RequireAuth adminOnly>
-      <AdminProblemList />
-    </RequireAuth>
-  );
-}
 
-function AdminProblemList() {
+export function AdminProblemListPage() {
   const [result, setResult] = useState<Page<ProblemSummary> | null>(null);
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    // 전에는 첫 50개만 불러서 **51번째 문제에 화면으로 도달할 수 없었다** (#131).
     problemApi
-      .adminList({ page: 0, size: 50 })
+      .adminList({ page, size: 20 })
       .then(setResult)
       .catch(() => setError("문제 목록을 불러오지 못했습니다."));
-  }, []);
+  }, [page]);
 
   useEffect(load, [load]);
 
@@ -81,6 +75,15 @@ function AdminProblemList() {
           </Card>
         ))}
       </div>
+
+      {result ? (
+        <Pagination
+          page={result.page}
+          totalPages={result.totalPages}
+          totalElements={result.totalElements}
+          onChange={setPage}
+        />
+      ) : null}
     </div>
   );
 }

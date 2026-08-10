@@ -2,7 +2,6 @@
 
 import { queueApi } from "@/entities/queue";
 import type { QueueStatus } from "@/entities/queue";
-import { RequireAuth } from "@/features/auth";
 import { ExecutorScalePanel } from "@/features/executor-scale";
 import { Badge, Card, EmptyState } from "@/shared/ui";
 import { useEffect, useState } from "react";
@@ -15,15 +14,8 @@ const STREAM_LABELS: Record<string, string> = {
   "codekr:exec": "실행 큐",
 };
 
-export function AdminQueuesPage() {
-  return (
-    <RequireAuth adminOnly>
-      <QueueMonitor />
-    </RequireAuth>
-  );
-}
 
-function QueueMonitor() {
+export function AdminQueuesPage() {
   const [status, setStatus] = useState<QueueStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 

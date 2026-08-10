@@ -2,7 +2,6 @@
 
 import { problemApi } from "@/entities/problem";
 import type { ProblemVerification } from "@/entities/problem";
-import { RequireAuth } from "@/features/auth";
 import { ProblemForm, toFormValues } from "@/features/problem-editor";
 import type { ProblemFormValues } from "@/features/problem-editor";
 import { EmptyState } from "@/shared/ui";
@@ -10,11 +9,8 @@ import { use, useEffect, useState } from "react";
 
 export function AdminProblemEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return (
-    <RequireAuth adminOnly>
-      <EditProblem id={Number(id)} />
-    </RequireAuth>
-  );
+  // 인가는 app/admin/layout.tsx 가 한 번에 맡는다 (#131).
+  return <EditProblem id={Number(id)} />;
 }
 
 function EditProblem({ id }: { id: number }) {

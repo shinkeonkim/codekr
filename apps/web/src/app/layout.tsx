@@ -1,6 +1,6 @@
 import { AuthProvider } from "@/features/auth";
 import { ToastProvider, ToastViewport } from "@/shared/ui";
-import { SiteHeader } from "@/widgets/site-header";
+import { AppShell } from "@/widgets/app-shell";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -24,11 +24,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-[100dvh] flex-col bg-surface text-ink">
         <ToastProvider>
           <AuthProvider>
-            <SiteHeader />
-            <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-            <footer className="border-t border-border py-6 text-center text-xs text-ink-muted">
-              코드.kr · 오픈소스 코딩 테스트 플랫폼
-            </footer>
+            {/* 헤더·본문 폭·푸터는 AppShell 한 곳에서 정한다 (#131). */}
+            <AppShell>{children}</AppShell>
           </AuthProvider>
           {/* 화면을 넘어가도 살아남아야 하므로 라우트 바깥, 최상위에 둔다 (#112). */}
           <ToastViewport />
