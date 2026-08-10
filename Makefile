@@ -4,10 +4,13 @@
 
 COMPOSE := docker compose --env-file .env -f infra/docker/compose.yml
 INFRA   := postgres redis
+GO_MODULES := apps/executor apps/judge libs/gocontract
+# 로컬에 golangci-lint 가 없어도 CI 와 같은 버전으로 검사할 수 있게 컨테이너로 돌린다.
+GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \
-        pull-runtimes seed smoke test test-api test-web test-go
+        pull-runtimes seed smoke test test-api test-web test-go lint lint-go
 
 help: ## 사용 가능한 명령 표시
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -51,6 +54,15 @@ seed: env ## 데모 계정 및 시드 문제 주입
 
 smoke: env ## E2E 스모크 테스트 (가입 → 제출 → 판정)
 	@bash scripts/smoke.sh
+
+lint: lint-go test-web ## 전체 정적 검사
+
+lint-go: ## golangci-lint 로 Go 모듈 검사
+	@for module in $(GO_MODULES); do \
+		echo "==> lint $$module"; \
+		docker run --rm -v "$(PWD)":/w -w "/w/$$module" $(GOLANGCI_IMAGE) \
+			golangci-lint run --config /w/.golangci.yml ./... || exit 1; \
+	done
 
 test: test-api test-web test-go ## 전체 단위 테스트
 

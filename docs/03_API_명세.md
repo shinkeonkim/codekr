@@ -78,7 +78,7 @@
 |---|---|---|
 | `q` | | 제목 부분 일치 |
 | `category` | | `ALGORITHM` 등 |
-| `difficulty` | | `EASY` \| `MEDIUM` \| `HARD` |
+| `tier` | | `BRONZE` \| `SILVER` \| `GOLD` \| `PLATINUM` \| `DIAMOND` \| `RUBY` |
 | `sort` | `latest` | `latest` \| `title` \| `difficulty` |
 | `page`, `size` | 0, 20 | size 최대 100 |
 
@@ -86,7 +86,8 @@
 {
   "content": [
     { "id": 1, "slug": "two-sum", "title": "두 수의 합", "category": "ALGORITHM",
-      "difficulty": "EASY", "timeLimitMs": 2000, "memoryLimitMb": 256 }
+      "difficulty": "BRONZE_5", "difficultyLevel": 1, "tier": "BRONZE", "difficultyLabel": "브론즈 5",
+      "timeLimitMs": 2000, "memoryLimitMb": 256 }
   ],
   "page": 0, "size": 20, "totalElements": 3, "totalPages": 1
 }
@@ -97,16 +98,21 @@
 ```json
 {
   "id": 1, "slug": "two-sum", "title": "두 수의 합",
-  "category": "ALGORITHM", "difficulty": "EASY",
+  "category": "ALGORITHM",
+  "difficulty": "BRONZE_5", "difficultyLevel": 1, "tier": "BRONZE", "difficultyLabel": "브론즈 5",
   "description": "…마크다운…",
   "inputDescription": "…", "outputDescription": "…",
   "timeLimitMs": 2000, "memoryLimitMb": 256,
   "examples": [ { "seq": 1, "input": "1 2\n", "output": "3\n" } ],
-  "runtimes": [ { "id": "python:3.12", "label": "Python 3.12" } ]
+  "runtimes": [
+    { "id": "python:3.12", "label": "Python 3.12", "monacoLanguage": "python",
+      "template": "import sys\n…" }
+  ]
 }
 ```
 
-`examples` 에는 `visibility=PUBLIC` 테스트케이스만 담긴다.
+- `examples` 에는 `visibility=PUBLIC` 테스트케이스만 담긴다.
+- `runtimes[].template` 은 **문제가 지정한 초기 코드**이며, 지정하지 않았으면 런타임 기본 템플릿이 들어온다.
 
 ### POST `/{slug}/run` 🔒
 
@@ -186,29 +192,37 @@ WebSocket 을 사용할 수 없는 환경을 위해 `GET /submissions/{id}` 폴�
 ```json
 {
   "slug": "two-sum", "title": "두 수의 합",
-  "category": "ALGORITHM", "difficulty": "EASY",
+  "category": "ALGORITHM", "difficulty": "BRONZE_5",
   "description": "…", "inputDescription": "…", "outputDescription": "…",
   "timeLimitMs": 2000, "memoryLimitMb": 256, "published": true,
   "testcases": [
     { "seq": 1, "input": "1 2\n", "expectedOutput": "3\n", "visibility": "PUBLIC" },
     { "seq": 2, "input": "10 20\n", "expectedOutput": "30\n", "visibility": "HIDDEN" }
+  ],
+  "templates": [
+    { "runtimeId": "python:3.12", "sourceCode": "import sys\n\ndef main():\n    pass\n" }
   ]
 }
 ```
+
+`difficulty` 는 `BRONZE_5` ~ `RUBY_1` 의 30단계 중 하나다 (docs/02 3장).
+`templates` 는 언어별 초기 코드이며, 등록하지 않은 언어는 런타임 기본 템플릿을 쓴다.
 
 → 201 `{ "id": 1, "slug": "two-sum" }`. slug 중복 시 409.
 
 ### GET `/problems/{id}`
 
-히든 포함 전체 테스트케이스를 반환한다 (어드민 편집 화면용).
+히든 테스트케이스와 언어별 초기 코드를 모두 반환한다 (어드민 편집 화면용).
 
 ### PUT `/problems/{id}`
 
-POST 와 동일한 바디. 테스트케이스는 **전체 치환**한다 (부분 수정 API 를 따로 두지 않는다 — YAGNI).
+POST 와 동일한 바디. 테스트케이스와 초기 코드는 **전체 치환**한다
+(부분 수정 API 를 따로 두지 않는다 — YAGNI).
 
 ### DELETE `/problems/{id}`
 
-→ 204. 제출 이력이 있는 문제는 409 `PROBLEM_HAS_SUBMISSIONS`.
+→ 204. **소프트 삭제**다 — 행은 남고 `deleted_at` 만 채워진다 (ADR-0007).
+따라서 그 문제로 남긴 제출 이력은 그대로 조회되며, 삭제한 slug 는 다시 쓸 수 있다.
 
 ### GET `/queues`
 
@@ -234,6 +248,8 @@ POST 와 동일한 바디. 테스트케이스는 **전체 치환**한다 (부분
 [ { "id": "python:3.12", "label": "Python 3.12", "monacoLanguage": "python",
     "template": "import sys\n\ndef solve():\n    pass\n" } ]
 ```
+
+여기의 `template` 은 **런타임 기본값**이다. 문제별 초기 코드는 문제 상세 응답에서 내려간다.
 
 ---
 
