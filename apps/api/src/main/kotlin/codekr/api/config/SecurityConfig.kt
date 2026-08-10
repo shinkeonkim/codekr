@@ -72,7 +72,13 @@ class SecurityConfig(
                     // 랭킹은 공개 정보다 (#57, #85).
                     .requestMatchers(HttpMethod.GET, "/api/v1/rankings", "/api/v1/rankings/*").permitAll()
                     // 대회 목록·상세는 공개다. 참가 등록만 로그인이 필요하다 (#61).
-                    .requestMatchers(HttpMethod.GET, "/api/v1/contests", "/api/v1/contests/*").permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/v1/contests",
+                        "/api/v1/contests/*",
+                        // 순위표는 관전자도 본다 (#63).
+                        "/api/v1/contests/*/scoreboard",
+                    ).permitAll()
                     .requestMatchers("/ws/**").permitAll()
                     // 어드민 영역의 역할 규칙 (#103).
                     //
