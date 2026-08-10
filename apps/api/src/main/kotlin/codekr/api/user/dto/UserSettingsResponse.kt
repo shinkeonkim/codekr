@@ -1,18 +1,35 @@
 package codekr.api.user.dto
 
+import codekr.api.notification.entity.NotificationCategory
 import codekr.api.submission.entity.SubmissionVisibility
 import codekr.api.user.entity.User
 
 /**
- * 내 설정 (#104).
+ * 내 설정 (#104, #106).
  *
- * 지금은 항목이 하나지만 **앞으로 들어올 것들의 자리**이기도 하다 —
- * 알림 카테고리별 수신 설정(#106)이 여기 붙는다.
+ * 알림은 **끈 것만** 담는다 (`mutedNotificationCategories`). 화면은 전체 카테고리 목록과
+ * 대조해 켜짐/꺼짐을 그린다 — 카테고리가 늘어도 서버가 사용자 행을 채울 필요가 없다.
  */
 data class UserSettingsResponse(
     val defaultSubmissionVisibility: SubmissionVisibility,
+    val mutedNotificationCategories: Set<NotificationCategory>,
+    /** 끌 수 있는 카테고리와 이름. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
+    val notificationCategories: List<NotificationCategoryOption>,
 ) {
     companion object {
-        fun from(user: User) = UserSettingsResponse(user.defaultSubmissionVisibility)
+        fun of(user: User, muted: Set<NotificationCategory>) = UserSettingsResponse(
+            defaultSubmissionVisibility = user.defaultSubmissionVisibility,
+            mutedNotificationCategories = muted,
+            notificationCategories = NotificationCategory.entries.map {
+                NotificationCategoryOption(it, it.label, it.mutable)
+            },
+        )
     }
 }
+
+data class NotificationCategoryOption(
+    val category: NotificationCategory,
+    val label: String,
+    /** false 면 화면이 끄기 스위치를 보여주지 않는다 (시스템 공지). */
+    val mutable: Boolean,
+)

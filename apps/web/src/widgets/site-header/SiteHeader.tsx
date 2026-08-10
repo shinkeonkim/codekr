@@ -1,6 +1,7 @@
 "use client";
 
 import { UserLink } from "@/entities/user";
+import { NotificationBell } from "./NotificationBell";
 import { useAuth } from "@/features/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -55,6 +56,7 @@ export function SiteHeader() {
                 <UserLink nickname={user.nickname} />
                 {isAdmin ? " (관리자)" : ""}
               </span>
+              <NotificationBell />
               <Link href="/settings">
                 <Button variant="ghost">설정</Button>
               </Link>

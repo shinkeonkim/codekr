@@ -1,3 +1,4 @@
+import type { NotificationCategory, NotificationCategoryOption } from "@/entities/notification";
 import type { SubmissionVisibility } from "@/entities/submission";
 import type { DifficultyTier } from "@/entities/problem";
 
@@ -58,4 +59,8 @@ export interface UserProfile {
  */
 export interface UserSettings {
   defaultSubmissionVisibility: SubmissionVisibility;
+  /** 수신을 **끈** 카테고리만 담긴다 (#106). */
+  mutedNotificationCategories: NotificationCategory[];
+  /** 전체 카테고리와 라벨. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
+  notificationCategories: NotificationCategoryOption[];
 }

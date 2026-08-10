@@ -8,6 +8,9 @@ data class RetentionReport(
     val deletedProblems: Int,
     val deletedTestcases: Int,
     val deletedTemplates: Int,
+    val deletedNotifications: Int = 0,
     /** 상한(batchSize)에 걸려 남은 것이 있으면 true — 다음 실행에서 이어서 지운다. */
     val truncated: Boolean,
-)
+) {
+    val total: Int get() = deletedProblems + deletedTestcases + deletedTemplates + deletedNotifications
+}

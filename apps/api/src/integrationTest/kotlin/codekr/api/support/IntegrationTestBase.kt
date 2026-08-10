@@ -32,7 +32,8 @@ abstract class IntegrationTestBase {
         jdbcClient.sql(
             """
             TRUNCATE submission_testcase_results, submissions, problem_runtime_limits,
-                     problem_templates, problem_testcases, problems, user_roles, users
+                     problem_templates, problem_testcases, problems,
+                     notifications, notification_mutes, user_roles, users
             RESTART IDENTITY CASCADE
             """,
         ).update()

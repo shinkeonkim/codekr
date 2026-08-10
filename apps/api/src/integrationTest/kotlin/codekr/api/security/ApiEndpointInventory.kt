@@ -70,6 +70,12 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/users/me/settings", Access.AUTHENTICATED),
         Endpoint("PATCH", "/api/v1/users/me/settings", Access.AUTHENTICATED),
 
+        // --- 알림 (#106) ---
+        Endpoint("GET", "/api/v1/notifications", Access.AUTHENTICATED),
+        Endpoint("GET", "/api/v1/notifications/unread-count", Access.AUTHENTICATED),
+        Endpoint("POST", "/api/v1/notifications/{id}/read", Access.AUTHENTICATED),
+        Endpoint("POST", "/api/v1/notifications/read-all", Access.AUTHENTICATED),
+
         // --- 어드민 ---
         Endpoint("GET", "/api/v1/admin/problems", Access.ADMIN, UserRole.PROBLEM_SETTER),
         Endpoint("POST", "/api/v1/admin/problems", Access.ADMIN, UserRole.PROBLEM_SETTER),

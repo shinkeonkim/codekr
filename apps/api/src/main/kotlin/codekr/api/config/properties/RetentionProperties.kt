@@ -21,6 +21,13 @@ data class RetentionProperties(
      */
     val problemChildDays: Long = 30,
 
+    /**
+     * 읽은 알림을 보관하는 기간 (#106).
+     *
+     * **안 읽은 알림은 지우지 않는다.** 읽지 않았다는 것은 아직 전달되지 않았다는 뜻이다.
+     */
+    val readNotificationDays: Long = 90,
+
     /** 한 번에 지울 최대 행 수. 배치가 DB 를 오래 붙잡지 않게 한다. */
     val batchSize: Int = 500,
 )
