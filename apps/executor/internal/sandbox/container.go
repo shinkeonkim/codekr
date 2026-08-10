@@ -63,6 +63,14 @@ func NewContainerSandbox() (Sandbox, error) {
 // Close 는 런타임 클라이언트가 쥐고 있는 연결을 정리한다.
 func (s *containerSandbox) Close() error { return s.cli.Close() }
 
+// Preflight 는 런타임 API 에 닿는지 확인한다.
+func (s *containerSandbox) Preflight(ctx context.Context) error {
+	if _, err := s.cli.Ping(ctx, client.PingOptions{}); err != nil {
+		return fmt.Errorf("컨테이너 런타임에 닿지 못했습니다: %w", err)
+	}
+	return nil
+}
+
 // Run 은 격리된 컨테이너에서 코드를 한 번 실행하고 관찰 결과를 돌려준다.
 func (s *containerSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) {
 	budget := lifetime(spec)
