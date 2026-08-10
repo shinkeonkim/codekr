@@ -20,3 +20,17 @@ readOnlyRootFilesystem: true
 capabilities:
   drop: ["ALL"]
 {{- end }}
+
+{{/*
+실행기는 다른 네임스페이스에 둘 수 있다. 런타임 소켓을 마운트하는 hostPath 가
+Pod Security 의 baseline 을 위반하므로, 그 네임스페이스만 privileged 로 열고
+나머지 워크로드는 baseline 아래에 남기기 위함이다 (docs/07 잔여 위험 R1).
+*/}}
+{{- define "codekr.executorNamespace" -}}
+{{ .Values.executor.namespace | default .Release.Namespace }}
+{{- end }}
+
+{{/* Redis 주소. 실행기가 네임스페이스를 넘어올 수 있으므로 항상 FQDN 으로 쓴다. */}}
+{{- define "codekr.redisAddr" -}}
+codekr-redis.{{ .Release.Namespace }}.svc.cluster.local:6379
+{{- end }}

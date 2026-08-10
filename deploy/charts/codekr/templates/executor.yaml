@@ -1,9 +1,13 @@
 # 실행기는 컨테이너 런타임 소켓을 마운트한다. 이 권한은 노드 root 와 동등하므로
-# 반드시 실행 전용 노드에만 배치한다 (docs/07 잔여 위험 R1, 이슈 #47).
+# 두 겹으로 가둔다 (docs/07 잔여 위험 R1, 이슈 #47):
+#   1. 노드   — nodeSelector/toleration 으로 실행 전용 노드에만 배치
+#   2. 네임스페이스 — executor.namespace 를 따로 두면 hostPath 를 허용하는
+#      privileged Pod Security 를 그 네임스페이스에만 열 수 있다
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: codekr-executor
+  namespace: {{ include "codekr.executorNamespace" . }}
   labels: {{- include "codekr.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.executor.replicas }}
@@ -26,8 +30,9 @@ spec:
             - { name: EXECUTOR_CONCURRENCY, value: "{{ .Values.executor.concurrency }}" }
             - { name: CODEKR_RUNTIMES_PATH, value: /etc/codekr/runtimes.yaml }
             - { name: DOCKER_HOST, value: "unix://{{ .Values.executor.runtimeSocket }}" }
-          envFrom:
-            - configMapRef: { name: codekr-config }
+            # 실행기가 필요로 하는 설정은 큐 주소뿐이다. DB 자격증명은 주지 않는다
+            # (ADR-0004) — 그래서 codekr-config 를 통째로 넣지 않는다.
+            - { name: CODEKR_REDIS_ADDR, value: {{ include "codekr.redisAddr" . | quote }} }
           volumeMounts:
             - { name: runtimes, mountPath: /etc/codekr }
             - { name: runtime-socket, mountPath: {{ .Values.executor.runtimeSocket }} }

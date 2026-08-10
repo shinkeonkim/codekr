@@ -1,5 +1,6 @@
 package codekr.api.scaling.service
 
+import codekr.api.config.properties.ExecutorScalingProperties
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -16,12 +17,17 @@ import java.nio.file.Path
  * 권한도 그만큼만 준다 (차트의 Role 참고).
  */
 @Component
-class KubernetesScaleClient(private val objectMapper: ObjectMapper) : ExecutorScaleClient {
+class KubernetesScaleClient(
+    private val objectMapper: ObjectMapper,
+    properties: ExecutorScalingProperties,
+) : ExecutorScaleClient {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val token: String? = readIfExists(TOKEN_PATH)
-    private val namespace: String? = readIfExists(NAMESPACE_PATH)
+    // 실행기는 별도 네임스페이스에 있을 수 있다. 설정이 있으면 그쪽을, 없으면 내 것을 쓴다.
+    private val namespace: String? =
+        properties.namespace.takeIf { it.isNotBlank() } ?: readIfExists(NAMESPACE_PATH)
     private val host: String? = System.getenv("KUBERNETES_SERVICE_HOST")
 
     override val available: Boolean = token != null && namespace != null && host != null

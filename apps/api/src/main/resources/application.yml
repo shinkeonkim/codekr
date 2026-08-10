@@ -50,6 +50,7 @@ codekr:
   executor-scaling:
     # 어드민이 조정할 수 있는 실행기 배포와 범위 (#40)
     deployment: ${CODEKR_EXECUTOR_DEPLOYMENT:codekr-executor}
+    namespace: ${CODEKR_EXECUTOR_NAMESPACE:}
     min-replicas: ${CODEKR_EXECUTOR_MIN_REPLICAS:1}
     max-replicas: ${CODEKR_EXECUTOR_MAX_REPLICAS:20}
   retention:
