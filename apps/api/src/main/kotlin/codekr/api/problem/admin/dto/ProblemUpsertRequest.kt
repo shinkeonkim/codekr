@@ -47,6 +47,10 @@ data class ProblemUpsertRequest(
     @field:Valid
     val templates: List<TemplateRequest> = emptyList(),
 
+    /** 런타임별 실행 제한 오버라이드 (#97). 적지 않은 런타임은 위 기본 제한을 쓴다. */
+    @field:Valid
+    val runtimeLimits: List<RuntimeLimitRequest> = emptyList(),
+
     /** 선택 사항. 넣으면 전체 테스트케이스를 이 코드로 검증할 수 있다 (#39). */
     @field:Valid
     val solution: SolutionRequest? = null,

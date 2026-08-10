@@ -23,6 +23,7 @@ data class AdminProblemDetailResponse(
     val published: Boolean,
     val testcases: List<TestcaseResponse>,
     val templates: List<TemplateResponse>,
+    val runtimeLimits: List<RuntimeLimitResponse>,
     val solution: SolutionResponse?,
     val verification: VerificationResponse?,
 ) {
@@ -44,6 +45,7 @@ data class AdminProblemDetailResponse(
             published = problem.published,
             testcases = problem.testcases.map(TestcaseResponse::from),
             templates = problem.templates.map(TemplateResponse::from),
+            runtimeLimits = problem.runtimeLimits.map(RuntimeLimitResponse::from),
             solution = SolutionResponse.from(problem),
             verification = verification,
         )

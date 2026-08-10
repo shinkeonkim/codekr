@@ -97,12 +97,17 @@ class Problem(
     @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL])
     private val allTemplates: MutableList<ProblemTemplate> = mutableListOf()
 
+    @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL])
+    private val allRuntimeLimits: MutableList<ProblemRuntimeLimit> = mutableListOf()
+
     val testcases: List<ProblemTestcase> get() = allTestcases.filter { !it.isDeleted }
 
     val examples: List<ProblemTestcase>
         get() = testcases.filter { it.visibility == TestcaseVisibility.PUBLIC }
 
     val templates: List<ProblemTemplate> get() = allTemplates.filter { !it.isDeleted }
+
+    val runtimeLimits: List<ProblemRuntimeLimit> get() = allRuntimeLimits.filter { !it.isDeleted }
 
     /** 런타임별 초기 코드. 문제에 지정된 값이 없으면 호출자가 런타임 기본 템플릿을 쓴다. */
     fun templateOf(runtimeId: String): String? =
@@ -129,6 +134,24 @@ class Problem(
         allTemplates.addAll(templates)
     }
 
+    fun softDeleteRuntimeLimits() = allRuntimeLimits.forEach { it.softDelete() }
+
+    fun addRuntimeLimits(limits: List<ProblemRuntimeLimit>) {
+        limits.forEach { it.assignTo(this) }
+        allRuntimeLimits.addAll(limits)
+    }
+
+    /**
+     * 이 런타임으로 실행할 때 적용할 제한.
+     *
+     * 런타임별 오버라이드가 없으면 문제 기본값을 쓴다. **제출·실행·정답 검증이 모두
+     * 이 한 곳을 거쳐야** 한다 — 세 경로가 각자 제한을 고르면 서로 달라진다.
+     */
+    fun limitsFor(runtimeId: String): ResolvedLimits =
+        runtimeLimits.firstOrNull { it.runtimeId == runtimeId }
+            ?.let { ResolvedLimits(it.timeLimitMs, it.memoryLimitMb, overridden = true) }
+            ?: ResolvedLimits(timeLimitMs, memoryLimitMb, overridden = false)
+
     val hasSolution: Boolean get() = !solutionSourceCode.isNullOrBlank() && solutionRuntimeId != null
 
     /**
@@ -141,6 +164,12 @@ class Problem(
     fun verificationSignature(): String {
         val content = buildString {
             append(timeLimitMs).append('|').append(memoryLimitMb).append('|')
+            // 런타임별 제한도 판정을 바꾼다. 빠뜨리면 제한만 고쳤을 때 검증이 낡지 않은 것으로 남는다.
+            runtimeLimits.sortedBy { it.runtimeId }.forEach {
+                append(it.runtimeId).append('=').append(it.timeLimitMs).append('/')
+                    .append(it.memoryLimitMb).append(';')
+            }
+            append('|')
             append(solutionRuntimeId).append('|').append(solutionSourceCode).append('|')
             testcases.sortedBy { it.seq }.forEach {
                 append(it.seq).append(':').append(it.input).append("=>").append(it.expectedOutput).append(';')
