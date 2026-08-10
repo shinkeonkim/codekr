@@ -3,8 +3,7 @@
 import { CATEGORY_LABELS, TIER_LABELS, TierBadge, problemApi } from "@/entities/problem";
 import type { ProblemCategory, ProblemSummary } from "@/entities/problem";
 import type { Page } from "@/shared/api";
-import { Card, EmptyState, Input, Select } from "@/shared/ui";
-import Link from "next/link";
+import { EmptyState, Input, Pagination, Select, Table } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 export function ProblemListPage() {
@@ -19,9 +18,9 @@ export function ProblemListPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       problemApi
-      .list({ q: keyword, category, tier, page, size: 20 })
-        .then((response) => {
-          setResult(response);
+        .list({ q: keyword, category, tier, page, size: 20 })
+        .then((data) => {
+          setResult(data);
           setError(null);
         })
         .catch(() => setError("문제 목록을 불러오지 못했습니다."));
@@ -45,10 +44,15 @@ export function ProblemListPage() {
       <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
         <Input
           placeholder="문제 제목 검색"
+          aria-label="문제 제목 검색"
           value={keyword}
           onChange={(event) => resetPageAnd(() => setKeyword(event.target.value))}
         />
-        <Select value={category} onChange={(event) => resetPageAnd(() => setCategory(event.target.value))}>
+        <Select
+          aria-label="유형"
+          value={category}
+          onChange={(event) => resetPageAnd(() => setCategory(event.target.value))}
+        >
           <option value="">전체 유형</option>
           {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -56,7 +60,11 @@ export function ProblemListPage() {
             </option>
           ))}
         </Select>
-        <Select value={tier} onChange={(event) => resetPageAnd(() => setTier(event.target.value))}>
+        <Select
+          aria-label="티어"
+          value={tier}
+          onChange={(event) => resetPageAnd(() => setTier(event.target.value))}
+        >
           <option value="">전체 티어</option>
           {Object.entries(TIER_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
@@ -72,58 +80,52 @@ export function ProblemListPage() {
         <EmptyState title="조건에 맞는 문제가 없습니다." description="검색어나 필터를 바꿔 보세요." />
       ) : null}
 
-      <div className="space-y-2">
-        {result?.content.map((problem) => (
-          <Link key={problem.id} href={`/problems/${problem.slug}`} className="block">
-            <Card className="flex items-center gap-4 px-5 py-4 transition hover:border-brand">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-ink">{problem.title}</p>
-                <p className="mt-1 text-xs text-ink-muted">
-                  {CATEGORY_LABELS[problem.category as ProblemCategory]} · 시간 {problem.timeLimitMs}ms · 메모리{" "}
-                  {problem.memoryLimitMb}MB
-                </p>
-              </div>
-              <TierBadge difficulty={problem.difficulty} label={problem.difficultyLabel} />
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      {result && result.totalPages > 1 ? (
-        <Pagination page={result.page} totalPages={result.totalPages} onChange={setPage} />
+      {result && result.content.length > 0 ? (
+        <>
+          <Table
+            rows={result.content}
+            rowKey={(problem) => problem.id}
+            href={(problem) => `/problems/${problem.slug}`}
+            columns={[
+              { key: "title", header: "문제", render: (problem) => problem.title },
+              {
+                key: "category",
+                header: "유형",
+                hideOnMobile: true,
+                render: (problem) => (
+                  <span className="text-ink-muted">
+                    {CATEGORY_LABELS[problem.category as ProblemCategory]}
+                  </span>
+                ),
+              },
+              {
+                key: "limits",
+                header: "제한",
+                hideOnMobile: true,
+                render: (problem) => (
+                  <span className="whitespace-nowrap text-xs text-ink-muted">
+                    {problem.timeLimitMs}ms · {problem.memoryLimitMb}MB
+                  </span>
+                ),
+              },
+              {
+                key: "difficulty",
+                header: "난이도",
+                align: "right",
+                render: (problem) => (
+                  <TierBadge difficulty={problem.difficulty} label={problem.difficultyLabel} />
+                ),
+              },
+            ]}
+          />
+          <Pagination
+            page={result.page}
+            totalPages={result.totalPages}
+            totalElements={result.totalElements}
+            onChange={setPage}
+          />
+        </>
       ) : null}
-    </div>
-  );
-}
-
-function Pagination({
-  page,
-  totalPages,
-  onChange,
-}: {
-  page: number;
-  totalPages: number;
-  onChange: (page: number) => void;
-}) {
-  return (
-    <div className="flex items-center justify-center gap-2 text-sm">
-      <button
-        className="rounded-lg border border-border px-3 py-1.5 disabled:opacity-40"
-        disabled={page === 0}
-        onClick={() => onChange(page - 1)}
-      >
-        이전
-      </button>
-      <span className="text-ink-muted">
-        {page + 1} / {totalPages}
-      </span>
-      <button
-        className="rounded-lg border border-border px-3 py-1.5 disabled:opacity-40"
-        disabled={page + 1 >= totalPages}
-        onClick={() => onChange(page + 1)}
-      >
-        다음
-      </button>
     </div>
   );
 }

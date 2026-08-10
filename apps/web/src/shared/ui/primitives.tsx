@@ -1,5 +1,3 @@
-export { CodeEditor } from "./CodeEditor";
-
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 type Tone = "ok" | "danger" | "warn" | "info" | "muted";
