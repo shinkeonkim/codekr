@@ -1,0 +1,48 @@
+version: "2"
+
+# executor / judge / libs 가 같은 규칙을 공유한다. 모듈별로 설정을 흩뜨리지 않는다.
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    # 확실한 버그·자원 누수 계열
+    - bodyclose        # HTTP 응답 바디 미종료
+    - errorlint        # %w 없이 감싼 오류, 잘못된 오류 비교
+    - noctx            # context 없이 나가는 외부 호출
+    - rowserrcheck
+    - sqlclosecheck
+    # 코드 품질
+    - gocritic
+    - revive
+    - misspell
+    - unconvert
+    - unparam
+    - prealloc
+    - nakedret
+    - copyloopvar
+  settings:
+    revive:
+      rules:
+        # 공개 API 에는 주석을 요구한다 — 이 저장소의 코드 규약이다.
+        - name: exported
+          arguments: ["checkPrivateReceivers"]
+        - name: package-comments
+    errcheck:
+      # 로그·정리 목적의 무시는 `_ =` 로 명시하므로 별도 예외 목록을 두지 않는다.
+      check-type-assertions: true
+    gocritic:
+      enabled-tags: [diagnostic, style, performance]
+      disabled-checks:
+        # 한국어 주석에서 오탐이 잦다.
+        - commentFormatting
+        # 값 타입(작업 명세·큐 메시지)을 포인터로 바꾸면 호출부에서 실수로 수정할 여지가 생긴다.
+        # 이 값들은 초당 수십 회 수준으로만 복사되므로 복사 비용보다 불변성이 중요하다.
+        - hugeParam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
