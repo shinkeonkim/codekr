@@ -33,6 +33,14 @@ class Submission(
     @Column(nullable = false, length = 30)
     val kind: SubmissionKind = SubmissionKind.USER,
 
+    /**
+     * 어느 대회의 제출인가 (#62). null 이면 평소 제출이다.
+     *
+     * 제출 시점에 정하고 바뀌지 않는다 — 나중에 대회에 편입시키면 마감 판정이 무너진다.
+     */
+    @Column(name = "contest_id")
+    val contestId: Long? = null,
+
 ) : SoftDeletableEntity() {
 
     @Enumerated(EnumType.STRING)

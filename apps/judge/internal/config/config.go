@@ -14,6 +14,8 @@ type Config struct {
 	Concurrency  int
 	ExecTimeout  time.Duration
 	ConsumerName string
+	// Lane 은 이 워커가 설 채점 차선이다 (#62). general | contest.
+	Lane string
 }
 
 // Load 는 환경 변수를 읽어 설정을 만든다.
@@ -28,6 +30,7 @@ func Load() Config {
 		Concurrency:  envInt("JUDGE_CONCURRENCY", 4),
 		ExecTimeout:  time.Duration(envInt("JUDGE_EXEC_TIMEOUT_MS", 60000)) * time.Millisecond,
 		ConsumerName: env("CODEKR_CONSUMER_NAME", hostname),
+		Lane:         env("CODEKR_JUDGE_LANE", "general"),
 	}
 }
 

@@ -13,8 +13,23 @@ object QueueKeys {
     const val JUDGE_STREAM_NORMAL = "codekr:judge:normal"
     const val JUDGE_STREAM_LOW = "codekr:judge:low"
 
-    /** 모니터링이 훑을 채점 스트림 전체. 높은 등급부터. */
-    val JUDGE_STREAMS = listOf(JUDGE_STREAM_HIGH, JUDGE_STREAM_NORMAL, JUDGE_STREAM_LOW)
+    /** 대회 제출 전용 (#62). 전용 워커만 읽는다. */
+    const val JUDGE_STREAM_CONTEST = "codekr:judge:contest"
+
+    /**
+     * 등급 스트림. **높은 등급부터.** Go 의 `JudgeStreamsByPriority()` 와 같은 목록이다.
+     *
+     * 대회 큐는 여기 없다 (#62) — 일반 워커가 읽으면 격리가 되지 않는다.
+     */
+    val JUDGE_PRIORITY_STREAMS = listOf(JUDGE_STREAM_HIGH, JUDGE_STREAM_NORMAL, JUDGE_STREAM_LOW)
+
+    /**
+     * 모니터링이 훑을 채점 스트림 전체.
+     *
+     * **대회 큐도 넣는다** (#62). 빼면 대회 중 적체가 어드민 화면에 보이지 않는데,
+     * 적체를 볼 수 없으면 워커를 언제 늘려야 하는지 알 수 없다.
+     */
+    val JUDGE_STREAMS = JUDGE_PRIORITY_STREAMS + JUDGE_STREAM_CONTEST
     const val EXEC_STREAM = "codekr:exec"
     const val JUDGE_GROUP = "judge-workers"
     const val EXEC_GROUP = "exec-workers"

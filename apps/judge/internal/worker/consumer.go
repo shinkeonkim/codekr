@@ -24,18 +24,41 @@ type Consumer struct {
 	judger       Judger
 	consumerName string
 	concurrency  int
-	log          *slog.Logger
+	// streams 는 이 워커가 읽을 스트림이다. 차선(#62)이 정한다.
+	streams []string
+	log     *slog.Logger
 }
 
 // NewConsumer 는 채점 큐 소비자를 만든다.
-func NewConsumer(client *redis.Client, judger Judger, consumerName string, concurrency int, log *slog.Logger) *Consumer {
-	return &Consumer{redis: client, judger: judger, consumerName: consumerName, concurrency: concurrency, log: log}
+//
+// lane 은 이 워커가 설 차선이다 (#62). 대회 워커와 일반 워커를 나누는 것이
+// 격리의 전부다 — 등급 순서를 어떻게 정하든 워커 수가 유한하기 때문이다.
+func NewConsumer(
+	client *redis.Client,
+	judger Judger,
+	consumerName string,
+	concurrency int,
+	lane string,
+	log *slog.Logger,
+) *Consumer {
+	return &Consumer{
+		redis:        client,
+		judger:       judger,
+		consumerName: consumerName,
+		concurrency:  concurrency,
+		streams:      contract.JudgeStreamsFor(lane),
+		log:          log,
+	}
 }
 
 // Start 는 concurrency 만큼의 소비 루프를 띄우고 ctx 가 끝날 때까지 돈다.
 func (c *Consumer) Start(ctx context.Context) error {
+	// 차선을 잘못 적으면 읽을 스트림이 없다. 조용히 도는 대신 여기서 끊는다 (#62).
+	if len(c.streams) == 0 {
+		return errors.New("읽을 채점 스트림이 없습니다. CODEKR_JUDGE_LANE 을 확인하십시오")
+	}
 	// 등급마다 스트림이 따로 있다 (#102). 하나라도 그룹이 없으면 그 등급을 못 읽는다.
-	for _, stream := range contract.JudgeStreamsByPriority() {
+	for _, stream := range c.streams {
 		if err := ensureGroup(ctx, c.redis, stream, contract.GroupJudge); err != nil {
 			return err
 		}
@@ -72,7 +95,7 @@ pickOne 은 등급 순서대로 훑어 **처음 발견한 작업 하나**를 처
 "먼저 들어온 것" 을 주기 때문에 등급이 무시된다. 순서는 우리가 정해야 한다.
 */
 func (c *Consumer) pickOne(ctx context.Context, cycle int) bool {
-	for _, stream := range streamOrder(cycle) {
+	for _, stream := range streamOrder(c.streams, cycle) {
 		streams, err := c.redis.XReadGroup(ctx, &redis.XReadGroupArgs{
 			Group:    contract.GroupJudge,
 			Consumer: c.consumerName,
@@ -111,8 +134,8 @@ func (c *Consumer) pickOne(ctx context.Context, cycle int) bool {
 // 깨어난 뒤 다음 차례부터 다시 등급 순서대로 읽는다.
 func (c *Consumer) waitForAny(ctx context.Context) {
 	args := []string{}
-	args = append(args, contract.JudgeStreamsByPriority()...)
-	for range contract.JudgeStreamsByPriority() {
+	args = append(args, c.streams...)
+	for range c.streams {
 		args = append(args, ">")
 	}
 

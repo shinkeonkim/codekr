@@ -44,7 +44,7 @@ func main() {
 		dispatch.NewEventPublisher(redisClient),
 		log,
 	)
-	consumer := worker.NewConsumer(redisClient, service, cfg.ConsumerName, cfg.Concurrency, log)
+	consumer := worker.NewConsumer(redisClient, service, cfg.ConsumerName, cfg.Concurrency, cfg.Lane, log)
 	if err := consumer.Start(ctx); err != nil {
 		log.Error("채점 큐 소비 실패", "error", err)
 	}
