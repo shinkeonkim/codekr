@@ -370,3 +370,21 @@ POST 와 동일한 바디. 테스트케이스와 초기 코드는 **전체 치�
 | api | `GET /actuator/health`, `/actuator/prometheus` |
 | judge | `GET :18082/healthz`, `/metrics` |
 | executor | `GET :18081/healthz`, `/metrics` |
+
+
+## 부록 — 엔드포인트 접근 수준
+
+전체 목록은 코드에 있다: `apps/api/src/integrationTest/.../security/ApiEndpointInventory.kt`
+
+| 수준 | 뜻 |
+|---|---|
+| `PUBLIC` | 토큰 없이 누구나 |
+| `AUTHENTICATED` | 로그인한 사용자. **자원 소유권 검사는 서비스가 따로 한다** |
+| `ADMIN` | ADMIN 역할만 |
+
+**엔드포인트를 추가하면 그 목록에도 적어야 한다.** 적지 않으면
+`EndpointAuthorizationIntegrationTest` 가 실패한다 (#71). 권한을 정하지 않고 API 를
+늘릴 수 없게 만든 장치다.
+
+어드민 API 의 보호는 `SecurityConfig` 의 경로 규칙(`/api/v1/admin/**`) 하나에 달려 있다.
+그래서 **어드민 엔드포인트가 그 경로 밖에 생기지 않는지도** 같은 테스트가 확인한다.
