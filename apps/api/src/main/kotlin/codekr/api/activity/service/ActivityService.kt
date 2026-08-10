@@ -13,10 +13,15 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class ActivityService(private val activityRepository: ActivityRepository) {
 
-    fun findActivity(userId: Long, from: LocalDate?, to: LocalDate?): ActivityResponse {
+    /**
+     * 활동 그래프와 스트릭.
+     *
+     * [year] 를 주면 그 해 전체를 본다. from/to 와 함께 주면 year 가 이긴다 —
+     * 화면은 둘 중 하나만 쓴다.
+     */
+    fun findActivity(userId: Long, from: LocalDate?, to: LocalDate?, year: Int? = null): ActivityResponse {
         val today = LocalDate.now(ActivityPolicy.ZONE)
-        val end = to ?: today
-        val start = from ?: end.minusDays(ActivityPolicy.DEFAULT_RANGE_DAYS - 1)
+        val (start, end) = resolveRange(from, to, year, today)
 
         if (start.isAfter(end)) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "시작일이 종료일보다 늦습니다.")
@@ -26,17 +31,49 @@ class ActivityService(private val activityRepository: ActivityRepository) {
         }
 
         val days = activityRepository.findDailyCounts(userId, start, end)
-        val activeDays = days.map { it.date }.toSet()
+        // 그래프는 조회 범위지만 스트릭은 전체 기간이다 (#81).
+        val allActiveDates = activityRepository.findActiveDates(userId)
 
         return ActivityResponse(
             from = start,
             to = end,
             days = days,
             totalCount = days.sumOf { it.count },
-            activeDayCount = activeDays.size,
-            currentStreak = StreakCalculator.current(activeDays, today),
-            longestStreak = StreakCalculator.longest(activeDays),
+            activeDayCount = days.size,
+            currentStreak = StreakCalculator.current(allActiveDates, today),
+            longestStreak = StreakCalculator.longest(allActiveDates),
+            availableYears = availableYears(allActiveDates, today),
             timeZone = ActivityPolicy.ZONE.id,
         )
+    }
+
+    private fun resolveRange(
+        from: LocalDate?,
+        to: LocalDate?,
+        year: Int?,
+        today: LocalDate,
+    ): Pair<LocalDate, LocalDate> {
+        if (year != null) {
+            if (year < MIN_YEAR || year > today.year + 1) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "조회할 수 없는 연도입니다.")
+            }
+            return LocalDate.of(year, 1, 1) to LocalDate.of(year, 12, 31)
+        }
+        val end = to ?: today
+        return (from ?: end.minusDays(ActivityPolicy.DEFAULT_RANGE_DAYS - 1)) to end
+    }
+
+    /**
+     * 활동이 있는 연도 + 올해. 최신 연도가 앞에 온다.
+     *
+     * 올해를 항상 넣는 이유는, 아직 아무것도 안 한 해에도 "올해" 를 보여줄 수 있어야 하기
+     * 때문이다. 빈 그래프는 정보다 — 선택지가 아예 없는 것과 다르다.
+     */
+    private fun availableYears(activeDates: Set<LocalDate>, today: LocalDate): List<Int> =
+        (activeDates.map { it.year } + today.year).distinct().sortedDescending()
+
+    private companion object {
+        /** 서비스 시작 이전 연도는 조회할 이유가 없다. */
+        const val MIN_YEAR = 2020
     }
 }

@@ -116,6 +116,72 @@ class ActivityIntegrationTest : IntegrationTestBase() {
         ).andExpect(status().isBadRequest)
     }
 
+    // ── 연도별 보기 (#81) ──────────────────────────────────────────────────────
+
+    @Test
+    fun `연도를 지정하면 그 해만 그래프에 담긴다`() {
+        val thisYear = LocalDate.now(zone).year
+        submissionOn(LocalDate.of(thisYear - 1, 6, 1))
+        submissionOn(LocalDate.of(thisYear - 1, 6, 2))
+        submissionOn(LocalDate.now(zone))
+
+        mockMvc.perform(
+            get("/api/v1/users/me/activity?year=${thisYear - 1}").header("Authorization", "Bearer $token"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.days.length()").value(2))
+            .andExpect(jsonPath("$.from").value("${thisYear - 1}-01-01"))
+            .andExpect(jsonPath("$.to").value("${thisYear - 1}-12-31"))
+    }
+
+    @Test
+    fun `최장 스트릭은 조회한 연도가 아니라 전체 기간 기준이다`() {
+        val thisYear = LocalDate.now(zone).year
+        // 작년에 5일 연속.
+        repeat(5) { submissionOn(LocalDate.of(thisYear - 1, 6, 1).plusDays(it.toLong())) }
+        // 올해는 하루만.
+        submissionOn(LocalDate.now(zone))
+
+        // 올해만 조회해도 최장 기록은 작년 것이 나와야 한다.
+        mockMvc.perform(get("/api/v1/users/me/activity?year=$thisYear").header("Authorization", "Bearer $token"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.days.length()").value(1))
+            .andExpect(jsonPath("$.longestStreak").value(5))
+    }
+
+    @Test
+    fun `연말과 연초에 걸친 연속은 끊기지 않는다`() {
+        val thisYear = LocalDate.now(zone).year
+        // 12/30, 12/31, 1/1, 1/2 — 연도 경계를 넘는 4일 연속.
+        submissionOn(LocalDate.of(thisYear - 1, 12, 30))
+        submissionOn(LocalDate.of(thisYear - 1, 12, 31))
+        submissionOn(LocalDate.of(thisYear, 1, 1))
+        submissionOn(LocalDate.of(thisYear, 1, 2))
+
+        mockMvc.perform(get("/api/v1/users/me/activity?year=$thisYear").header("Authorization", "Bearer $token"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.longestStreak").value(4))
+    }
+
+    @Test
+    fun `선택할 수 있는 연도는 활동이 있는 해와 올해다`() {
+        val thisYear = LocalDate.now(zone).year
+        submissionOn(LocalDate.of(thisYear - 2, 3, 1))
+
+        mockMvc.perform(get("/api/v1/users/me/activity").header("Authorization", "Bearer $token"))
+            .andExpect(status().isOk)
+            // 최신 연도가 앞. 활동이 없는 해(작년)는 선택지에 없다.
+            .andExpect(jsonPath("$.availableYears[0]").value(thisYear))
+            .andExpect(jsonPath("$.availableYears[1]").value(thisYear - 2))
+            .andExpect(jsonPath("$.availableYears.length()").value(2))
+    }
+
+    @Test
+    fun `서비스 시작 이전 연도는 400 이다`() {
+        mockMvc.perform(get("/api/v1/users/me/activity?year=1999").header("Authorization", "Bearer $token"))
+            .andExpect(status().isBadRequest)
+    }
+
     private fun submissionOn(date: LocalDate, status: String = "COMPLETED") {
         insertSubmission(date.atTime(12, 0).atZone(zone).toInstant().toString(), status)
     }

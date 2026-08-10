@@ -22,6 +22,7 @@ function SubmissionList() {
   const [page, setPage] = useState(0);
   const [result, setResult] = useState<Page<SubmissionSummary> | null>(null);
   const [activity, setActivity] = useState<ActivityResponse | null>(null);
+  const [year, setYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
     submissionApi
@@ -31,14 +32,14 @@ function SubmissionList() {
   }, [page]);
 
   useEffect(() => {
-    activityApi.mine().then(setActivity).catch(() => setActivity(null));
-  }, []);
+    activityApi.mine({ year }).then(setActivity).catch(() => setActivity(null));
+  }, [year]);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">내 제출</h1>
 
-      {activity ? <ActivityGraph activity={activity} /> : null}
+      {activity ? <ActivityGraph activity={activity} year={year} onYearChange={setYear} /> : null}
 
       {result && result.content.length === 0 ? (
         <EmptyState title="아직 제출한 코드가 없습니다." description="문제를 골라 풀어 보세요." />

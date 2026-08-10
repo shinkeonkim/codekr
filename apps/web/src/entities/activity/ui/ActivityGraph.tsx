@@ -1,7 +1,7 @@
 "use client";
 
 import type { ActivityResponse } from "../model/types";
-import { Card } from "@/shared/ui";
+import { Button, Card } from "@/shared/ui";
 
 /** 활동량을 4단계로 나눈다. 색만으로 구분하지 않도록 각 칸에 정확한 수치를 함께 담는다. */
 const LEVELS = [
@@ -37,7 +37,14 @@ function toKey(date: Date): string {
  * 주 단위 열로 쌓고, 각 칸은 하루다. 색은 강도를 빠르게 훑기 위한 것이고,
  * 실제 정보(날짜·활동량)는 `title` 과 스크린 리더용 텍스트로 함께 제공한다.
  */
-export function ActivityGraph({ activity }: { activity: ActivityResponse }) {
+interface Props {
+  activity: ActivityResponse;
+  /** 보고 있는 연도. 주지 않으면 연도 선택을 그리지 않는다 (기본 365일 보기). */
+  year?: number;
+  onYearChange?: (year: number) => void;
+}
+
+export function ActivityGraph({ activity, year, onYearChange }: Props) {
   const counts = new Map(activity.days.map((day) => [day.date, day.count]));
 
   // 그래프가 항상 일요일에서 시작하도록 시작일을 그 주의 일요일로 당긴다.
@@ -55,10 +62,27 @@ export function ActivityGraph({ activity }: { activity: ActivityResponse }) {
   return (
     <Card className="space-y-4 p-5">
       <div className="flex flex-wrap items-center gap-4">
-        <Stat label="현재 스트릭" value={`${activity.currentStreak}일`} />
-        <Stat label="최장 스트릭" value={`${activity.longestStreak}일`} />
-        <Stat label="활동한 날" value={`${activity.activeDayCount}일`} />
-        <Stat label="채점 완료" value={`${activity.totalCount}회`} />
+        {/* 스트릭은 전체 기간 기준이라 연도를 바꿔도 값이 그대로다 — 라벨로 그 사실을 밝힌다. */}
+        <Stat label="현재 스트릭" value={`${activity.currentStreak}일`} hint="전체 기간" />
+        <Stat label="최장 스트릭" value={`${activity.longestStreak}일`} hint="전체 기간" />
+        <Stat label="활동한 날" value={`${activity.activeDayCount}일`} hint={year ? `${year}년` : undefined} />
+        <Stat label="채점 완료" value={`${activity.totalCount}회`} hint={year ? `${year}년` : undefined} />
+
+        {onYearChange && activity.availableYears.length > 1 ? (
+          <div className="ml-auto flex flex-wrap items-center gap-1">
+            {activity.availableYears.map((it) => (
+              <Button
+                key={it}
+                variant={it === year ? "primary" : "ghost"}
+                className="px-3 py-1 text-xs"
+                aria-current={it === year ? "true" : undefined}
+                onClick={() => onYearChange(it)}
+              >
+                {it}
+              </Button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="overflow-x-auto">
@@ -112,10 +136,13 @@ export function ActivityGraph({ activity }: { activity: ActivityResponse }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div>
-      <p className="text-xs text-ink-muted">{label}</p>
+      <p className="text-xs text-ink-muted">
+        {label}
+        {hint ? <span className="ml-1 text-[10px] opacity-70">{hint}</span> : null}
+      </p>
       <p className="mt-0.5 text-lg font-semibold text-ink">{value}</p>
     </div>
   );
