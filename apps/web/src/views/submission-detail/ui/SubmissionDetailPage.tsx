@@ -3,6 +3,7 @@
 import { STATUS_LABELS, VERDICT_LABELS, VISIBILITY_LABELS, submissionApi, verdictTone } from "@/entities/submission";
 import type { SubmissionDetail, SubmissionVisibility } from "@/entities/submission";
 import { RequireAuth, useAuth } from "@/features/auth";
+import { JudgeProgressPanel, useJudgeStream } from "@/features/judge-stream";
 import { formatDateTime, formatMemory } from "@/shared/lib";
 import { Badge, Card, EmptyState } from "@/shared/ui";
 import Link from "next/link";
@@ -24,18 +25,20 @@ function SubmissionView({ id }: { id: number }) {
   const { user } = useAuth();
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { progress, watch } = useJudgeStream();
 
   const changeVisibility = async (visibility: SubmissionVisibility) => {
     await submissionApi.changeVisibility(id, visibility);
     setSubmission((previous) => (previous ? { ...previous, visibility } : previous));
   };
 
+  // 화면 데이터는 폴링이 채운다. 채점이 끝나면 스스로 멈춘다.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
 
     const load = () => {
       submissionApi
-      .detail(id)
+        .detail(id)
         .then((detail) => {
           setSubmission(detail);
           if (detail.status === "PENDING" || detail.status === "JUDGING") {
@@ -48,6 +51,18 @@ function SubmissionView({ id }: { id: number }) {
     load();
     return () => clearTimeout(timer);
   }, [id]);
+
+  /**
+   * 진행 표시는 WebSocket 이 채운다 (#78, #80).
+   *
+   * 폴링만 쓰면 2초마다 뭉텅이로 바뀌어 "멈춰 있는 것"과 구분되지 않는다. 테스트케이스가
+   * 하나씩 통과하는 것이 보여야 기다릴 만하다고 느낀다. 폴링은 그대로 두어 이벤트가
+   * 유실돼도 결과는 반드시 확정된다.
+   */
+  const judging = submission?.status === "PENDING" || submission?.status === "JUDGING";
+  useEffect(() => {
+    if (judging && progress.submissionId !== id) watch(id, submission?.totalCount ?? 0);
+  }, [judging, id, progress.submissionId, submission?.totalCount, watch]);
 
   if (error) return <EmptyState title={error} />;
   if (!submission) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
@@ -70,6 +85,10 @@ function SubmissionView({ id }: { id: number }) {
           <Badge>{STATUS_LABELS[submission.status]}</Badge>
         )}
       </header>
+
+      {judging ? (
+        <JudgeProgressPanel progress={progress} pending={submission?.status === "PENDING"} />
+      ) : null}
 
       <Card className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
         <Stat label="통과" value={`${submission.passedCount} / ${submission.totalCount}`} />

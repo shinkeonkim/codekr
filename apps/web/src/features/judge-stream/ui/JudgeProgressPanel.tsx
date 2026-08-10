@@ -6,8 +6,17 @@ import { formatMemory } from "@/shared/lib";
 import { Badge, Card } from "@/shared/ui";
 import Link from "next/link";
 
+interface Props {
+  progress: JudgeProgress;
+  /**
+   * 아직 워커가 집어가지 않은 상태인지. 큐가 밀려 기다리는 것과 지금 채점 중인 것은
+   * 사용자에게 다른 사실이다 — "채점 중" 으로 뭉뚱그리면 왜 느린지 알 수 없다 (#78).
+   */
+  pending?: boolean;
+}
+
 /** 채점 진행 상황. 테스트케이스가 하나씩 채워지는 과정을 그대로 보여준다. */
-export function JudgeProgressPanel({ progress }: { progress: JudgeProgress }) {
+export function JudgeProgressPanel({ progress, pending = false }: Props) {
   if (!progress.submissionId) return null;
 
   const total = Math.max(progress.totalCount, progress.results.length);
@@ -18,14 +27,20 @@ export function JudgeProgressPanel({ progress }: { progress: JudgeProgress }) {
     <Card className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-ink">
-          {progress.finished ? "채점 완료" : `채점 중… (${done}/${total})`}
+          {progress.finished
+            ? "채점 완료"
+            : pending && done === 0
+              ? "채점 대기 중…"
+              : `채점 중… (${done}/${total})`}
         </h3>
         {progress.finished && progress.verdict ? (
           <Badge tone={verdictTone(progress.verdict)}>
             {VERDICT_LABELS[progress.verdict]} · {progress.passedCount}/{progress.totalCount}
           </Badge>
         ) : (
-          <span className="text-xs text-ink-muted">실시간</span>
+          <span className="text-xs text-ink-muted">
+            {pending && done === 0 ? "순서를 기다리는 중" : "실시간"}
+          </span>
         )}
       </div>
 
