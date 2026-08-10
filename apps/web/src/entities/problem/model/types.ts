@@ -32,6 +32,14 @@ export interface Runtime {
   limitOverridden: boolean;
 }
 
+/** 문제 풀이 통계 (#84). 제출 수가 아니라 **사람 수**로 센다. */
+export interface ProblemStats {
+  submitterCount: number;
+  solverCount: number;
+  /** 맞은 사람 / 제출한 사람. 아무도 제출하지 않았으면 null. */
+  acceptanceRate: number | null;
+}
+
 export interface ProblemSummary {
   id: number;
   slug: string;
@@ -45,6 +53,7 @@ export interface ProblemSummary {
   timeLimitMs: number;
   memoryLimitMb: number;
   published: boolean;
+  stats: ProblemStats;
 }
 
 export interface ProblemExample {

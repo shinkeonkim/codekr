@@ -17,9 +17,11 @@ data class ProblemSummaryResponse(
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
     val published: Boolean,
+    /** 풀이 통계 (#84). 어드민 목록에서도 같은 값을 쓴다. */
+    val stats: ProblemStats,
 ) {
     companion object {
-        fun from(problem: Problem) = ProblemSummaryResponse(
+        fun from(problem: Problem, stats: ProblemStats = ProblemStats.EMPTY) = ProblemSummaryResponse(
             id = problem.id,
             slug = problem.slug,
             title = problem.title,
@@ -31,6 +33,7 @@ data class ProblemSummaryResponse(
             timeLimitMs = problem.timeLimitMs,
             memoryLimitMb = problem.memoryLimitMb,
             published = problem.published,
+            stats = stats,
         )
     }
 }
