@@ -34,6 +34,7 @@ const sandboxPath = "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbi
 type containerdSandbox struct {
 	cli            *client.Client
 	seccompProfile string
+	credentials    registryCredentials
 }
 
 // NewContainerdSandbox 는 containerd 기반 샌드박스를 만든다.
@@ -42,6 +43,10 @@ type containerdSandbox struct {
 // 호스트 경로를 준다 (docs/05, #70).
 func NewContainerdSandbox(address, seccompProfilePath string) (Sandbox, error) {
 	profile, err := readSeccompProfile(seccompProfilePath)
+	if err != nil {
+		return nil, err
+	}
+	credentials, err := loadRegistryCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +68,7 @@ func NewContainerdSandbox(address, seccompProfilePath string) (Sandbox, error) {
 
 	// **여기서 한 번 말을 걸어 본다.** client.New 는 실제로 붙지 않아서, 확인하지 않으면
 	// 소켓이 없어도 조용히 뜬 뒤 첫 제출에서 실패한다.
-	sandbox := &containerdSandbox{cli: cli, seccompProfile: profile}
+	sandbox := &containerdSandbox{cli: cli, seccompProfile: profile, credentials: credentials}
 	ctx, cancel := context.WithTimeout(context.Background(), connectTimeout)
 	defer cancel()
 	if err := sandbox.Preflight(ctx); err != nil {

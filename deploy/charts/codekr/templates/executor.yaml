@@ -33,6 +33,18 @@ spec:
             # 엔진 API 클라이언트가 읽는 표준 변수명이다 (제품명이 아니라 규약).
             - { name: DOCKER_HOST, value: "unix://{{ .Values.executor.runtimeSocket }}" }
             - { name: CODEKR_SANDBOX_RUNTIME, value: {{ .Values.executor.sandboxRuntime | quote }} }
+            {{- if eq .Values.executor.sandboxRuntime "containerd" }}
+            # containerd 구현은 소켓 경로를 이 변수로 받는다 (#68).
+            - { name: CONTAINERD_ADDRESS, value: {{ .Values.executor.runtimeSocket | quote }} }
+            {{- end }}
+            {{- if .Values.executor.usernsHostOffset }}
+            # user namespace 재매핑 (#130). containerd 에서만 쓸 수 있다.
+            - { name: CODEKR_USERNS_HOST_OFFSET, value: {{ .Values.executor.usernsHostOffset | quote }} }
+            {{- end }}
+            {{- if .Values.executor.runtimeRegistrySecret }}
+            # 런타임 이미지를 받을 때 쓸 자격증명 (#171). 제품명이 아니라 규약인 변수다.
+            - { name: DOCKER_CONFIG, value: /etc/codekr/registry }
+            {{- end }}
             {{- if .Values.executor.runtimeRegistry }}
             # 런타임 이미지를 자체 레지스트리에서 받는다 (#96).
             - { name: CODEKR_RUNTIME_REGISTRY, value: {{ .Values.executor.runtimeRegistry | quote }} }
@@ -51,6 +63,9 @@ spec:
             - { name: seccomp, mountPath: /etc/codekr/seccomp }
             {{- end }}
             - { name: runtime-socket, mountPath: {{ .Values.executor.runtimeSocket }} }
+            {{- if .Values.executor.runtimeRegistrySecret }}
+            - { name: registry-auth, mountPath: /etc/codekr/registry, readOnly: true }
+            {{- end }}
           readinessProbe:
             httpGet: { path: /healthz, port: http }
             periodSeconds: 10
@@ -75,6 +90,15 @@ spec:
         {{- if .Values.executor.seccompProfile.enabled }}
         - name: seccomp
           configMap: { name: codekr-seccomp }
+        {{- end }}
+        {{- if .Values.executor.runtimeRegistrySecret }}
+        - name: registry-auth
+          secret:
+            secretName: {{ .Values.executor.runtimeRegistrySecret }}
+            # dockerconfigjson 시크릿의 키는 .dockerconfigjson 인데, 실행기는
+            # config.json 을 찾는다 (DOCKER_CONFIG 규약).
+            items:
+              - { key: .dockerconfigjson, path: config.json }
         {{- end }}
         - name: runtime-socket
           hostPath:
