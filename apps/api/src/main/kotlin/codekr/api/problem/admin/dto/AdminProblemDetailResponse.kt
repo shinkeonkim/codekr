@@ -3,6 +3,7 @@ package codekr.api.problem.admin.dto
 import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.Problem
+import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.ProblemCategory
 
 /** 어드민 편집 화면용 상세 — 히든 테스트케이스와 언어별 초기 코드를 포함한다. */
@@ -24,6 +25,7 @@ data class AdminProblemDetailResponse(
     val testcases: List<TestcaseResponse>,
     val templates: List<TemplateResponse>,
     val runtimeLimits: List<RuntimeLimitResponse>,
+    val judgePriority: ProblemJudgePriority,
     val solution: SolutionResponse?,
     val verification: VerificationResponse?,
 ) {
@@ -46,6 +48,7 @@ data class AdminProblemDetailResponse(
             testcases = problem.testcases.map(TestcaseResponse::from),
             templates = problem.templates.map(TemplateResponse::from),
             runtimeLimits = problem.runtimeLimits.map(RuntimeLimitResponse::from),
+            judgePriority = problem.judgePriority,
             solution = SolutionResponse.from(problem),
             verification = verification,
         )

@@ -16,11 +16,13 @@ class QueueMonitorService(private val redis: StringRedisTemplate) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    /**
+     * 채점 큐는 등급마다 스트림이 따로다 (#102). 등급별로 보여야 **무엇이 밀리고 있는지**
+     * 알 수 있다 — 합쳐서 보여주면 낮은 등급이 밀리는 것과 전체가 밀리는 것을 구분할 수 없다.
+     */
     fun status(): QueueStatusResponse = QueueStatusResponse(
-        listOf(
-            inspect(QueueKeys.JUDGE_STREAM, QueueKeys.JUDGE_GROUP),
+        QueueKeys.JUDGE_STREAMS.map { inspect(it, QueueKeys.JUDGE_GROUP) } +
             inspect(QueueKeys.EXEC_STREAM, QueueKeys.EXEC_GROUP),
-        ),
     )
 
     private fun inspect(stream: String, group: String): StreamStatus {

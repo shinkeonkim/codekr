@@ -52,6 +52,11 @@ class Problem(
     @Column(name = "memory_limit_mb", nullable = false)
     var memoryLimitMb: Int = ExecutionLimits.DEFAULT_MEMORY_LIMIT_MB,
 
+    /** 채점 큐 우선순위 (#102). 실행이 무거운 문제를 뒤로 미룰 수 있다. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "judge_priority", nullable = false, length = 20)
+    var judgePriority: ProblemJudgePriority = ProblemJudgePriority.NORMAL,
+
     @Column(nullable = false)
     var published: Boolean = false,
 

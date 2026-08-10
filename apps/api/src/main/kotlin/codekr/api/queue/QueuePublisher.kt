@@ -30,8 +30,15 @@ class QueuePublisher(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    fun publishJudgeJob(job: JudgeJobMessage) {
-        add(QueueKeys.JUDGE_STREAM, objectMapper.writeValueAsString(job))
+    /**
+     * 채점 작업을 **등급에 맞는 스트림**으로 보낸다 (#102).
+     *
+     * 등급을 인자로 받되, 그 값을 정하는 것은 호출부가 아니라 [JudgePriority.of] 다.
+     * 요청에서 흘러들어올 경로가 없어야 한다.
+     */
+    fun publishJudgeJob(job: JudgeJobMessage, priority: JudgePriority) {
+        add(priority.stream, objectMapper.writeValueAsString(job))
+        log.debug("채점 작업 발행: submissionId={} priority={}", job.submissionId, priority)
     }
 
     /**

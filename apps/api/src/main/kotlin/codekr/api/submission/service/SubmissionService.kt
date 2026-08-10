@@ -9,6 +9,7 @@ import codekr.api.problem.entity.Problem
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.service.ProblemService
 import codekr.api.queue.QueuePublisher
+import codekr.api.queue.JudgePriority
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.runtime.RuntimeRegistry
 import codekr.api.user.repository.UserRepository
@@ -80,7 +81,10 @@ class SubmissionService(
             ).apply { changeVisibility(request.visibility) },
         )
 
-        queuePublisher.publishJudgeJob(JudgeJobMessage.of(submission, problem))
+        queuePublisher.publishJudgeJob(
+            JudgeJobMessage.of(submission, problem),
+            JudgePriority.of(submission.kind, problem),
+        )
         return SubmitResponse.from(submission)
     }
 

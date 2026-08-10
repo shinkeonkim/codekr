@@ -4,7 +4,6 @@ package contract
 
 // Redis 키. Stream 은 작업 큐, Channel 은 실시간 이벤트 브로드캐스트에 쓴다.
 const (
-	StreamJudge       = "codekr:judge"
 	StreamExec        = "codekr:exec"
 	GroupJudge        = "judge-workers"
 	GroupExec         = "exec-workers"
@@ -15,6 +14,25 @@ const (
 	// StreamMaxLength 는 스트림이 무한정 커지지 않도록 두는 근사 상한이다.
 	StreamMaxLength = 10000
 )
+
+// 채점 큐는 우선순위 등급마다 스트림을 나눈다 (#102).
+//
+// Redis Streams 는 우선순위를 기본 지원하지 않는다. 한 스트림에 우선순위 필드를 실어도
+// 소비자가 앞에서부터 읽을 수밖에 없어 의미가 없다. 스트림을 나누면 **어느 것을 먼저
+// 읽을지** 소비자가 정할 수 있다.
+//
+// 등급이 메시지가 아니라 **스트림에 있다는 점이 중요하다.** 메시지 안의 값이면
+// 조작 가능성을 따져야 하지만, 어느 스트림에 넣을지는 발행자(api)만 정한다.
+const (
+	StreamJudgeHigh   = "codekr:judge:high"
+	StreamJudgeNormal = "codekr:judge:normal"
+	StreamJudgeLow    = "codekr:judge:low"
+)
+
+// JudgeStreamsByPriority 는 **높은 등급부터** 나열한다. 소비자는 이 순서로 시도한다.
+func JudgeStreamsByPriority() []string {
+	return []string{StreamJudgeHigh, StreamJudgeNormal, StreamJudgeLow}
+}
 
 // Verdict 는 테스트케이스 및 제출 단위의 판정 값이다.
 type Verdict string

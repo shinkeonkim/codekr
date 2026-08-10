@@ -3,6 +3,7 @@ package codekr.api.problem.admin.dto
 import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.ExecutionLimits
 import codekr.api.problem.entity.ProblemCategory
+import codekr.api.problem.entity.ProblemJudgePriority
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -45,6 +46,12 @@ data class ProblemUpsertRequest(
     val testcases: List<TestcaseRequest> = emptyList(),
 
     @field:Valid
+    /**
+     * 채점 우선순위 (#102). 실행이 무거워 큐를 오래 잡는 문제를 뒤로 미룰 때 쓴다.
+     * 최상위(HIGH)는 고를 수 없다 — 시스템 동작에만 남긴다.
+     */
+    val judgePriority: ProblemJudgePriority = ProblemJudgePriority.NORMAL,
+
     val templates: List<TemplateRequest> = emptyList(),
 
     /** 런타임별 실행 제한 오버라이드 (#97). 적지 않은 런타임은 위 기본 제한을 쓴다. */

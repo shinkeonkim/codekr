@@ -90,6 +90,36 @@ class QueueContractTest {
         assertTrue(goLimits.contains("MinMemoryLimitMb = ${ExecutionLimits.MIN_MEMORY_LIMIT_MB}"))
         assertTrue(goLimits.contains("MaxMemoryLimitMb = ${ExecutionLimits.MAX_MEMORY_LIMIT_MB}"))
     }
+
+    @Test
+    fun `큐 키가 Go 쪽과 같은 값이다`() {
+        // 키가 어긋나면 워커가 아무것도 못 읽는데, 오류 없이 조용히 멈춰서 발견이 늦다 (#102).
+        val keys = mapper.readValue(fixture("queue-keys.json"), QueueKeysFixture::class.java)
+
+        assertEquals(keys.judgeStreamsByPriority, QueueKeys.JUDGE_STREAMS)
+        assertEquals(keys.execStream, QueueKeys.EXEC_STREAM)
+        assertEquals(keys.judgeGroup, QueueKeys.JUDGE_GROUP)
+        assertEquals(keys.execGroup, QueueKeys.EXEC_GROUP)
+        assertEquals(keys.eventChannel, QueueKeys.EVENT_CHANNEL)
+        assertEquals(keys.replyStreamPrefix, QueueKeys.REPLY_STREAM_PREFIX)
+        assertEquals(keys.payloadField, QueueKeys.PAYLOAD_FIELD)
+    }
+
+    @Test
+    fun `우선순위 등급과 스트림이 일대일로 대응한다`() {
+        // 등급을 늘리면 스트림도 늘려야 한다. 빠뜨리면 그 등급의 작업이 어디로도 가지 않는다.
+        assertEquals(QueueKeys.JUDGE_STREAMS.toSet(), JudgePriority.entries.map { it.stream }.toSet())
+    }
+
+    private data class QueueKeysFixture(
+        val judgeStreamsByPriority: List<String>,
+        val execStream: String,
+        val judgeGroup: String,
+        val execGroup: String,
+        val eventChannel: String,
+        val replyStreamPrefix: String,
+        val payloadField: String,
+    )
 }
 
 /** Go 소스의 숫자 리터럴은 가독성을 위해 밑줄을 쓴다 (30_000). */

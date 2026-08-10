@@ -45,9 +45,11 @@ pass "실행 결과 15"
 
 await_verdict() {
   local submission_id="$1"
+  # 두 번째 인자로 토큰을 받는다. 어드민 검증 제출은 사용자 토큰으로 조회할 수 없다.
+  local token="${2:-${TOKEN}}"
   for _ in $(seq 1 60); do
     local body status
-    body=$(curl -s "${API}/api/v1/submissions/${submission_id}" -H "Authorization: Bearer ${TOKEN}")
+    body=$(curl -s "${API}/api/v1/submissions/${submission_id}" -H "Authorization: Bearer ${token}")
     status=$(echo "${body}" | json '["status"]')
     if [[ "${status}" == "COMPLETED" || "${status}" == "FAILED" ]]; then
       echo "${body}" | json '["verdict"]'
@@ -141,5 +143,49 @@ pass "python:3.12 (오버라이드 5000ms) → ACCEPTED"
 VERDICT=$(await_verdict "$(submit_with_runtime "python:3.13")")
 [[ "${VERDICT}" == "TIME_LIMIT_EXCEEDED" ]] || fail "기본 제한(500ms)을 쓰는 런타임은 시간 초과여야 합니다: ${VERDICT}"
 pass "python:3.13 (문제 기본 500ms) → TIME_LIMIT_EXCEEDED (같은 코드, 같은 문제)"
+
+step "10. 채점 큐 우선순위 — 밀린 큐를 어드민 검증이 앞질러 가는지"
+# 낮은 등급 제출을 잔뜩 넣어 큐를 막은 뒤, 어드민 정답 검증을 넣는다.
+# 검증이 먼저 끝나야 한다 (#102).
+PRIO_SLUG="prio-check-${SUFFIX}"
+SLOW="import time\ntime.sleep(2)\nprint('done')"
+status=$(curl -s -o /tmp/codekr-smoke-problem.json -w '%{http_code}' -X POST "${API}/api/v1/admin/problems" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" -H 'Content-Type: application/json' \
+  -d "{\"slug\":\"${PRIO_SLUG}\",\"title\":\"우선순위 검증\",\"category\":\"ALGORITHM\",
+       \"difficulty\":\"BRONZE_5\",\"description\":\"스모크 전용\",\"timeLimitMs\":5000,
+       \"memoryLimitMb\":256,\"published\":true,\"judgePriority\":\"LOW\",
+       \"testcases\":[{\"seq\":1,\"input\":\"\",\"expectedOutput\":\"done\\n\",\"visibility\":\"HIDDEN\"}],
+       \"solution\":{\"runtimeId\":\"python:3.12\",\"sourceCode\":\"${SLOW}\"}}")
+[[ "${status}" == "201" ]] || fail "우선순위 검증 문제 생성 실패(${status}): $(cat /tmp/codekr-smoke-problem.json)"
+PRIO_ID=$(json '["id"]' < /tmp/codekr-smoke-problem.json)
+
+# 낮은 등급으로 큐를 채운다.
+LOW_IDS=()
+for _ in $(seq 1 16); do
+  body=$(curl -s -X POST "${API}/api/v1/problems/${PRIO_SLUG}/submissions" \
+    -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+    -d "{\"runtimeId\":\"python:3.12\",\"sourceCode\":\"${SLOW}\"}")
+  id=$(echo "${body}" | json '["submissionId"]' 2>/dev/null) \
+    || fail "낮은 등급 제출에 실패했습니다: ${body}"
+  LOW_IDS+=("${id}")
+done
+
+# 그 뒤에 어드민 검증(최상위)을 넣는다.
+VERIFY_ID=$(curl -s -X POST "${API}/api/v1/admin/problems/${PRIO_ID}/verify" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" | json '["submissionId"]')
+[[ -n "${VERIFY_ID}" ]] || fail "정답 검증을 시작하지 못했습니다"
+
+VERDICT=$(await_verdict "${VERIFY_ID}" "${ADMIN_TOKEN}")
+[[ "${VERDICT}" == "ACCEPTED" ]] || fail "정답 검증이 통과해야 합니다: ${VERDICT}"
+
+# 완료만으로는 '앞질렀다'를 증명하지 못한다 — 낮은 등급이 그때까지 다 끝났을 수도 있다.
+# 검증이 끝난 시점에 낮은 등급이 아직 남아 있어야 실제로 새치기한 것이다.
+REMAINING=0
+for id in "${LOW_IDS[@]}"; do
+  st=$(curl -s "${API}/api/v1/submissions/${id}" -H "Authorization: Bearer ${TOKEN}" | json '["status"]')
+  [[ "${st}" == "COMPLETED" || "${st}" == "FAILED" ]] || REMAINING=$((REMAINING + 1))
+done
+[[ "${REMAINING}" -gt 0 ]] || fail "낮은 등급이 모두 끝난 뒤라 우선순위를 확인할 수 없습니다"
+pass "낮은 등급 ${REMAINING}건이 남은 상태에서 어드민 검증이 먼저 완료 (${VERDICT})"
 
 printf '\n\033[32m스모크 테스트 통과\033[0m — 채점 파이프라인이 정상 동작합니다.\n'
