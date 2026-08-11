@@ -7,7 +7,7 @@ import { Avatar } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import type { Page } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Button, Card, EmptyState } from "@/shared/ui";
+import { Button, Card, EmptyState, Pagination } from "@/shared/ui";
 import { ProblemHeader, ProblemTabs } from "@/widgets/problem-tabs";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -23,11 +23,12 @@ export function ProblemQuestionsPage({ params }: { params: Promise<{ slug: strin
   const { problem, error } = useProblem(decodeURIComponent(slug));
   const { user } = useAuth();
   const [result, setResult] = useState<Page<PostSummary> | null>(null);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     if (!problem) return;
-    postApi.byProblem(problem.id).then(setResult).catch(() => setResult(null));
-  }, [problem]);
+    postApi.byProblem(problem.id, page).then(setResult).catch(() => setResult(null));
+  }, [problem, page]);
 
   if (error) return <EmptyState title={error} />;
   if (!problem) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
@@ -74,6 +75,14 @@ export function ProblemQuestionsPage({ params }: { params: Promise<{ slug: strin
             </Card>
           </Link>
         ))}
+        {result ? (
+          <Pagination
+            page={result.page}
+            totalPages={result.totalPages}
+            totalElements={result.totalElements}
+            onChange={setPage}
+          />
+        ) : null}
       </div>
     </div>
   );
