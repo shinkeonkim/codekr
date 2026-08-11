@@ -1,10 +1,9 @@
 "use client";
 
-import { ActivityGraph, activityApi } from "@/entities/activity";
-import type { ActivityResponse } from "@/entities/activity";
 import { SubmissionResult, submissionApi } from "@/entities/submission";
 import type { SubmissionSummary } from "@/entities/submission";
-import { RequireAuth } from "@/features/auth";
+import { RequireAuth, useAuth } from "@/features/auth";
+import Link from "next/link";
 import type { Page } from "@/shared/api";
 import { formatDateTime, formatMemory } from "@/shared/lib";
 import { EmptyState, Pagination, Table } from "@/shared/ui";
@@ -19,10 +18,9 @@ export function MySubmissionsPage() {
 }
 
 function SubmissionList() {
+  const { user } = useAuth();
   const [page, setPage] = useState(0);
   const [result, setResult] = useState<Page<SubmissionSummary> | null>(null);
-  const [activity, setActivity] = useState<ActivityResponse | null>(null);
-  const [year, setYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
     submissionApi
@@ -31,15 +29,24 @@ function SubmissionList() {
       .catch(() => setResult({ content: [], page: 0, size: 0, totalElements: 0, totalPages: 0 }));
   }, [page]);
 
-  useEffect(() => {
-    activityApi.mine({ year }).then(setActivity).catch(() => setActivity(null));
-  }, [year]);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">내 제출</h1>
 
-      {activity ? <ActivityGraph activity={activity} year={year} onYearChange={setYear} /> : null}
+      {/*
+        활동 그래프는 프로필에만 둔다 (#117). 두 곳에 두면 같은 것을 두 곳에서 고치게 되고,
+        본인 프로필과 이 화면에 똑같은 그래프가 두 번 나온다.
+      */}
+      {user ? (
+        <p className="text-sm text-ink-muted">
+          활동 기록은{" "}
+          <Link href={`/users/${encodeURIComponent(user.nickname)}`} className="text-brand hover:underline">
+            내 프로필
+          </Link>
+          에서 볼 수 있습니다.
+        </p>
+      ) : null}
 
       {result && result.content.length === 0 ? (
         <EmptyState title="아직 제출한 코드가 없습니다." description="문제를 골라 풀어 보세요." />

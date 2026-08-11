@@ -1,8 +1,6 @@
 package codekr.api.user.service
 
-import codekr.api.activity.repository.UserDailyActivityRepository
-import codekr.api.activity.service.StreakCalculator
-import codekr.api.activity.ActivityPolicy
+import codekr.api.activity.service.ActivityService
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.user.dto.UserProfileResponse
@@ -10,7 +8,6 @@ import codekr.api.user.repository.UserProfileRepository
 import codekr.api.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDate
 
 /**
  * 공개 프로필 (#83).
@@ -23,13 +20,13 @@ import java.time.LocalDate
 class UserProfileService(
     private val userRepository: UserRepository,
     private val profileRepository: UserProfileRepository,
-    private val activityRepository: UserDailyActivityRepository,
+    private val activityService: ActivityService,
 ) {
 
     fun findByNickname(nickname: String): UserProfileResponse {
         val user = userRepository.findByNickname(nickname) ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
-        val activeDates = activityRepository.findActiveDates(user.id)
-        val today = LocalDate.now(ActivityPolicy.ZONE)
+        // 스트릭은 활동 서비스 한 곳에서 받는다 (#117). 여기서 다시 계산하면 언젠가 어긋난다.
+        val streaks = activityService.streaksOf(user.id)
 
         return UserProfileResponse(
             nickname = user.nickname,
@@ -37,8 +34,8 @@ class UserProfileService(
             solvedCount = profileRepository.countSolvedProblems(user.id),
             submissionCount = profileRepository.countSubmissions(user.id),
             solvedByTier = profileRepository.solvedByTier(user.id),
-            currentStreak = StreakCalculator.current(activeDates, today),
-            longestStreak = StreakCalculator.longest(activeDates),
+            currentStreak = streaks.current,
+            longestStreak = streaks.longest,
         )
     }
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { ActivityGraph, activityApi } from "@/entities/activity";
+import type { ActivityResponse } from "@/entities/activity";
 import { TIER_BADGE_CLASSES, TIER_LABELS } from "@/entities/problem";
 import { userApi } from "@/entities/user";
 import type { UserProfile } from "@/entities/user";
@@ -22,6 +24,8 @@ export function UserProfilePage({ params }: { params: Promise<{ nickname: string
 function ProfileView({ nickname }: { nickname: string }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activity, setActivity] = useState<ActivityResponse | null>(null);
+  const [year, setYear] = useState(() => new Date().getFullYear());
 
   useEffect(() => {
     userApi
@@ -31,6 +35,13 @@ function ProfileView({ nickname }: { nickname: string }) {
         setError(caught instanceof ApiError ? caught.message : "프로필을 불러오지 못했습니다."),
       );
   }, [nickname]);
+
+  useEffect(() => {
+    activityApi
+      .ofUser(nickname, { year })
+      .then(setActivity)
+      .catch(() => setActivity(null));
+  }, [nickname, year]);
 
   if (error) return <EmptyState title={error} />;
   if (!profile) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
@@ -48,6 +59,12 @@ function ProfileView({ nickname }: { nickname: string }) {
         <Stat label="현재 스트릭" value={`${profile.currentStreak}일`} />
         <Stat label="최장 스트릭" value={`${profile.longestStreak}일`} />
       </Card>
+
+      {/*
+        스트릭 숫자만으로는 꾸준한 사람인지 최근에 몰아친 사람인지 구분되지 않는다.
+        그것을 보여주는 것이 캘린더의 역할이다 (#117).
+      */}
+      {activity ? <ActivityGraph activity={activity} year={year} onYearChange={setYear} /> : null}
 
       <SolvedByTierView profile={profile} />
 
