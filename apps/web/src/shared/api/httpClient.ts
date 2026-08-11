@@ -21,11 +21,23 @@ function resolveOrigin(): string | undefined {
   return typeof window === "undefined" ? undefined : window.location.origin;
 }
 
+/**
+ * 경로를 실제로 부를 주소로 만든다.
+ *
+ * **JSON 이 아닌 요청(multipart)도 이것을 써야 한다.** 상대 경로로 그냥 `fetch` 하면
+ * API 가 다른 출처에 있을 때 웹 서버로 가서 404 가 된다 — 아바타 업로드가 실제로
+ * 그랬다 (#115 검수).
+ *
+ * `API_BASE_URL` 이 비어 있으면 같은 출처다. URL 은 절대 주소를 요구하므로 그때는
+ * 현재 출처를 기준으로 만든다.
+ */
+export function apiUrl(path: string): URL {
+  return new URL(`${API_BASE_URL}${path}`, resolveOrigin());
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = false, query } = options;
-  // API_BASE_URL 이 비어 있으면 같은 출처다. URL 은 절대 주소를 요구하므로
-  // 그때는 현재 출처를 기준으로 만든다.
-  const url = new URL(`${API_BASE_URL}${path}`, resolveOrigin());
+  const url = apiUrl(path);
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
   });

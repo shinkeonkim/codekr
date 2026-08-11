@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
@@ -51,6 +52,16 @@ class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException::class)
     fun handleAccessDenied(e: AccessDeniedException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(ErrorCode.FORBIDDEN.status).body(ErrorResponse.of(ErrorCode.FORBIDDEN))
+
+    /**
+     * 서블릿 컨테이너가 먼저 끊은 업로드 (#115).
+     *
+     * 우리 상한보다 크게 잡아 두었으므로 여기까지 오는 것은 **한참 큰 파일**이다.
+     * 그래도 500 이 아니라 413 이어야 한다 — 서버가 고장 난 것이 아니라 파일이 큰 것이다.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException::class)
+    fun handleUploadTooLarge(e: MaxUploadSizeExceededException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(ErrorCode.IMAGE_TOO_LARGE.status).body(ErrorResponse.of(ErrorCode.IMAGE_TOO_LARGE))
 
     @ExceptionHandler(Exception::class)
     fun handleUnexpected(e: Exception): ResponseEntity<ErrorResponse> {
