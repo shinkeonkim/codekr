@@ -38,3 +38,22 @@ data:
   runtimes.yaml: |
 {{ $.Files.Get "files/runtimes.yaml" | indent 4 }}
 {{- end }}
+
+---
+# 샌드박스 컨테이너에 걸 seccomp 프로파일 (#48).
+#
+# **파드 스펙(`securityContext.seccompProfile`)이 아니라 ConfigMap 이다.** 이 프로파일은
+# 실행기 파드가 아니라 실행기가 **만드는** 컨테이너에 걸린다 — 쿠버네티스는 그 컨테이너를
+# 모르므로 파드 스펙으로는 닿지 않는다. 실행기가 파일을 읽어 런타임 API 로 넘긴다.
+#
+# 노드 설정(`/etc/containerd/...`)에 두지 않은 이유: 노드를 늘릴 때마다 사람이 파일을
+# 복사해야 하고, 프로파일과 코드의 버전이 갈라져도 아무도 모른다.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codekr-seccomp
+  namespace: {{ include "codekr.executorNamespace" . }}
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+data:
+  seccomp.json: |
+{{ .Files.Get "files/seccomp.json" | indent 4 }}

@@ -35,7 +35,7 @@ func run() int {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	cfg := config.Load()
 
-	box, err := sandbox.New(cfg.SandboxRuntime)
+	box, err := sandbox.New(cfg.SandboxRuntime, cfg.SeccompProfilePath)
 	if err != nil {
 		log.Error("샌드박스 초기화 실패", "runtime", cfg.SandboxRuntime, "error", err)
 		return 1

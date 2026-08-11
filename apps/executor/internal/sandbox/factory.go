@@ -16,10 +16,10 @@ const (
 // 구현을 이름으로 고르게 한 이유는, 운영 노드의 런타임이 로컬 개발 환경과 다를 수
 // 있는데 그 차이가 첫 제출에서야 드러나면 곤란하기 때문이다. 알 수 없는 이름이나
 // 아직 없는 구현은 **기동 시점에** 실패한다.
-func New(runtime string) (Sandbox, error) {
+func New(runtime, seccompProfilePath string) (Sandbox, error) {
 	switch runtime {
 	case "", RuntimeEngineAPI:
-		return NewContainerSandbox()
+		return NewContainerSandbox(seccompProfilePath)
 	case RuntimeContainerd:
 		return nil, fmt.Errorf(
 			"containerd 네이티브 구현은 아직 없습니다 (이슈 #45). "+

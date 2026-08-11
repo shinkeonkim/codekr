@@ -10,7 +10,7 @@ GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \
-        pull-runtimes build-runtimes verify-runtimes seed smoke test test-api test-web test-go lint lint-go
+        pull-runtimes build-runtimes verify-runtimes verify-seccomp seed smoke test test-api test-web test-go lint lint-go
 
 help: ## 사용 가능한 명령 표시
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -53,8 +53,14 @@ build-runtimes: ## 공식 이미지가 없는 언어의 런타임 이미지 빌�
 	@bash scripts/build-runtimes.sh
 
 verify-runtimes: ## 등록된 모든 런타임의 기본 템플릿이 실제로 컴파일·실행되는지 확인
-	cd apps/executor && CODEKR_SANDBOX_TEST=1 go test ./internal/sandbox/ \
-		-run TestLiveEveryRegisteredRuntime -timeout 25m -v
+	cd apps/executor && CODEKR_SANDBOX_TEST=1 \
+		CODEKR_SECCOMP_PROFILE=$(CURDIR)/infra/sandbox/seccomp.json \
+		go test ./internal/sandbox/ -run TestLiveEveryRegisteredRuntime -timeout 25m -v
+
+verify-seccomp: ## 좁힌 seccomp 프로파일이 실제로 위험한 syscall 을 막는지 확인 (#48)
+	cd apps/executor && CODEKR_SANDBOX_TEST=1 \
+		CODEKR_SECCOMP_PROFILE=$(CURDIR)/infra/sandbox/seccomp.json \
+		go test ./internal/sandbox/ -run TestLiveNarrowedSeccomp -v
 
 seed: env ## 데모 계정 및 시드 문제 주입
 	@bash scripts/seed.sh

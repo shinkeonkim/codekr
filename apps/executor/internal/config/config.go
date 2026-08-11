@@ -20,6 +20,9 @@ type Config struct {
 	ConsumerName string
 	// SandboxRuntime 은 어떤 컨테이너 런타임 구현을 쓸지 고른다 (#45).
 	SandboxRuntime string
+	// SeccompProfilePath 는 샌드박스 컨테이너에 걸 seccomp 프로파일 파일이다 (#48).
+	// 비어 있으면 런타임 기본 프로파일을 쓴다.
+	SeccompProfilePath string
 }
 
 // Load 는 환경 변수를 읽어 설정을 만든다. 값이 없으면 로컬 개발에 맞는 기본값을 쓴다.
@@ -38,6 +41,7 @@ func Load() Config {
 		MaxOutputBytes:       envInt("EXECUTOR_MAX_OUTPUT_BYTES", 65536),
 		ConsumerName:         env("CODEKR_CONSUMER_NAME", hostname),
 		SandboxRuntime:       env("CODEKR_SANDBOX_RUNTIME", "engine-api"),
+		SeccompProfilePath:   env("CODEKR_SECCOMP_PROFILE", ""),
 	}
 }
 
