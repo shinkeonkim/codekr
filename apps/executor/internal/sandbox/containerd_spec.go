@@ -53,6 +53,10 @@ func (s *containerdSandbox) create(
 		oci.WithNoNewPrivileges,
 		oci.WithRootFSReadonly(),
 		oci.WithMemoryLimit(uint64(memoryBytes)),
+		// **스왑도 같은 값으로 막는다.** 메모리 한도만 걸면 스왑이 있는 노드에서는
+		// 넘겨 쓰고 살아남는다 — GitHub 러너에서 400MB 할당이 통과했다.
+		// 엔진 API 구현도 MemorySwap 을 같이 건다.
+		oci.WithMemorySwap(memoryBytes),
 		oci.WithPidsLimit(pids),
 		// 네트워크 네임스페이스를 새로 만든다 — 호스트 네트워크가 보이지 않는다.
 		// CNI 를 붙이지 않으므로 루프백만 남는다.

@@ -78,6 +78,7 @@ func NewContainerdSandbox(address, seccompProfilePath string) (Sandbox, error) {
 	return sandbox, nil
 }
 
+// Close 는 containerd 연결을 닫는다.
 func (s *containerdSandbox) Close() error { return s.cli.Close() }
 
 // Preflight 는 containerd 에 닿는지 확인한다.
@@ -90,6 +91,7 @@ func (s *containerdSandbox) Preflight(ctx context.Context) error {
 	return nil
 }
 
+// Run 은 제출 하나를 격리된 컨테이너에서 실행한다.
 func (s *containerdSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) {
 	budget := lifetime(spec)
 	ctx, cancel := context.WithTimeout(s.withNamespace(ctx), budget)

@@ -133,7 +133,8 @@ func (c *Consumer) pickOne(ctx context.Context, cycle int) bool {
 // 여기서는 등급이 무시되지만 상관없다 — 어차피 큐가 비어 있어 경쟁할 것이 없다.
 // 깨어난 뒤 다음 차례부터 다시 등급 순서대로 읽는다.
 func (c *Consumer) waitForAny(ctx context.Context) {
-	args := []string{}
+	// XReadGroup 은 스트림 이름 뒤에 같은 수의 ID 를 요구한다 — 그래서 두 배다.
+	args := make([]string, 0, len(c.streams)*2)
 	args = append(args, c.streams...)
 	for range c.streams {
 		args = append(args, ">")

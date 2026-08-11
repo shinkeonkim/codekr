@@ -83,10 +83,12 @@ func (s *containerdSandbox) runInside(
 
 	// 2단계: 사용자 프로그램.
 	//
-	// 엔진 API 는 여기서 메모리 한도를 낮추지만(ContainerUpdate), containerd 에서
-	// 실행 중인 태스크의 cgroup 을 바꾸는 것은 런타임마다 지원이 갈린다.
-	// **대신 실행 스크립트가 ulimit 으로 자기 한도를 건다** — 두 구현이 같은 값을
-	// 쓰는지는 selftest 가 확인한다.
+	// **컴파일에 열어 둔 여유를 걷고 문제의 한도로 낮춘다** — 엔진 API 구현과 같다.
+	// 전에는 "런타임마다 지원이 갈린다"고 적고 낮추지 않았는데, 근거 없는 추측이었고
+	// 그 결과 사용자 프로그램이 컴파일용 여유를 그대로 쓸 수 있었다.
+	if err := applyRunMemoryLimit(ctx, task, spec); err != nil {
+		return Outcome{}, err
+	}
 	captured, err = s.exec(ctx, task, spec, env, runCommand)
 	if err != nil {
 		return Outcome{}, err
@@ -175,3 +177,24 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 }
 
 func (b *limitedBuffer) String() string { return b.buf.String() }
+
+/*
+applyRunMemoryLimit 은 실행 단계의 메모리 한도를 건다.
+
+컴파일 단계에는 툴체인을 위해 넉넉히 열어 두므로(#38), 사용자 프로그램을 돌리기 전에
+문제의 한도로 좁힌다. 스왑도 같은 값으로 막는다 — 메모리만 걸면 스왑이 있는 노드에서
+넘겨 쓰고 살아남는다.
+*/
+func applyRunMemoryLimit(ctx context.Context, task client.Task, spec Spec) error {
+	if startupMemoryLimitMb(spec) == spec.MemoryLimitMb {
+		return nil
+	}
+	limit := int64(spec.MemoryLimitMb) * bytesPerMb
+	resources := &specs.LinuxResources{
+		Memory: &specs.LinuxMemory{Limit: &limit, Swap: &limit},
+	}
+	if err := task.Update(ctx, client.WithResources(resources)); err != nil {
+		return fmt.Errorf("실행 단계 메모리 한도를 걸지 못했습니다: %w", err)
+	}
+	return nil
+}
