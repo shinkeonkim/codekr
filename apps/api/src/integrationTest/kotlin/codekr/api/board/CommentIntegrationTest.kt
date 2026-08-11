@@ -1,0 +1,193 @@
+package codekr.api.board
+
+import codekr.api.auth.security.JwtTokenProvider
+import codekr.api.support.IntegrationTestBase
+import codekr.api.user.entity.User
+import codekr.api.user.entity.UserRole
+import codekr.api.user.repository.UserRepository
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
+import org.springframework.jdbc.core.simple.JdbcClient
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+
+/** 댓글과 대댓글 (#138). */
+class CommentIntegrationTest : IntegrationTestBase() {
+
+    @Autowired private lateinit var userRepository: UserRepository
+    @Autowired private lateinit var tokenProvider: JwtTokenProvider
+    @Autowired private lateinit var jdbcClient: JdbcClient
+
+    private var authorId: Long = 0
+    private lateinit var authorToken: String
+    private lateinit var otherToken: String
+    private lateinit var moderatorToken: String
+    private var postId: Long = 0
+
+    @BeforeEach
+    fun setUp() {
+        val author = userRepository.save(User("a@codekr.dev", "x", "글쓴이", setOf(UserRole.USER)))
+        authorId = author.id
+        authorToken = tokenProvider.issueAccessToken(author)
+        otherToken = tokenProvider.issueAccessToken(
+            userRepository.save(User("b@codekr.dev", "x", "답하는이", setOf(UserRole.USER))),
+        )
+        moderatorToken = tokenProvider.issueAccessToken(
+            userRepository.save(User("m@codekr.dev", "x", "운영자", setOf(UserRole.USER, UserRole.BOARD_MANAGER))),
+        )
+
+        postId = jdbcClient.sql(
+            """
+            INSERT INTO posts (board, author_id, title, body)
+            VALUES ('QUESTION', :authorId, '질문', '본문')
+            RETURNING id
+            """,
+        ).param("authorId", authorId).query(Long::class.java).single()
+    }
+
+    @Test
+    fun `익명 댓글을 받지 않는다`() {
+        mockMvc.perform(
+            post("/api/v1/posts/" + postId + "/comments")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"body\":\"익명\"}"),
+        ).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `깊이 제한 없이 이어진다`() {
+        // "대댓글까지만" 으로 막으면 세 번째 발언부터는 누구에게 하는 말인지 사라진다.
+        val first = comment(authorToken, null, "질문입니다")
+        val second = comment(otherToken, first, "이렇게 해보세요")
+        val third = comment(authorToken, second, "그래도 안 됩니다")
+        comment(otherToken, third, "그럼 이건요?")
+
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].children[0].children[0].children[0].body").value("그럼 이건요?"))
+    }
+
+    @Test
+    fun `자식이 있는 댓글을 지워도 자식은 남는다`() {
+        val parent = comment(authorToken, null, "지워질 댓글")
+        comment(otherToken, parent, "남아야 할 답")
+
+        mockMvc.perform(delete("/api/v1/comments/" + parent).header("Authorization", "Bearer " + authorToken))
+            .andExpect(status().isOk)
+
+        // 자식까지 지우면 남의 글이 함께 사라진다.
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andExpect(jsonPath("$[0].deleted").value(true))
+            .andExpect(jsonPath("$[0].body").doesNotExist())
+            .andExpect(jsonPath("$[0].authorNickname").doesNotExist())
+            .andExpect(jsonPath("$[0].children[0].body").value("남아야 할 답"))
+    }
+
+    @Test
+    fun `자식이 없는 삭제된 댓글은 아예 사라진다`() {
+        val id = comment(authorToken, null, "혼자 있는 댓글")
+
+        mockMvc.perform(delete("/api/v1/comments/" + id).header("Authorization", "Bearer " + authorToken))
+            .andExpect(status().isOk)
+
+        // 자리만 차지할 이유가 없다.
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andExpect(jsonPath("$.length()").value(0))
+    }
+
+    @Test
+    fun `삭제된 댓글에는 답할 수 없다`() {
+        val id = comment(authorToken, null, "곧 지움")
+        comment(otherToken, id, "자식")
+        mockMvc.perform(delete("/api/v1/comments/" + id).header("Authorization", "Bearer " + authorToken))
+
+        // 무엇에 답하는지가 사라진 자리다.
+        mockMvc.perform(
+            post("/api/v1/posts/" + postId + "/comments")
+                .header("Authorization", "Bearer " + otherToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"parentId\":" + id + ",\"body\":\"뒤늦은 답\"}"),
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `다른 글의 댓글에 답할 수 없다`() {
+        val otherPost = jdbcClient.sql(
+            "INSERT INTO posts (board, author_id, title, body) VALUES ('FREE', :a, '다른 글', '본문') RETURNING id",
+        ).param("a", authorId).query(Long::class.java).single()
+        val id = comment(authorToken, null, "이 글의 댓글")
+
+        // 그러면 트리가 두 글에 걸친다.
+        mockMvc.perform(
+            post("/api/v1/posts/" + otherPost + "/comments")
+                .header("Authorization", "Bearer " + otherToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"parentId\":" + id + ",\"body\":\"엉뚱한 답\"}"),
+        ).andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `운영자는 남의 댓글을 내릴 수 있지만 고칠 수는 없다`() {
+        val id = comment(authorToken, null, "원문")
+
+        mockMvc.perform(
+            put("/api/v1/comments/" + id)
+                .header("Authorization", "Bearer " + moderatorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"body\":\"운영자가 고침\"}"),
+        ).andExpect(status().isForbidden)
+
+        mockMvc.perform(delete("/api/v1/comments/" + id).header("Authorization", "Bearer " + moderatorToken))
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `목록에 댓글 수가 나온다`() {
+        comment(authorToken, null, "하나")
+        val second = comment(otherToken, null, "둘")
+        comment(authorToken, second, "셋")
+
+        // 답이 달렸는지가 목록에서 보여야 질문 글이 쓸모가 있다.
+        mockMvc.perform(get("/api/v1/posts"))
+            .andExpect(jsonPath("$.content[0].commentCount").value(3))
+
+        mockMvc.perform(delete("/api/v1/comments/" + second).header("Authorization", "Bearer " + otherToken))
+        mockMvc.perform(get("/api/v1/posts"))
+            .andExpect(jsonPath("$.content[0].commentCount").value(2))
+    }
+
+    @Test
+    fun `삭제된 댓글은 본문을 내리지 않는다`() {
+        val id = comment(authorToken, null, "비밀이 담긴 댓글")
+        comment(otherToken, id, "자식")
+        mockMvc.perform(delete("/api/v1/comments/" + id).header("Authorization", "Bearer " + authorToken))
+
+        val body = mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andReturn().response.contentAsString
+        // 본문은 DB 에 남지만(복구 가능해야 한다) 화면으로는 내려가지 않아야 한다.
+        kotlin.test.assertTrue(!body.contains("비밀이 담긴"))
+    }
+
+    private fun comment(token: String, parentId: Long?, body: String): Long {
+        val payload = if (parentId == null) {
+            "{\"body\":\"" + body + "\"}"
+        } else {
+            "{\"parentId\":" + parentId + ",\"body\":\"" + body + "\"}"
+        }
+        mockMvc.perform(
+            post("/api/v1/posts/" + postId + "/comments")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload),
+        ).andExpect(status().isOk)
+
+        return jdbcClient.sql("SELECT max(id) FROM comments").query(Long::class.java).single()
+    }
+}

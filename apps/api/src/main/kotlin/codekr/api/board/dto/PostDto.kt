@@ -35,9 +35,11 @@ data class PostSummaryResponse(
     val updatedAt: Instant,
     /** 수정된 글인지. 목록에서 "고쳐졌다" 는 사실이 보여야 한다. */
     val edited: Boolean,
+    /** 댓글 수 (#138). 답이 달렸는지가 목록에서 보여야 질문 글이 쓸모가 있다. */
+    val commentCount: Long = 0,
 ) {
     companion object {
-        fun of(post: Post, nickname: String, avatarUrl: String?) = PostSummaryResponse(
+        fun of(post: Post, nickname: String, avatarUrl: String?, commentCount: Long = 0) = PostSummaryResponse(
             id = post.id,
             board = post.board,
             boardLabel = post.board.label,
@@ -47,6 +49,7 @@ data class PostSummaryResponse(
             createdAt = post.createdAt,
             updatedAt = post.updatedAt,
             edited = post.updatedAt.isAfter(post.createdAt.plusSeconds(EDIT_GRACE_SECONDS)),
+            commentCount = commentCount,
         )
 
         /**

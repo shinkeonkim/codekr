@@ -65,6 +65,7 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/posts", Access.PUBLIC),
         Endpoint("GET", "/api/v1/posts/boards", Access.PUBLIC),
         Endpoint("GET", "/api/v1/posts/{id}", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/posts/{postId}/comments", Access.PUBLIC),
         Endpoint("POST", "/api/v1/contests/{slug}/registrations", Access.AUTHENTICATED),
         Endpoint(
             "POST",
@@ -85,6 +86,9 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/users/{nickname}", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/users/{nickname}/activity", Access.AUTHENTICATED),
         Endpoint("POST", "/api/v1/posts", Access.AUTHENTICATED),
+        Endpoint("POST", "/api/v1/posts/{postId}/comments", Access.AUTHENTICATED),
+        Endpoint("PUT", "/api/v1/comments/{id}", Access.AUTHENTICATED),
+        Endpoint("DELETE", "/api/v1/comments/{id}", Access.AUTHENTICATED),
         Endpoint("PUT", "/api/v1/posts/{id}", Access.AUTHENTICATED),
         Endpoint("DELETE", "/api/v1/posts/{id}", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/collections/me", Access.AUTHENTICATED),
