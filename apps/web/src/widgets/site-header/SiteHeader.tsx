@@ -7,20 +7,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/shared/ui";
-
-const NAV_ITEMS = [
-  { href: "/problems", label: "문제" },
-  { href: "/submissions/explore", label: "전체 제출" },
-  { href: "/posts", label: "게시판" },
-  { href: "/collections", label: "문제집" },
-  { href: "/contests", label: "대회" },
-  { href: "/ranking", label: "랭킹" },
-  { href: "/submissions", label: "내 제출" },
-];
+import { NAV_ITEMS, activeHref } from "./nav";
 
 export function SiteHeader() {
   const { user, isAdmin, loading, signOut } = useAuth();
   const pathname = usePathname();
+  // 활성 판정은 nav.ts 가 한다 — 접두사 비교만으로는 두 항목이 함께 켜진다 (#182).
+  const active = activeHref(pathname);
 
   return (
     <header className="sticky top-0 z-header border-b border-border bg-surface/90 backdrop-blur">
@@ -34,8 +27,9 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active === item.href ? "page" : undefined}
               className={`rounded-lg px-3 py-1.5 transition ${
-                pathname.startsWith(item.href) ? "bg-surface-muted text-ink" : "text-ink-muted hover:text-ink"
+                active === item.href ? "bg-surface-muted text-ink" : "text-ink-muted hover:text-ink"
               }`}
             >
               {item.label}
@@ -45,6 +39,7 @@ export function SiteHeader() {
             <Link
               // 진입점은 하나다. 어느 구획으로 갈지는 어드민 첫 화면이 역할에 맞춰 보여준다 (#131).
               href="/admin"
+              aria-current={pathname.startsWith("/admin") ? "page" : undefined}
               className={`rounded-lg px-3 py-1.5 transition ${
                 pathname.startsWith("/admin") ? "bg-surface-muted text-ink" : "text-ink-muted hover:text-ink"
               }`}
