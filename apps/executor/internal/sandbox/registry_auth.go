@@ -111,7 +111,7 @@ func normalizeAuthHost(host string) string {
 }
 
 // lookup 은 resolver 가 호스트마다 부르는 함수다. 모르는 호스트는 익명으로 둔다.
-func (c registryCredentials) lookup(host string) (string, string, error) {
+func (c registryCredentials) lookup(host string) (username, password string, err error) {
 	auth, ok := c[host]
 	if !ok {
 		return "", "", nil
