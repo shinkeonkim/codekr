@@ -141,6 +141,9 @@ jobs:
           CONTAINERD_ADDRESS: /run/containerd/containerd.sock
           CODEKR_SECCOMP_PROFILE: ${{ github.workspace }}/infra/sandbox/seccomp.json
         run: |
+          # **pipefail 이 없으면 tee 가 시험 실패를 삼킨다.** 실제로 그랬다 — 라이브
+          # 시험 하나가 실패했는데 잡은 초록이었다.
+          set -o pipefail
           sudo -E /tmp/selftest.test -test.run TestLive -test.v 2>&1 | tee /tmp/selftest.log
           # **통과보다 실제로 돌았는지가 중요하다.** 환경 변수를 빠뜨리면 전부 SKIP 인데
           # 초록으로 보인다 — 그것이 가장 나쁜 결과다.
@@ -161,13 +164,18 @@ jobs:
         run: |
           # 런타임 매트릭스는 뺀다. 15개 중 2개가 아직 없는 이미지를 가리켜 실패한다 (#171).
           # 이미지가 올라가면 이 제외를 지운다.
+          set -o pipefail
           sudo -E /tmp/sandbox.test -test.v -test.timeout 30m \
             -test.run 'TestLive(Runs|Detects|Blocks|Hardening|Narrowed|SQL|UserNamespace)' \
             2>&1 | tee /tmp/sandbox.log
           ran=$(grep -cE '^(    )?--- (PASS|FAIL)' /tmp/sandbox.log || true)
-          echo "돌아간 검사: ${ran}개"
+          failed=$(grep -cE '^(    )?--- FAIL' /tmp/sandbox.log || true)
+          echo "돌아간 검사: ${ran}개 (실패 ${failed}개)"
           # SKIP 만 남은 상태를 막는 하한이다. 검사를 늘리면 이 숫자도 올린다.
           test "$ran" -ge 15
+          # 세는 것만으로는 부족하다. **실패가 0 인지도 따로 본다** — pipefail 을 빠뜨렸을
+          # 때 이 줄이 마지막 방어선이 된다.
+          test "$failed" -eq 0
 
   web-check:
     name: web 린트 · 타입 체크 · 빌드
