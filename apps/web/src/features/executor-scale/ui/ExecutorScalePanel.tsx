@@ -43,7 +43,8 @@ export function ExecutorScalePanel() {
 
   if (!status) return null;
 
-  if (!status.available) {
+  // 클러스터 밖이면 조정할 대상 자체가 없다. 고장이 아니라 설정이므로 조용히 안내만 한다.
+  if (status.state === "OUTSIDE_CLUSTER") {
     return (
       <Card className="p-5">
         <h2 className="text-sm font-semibold text-ink">실행기 수</h2>
@@ -54,8 +55,9 @@ export function ExecutorScalePanel() {
     );
   }
 
-  const canDecrease = status.desiredReplicas > status.minReplicas;
-  const canIncrease = status.desiredReplicas < status.maxReplicas;
+  const unreadable = status.state === "UNREADABLE";
+  const canDecrease = !unreadable && status.desiredReplicas > status.minReplicas;
+  const canIncrease = !unreadable && status.desiredReplicas < status.maxReplicas;
 
   return (
     <Card className="space-y-3 p-5">
@@ -63,8 +65,15 @@ export function ExecutorScalePanel() {
         <div>
           <h2 className="text-sm font-semibold text-ink">실행기 수</h2>
           <p className="mt-0.5 text-xs text-ink-muted">
-            준비됨 {status.readyReplicas} / 목표 {status.desiredReplicas}
+            {unreadable ? "현재 수를 읽지 못했습니다" : `준비됨 ${status.readyReplicas} / 목표 ${status.desiredReplicas}`}
             {" · "}허용 {status.minReplicas}~{status.maxReplicas}
+          </p>
+          {/*
+            어디를 보고 있는지 적는다 (#237). "그 배포가 없다" 는 말은 어느 네임스페이스에서
+            없다는 것인지 알아야 고칠 수 있다.
+          */}
+          <p className="mt-0.5 text-[11px] text-ink-muted">
+            {status.namespace ? `${status.namespace}/${status.deployment}` : status.deployment}
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -77,7 +86,7 @@ export function ExecutorScalePanel() {
             −
           </Button>
           <span className="w-10 text-center text-lg font-semibold text-ink">
-            {status.desiredReplicas}
+            {unreadable ? "?" : status.desiredReplicas}
           </span>
           <Button
             variant="secondary"
@@ -90,8 +99,14 @@ export function ExecutorScalePanel() {
         </div>
       </div>
 
+      {/*
+        읽기 실패는 **고장이다.** 왜 실패했는지를 그대로 보여준다 — 원인을 모르면
+        어드민이 계속 새로 고치기만 한다.
+      */}
+      {unreadable ? <Alert>{status.reason ?? "실행기 배포 상태를 읽지 못했습니다."}</Alert> : null}
+
       {/* 준비된 수가 목표에 못 미치면 확장이 진행 중이라는 뜻이다. */}
-      {status.readyReplicas < status.desiredReplicas ? (
+      {!unreadable && status.readyReplicas < status.desiredReplicas ? (
         <p className="text-xs text-warn">실행기를 늘리는 중입니다…</p>
       ) : null}
 

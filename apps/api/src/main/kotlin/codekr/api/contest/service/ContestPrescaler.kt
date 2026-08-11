@@ -1,6 +1,7 @@
 package codekr.api.contest.service
 
 import codekr.api.contest.entity.ContestStatus
+import codekr.api.scaling.dto.ExecutorScaleState
 import codekr.api.contest.repository.ContestRegistrationRepository
 import codekr.api.contest.repository.ContestRepository
 import codekr.api.scaling.service.ExecutorScaleService
@@ -39,7 +40,9 @@ class ContestPrescaler(
         if (upcoming.isEmpty()) return
 
         val status = scaleService.status()
-        if (!status.available) return
+        // **읽기에 성공했을 때만 움직인다** (#237). 지금 몇 개인지 모르는 채로 목표를 정하면
+        // 이미 떠 있는 것을 무시하고 잘못된 수로 덮어쓴다.
+        if (status.state != ExecutorScaleState.OK) return
 
         val needed = upcoming.sumOf { targetFor(registrationRepository.countByIdContestId(it.id)) }
         // **줄이지 않는다.** 이미 더 많이 떠 있다면 그럴 이유가 있는 것이다.

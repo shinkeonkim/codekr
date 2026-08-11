@@ -3,7 +3,9 @@ package codekr.api.scaling.service
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.config.properties.ExecutorScalingProperties
+import codekr.api.scaling.dto.ExecutorScaleState
 import codekr.api.scaling.dto.ExecutorScaleStatus
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 /**
@@ -18,15 +20,25 @@ class ExecutorScaleService(
     private val properties: ExecutorScalingProperties,
 ) {
 
-    fun status(): ExecutorScaleStatus {
-        if (!client.available) return unavailable()
+    private val log = LoggerFactory.getLogger(javaClass)
 
-        val (desired, ready) = runCatching { client.read(properties.deployment) }
-            .getOrElse { return unavailable("실행기 배포 상태를 읽지 못했습니다.") }
+    fun status(): ExecutorScaleStatus {
+        if (!client.available) return degraded(ExecutorScaleState.OUTSIDE_CLUSTER, client.unavailableReason)
+
+        val (desired, ready) = try {
+            client.read(properties.deployment)
+        } catch (error: ScaleAccessException) {
+            // 자세한 내용은 클라이언트가 이미 남겼다. 여기서는 무엇으로 분류됐는지만.
+            return degraded(ExecutorScaleState.UNREADABLE, error.failure.message)
+        } catch (error: Exception) {
+            log.error("실행기 배포 상태 조회가 예상 못 한 이유로 실패했습니다", error)
+            return degraded(ExecutorScaleState.UNREADABLE, ScaleAccessFailure.UNKNOWN.message)
+        }
 
         return ExecutorScaleStatus(
-            available = true,
+            state = ExecutorScaleState.OK,
             deployment = properties.deployment,
+            namespace = client.namespace,
             desiredReplicas = desired,
             readyReplicas = ready,
             minReplicas = properties.minReplicas,
@@ -51,13 +63,20 @@ class ExecutorScaleService(
         return status()
     }
 
-    private fun unavailable(reason: String? = null) = ExecutorScaleStatus(
-        available = false,
+    /**
+     * 수를 모르는 상태.
+     *
+     * **조정까지 막지는 않는다** (#237). 읽기 권한이 없어도 `scale` 권한은 있을 수 있고,
+     * 그때 화면 전체를 잠그면 고칠 수단까지 사라진다.
+     */
+    private fun degraded(state: ExecutorScaleState, reason: String?) = ExecutorScaleStatus(
+        state = state,
         deployment = properties.deployment,
+        namespace = client.namespace,
         desiredReplicas = 0,
         readyReplicas = 0,
         minReplicas = properties.minReplicas,
         maxReplicas = properties.maxReplicas,
-        reason = reason ?: client.unavailableReason,
+        reason = reason,
     )
 }
