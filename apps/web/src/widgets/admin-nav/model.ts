@@ -32,6 +32,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     description: "채점 적체와 실행기 수",
     roles: ["ADMIN"],
   },
+  {
+    href: "/admin/operations",
+    label: "운영 작업",
+    description: "랭킹·활동 집계 재계산",
+    // 집계를 통째로 다시 만드는 일이라 최고 관리자만 본다 — 서버 경로 규칙과 같다 (#103).
+    roles: ["SUPERUSER"],
+  },
 ];
 
 /**
