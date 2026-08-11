@@ -2,6 +2,7 @@ package codekr.api.user.avatar
 
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.storage.ImagePolicy
 import codekr.api.storage.ImageProcessor
 import codekr.api.storage.ObjectStorage
 import codekr.api.user.repository.UserRepository
@@ -25,7 +26,7 @@ class AvatarService(
         if (!storage.available) throw ApiException(ErrorCode.STORAGE_UNAVAILABLE)
         val user = userRepository.findById(userId).orElseThrow { ApiException(ErrorCode.USER_NOT_FOUND) }
 
-        val image = imageProcessor.toSquarePng(bytes)
+        val image = imageProcessor.process(bytes, ImagePolicy.AVATAR)
         val key = imageProcessor.keyFor(PREFIX, image.bytes)
         storage.put(key, image.bytes, image.contentType)
 

@@ -30,7 +30,7 @@ class S3ObjectStorageLiveTest {
     @Test
     fun `올리고 받고 지운다`() {
         val processor = ImageProcessor()
-        val image = processor.toSquarePng(samplePng())
+        val image = processor.process(samplePng(), ImagePolicy.AVATAR)
         val key = processor.keyFor("avatars", image.bytes)
 
         storage.put(key, image.bytes, image.contentType)

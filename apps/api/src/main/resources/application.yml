@@ -28,7 +28,12 @@ spring:
       port: ${CODEKR_REDIS_PORT:16379}
   servlet:
     multipart:
-      enabled: false
+      # 아바타 업로드(#116)가 multipart 다. 꺼 두면 그 엔드포인트가 500 을 낸다.
+      enabled: true
+      # **우리 상한(5MB)보다 크게 잡는다.** 컨테이너가 먼저 끊으면 "이미지는 5MB 이하여야
+      # 합니다" 대신 원인을 알 수 없는 오류가 간다. 이 값은 마지막 방어선이다.
+      max-file-size: 6MB
+      max-request-size: 8MB
 
 server:
   port: 8080

@@ -37,7 +37,10 @@ web:
 #
 # **자격증명은 차트에 두지 않는다.** 시크릿에서 읽는다 — values.yaml 은 저장소에 남는다.
 storage:
-  # S3 호환 엔드포인트. 비우면 업로드가 503 이 되고 나머지 기능은 그대로 돈다.
+  # 홈랩에 띄운 MinIO 의 주소 (#115). 비우면 업로드가 503 이 되고 나머지 기능은 그대로 돈다.
+  #
+  # **AWS S3 를 쓰지 않는다.** MinIO 가 S3 프로토콜을 말하므로 표준 클라이언트를 그대로
+  # 쓸 뿐이다. 예: http://minio.storage.svc.cluster.local:9000
   endpoint: ""
   bucket: codekr
   # 자격증명이 든 시크릿 이름. 키는 accessKey / secretKey.

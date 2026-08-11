@@ -1,4 +1,4 @@
-import { ApiError, request, tokenStore } from "@/shared/api";
+import { ApiError, apiUrl, request, tokenStore } from "@/shared/api";
 import type { TokenResponse, User, UserProfile, UserSettings } from "../model/types";
 
 function authHeader(): Record<string, string> {
@@ -35,7 +35,9 @@ export const userApi = {
     const form = new FormData();
     form.append("file", file);
 
-    const response = await fetch("/api/v1/users/me/avatar", {
+    // **`apiUrl` 을 거친다.** 상대 경로로 부르면 API 가 다른 출처일 때 웹 서버로 가서
+    // 404 가 된다 — 실제로 그랬다.
+    const response = await fetch(apiUrl("/api/v1/users/me/avatar").toString(), {
       method: "PUT",
       headers: authHeader(),
       body: form,
