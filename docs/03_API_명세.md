@@ -464,6 +464,20 @@ POST 와 동일한 바디. 테스트케이스와 초기 코드는 **전체 치�
 > 널 허용 `AuthPrincipal?` 파라미터는 **비로그인도 허용**한다. 공개 화면인데 로그인 여부에
 > 따라 내용이 달라지는 경우에 쓴다 — 대회 상세가 그렇다.
 
+### 알림 (#106, #135)
+
+`GET /api/v1/notifications?category=&unreadOnly=&page=&size=`
+`GET /api/v1/notifications/unread-count` — 총합과 **카테고리별** 미읽음 수
+`POST /api/v1/notifications/read-all?category=`
+
+- `category` 를 비우면 **전체 탭**이다. 전체가 첫 번째이고 기본값이다
+- `category` 와 `unreadOnly` 를 함께 걸면 **교집합**이다 — 그 탭에서 안 읽은 것
+- **"모두 읽음" 은 보고 있는 탭만 읽는다.** 채점 탭에서 눌렀는데 대회 알림까지
+  읽음이 되면 보지 않은 것을 읽은 것으로 만든 셈이고, 되돌릴 수 없다.
+  전체 탭에서만 전부 읽는다
+- 탭 목록은 **설정 응답의 카테고리 옵션**에서 만든다. 화면이 하드코딩하지 않는다
+- 카테고리별 미읽음 수는 **없는 카테고리도 0 으로 채워** 내린다. 화면이 빈 값을 다루지 않게
+
 ### 문제집 (#87)
 
 `GET /api/v1/collections/me` · `GET /api/v1/collections/{id}` ·

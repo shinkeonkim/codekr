@@ -132,6 +132,76 @@ class NotificationIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.mutedNotificationCategories.length()").value(0))
     }
 
+    @Test
+    fun `카테고리 탭으로 거를 수 있다`() {
+        notificationService.notify(userId, NotificationCategory.JUDGE, "채점 알림")
+        notificationService.notify(userId, NotificationCategory.SYSTEM, "점검 안내")
+
+        mockMvc.perform(
+            get("/api/v1/notifications").param("category", "JUDGE")
+                .header("Authorization", "Bearer $token"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].title").value("채점 알림"))
+
+        // 전체 탭이 기본이다.
+        mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer $token"))
+            .andExpect(jsonPath("$.content.length()").value(2))
+    }
+
+    @Test
+    fun `탭과 안 읽은 것만이 함께 걸리면 교집합이다`() {
+        notificationService.notify(userId, NotificationCategory.JUDGE, "안 읽은 채점")
+        notificationService.notify(userId, NotificationCategory.SYSTEM, "안 읽은 점검")
+        mockMvc.perform(post("/api/v1/notifications/read-all").param("category", "SYSTEM")
+            .header("Authorization", "Bearer $token"))
+
+        mockMvc.perform(
+            get("/api/v1/notifications").param("category", "JUDGE").param("unreadOnly", "true")
+                .header("Authorization", "Bearer $token"),
+        ).andExpect(jsonPath("$.content.length()").value(1))
+    }
+
+    @Test
+    fun `모두 읽음은 보고 있는 탭만 읽는다`() {
+        // 채점 탭에서 눌렀는데 대회 알림까지 읽음이 되면 보지 않은 것을 읽은 것으로
+        // 만든 셈이고, 되돌릴 수 없다 (#135).
+        notificationService.notify(userId, NotificationCategory.JUDGE, "채점")
+        notificationService.notify(userId, NotificationCategory.SYSTEM, "점검")
+
+        mockMvc.perform(
+            post("/api/v1/notifications/read-all").param("category", "JUDGE")
+                .header("Authorization", "Bearer $token"),
+        ).andExpect(status().isNoContent)
+
+        mockMvc.perform(get("/api/v1/notifications/unread-count").header("Authorization", "Bearer $token"))
+            .andExpect(jsonPath("$.unreadCount").value(1))
+            .andExpect(jsonPath("$.byCategory.JUDGE").value(0))
+            .andExpect(jsonPath("$.byCategory.SYSTEM").value(1))
+    }
+
+    @Test
+    fun `전체 탭에서는 전부 읽는다`() {
+        notificationService.notify(userId, NotificationCategory.JUDGE, "채점")
+        notificationService.notify(userId, NotificationCategory.SYSTEM, "점검")
+
+        mockMvc.perform(post("/api/v1/notifications/read-all").header("Authorization", "Bearer $token"))
+            .andExpect(status().isNoContent)
+
+        mockMvc.perform(get("/api/v1/notifications/unread-count").header("Authorization", "Bearer $token"))
+            .andExpect(jsonPath("$.unreadCount").value(0))
+    }
+
+    @Test
+    fun `탭별 안 읽은 수는 없는 카테고리도 0 으로 채운다`() {
+        // 화면이 빈 값을 다루지 않게 한다.
+        mockMvc.perform(get("/api/v1/notifications/unread-count").header("Authorization", "Bearer $token"))
+            .andExpect(jsonPath("$.byCategory.JUDGE").value(0))
+            .andExpect(jsonPath("$.byCategory.CONTEST").value(0))
+            .andExpect(jsonPath("$.byCategory.SYSTEM").value(0))
+    }
+
     private fun muteJudge() = updateMuted("""["JUDGE"]""")
 
     private fun updateMuted(json: String) {
