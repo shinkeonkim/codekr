@@ -13,4 +13,11 @@ export const activityApi = {
       auth: true,
       query,
     }),
+
+  /** 활동 집계 재계산 (#105, #180). */
+  recompute: (userId: number) =>
+    request<{ days: number }>(`/api/v1/admin/users/${userId}/activity/recompute`, {
+      method: "POST",
+      auth: true,
+    }),
 };

@@ -10,4 +10,15 @@ export const rankingApi = {
     ),
 
   options: () => request<RankingOptions>("/api/v1/rankings/metrics"),
+
+  /** 맞힌 제출이 있는 **모든** 회원을 다시 계산한다 (#177, #180). */
+  recomputeAll: () =>
+    request<{ users: number }>("/api/v1/admin/ranking/recompute", { method: "POST", auth: true }),
+
+  /** 회원 한 명만 다시 계산한다 (#177, #180). */
+  recomputeUser: (userId: number) =>
+    request<{ score: number; solvedCount: number }>(
+      `/api/v1/admin/users/${userId}/ranking/recompute`,
+      { method: "POST", auth: true },
+    ),
 };
