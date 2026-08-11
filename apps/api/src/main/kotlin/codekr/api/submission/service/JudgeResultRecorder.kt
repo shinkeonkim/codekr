@@ -2,6 +2,7 @@ package codekr.api.submission.service
 
 import codekr.api.activity.service.ActivityRecorder
 import codekr.api.queue.message.JudgeEventMessage
+import codekr.api.ranking.service.ScoreRecorder
 import codekr.api.rejudge.service.RejudgeCompletion
 import codekr.api.submission.entity.SubmissionKind
 import codekr.api.submission.entity.SubmissionTestcaseResult
@@ -22,6 +23,7 @@ class JudgeResultRecorder(
     private val resultRepository: SubmissionTestcaseResultRepository,
     private val rejudgeCompletion: RejudgeCompletion,
     private val activityRecorder: ActivityRecorder,
+    private val scoreRecorder: ScoreRecorder,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -39,13 +41,20 @@ class JudgeResultRecorder(
             JudgeEventMessage.TYPE_TESTCASE -> upsertTestcaseResult(event)
             JudgeEventMessage.TYPE_COMPLETED -> {
                 submission.complete(event.toOutcome())
-                // 활동 집계는 제출 테이블과 분리돼 있다 (#105). 결과가 확정되는 여기서 반영한다.
+                // 집계는 제출을 SQL 로 다시 읽어 계산한다. 방금 바꾼 판정이 아직 DB 에
+                // 없으면 직전 판정으로 집계된다 — 그래서 여기서 먼저 밀어낸다.
+                submissionRepository.flush()
+
+                var scoreDelta = 0
+                // 활동·점수 집계는 제출 테이블과 분리돼 있다 (#105, #57).
+                // 결과가 확정되는 여기서 반영한다.
                 if (submission.kind == SubmissionKind.USER) {
                     activityRecorder.recordCompletion(submission.userId, submission.createdAt)
+                    scoreDelta = scoreRecorder.record(submission.userId, submission.problemId)
                 }
                 // 재채점이었으면 판정이 바뀌었는지 보고 알린다 (#107).
                 // 여기서 부르는 이유: 결과가 확정되는 유일한 지점이다.
-                if (submission.isRejudging) rejudgeCompletion.completeOne(submission.id)
+                if (submission.isRejudging) rejudgeCompletion.completeOne(submission.id, scoreDelta)
             }
             else -> log.warn("알 수 없는 채점 이벤트 유형: {}", event.type)
         }
