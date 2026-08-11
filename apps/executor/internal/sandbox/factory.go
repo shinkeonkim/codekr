@@ -1,6 +1,9 @@
 package sandbox
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 // 지원하는 런타임 구현.
 const (
@@ -21,9 +24,8 @@ func New(runtime, seccompProfilePath string) (Sandbox, error) {
 	case "", RuntimeEngineAPI:
 		return NewContainerSandbox(seccompProfilePath)
 	case RuntimeContainerd:
-		return nil, fmt.Errorf(
-			"containerd 네이티브 구현은 아직 없습니다 (이슈 #45). "+
-				"엔진 API 를 노출하는 노드라면 CODEKR_SANDBOX_RUNTIME=%s 로 두십시오", RuntimeEngineAPI)
+		// 소켓 경로는 환경마다 다르다. 비우면 기본 경로를 쓴다 (#68).
+		return NewContainerdSandbox(os.Getenv("CONTAINERD_ADDRESS"), seccompProfilePath)
 	default:
 		return nil, fmt.Errorf(
 			"알 수 없는 샌드박스 런타임 %q — %s 또는 %s 여야 합니다",

@@ -22,7 +22,7 @@ func TestLiveNarrowedSeccompBlocksDangerousSyscalls(t *testing.T) {
 		t.Skip("CODEKR_SANDBOX_TEST=1 일 때만 실행한다 (컨테이너 런타임 필요)")
 	}
 
-	box, err := NewContainerSandbox(profile)
+	box, err := New(os.Getenv("CODEKR_SANDBOX_RUNTIME"), profile)
 	if err != nil {
 		t.Fatalf("샌드박스 생성 실패: %v", err)
 	}
