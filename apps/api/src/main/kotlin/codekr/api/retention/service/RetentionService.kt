@@ -28,7 +28,7 @@ class RetentionService(
     fun scheduledCleanup() {
         if (!properties.enabled) return
         val report = cleanup()
-        if (report.deletedProblems + report.deletedTestcases + report.deletedTemplates > 0) {
+        if (report.total > 0) {
             log.info("보관 기간이 지난 삭제 행 정리: {}", report)
         }
     }
@@ -44,6 +44,9 @@ class RetentionService(
         val childThreshold = now.minusSeconds(properties.problemChildDays * SECONDS_PER_DAY)
         val problemThreshold = now.minusSeconds(properties.problemDays * SECONDS_PER_DAY)
 
+        val notifications = deleteExpiredNotifications(
+            now.minusSeconds(properties.readNotificationDays * SECONDS_PER_DAY),
+        )
         val testcases = deleteExpired("problem_testcases", childThreshold)
         val templates = deleteExpired("problem_templates", childThreshold)
         val problems = deleteExpiredProblems(problemThreshold)
@@ -53,9 +56,32 @@ class RetentionService(
             deletedProblems = problems,
             deletedTestcases = testcases,
             deletedTemplates = templates,
-            truncated = listOf(testcases, templates, problems).any { it >= properties.batchSize },
+            deletedNotifications = notifications,
+            truncated = listOf(testcases, templates, problems, notifications).any { it >= properties.batchSize },
         )
     }
+
+    /**
+     * 읽은 지 오래된 알림만 지운다.
+     *
+     * 안 읽은 것은 남긴다 — 읽지 않았다는 것은 아직 전달되지 않았다는 뜻이고,
+     * 오래됐다는 이유로 지우면 사용자는 그런 일이 있었다는 것 자체를 모르게 된다.
+     */
+    private fun deleteExpiredNotifications(threshold: Instant): Int =
+        jdbcClient.sql(
+            """
+            DELETE FROM notifications
+            WHERE id IN (
+                SELECT id FROM notifications
+                WHERE read_at IS NOT NULL AND read_at < :threshold
+                ORDER BY read_at
+                LIMIT :batchSize
+            )
+            """,
+        )
+            .param("threshold", java.sql.Timestamp.from(threshold))
+            .param("batchSize", properties.batchSize)
+            .update()
 
     private fun deleteExpired(table: String, threshold: Instant): Int =
         jdbcClient.sql(
