@@ -33,6 +33,15 @@ class Post(
      */
     @Column(nullable = false)
     var body: String,
+
+    /**
+     * 어느 문제에 붙은 질문인가 (#139). null 이면 커뮤니티 글이다.
+     *
+     * 게시글을 새로 만들지 않고 붙이는 이유: 질문은 게시글이고 답변은 댓글이다.
+     * 같은 것을 두 벌 만들면 렌더링·권한·삭제 규칙이 둘로 갈라진다.
+     */
+    @Column(name = "problem_id")
+    val problemId: Long? = null,
 ) : BaseTimeEntity() {
 
     @Id

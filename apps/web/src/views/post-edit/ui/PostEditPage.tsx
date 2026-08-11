@@ -5,7 +5,7 @@ import type { Board, BoardOption } from "@/entities/post";
 import { RequireAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input, Markdown, Select, Textarea, useToast } from "@/shared/ui";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { use, useEffect, useState } from "react";
 
 export function PostNewPage() {
@@ -29,7 +29,14 @@ function Editor({ title, postId }: { title: string; postId?: number }) {
   const router = useRouter();
   const toast = useToast();
   const [boards, setBoards] = useState<BoardOption[]>([]);
-  const [values, setValues] = useState({ board: "FREE" as Board, title: "", body: "" });
+  const searchParams = useSearchParams();
+  // 문제 질문 탭에서 넘어오면 그 문제에 붙는다 (#139).
+  const problemId = Number(searchParams.get("problemId")) || undefined;
+  const [values, setValues] = useState({
+    board: (problemId ? "QUESTION" : "FREE") as Board,
+    title: "",
+    body: "",
+  });
   const [preview, setPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -55,7 +62,7 @@ function Editor({ title, postId }: { title: string; postId?: number }) {
     try {
       const saved = postId
         ? await postApi.update(postId, values)
-        : await postApi.create(values);
+        : await postApi.create({ ...values, problemId });
       toast.success("저장했습니다.");
       router.push(`/posts/${saved.summary.id}`);
     } catch (caught) {

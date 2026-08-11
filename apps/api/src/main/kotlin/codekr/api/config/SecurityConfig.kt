@@ -86,6 +86,7 @@ class SecurityConfig(
                         "/api/v1/posts",
                         "/api/v1/posts/*",
                         "/api/v1/posts/*/comments",
+                        "/api/v1/posts/by-problem/*",
                     ).permitAll()
                     // 이미지는 공개다 (#115). 키에 내용 해시가 들어 있어 추측할 수 없다.
                     .requestMatchers(HttpMethod.GET, "/api/v1/files/**").permitAll()

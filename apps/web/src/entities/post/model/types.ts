@@ -22,10 +22,20 @@ export interface PostSummary {
   edited: boolean;
   /** 댓글 수 (#138). */
   commentCount: number;
+  /** 문제에 붙은 질문이면 그 문제 (#139). */
+  problemSlug: string | null;
+  problemTitle: string | null;
 }
 
 export interface PostDetail {
   summary: PostSummary;
+  /**
+   * 코드 블록을 기본으로 가릴지 (#139).
+   *
+   * 문제 질문에는 정답 코드가 그대로 올라온다. 아직 못 푼 사람에게 답이 보이면
+   * 그 문제의 값이 떨어진다.
+   */
+  hideCode: boolean;
   /** 마크다운 원문. 렌더링은 화면이 한다 — 서버가 HTML 을 만들지 않는다. */
   body: string;
   editable: boolean;
