@@ -56,9 +56,14 @@ function SubmissionList() {
           <Table
             rows={result.content}
             rowKey={(submission) => submission.id}
-            href={(submission) => `/submissions/${submission.id}`}
             columns={[
-              { key: "problem", header: "문제", render: (submission) => submission.problemTitle },
+              {
+                key: "problem",
+                header: "문제",
+                // 문제 열은 문제로 간다 (#197).
+                href: (submission) => `/problems/${submission.problemSlug}`,
+                render: (submission) => submission.problemTitle,
+              },
               {
                 key: "runtime",
                 header: "언어",
@@ -95,6 +100,16 @@ function SubmissionList() {
                   <span className="whitespace-nowrap text-xs text-ink-muted">
                     {formatDateTime(submission.createdAt)}
                   </span>
+                ),
+              },
+              {
+                key: "detail",
+                header: "제출",
+                align: "right",
+                // 내 제출이라 코드는 언제나 보인다 — 따로 표시할 것이 없다.
+                href: (submission) => `/submissions/${submission.id}`,
+                render: (submission) => (
+                  <span className="whitespace-nowrap text-xs">#{submission.id}</span>
                 ),
               },
             ]}
