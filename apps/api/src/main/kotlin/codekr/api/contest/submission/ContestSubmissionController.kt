@@ -3,6 +3,7 @@ package codekr.api.contest.submission
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.submission.dto.SubmitRequest
 import codekr.api.submission.dto.SubmitResponse
+import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PathVariable
@@ -29,5 +30,7 @@ class ContestSubmissionController(private val contestSubmissionService: ContestS
         @PathVariable problemSlug: String,
         @RequestBody @Valid request: SubmitRequest,
         principal: AuthPrincipal,
-    ): SubmitResponse = contestSubmissionService.submit(contestSlug, problemSlug, principal.userId, request)
+        httpRequest: HttpServletRequest,
+    ): SubmitResponse =
+        contestSubmissionService.submit(contestSlug, problemSlug, principal.userId, request, httpRequest)
 }

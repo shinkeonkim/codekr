@@ -2,6 +2,8 @@ package codekr.api.contest.admin
 
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
+import codekr.api.contest.audit.ContestAuditService
+import codekr.api.contest.audit.SharedAddress
 import codekr.api.contest.entity.ContestStatus
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
@@ -27,7 +29,10 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/v1/admin/contests")
-class AdminContestController(private val adminContestService: AdminContestService) {
+class AdminContestController(
+    private val adminContestService: AdminContestService,
+    private val auditService: ContestAuditService,
+) {
 
     @GetMapping
     fun findAll(
@@ -66,6 +71,16 @@ class AdminContestController(private val adminContestService: AdminContestServic
         @PathVariable problemId: Long,
         @RequestParam excluded: Boolean,
     ): AdminContestResponse = adminContestService.excludeProblem(id, problemId, excluded)
+
+    /**
+     * 같은 주소에서 제출한 계정들 (#148).
+     *
+     * **전체 목록을 내리지 않는다.** 운영자가 이유 없이 참가자의 IP 를 훑을 수 있게 되면
+     * 그것은 감사가 아니라 감시다. 계정이 둘 이상 겹치는 주소만 보여준다.
+     */
+    @GetMapping("/{id}/audit/shared-addresses")
+    fun sharedAddresses(@PathVariable id: Long): List<SharedAddress> =
+        auditService.sharedAddresses(id)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

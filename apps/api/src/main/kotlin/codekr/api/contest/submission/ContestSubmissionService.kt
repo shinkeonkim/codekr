@@ -1,6 +1,8 @@
 package codekr.api.contest.submission
 
 import codekr.api.common.error.ApiException
+import codekr.api.contest.audit.ContestAuditService
+import jakarta.servlet.http.HttpServletRequest
 import codekr.api.common.error.ErrorCode
 import codekr.api.contest.entity.ContestProblemId
 import codekr.api.contest.entity.ContestRegistrationId
@@ -38,6 +40,7 @@ class ContestSubmissionService(
     private val queuePublisher: QueuePublisher,
     private val judgeJobFactory: JudgeJobFactory,
     private val properties: SubmissionProperties,
+    private val auditService: ContestAuditService,
 ) {
 
     fun submit(
@@ -45,6 +48,7 @@ class ContestSubmissionService(
         problemSlug: String,
         userId: Long,
         request: SubmitRequest,
+        httpRequest: HttpServletRequest? = null,
     ): SubmitResponse {
         // **접수 시각을 먼저 잡는다.** 뒤의 검증에 걸리는 시간이 마감 판정에 섞이면,
         // 서버가 느린 날 마감 직전 제출이 부당하게 거부된다.
@@ -83,6 +87,10 @@ class ContestSubmissionService(
                 contestId = contest.id,
             ),
         )
+        // 부정행위 의심이 생겼을 때 판단할 근거를 남긴다 (#148).
+        // 대회가 끝난 뒤에 기록을 만들 수는 없다.
+        httpRequest?.let { auditService.record(submission.id, contest.id, userId, it) }
+
         // 대회 제출은 전용 큐로 간다. 평소 제출을 밀어내지 않기 위함이다.
         queuePublisher.publishJudgeJob(judgeJobFactory.of(submission, problem), JudgePriority.CONTEST)
         return SubmitResponse.from(submission)
