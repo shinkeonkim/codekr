@@ -235,6 +235,21 @@ WebSocket 을 사용할 수 없는 환경을 위해 `GET /submissions/{id}` 폴�
 
 ## 5. 어드민 `/api/v1/admin` 🔒 ROLE_ADMIN
 
+### POST `/ranking/recompute` · POST `/users/{userId}/ranking/recompute`
+
+랭킹 집계를 제출 기록에서 다시 만든다 (#177). 점수·최고 점수(실력 티어의 근거)·뱃지를
+함께 맞춘다.
+
+```json
+{ "users": 128 }                        // 전체
+{ "score": 930, "solvedCount": 12 }     // 한 사람
+```
+
+**랭킹을 처음 붙인 직후에는 전체를 한 번 불러야 한다.** 그 전의 제출은 점수 표를 거치지
+않았으므로, 부르지 않으면 랭킹이 빈 채로 시작한다.
+
+여러 번 불러도 결과는 같다.
+
 ### GET `/problems`
 
 미공개 문제를 포함한 전체 목록. 쿼리는 공개 목록과 동일.
