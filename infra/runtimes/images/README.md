@@ -5,8 +5,11 @@
 
 | 언어 | 이미지 | 왜 직접 만드는가 |
 |---|---|---|
-| Kotlin | `codekr/runtime-kotlin` | 공식 `kotlinc` 컨테이너 이미지가 없다 |
-| C# | `codekr/runtime-csharp` | 단일 `.cs` 를 빌드하려면 프로젝트 골격과 사전 복원이 필요하다 |
+| Kotlin | `codekr-runtime-kotlin` | 공식 `kotlinc` 컨테이너 이미지가 없다 |
+| C# | `codekr-runtime-csharp` | 단일 `.cs` 를 빌드하려면 프로젝트 골격과 사전 복원이 필요하다 |
+
+**주소에 레지스트리를 적지 않는다.** 레지스트리는 실행기 설정(`CODEKR_RUNTIME_REGISTRY`)이
+앞에 붙인다 — 공개 이미지와 같은 규칙이다.
 
 ## 만들기
 
@@ -20,8 +23,18 @@ CODEKR_IMAGE_BUILDER=nerdctl sudo -E \
 들어가는데, containerd 구현은 containerd 의 `codekr` 네임스페이스를 본다 — 빌드는
 성공했는데 실행기는 없다고 한다.
 
-CI 는 `infra/runtimes/images/**` 가 바뀔 때만 빌드해 `ghcr.io` 로 올린다
-(`.github/workflows/runtime-images.yml`).
+## 운영에서는 어디서 만드는가 — 클러스터 안
+
+**GitHub Actions 로 만들어 ghcr 에 올리는 방식을 그만뒀다** (#171).
+
+- 실행 노드가 amd64 인데 손으로 만들면 만든 사람의 아키텍처가 따라온다
+- 이미지를 밖에 두면 받아올 자격증명과 공개 여부를 또 관리해야 한다
+- 무엇보다, 만든 것을 **쓰는 곳과 같은 클러스터에서** 만드는 편이 단순하다
+
+지금은 홈랩 클러스터 안에서 buildkit Job 이 만들어 자체 레지스트리에 넣는다.
+매니페스트와 절차는 `oh-my-homelab` 저장소에 있다.
+
+공개 런타임 13종은 레지스트리가 업스트림에서 직접 당겨온다(zot sync) — 만들 것이 없다.
 
 ## 레지스트리 없이 도는가
 
