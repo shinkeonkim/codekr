@@ -14,6 +14,8 @@ data class RejudgeResponse(
     val problemId: Long,
     val reason: String,
     val targetCount: Int,
+    /** 결과가 돌아온 제출 수 (#187). 화면이 진행률을 보여주려면 이것이 필요하다. */
+    val processedCount: Int,
     val changedCount: Int,
     val finished: Boolean,
     val createdAt: Instant,
@@ -24,6 +26,7 @@ data class RejudgeResponse(
             problemId = batch.problemId,
             reason = batch.reason,
             targetCount = batch.targetCount,
+            processedCount = batch.processedCount,
             changedCount = batch.changedCount,
             finished = batch.isFinished,
             createdAt = batch.createdAt,

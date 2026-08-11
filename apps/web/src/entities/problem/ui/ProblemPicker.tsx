@@ -1,22 +1,30 @@
 "use client";
 
-import { TierBadge, problemApi } from "@/entities/problem";
-import type { ProblemSummary } from "@/entities/problem";
 import { Field, Input } from "@/shared/ui";
 import { useEffect, useState } from "react";
+import { problemApi } from "../api";
+import type { ProblemSummary } from "../model/types";
+import { acceptanceLabel } from "./ProblemStatsView";
+import { TierBadge } from "./TierBadge";
 
 /**
- * 문제를 찾아 담는다 (#87).
+ * 문제를 찾아 고른다 (#87).
  *
  * **문제 번호를 외워서 입력하는 방식은 안 된다.** 제목 일부로 찾고, 티어와 정답률을
- * 함께 보여줘 고르기 쉽게 한다 — 무엇을 담을지 고르는 것이 문제집 만들기의 전부다.
+ * 함께 보여줘 고르기 쉽게 한다.
+ *
+ * `entities/problem` 에 있는 이유: 문제집(#87)과 재채점(#219)이 같은 것을 쓴다.
+ * 한쪽 feature 안에 두면 다른 쪽이 feature 를 가로질러 가져다 써야 한다.
+ * 고른 뒤에 무엇을 하는지는 쓰는 쪽마다 다르므로, 버튼에 쓸 말도 쓰는 쪽이 정한다.
  */
 export function ProblemPicker({
   pickedIds,
   onPick,
+  labels = { idle: "담기", picked: "담김" },
 }: {
   pickedIds: number[];
   onPick: (problem: ProblemSummary) => void;
+  labels?: { idle: string; picked: string };
 }) {
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState<ProblemSummary[]>([]);
@@ -64,11 +72,12 @@ export function ProblemPicker({
                   <span className="min-w-0 flex-1 truncate text-ink">{problem.title}</span>
                   {/* 정답률을 함께 보여줘야 난이도만으로는 안 보이는 체감 난이도가 드러난다. */}
                   <span className="shrink-0 text-xs text-ink-muted">
-                    {problem.stats.solverCount}명
-                    {problem.stats.acceptanceRate !== null ? ` · ${problem.stats.acceptanceRate}%` : ""}
+                    {problem.stats.solverCount}명 · {acceptanceLabel(problem.stats)}
                   </span>
-                  {/* 이미 담긴 문제를 표시하지 않으면 같은 것을 또 누르게 된다. */}
-                  <span className="shrink-0 text-xs text-ink-muted">{picked ? "담김" : "담기"}</span>
+                  {/* 이미 고른 문제를 표시하지 않으면 같은 것을 또 누르게 된다. */}
+                  <span className="shrink-0 text-xs text-ink-muted">
+                    {picked ? labels.picked : labels.idle}
+                  </span>
                 </button>
               </li>
             );

@@ -2,6 +2,7 @@
 
 import { activityApi } from "@/entities/activity";
 import { rankingApi } from "@/entities/ranking";
+import { RejudgePanel } from "@/features/rejudge";
 import { useToast } from "@/shared/ui";
 import { OperationCard } from "./OperationCard";
 import type { Operation } from "./OperationCard";
@@ -59,7 +60,8 @@ export function AdminOperationsPage() {
       <header>
         <h1 className="text-2xl font-bold text-ink">운영 작업</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          저장해 둔 집계를 원자료에서 다시 만듭니다. 여러 번 눌러도 결과는 같습니다.
+          저장해 둔 집계를 원자료에서 다시 만듭니다. 재채점을 뺀 나머지는 여러 번 눌러도
+          결과가 같습니다.
         </p>
       </header>
 
@@ -71,6 +73,13 @@ export function AdminOperationsPage() {
             onError={toast.error}
           />
         ))}
+
+        {/*
+          재채점만 카드 밖에 따로 있는 이유 (#219): 다른 작업은 "인자 하나 + 실행" 인데
+          이것은 문제를 고르고, 대상 수를 보고, 이유를 적는 절차가 필요하다. `Operation`
+          배열에 억지로 끼우면 그 배열이 무엇이든 담는 것이 되어 형태가 사라진다.
+        */}
+        <RejudgePanel onError={toast.error} />
       </div>
     </div>
   );

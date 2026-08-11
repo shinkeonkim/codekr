@@ -2,13 +2,12 @@
 
 import { MIN_SHARED_PROBLEMS, VISIBILITY_LABELS, collectionApi } from "@/entities/collection";
 import type { CollectionVisibility } from "@/entities/collection";
-import { TierBadge } from "@/entities/problem";
+import { ProblemPicker, TierBadge } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ProblemPicker } from "./ProblemPicker";
 
 /** 담은 문제. 서버에는 id 만 보내지만 화면에는 제목·티어가 있어야 한다. */
 export interface PickedProblem {
