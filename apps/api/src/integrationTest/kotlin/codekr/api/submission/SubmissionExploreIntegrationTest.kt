@@ -30,14 +30,17 @@ class SubmissionExploreIntegrationTest : IntegrationTestBase() {
     @Autowired private lateinit var recorder: JudgeResultRecorder
     @Autowired private lateinit var tokenProvider: JwtTokenProvider
     @Autowired private lateinit var transactionTemplate: TransactionTemplate
+    @Autowired private lateinit var jdbcClient: org.springframework.jdbc.core.simple.JdbcClient
 
     private lateinit var aliceToken: String
     private lateinit var bobToken: String
+    private var alice: Long = 0
 
     @BeforeEach
     fun setUp() {
         aliceToken = tokenProvider.issueAccessToken(
-            userRepository.save(User("alice@codekr.dev", "x", "앨리스", setOf(UserRole.USER))),
+            userRepository.save(User("alice@codekr.dev", "x", "앨리스", setOf(UserRole.USER)))
+                .also { alice = it.id },
         )
         bobToken = tokenProvider.issueAccessToken(
             userRepository.save(User("bob@codekr.dev", "x", "밥", setOf(UserRole.USER))),
@@ -128,7 +131,9 @@ class SubmissionExploreIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `페이지 경계에서 중복이나 누락이 없다`() {
-        repeat(5) { submit(aliceToken, "two-sum") }
+        // 제출 간격 제한(#189)을 피해 표에 바로 넣는다. 여기서 보는 것은 페이지 경계이지
+        // 제출 경로가 아니다 — API 로 5번 내면 간격 제한에 걸린다.
+        repeat(5) { insertSubmission(alice, "two-sum") }
 
         val firstPage = idsOf("size=2&page=0")
         val secondPage = idsOf("size=2&page=1")
@@ -147,6 +152,18 @@ class SubmissionExploreIntegrationTest : IntegrationTestBase() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.content[0].sourceCode").doesNotExist())
             .andExpect(jsonPath("$.content[0].sourceVisible").value(false))
+    }
+
+    /** 제출 경로를 거치지 않고 제출 한 건을 남긴다. 목록·페이지 시험의 사전 준비용이다. */
+    private fun insertSubmission(userId: Long, slug: String) {
+        val problemId = problemRepository.findBySlugAndDeletedAtIsNull(slug)!!.id
+        jdbcClient.sql(
+            """
+            INSERT INTO submissions
+                (user_id, problem_id, runtime_id, source_code, status, kind, created_at, updated_at)
+            VALUES (:userId, :problemId, 'python:3.12', 'print(3)', 'PENDING', 'USER', now(), now())
+            """,
+        ).param("userId", userId).param("problemId", problemId).update()
     }
 
     private fun idsOf(query: String): List<Int> {

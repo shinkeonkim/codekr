@@ -233,6 +233,22 @@ WebSocket 을 사용할 수 없는 환경을 위해 `GET /submissions/{id}` 폴�
 
 ---
 
+### 제출 간격 제한
+
+같은 사람이 같은 문제에 연달아 내는 것을 막는다 (#189). 걸리면 **429** 와
+`SUBMISSION_TOO_FREQUENT`, 남은 시간을 담은 메시지가 온다.
+
+| 경로 | 간격 |
+|---|---|
+| 일반 제출 | 30초 |
+| 대회 제출 | 대회의 `submissionCooldownSeconds` (기본 20초, **최소 3초**) |
+
+**검증을 통과한 요청에만 간격을 따진다.** 잘못된 런타임 같은 오류는 간격과 무관하게
+그대로 알려 준다 — 아니면 무엇이 틀렸는지 모른 채 간격만큼 기다리게 된다.
+
+대회 등록·수정의 `submissionCooldownSeconds` 는 3 미만이면 400 이다. 0 을 허용하면
+제한이 없는 것과 같아지고, 한 참가자가 채점 차선을 혼자 채울 수 있다.
+
 ## 5. 어드민 `/api/v1/admin` 🔒 ROLE_ADMIN
 
 ### POST `/ranking/recompute` · POST `/users/{userId}/ranking/recompute`

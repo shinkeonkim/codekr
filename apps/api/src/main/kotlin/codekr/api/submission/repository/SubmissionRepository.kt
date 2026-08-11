@@ -13,6 +13,12 @@ interface SubmissionRepository : JpaRepository<Submission, Long> {
     fun findByIdAndDeletedAtIsNull(id: Long): Submission?
 
     /** 대회 제출 간격 제한에 쓴다 (#62). 문제마다 따로 센다. */
+    /** 대회 밖에서 같은 사람이 같은 문제에 마지막으로 낸 제출 (#189). */
+    fun findFirstByUserIdAndProblemIdAndContestIdIsNullAndDeletedAtIsNullOrderByIdDesc(
+        userId: Long,
+        problemId: Long,
+    ): Submission?
+
     fun findFirstByContestIdAndUserIdAndProblemIdAndDeletedAtIsNullOrderByIdDesc(
         contestId: Long,
         userId: Long,

@@ -148,6 +148,23 @@ class SubmissionIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.code").value("RUNTIME_NOT_FOUND"))
     }
 
+    @Test
+    fun `같은 문제를 연달아 내면 거절한다`() {
+        // 자동화된 반복 제출이 채점 큐를 채우는 것을 막는다 (#189).
+        submit()
+
+        mockMvc.perform(
+            post("/api/v1/problems/two-sum/submissions")
+                .header("Authorization", "Bearer $ownerToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"runtimeId":"python:3.12","sourceCode":"print(3)"}"""),
+        )
+            // 400 이 아니라 429 다 — 여기서 할 일은 고치는 것이 아니라 기다리는 것이다.
+            .andExpect(status().isTooManyRequests)
+            .andExpect(jsonPath("$.code").value("SUBMISSION_TOO_FREQUENT"))
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("30초에 한 번")))
+    }
+
     private fun submit(): Long {
         val response = mockMvc.perform(
             post("/api/v1/problems/two-sum/submissions")
