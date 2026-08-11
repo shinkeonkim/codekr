@@ -37,11 +37,9 @@ export function AdminProblemListPage() {
 
   return (
     <div className="space-y-4">
+      {/* 구획 이동은 사이드바가 한다 (#179). 제목 옆에 또 두면 내비가 두 벌이 된다. */}
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold text-ink">문제 관리</h1>
-        <Link href="/admin/queues" className="text-sm text-ink-muted hover:text-ink">
-          큐 모니터링
-        </Link>
         <Link href="/admin/problems/new" className="ml-auto">
           <Button>문제 등록</Button>
         </Link>

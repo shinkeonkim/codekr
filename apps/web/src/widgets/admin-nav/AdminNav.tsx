@@ -17,7 +17,7 @@ export function AdminNav() {
   const items = visibleNav(user?.roles ?? []);
 
   return (
-    <nav aria-label="어드민 메뉴" className="lg:w-56 lg:shrink-0">
+    <nav aria-label="어드민 메뉴">
       {/* 좁은 화면에서는 가로로 스크롤되는 줄로 접는다. 사이드바를 세로로 두면 본문이 밀린다. */}
       <ul className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
         {items.map((item) => {
