@@ -79,21 +79,74 @@ class RejudgeIntegrationTest : IntegrationTestBase() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.content.length()").value(1))
             .andExpect(jsonPath("$.content[0].title").value("재채점으로 판정이 바뀌었습니다"))
-            // 왜 바뀌었는지가 함께 가야 한다.
-            .andExpect(jsonPath("$.content[0].body").value("테스트케이스가 수정되었습니다"))
+            // 왜 바뀌었는지와 **무엇에서 무엇으로** 바뀌었는지가 함께 가야 한다 (#187).
+            .andExpect(
+                jsonPath("$.content[0].body")
+                    .value(
+                        org.hamcrest.Matchers.containsString(
+                            "테스트케이스가 수정되었습니다 판정이 바뀌었습니다: 맞았습니다 → 틀렸습니다",
+                        ),
+                    ),
+            )
             .andExpect(jsonPath("$.content[0].link").value("/submissions/$id"))
     }
 
     @Test
-    fun `판정이 그대로면 알리지 않는다`() {
+    fun `판정이 그대로여도 결과를 알린다`() {
         val id = insertSubmission(verdict = "ACCEPTED")
 
         rejudgeService.rejudgeProblem(1, "테스트케이스가 수정되었습니다", adminId)
         complete(id, Verdict.ACCEPTED)
 
-        // 안 바뀐 사람에게 보내면 소음이다.
+        // **재채점 대상이었다는 사실 자체가 알릴 값이다** (#187). 알리지 않으면 자기 결과가
+        // 확정된 것인지 아직 도는 중인지 구분할 수 없다.
         mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer $token"))
-            .andExpect(jsonPath("$.content.length()").value(0))
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].title").value("재채점 결과: 판정이 그대로입니다"))
+            .andExpect(
+                jsonPath("$.content[0].body")
+                    .value(
+                        org.hamcrest.Matchers.containsString(
+                            "테스트케이스가 수정되었습니다 다시 채점했지만 1건 모두 판정이 같습니다.",
+                        ),
+                    ),
+            )
+    }
+
+    @Test
+    fun `전이를 전부 남긴다`() {
+        // 바뀐 것만 남기면 "그때 무슨 일이 있었나" 에 답할 수 없다 (#187).
+        val flipped = insertSubmission(verdict = "WRONG_ANSWER")
+        val kept = insertSubmission(verdict = "ACCEPTED")
+
+        rejudgeService.rejudgeProblem(1, "이유", adminId)
+        complete(flipped, Verdict.ACCEPTED)
+        complete(kept, Verdict.ACCEPTED)
+
+        val rows = jdbcClient
+            .sql("SELECT previous_verdict, new_verdict FROM rejudge_submission_results ORDER BY submission_id")
+            .query { rs, _ -> rs.getString("previous_verdict") to rs.getString("new_verdict") }
+            .list()
+
+        assertEquals(listOf("WRONG_ANSWER" to "ACCEPTED", "ACCEPTED" to "ACCEPTED"), rows)
+    }
+
+    @Test
+    fun `한 사람이 여러 번 냈어도 알림은 한 번이다`() {
+        // 스무 번 낸 사람에게 스무 번 울리면 알림함이 못 쓰게 된다.
+        val first = insertSubmission(verdict = "WRONG_ANSWER")
+        val second = insertSubmission(verdict = "WRONG_ANSWER")
+
+        rejudgeService.rejudgeProblem(1, "이유", adminId)
+        complete(first, Verdict.ACCEPTED)
+        complete(second, Verdict.ACCEPTED)
+
+        mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer $token"))
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(
+                jsonPath("$.content[0].body")
+                    .value(org.hamcrest.Matchers.containsString("틀렸습니다 → 맞았습니다 (2건)")),
+            )
     }
 
     @Test

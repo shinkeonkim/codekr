@@ -97,11 +97,17 @@ class Submission(
     }
 
     /** 재채점 결과를 반영하고 **판정이 바뀌었는지** 돌려준다. */
-    fun finishRejudge(): Boolean {
-        val changed = previousVerdict != verdict
+    /**
+     * 재채점을 마감하고 **판정이 어떻게 바뀌었는지를 돌려준다** (#187).
+     *
+     * 전에는 바뀌었는지 여부(Boolean)만 돌려주고 이전 판정을 지웠다. 그러면 "틀림 → 맞음"
+     * 인지 "맞음 → 틀림" 인지 알 수 없어, 판정이 뒤집힌 사람에게 설명할 근거가 남지 않는다.
+     */
+    fun finishRejudge(): RejudgeTransition {
+        val transition = RejudgeTransition(previous = previousVerdict, current = verdict)
         rejudgeBatchId = null
         previousVerdict = null
-        return changed
+        return transition
     }
 
     val isRejudging: Boolean get() = rejudgeBatchId != null
