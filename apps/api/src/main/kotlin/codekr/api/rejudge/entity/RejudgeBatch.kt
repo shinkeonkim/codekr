@@ -38,6 +38,10 @@ class RejudgeBatch(
     @Column(name = "changed_count", nullable = false)
     var changedCount: Int = 0
 
+    /** 결과가 돌아온 제출 수. 대상 수에 닿으면 배치가 끝난 것이다 (#187). */
+    @Column(name = "processed_count")
+    var processedCount: Int = 0
+
     @Column(name = "finished_at")
     var finishedAt: Instant? = null
 
@@ -45,6 +49,21 @@ class RejudgeBatch(
     val createdAt: Instant = Instant.now()
 
     val isFinished: Boolean get() = finishedAt != null
+
+    /**
+     * 결과 하나를 반영하고 **끝났는지** 알려준다 (#187).
+     *
+     * 전에는 배치를 끝내는 사람이 아무도 없어 `finishedAt` 이 영영 비어 있었다.
+     */
+    fun recordResult(changed: Boolean): Boolean {
+        processedCount += 1
+        if (changed) recordChange()
+        if (processedCount >= targetCount && finishedAt == null) {
+            finish()
+            return true
+        }
+        return false
+    }
 
     fun recordChange() {
         changedCount++
