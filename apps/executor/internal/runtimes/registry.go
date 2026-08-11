@@ -17,6 +17,13 @@ type Definition struct {
 	SourceFile string   `yaml:"sourceFile"`
 	Compile    []string `yaml:"compile"`
 	Run        []string `yaml:"run"`
+	// Harness 는 이 런타임이 필요로 하는 실행 스크립트 이름이다 (#60).
+	Harness string `yaml:"harness"`
+	// User 는 컨테이너 안에서 코드를 돌릴 UID:GID 다 (#60). 비우면 기본 계정.
+	//
+	// PostgreSQL 의 initdb 는 UID 가 /etc/passwd 에 없으면 거부하므로, SQL 런타임은
+	// 이미지에 있는 계정(70:70)을 써야 한다.
+	User string `yaml:"user"`
 	// Template 은 실행에 쓰이지 않지만, "기본 템플릿이 실제로 컴파일·실행되는가"를
 	// 검증하는 데 필요해 함께 읽는다.
 	Template string `yaml:"template"`

@@ -73,6 +73,11 @@ type ExecJob struct {
 	TimeLimitMs   int    `json:"timeLimitMs"`
 	MemoryLimitMb int    `json:"memoryLimitMb"`
 	ReplyStream   string `json:"replyStream"`
+	// ExtraFiles 는 작업 디렉터리에 함께 풀 파일이다 (#60).
+	//
+	// SQL 문제의 스키마·시드·정답 쿼리처럼 **문제가 소유하는 자료**를 싣는다.
+	// 이름에 경로를 쓸 수 없고 샌드박스 예약 이름과 겹칠 수 없다 — 실행기가 거부한다.
+	ExtraFiles map[string]string `json:"extraFiles,omitempty"`
 }
 
 // ExecResult 는 실행기가 응답 스트림으로 돌려주는 결과다.

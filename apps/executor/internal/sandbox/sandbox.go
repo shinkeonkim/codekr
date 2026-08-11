@@ -22,6 +22,21 @@ type Spec struct {
 	// 문제의 메모리 제한과 별개로 둔다 (docs/06_실행_제약_계약.md).
 	CompileMemoryLimitMb int
 	MaxOutputBytes       int
+	// Harness 는 이 런타임이 필요로 하는 실행 스크립트다 (#60). 비어 있으면 없다.
+	//
+	// SQL 런타임은 PostgreSQL 을 띄우고 읽기 전용 롤을 만드는 스크립트가 필요하다.
+	// 실행기 바이너리에 담아 두어 스크립트와 코드의 버전이 갈라지지 않게 한다.
+	Harness string
+	// User 는 컨테이너 안에서 코드를 돌릴 UID:GID 다. 비어 있으면 기본값을 쓴다.
+	//
+	// 런타임마다 다를 수 있어 열어 뒀다 (#60) — PostgreSQL 의 initdb 는 UID 가
+	// /etc/passwd 에 없으면 거부하므로, 이미지에 있는 계정을 써야 한다.
+	User string
+	// ExtraFiles 는 소스 외에 작업 디렉터리에 함께 풀 파일이다 (#60).
+	//
+	// SQL 문제의 스키마·시드·정답 쿼리처럼 **문제가 소유하는 자료**를 싣는다.
+	// 이름은 예약 파일과 겹칠 수 없다 (아래 reservedFiles).
+	ExtraFiles map[string]string
 }
 
 // Outcome 은 샌드박스가 관찰한 실행 결과다. 정답 여부는 판단하지 않는다.

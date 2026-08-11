@@ -132,3 +132,41 @@ func TestToOutcomeTreatsMissingMetricsAsTimeout(t *testing.T) {
 		t.Fatalf("계측 파일이 없으면 시간 초과로 봐야 합니다: %+v", outcome)
 	}
 }
+
+// 문제 자료가 샌드박스의 래퍼 스크립트를 덮어쓰면 임의 명령을 실행할 수 있다 (#60).
+//
+// 검증을 어드민 화면에만 두면 화면을 거치지 않는 경로가 생겼을 때 그대로 뚫린다.
+// 그래서 샌드박스가 스스로 거부한다.
+func TestBuildInputArchiveRejectsFilesThatOverwriteWrappers(t *testing.T) {
+	for _, name := range []string{"run.sh", "compile.sh", "input.txt", "run-sql.sh"} {
+		spec := Spec{
+			SourceFile: "query.sql",
+			SourceCode: "SELECT 1;",
+			Harness:    "sql",
+			ExtraFiles: map[string]string{name: "echo pwned"},
+		}
+		if _, err := buildInputArchive(spec, stageScripts{}); err == nil {
+			t.Fatalf("%q 는 거부해야 합니다", name)
+		}
+	}
+}
+
+func TestBuildInputArchiveRejectsPathsInFileNames(t *testing.T) {
+	for _, name := range []string{"../escape.sql", "sub/dir.sql", "..", ""} {
+		spec := Spec{
+			SourceFile: "query.sql",
+			SourceCode: "SELECT 1;",
+			ExtraFiles: map[string]string{name: "x"},
+		}
+		if _, err := buildInputArchive(spec, stageScripts{}); err == nil {
+			t.Fatalf("%q 는 거부해야 합니다", name)
+		}
+	}
+}
+
+func TestBuildInputArchiveRejectsUnknownHarness(t *testing.T) {
+	spec := Spec{SourceFile: "main.py", SourceCode: "print(3)", Harness: "없는하네스"}
+	if _, err := buildInputArchive(spec, stageScripts{}); err == nil {
+		t.Fatal("알 수 없는 하네스는 거부해야 합니다")
+	}
+}

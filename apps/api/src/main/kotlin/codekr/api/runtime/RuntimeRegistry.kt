@@ -1,6 +1,7 @@
 package codekr.api.runtime
 
 import codekr.api.common.error.ApiException
+import codekr.api.problem.entity.ProblemKind
 import codekr.api.common.error.ErrorCode
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -25,6 +26,9 @@ class RuntimeRegistry(
 
     fun findAll(): List<RuntimeDefinition> = runtimes
 
+    /** 그 유형으로 풀 수 있는 런타임만 (#60). */
+    fun findFor(kind: ProblemKind): List<RuntimeDefinition> = runtimes.filter { it.problemKind == kind }
+
     fun require(id: String): RuntimeDefinition = byId[id] ?: throw ApiException(ErrorCode.RUNTIME_NOT_FOUND)
 
     fun exists(id: String): Boolean = byId.containsKey(id)
@@ -46,6 +50,9 @@ class RuntimeRegistry(
                 label = it.getValue("label") as String,
                 monacoLanguage = it.getValue("monacoLanguage") as String,
                 template = (it["template"] as? String).orEmpty(),
+                // 적지 않으면 stdin/stdout 이다 — 지금까지의 모든 런타임이 그것이다.
+                problemKind = (it["problemKind"] as? String)
+                    ?.let(ProblemKind::valueOf) ?: ProblemKind.JUDGE_STDIO,
             )
         }
     }
