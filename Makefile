@@ -10,7 +10,7 @@ GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \
-        pull-runtimes build-runtimes mirror-runtimes verify-runtimes verify-seccomp verify-storage seed smoke test test-api test-web test-go lint lint-go
+        pull-runtimes build-runtimes containerd-up containerd-down mirror-runtimes verify-runtimes verify-seccomp verify-storage seed smoke test test-api test-web test-go lint lint-go
 
 help: ## 사용 가능한 명령 표시
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -56,6 +56,14 @@ verify-runtimes: ## 등록된 모든 런타임의 기본 템플릿이 실제로 
 	cd apps/executor && CODEKR_SANDBOX_TEST=1 \
 		CODEKR_SECCOMP_PROFILE=$(CURDIR)/infra/sandbox/seccomp.json \
 		go test ./internal/sandbox/ -run TestLiveEveryRegisteredRuntime -timeout 25m -v
+
+containerd-up: ## Docker 없이 containerd 를 띄운다 (#70, colima 필요)
+	@command -v colima >/dev/null || { echo "colima 가 필요합니다: brew install colima"; exit 1; }
+	colima start --runtime containerd --cpu 2 --memory 4 --disk 20
+	@echo "소켓: unix://$$HOME/.colima/default/containerd.sock"
+
+containerd-down: ## containerd VM 정지 (#70)
+	colima stop
 
 mirror-runtimes: ## 런타임 이미지를 자체 레지스트리로 미러링 (#96, crane 필요)
 	@bash scripts/mirror-runtimes.sh $(ARGS)
