@@ -35,6 +35,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
+import java.time.Instant
 
 @Service
 @Transactional(readOnly = true)
@@ -80,6 +81,17 @@ class SubmissionService(
         if (problem.problemKind != ProblemKind.JUDGE_SQL && problem.testcases.isEmpty()) {
             throw ApiException(ErrorCode.TESTCASE_REQUIRED)
         }
+
+        // **검증을 통과한 요청에만 간격을 따진다** (#189). 잘못된 요청을 "너무 잦다" 로
+        // 돌려주면 무엇이 틀렸는지 알 수 없고, 고칠 기회도 간격만큼 미뤄진다.
+        // 대회 제출은 자기 경로에서 대회가 정한 간격으로 판정한다.
+        SubmissionCooldown.require(
+            lastSubmittedAt = submissionRepository
+                .findFirstByUserIdAndProblemIdAndContestIdIsNullAndDeletedAtIsNullOrderByIdDesc(userId, problem.id)
+                ?.createdAt,
+            cooldown = SubmissionCooldown.DEFAULT,
+            now = Instant.now(),
+        )
 
         val submission = submissionRepository.save(
             Submission(

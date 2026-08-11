@@ -52,6 +52,7 @@ class AdminContestService(
                 startsAt = request.startsAt,
                 endsAt = request.endsAt,
                 freezeMinutes = request.freezeMinutes,
+                submissionCooldownSeconds = request.submissionCooldownSeconds,
                 registrationOpenDuring = request.registrationOpenDuring,
                 createdBy = createdBy,
             ),
@@ -75,6 +76,7 @@ class AdminContestService(
             startsAt = request.startsAt
             endsAt = request.endsAt
             freezeMinutes = request.freezeMinutes
+            submissionCooldownSeconds = request.submissionCooldownSeconds
             registrationOpenDuring = request.registrationOpenDuring
         }
         replaceProblems(contest.id, request)

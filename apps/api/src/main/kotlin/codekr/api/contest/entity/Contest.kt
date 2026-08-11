@@ -34,6 +34,14 @@ class Contest(
     @Column(name = "freeze_minutes", nullable = false)
     var freezeMinutes: Int = DEFAULT_FREEZE_MINUTES,
 
+    /**
+     * 같은 문제를 다시 낼 수 있기까지의 간격 (#189).
+     *
+     * 대회마다 완화할 수 있지만 하한이 있다 — `SubmissionCooldown.MINIMUM`.
+     */
+    @Column(name = "submission_cooldown_seconds")
+    var submissionCooldownSeconds: Int = DEFAULT_COOLDOWN_SECONDS,
+
     @Column(name = "registration_open_during", nullable = false)
     var registrationOpenDuring: Boolean = true,
 
@@ -123,5 +131,8 @@ class Contest(
     companion object {
         /** 종료 30분 전. 짧은 대회(2시간)가 많을 것이라 1시간은 과하다 (#86). */
         const val DEFAULT_FREEZE_MINUTES = 30
+
+        /** 대회 기본 제출 간격(초). 일반 제출(30초)보다 짧다 — 대회는 고쳐 내는 속도가 중요하다. */
+        const val DEFAULT_COOLDOWN_SECONDS = 20
     }
 }

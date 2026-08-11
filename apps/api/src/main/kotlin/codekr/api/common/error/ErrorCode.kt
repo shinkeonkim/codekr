@@ -26,6 +26,9 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     RUNTIME_NOT_FOUND(HttpStatus.NOT_FOUND, "지원하지 않는 실행 환경입니다."),
 
     SOURCE_CODE_TOO_LARGE(HttpStatus.BAD_REQUEST, "소스 코드가 너무 큽니다."),
+    // 429 다. 400 으로 두면 화면이 "고칠 수 있는 잘못"으로 다루는데, 여기서 할 일은
+    // 기다리는 것뿐이다 (#189).
+    SUBMISSION_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS, "제출이 너무 잦습니다."),
     TESTCASE_REQUIRED(HttpStatus.BAD_REQUEST, "테스트케이스가 최소 1개 필요합니다."),
     SOLUTION_REQUIRED(HttpStatus.BAD_REQUEST, "검증하려면 정답 코드를 먼저 등록해야 합니다."),
 

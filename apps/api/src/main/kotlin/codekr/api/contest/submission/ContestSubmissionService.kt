@@ -17,10 +17,10 @@ import codekr.api.submission.dto.SubmitRequest
 import codekr.api.submission.dto.SubmitResponse
 import codekr.api.submission.entity.Submission
 import codekr.api.submission.repository.SubmissionRepository
+import codekr.api.submission.service.SubmissionCooldown
 import codekr.api.config.properties.SubmissionProperties
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.Duration
 import java.time.Instant
 
 /**
@@ -75,7 +75,17 @@ class ContestSubmissionService(
         if (request.sourceCode.toByteArray().size > properties.maxSourceCodeBytes) {
             throw ApiException(ErrorCode.SOURCE_CODE_TOO_LARGE)
         }
-        requireCooldown(contest.id, userId, problem.id, receivedAt)
+        SubmissionCooldown.require(
+            lastSubmittedAt = submissionRepository
+                .findFirstByContestIdAndUserIdAndProblemIdAndDeletedAtIsNullOrderByIdDesc(
+                    contest.id,
+                    userId,
+                    problem.id,
+                )?.createdAt,
+            // 대회가 정한 값을 쓰되 하한 아래로는 내려가지 않는다 (#189).
+            cooldown = SubmissionCooldown.ofSeconds(contest.submissionCooldownSeconds),
+            now = receivedAt,
+        )
 
         val submission = submissionRepository.save(
             Submission(
@@ -103,31 +113,4 @@ class ContestSubmissionService(
      * 그 대가는 같은 대회의 다른 참가자가 치른다. 문제마다 따로 세는 이유는
      * A 문제를 반복 제출하는 것이 B 문제 제출을 막으면 안 되기 때문이다.
      */
-    private fun requireCooldown(contestId: Long, userId: Long, problemId: Long, now: Instant) {
-        val last = submissionRepository
-            .findFirstByContestIdAndUserIdAndProblemIdAndDeletedAtIsNullOrderByIdDesc(
-                contestId,
-                userId,
-                problemId,
-            ) ?: return
-
-        val elapsed = Duration.between(last.createdAt, now)
-        if (elapsed < COOLDOWN) {
-            val remaining = COOLDOWN.minus(elapsed).seconds + 1
-            throw ApiException(
-                ErrorCode.VALIDATION_ERROR,
-                "같은 문제는 ${COOLDOWN.seconds}초에 한 번 낼 수 있습니다. ${remaining}초 뒤에 다시 시도하십시오.",
-            )
-        }
-    }
-
-    private companion object {
-        /**
-         * 같은 문제에 다시 낼 수 있기까지의 시간.
-         *
-         * 20초는 "고치고 다시 내는" 정상 흐름을 막지 않으면서, 자동화된 반복 제출로
-         * 큐를 채우는 것은 막는 선이다.
-         */
-        val COOLDOWN: Duration = Duration.ofSeconds(20)
-    }
 }

@@ -28,6 +28,15 @@ data class ContestUpsertRequest(
     @field:Min(0)
     val freezeMinutes: Int = 30,
 
+    /**
+     * 같은 문제를 다시 낼 수 있기까지의 간격(초) (#189).
+     *
+     * **3초 아래로는 내릴 수 없다.** 제한이 없는 것과 같아지면 한 참가자가 채점 차선을
+     * 혼자 채우고, 대회에서는 그것이 곧 다른 참가자의 불이익이다.
+     */
+    @field:Min(3, message = "제출 간격은 3초 이상이어야 합니다.")
+    val submissionCooldownSeconds: Int = 20,
+
     val registrationOpenDuring: Boolean = true,
 
     @field:Valid

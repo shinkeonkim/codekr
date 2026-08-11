@@ -102,7 +102,8 @@ class ContestSubmissionIntegrationTest : IntegrationTestBase() {
     fun `같은 문제를 연속으로 내면 막힌다`() {
         // 한 사람이 초당 여러 번 내면 그만큼 워커가 묶이고, 그 대가는 다른 참가자가 치른다.
         submitToContest("two-sum").andExpect(status().isAccepted)
-        submitToContest("two-sum").andExpect(status().isBadRequest)
+        // 429 다 — 고칠 것이 있어서 막는 것이 아니라 기다리라는 뜻이다 (#189).
+        submitToContest("two-sum").andExpect(status().isTooManyRequests)
 
         assertEquals(1, queueLength(QueueKeys.JUDGE_STREAM_CONTEST))
     }
