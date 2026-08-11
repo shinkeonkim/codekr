@@ -13,6 +13,8 @@ import java.time.Instant
  */
 data class UserProfileResponse(
     val nickname: String,
+    /** 아바타 주소 (#116). 올리지 않았으면 null. */
+    val avatarUrl: String?,
     val joinedAt: Instant,
     /** 푼 문제 수. 제출 수가 아니라 문제 수다. */
     val solvedCount: Int,

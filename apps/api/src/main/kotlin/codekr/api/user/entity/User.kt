@@ -56,6 +56,15 @@ class User(
     @Column(name = "peak_score", nullable = false)
     var peakScore: Int = 0,
 
+    /**
+     * 아바타 오브젝트 키 (#116). null 이면 올리지 않은 것이다.
+     *
+     * **URL 이 아니라 키를 저장한다.** 저장소 주소나 서빙 경로가 바뀌면 URL 은 모든 행을
+     * 고쳐야 하고, 그 사이의 값은 깨진 링크가 된다.
+     */
+    @Column(name = "avatar_key", length = 120)
+    var avatarKey: String? = null,
+
 ) : BaseTimeEntity() {
 
     @Id
