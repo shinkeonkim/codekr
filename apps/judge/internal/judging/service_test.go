@@ -117,7 +117,7 @@ func TestJudgeRejectsUnknownProblemKind(t *testing.T) {
 	executor := &stubExecutor{results: []contract.ExecResult{{Status: contract.StatusOK, Stdout: "3\n"}}}
 
 	job := newJob(2)
-	job.Kind = contract.KindJudgeSQL // 아직 구현이 없는 유형이다.
+	job.Kind = contract.KindQuiz // 아직 구현이 없는 유형이다.
 	newTestService(executor, sink).Judge(context.Background(), job)
 
 	// stdin/stdout 으로 짐작해 채점하면 엉뚱한 판정이 사용자 기록에 남는다.

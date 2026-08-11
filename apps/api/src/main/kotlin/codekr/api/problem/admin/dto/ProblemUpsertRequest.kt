@@ -29,6 +29,10 @@ data class ProblemUpsertRequest(
     /** 채점 방식 (#59). 아직 구현이 없는 유형은 서비스가 막는다. */
     val problemKind: ProblemKind = ProblemKind.JUDGE_STDIO,
 
+    /** SQL 유형일 때만 쓴다 (#60). 다른 유형에 실려 오면 서비스가 거부한다. */
+    @field:Valid
+    val sqlSpec: SqlSpecRequest? = null,
+
     val difficulty: Difficulty,
 
     @field:NotBlank

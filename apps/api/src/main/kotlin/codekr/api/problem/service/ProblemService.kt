@@ -36,7 +36,13 @@ class ProblemService(
 
     fun findPublishedDetail(slug: String): ProblemDetailResponse {
         val problem = requirePublished(slug)
-        return ProblemDetailResponse.of(problem, runtimeRegistry.findAll(), statsRepository.findOne(problem.id))
+        // 이 문제의 유형으로 풀 수 있는 실행 환경만 내린다 (#60).
+        // 전체를 내리면 화면이 SQL 문제에 파이썬을 권하게 된다.
+        return ProblemDetailResponse.of(
+            problem,
+            runtimeRegistry.findFor(problem.problemKind),
+            statsRepository.findOne(problem.id),
+        )
     }
 
     /** 미공개되었거나 삭제된 문제는 존재 자체를 알리지 않는다 — 404 로 응답한다. */

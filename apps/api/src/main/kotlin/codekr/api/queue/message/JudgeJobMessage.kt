@@ -2,6 +2,7 @@ package codekr.api.queue.message
 
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.submission.entity.Submission
 
 data class JudgeJobMessage(
@@ -19,6 +20,13 @@ data class JudgeJobMessage(
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
     val testcases: List<JudgeTestcaseMessage>,
+    /**
+     * SQL 유형일 때만 실린다 (#60).
+     *
+     * 유형별 자료를 공통 필드에 섞지 않고 블록으로 나눈 이유: 유형이 늘어날 때
+     * 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
+     */
+    val sql: JudgeSqlSpecMessage? = null,
 ) {
     companion object {
         /**
@@ -27,7 +35,11 @@ data class JudgeJobMessage(
          * 제한은 **제출한 런타임에 맞는 값**을 고른다 (#97). 런타임별 오버라이드가 없으면
          * 문제 기본값이 그대로 나온다.
          */
-        fun of(submission: Submission, problem: Problem): JudgeJobMessage {
+        fun of(
+            submission: Submission,
+            problem: Problem,
+            sqlSpec: ProblemSqlSpec? = null,
+        ): JudgeJobMessage {
             val limits = problem.limitsFor(submission.runtimeId)
             return JudgeJobMessage(
                 submissionId = submission.id,
@@ -38,6 +50,7 @@ data class JudgeJobMessage(
                 timeLimitMs = limits.timeLimitMs,
                 memoryLimitMb = limits.memoryLimitMb,
                 testcases = problem.testcases.map(JudgeTestcaseMessage::from),
+                sql = sqlSpec?.let(JudgeSqlSpecMessage::from),
             )
         }
     }

@@ -6,6 +6,7 @@ import codekr.api.notification.entity.NotificationCategory
 import codekr.api.notification.service.NotificationService
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.queue.JudgePriority
+import codekr.api.queue.JudgeJobFactory
 import codekr.api.queue.QueuePublisher
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.rejudge.dto.RejudgeResponse
@@ -31,6 +32,7 @@ class RejudgeService(
     private val submissionRepository: SubmissionRepository,
     private val batchRepository: RejudgeBatchRepository,
     private val queuePublisher: QueuePublisher,
+    private val judgeJobFactory: JudgeJobFactory,
     private val notificationService: NotificationService,
 ) : RejudgeCompletion {
 
@@ -58,7 +60,7 @@ class RejudgeService(
         targets.forEach { submission ->
             submission.startRejudge(batch.id)
             // 재채점은 사람이 기다리는 일이 아니다. 일반 제출을 밀어내지 않도록 낮은 등급으로 (#102).
-            queuePublisher.publishJudgeJob(JudgeJobMessage.of(submission, problem), JudgePriority.LOW)
+            queuePublisher.publishJudgeJob(judgeJobFactory.of(submission, problem), JudgePriority.LOW)
         }
 
         log.info("재채점 시작: problemId={} 대상={} 이유={}", problemId, targets.size, reason)

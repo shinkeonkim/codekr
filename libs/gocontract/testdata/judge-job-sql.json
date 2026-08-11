@@ -1,0 +1,15 @@
+{
+  "submissionId": 2048,
+  "problemId": 9,
+  "kind": "JUDGE_SQL",
+  "runtimeId": "sql:postgres16",
+  "sourceCode": "SELECT city, count(*) FROM members GROUP BY city;\n",
+  "timeLimitMs": 10000,
+  "memoryLimitMb": 512,
+  "testcases": [],
+  "sql": {
+    "schema": "CREATE TABLE members (id int, name text, city text);\nINSERT INTO members VALUES (1,'가','서울');\n",
+    "answer": "SELECT city, count(*) FROM members GROUP BY city ORDER BY city;",
+    "ignoreRowOrder": true
+  }
+}

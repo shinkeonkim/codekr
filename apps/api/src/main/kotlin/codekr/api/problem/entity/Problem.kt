@@ -166,6 +166,17 @@ class Problem(
             ?.let { ResolvedLimits(it.timeLimitMs, it.memoryLimitMb, overridden = true) }
             ?: ResolvedLimits(timeLimitMs, memoryLimitMb, overridden = false)
 
+    /**
+     * 채점 단위의 개수 (#60). 진행률의 분모다.
+     *
+     * stdin/stdout 은 테스트케이스 수, SQL 은 정답 쿼리 하나와의 비교라 1 이다.
+     */
+    val judgeUnitCount: Int
+        get() = when (problemKind) {
+            ProblemKind.JUDGE_SQL -> 1
+            else -> testcases.size
+        }
+
     val hasSolution: Boolean get() = !solutionSourceCode.isNullOrBlank() && solutionRuntimeId != null
 
     /**

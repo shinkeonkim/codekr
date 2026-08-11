@@ -5,6 +5,7 @@ import codekr.api.common.error.ErrorCode
 import codekr.api.problem.admin.dto.VerificationResponse
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.repository.ProblemRepository
+import codekr.api.queue.JudgeJobFactory
 import codekr.api.queue.QueuePublisher
 import codekr.api.queue.JudgePriority
 import codekr.api.queue.message.JudgeJobMessage
@@ -28,6 +29,7 @@ class SolutionVerificationService(
     private val submissionRepository: SubmissionRepository,
     private val resultRepository: SubmissionTestcaseResultRepository,
     private val queuePublisher: QueuePublisher,
+    private val judgeJobFactory: JudgeJobFactory,
 ) {
 
     /** 검증을 시작한다. 이미 진행 중이던 검증이 있으면 새 실행이 그것을 대체한다. */
@@ -45,14 +47,14 @@ class SolutionVerificationService(
                 problemId = problem.id,
                 runtimeId = requireNotNull(problem.solutionRuntimeId),
                 sourceCode = requireNotNull(problem.solutionSourceCode),
-                totalCount = problem.testcases.size,
+                totalCount = problem.judgeUnitCount,
                 kind = SubmissionKind.SOLUTION_VERIFICATION,
             ),
         )
         problem.startVerification(submission.id)
 
         queuePublisher.publishJudgeJob(
-            JudgeJobMessage.of(submission, problem),
+            judgeJobFactory.of(submission, problem),
             JudgePriority.of(submission.kind, problem),
         )
         return requireNotNull(VerificationResponse.of(problem, submission, emptyList()))

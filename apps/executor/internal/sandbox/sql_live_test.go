@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	contract "github.com/shinkeonkim/codekr/libs/gocontract"
 )
 
 const sqlSchema = `
@@ -50,15 +52,14 @@ func TestLiveSQLComparesAgainstAnswerQuery(t *testing.T) {
 
 	outcome := runSQL(t, box, "SELECT city, count(*) FROM members GROUP BY city ORDER BY city;")
 
-	// 정답 쿼리와 제출 쿼리의 결과를 구분자로 나눠 함께 돌려준다.
-	// 정답을 결과 집합이 아니라 쿼리로 두면 시드가 바뀔 때 기대 결과도 따라간다.
-	expected, actual, found := strings.Cut(outcome.Stdout, "--- codekr:actual")
+	// **채점기가 쓰는 바로 그 함수로 가른다.** 시험이 자기만의 파싱을 갖고 있으면,
+	// 하네스 출력이 바뀔 때 시험은 통과한 채로 채점기만 깨진다.
+	expected, actual, found := contract.SplitSQLResults(outcome.Stdout)
 	if !found {
 		t.Fatalf("정답/제출 결과가 나뉘어 나오지 않았습니다: %q (stderr=%q)", outcome.Stdout, outcome.Stderr)
 	}
-	expected = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(expected), "--- codekr:expected"))
-	if strings.TrimSpace(actual) != expected {
-		t.Fatalf("같은 쿼리인데 결과가 다릅니다.\n정답=%q\n제출=%q", expected, strings.TrimSpace(actual))
+	if contract.NormalizeSQLRows(expected, true) != contract.NormalizeSQLRows(actual, true) {
+		t.Fatalf("같은 쿼리인데 결과가 다릅니다.\n정답=%q\n제출=%q", expected, actual)
 	}
 	if !strings.Contains(expected, "서울|2") {
 		t.Fatalf("시드 데이터가 반영되지 않았습니다: %q", expected)

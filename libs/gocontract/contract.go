@@ -123,6 +123,21 @@ type JudgeJob struct {
 	TimeLimitMs   int             `json:"timeLimitMs"`
 	MemoryLimitMb int             `json:"memoryLimitMb"`
 	Testcases     []JudgeTestcase `json:"testcases"`
+	// SQL 은 KindJudgeSQL 일 때만 실린다 (#60).
+	//
+	// 유형별 자료를 공통 필드에 섞지 않고 블록으로 나눈 이유: 유형이 늘어날 때
+	// 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
+	SQL *JudgeSQLSpec `json:"sql,omitempty"`
+}
+
+// JudgeSQLSpec 은 SQL 채점에 필요한 자료다 (#60).
+type JudgeSQLSpec struct {
+	// Schema 는 스키마와 시드 데이터. 슈퍼유저로 주입한다.
+	Schema string `json:"schema"`
+	// Answer 는 정답 쿼리. **결과 집합이 아니라 쿼리다** — 시드가 바뀌면 기대 결과도 따라간다.
+	Answer string `json:"answer"`
+	// IgnoreRowOrder 가 참이면 행 순서를 맞추지 않고 비교한다.
+	IgnoreRowOrder bool `json:"ignoreRowOrder"`
 }
 
 // KindOf 는 작업의 문제 유형을 돌려준다. 비어 있으면 stdin/stdout 채점이다.

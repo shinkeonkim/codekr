@@ -45,11 +45,12 @@ type Service struct {
 	log    *slog.Logger
 }
 
-// NewService 는 채점 서비스를 만든다. 지금 아는 유형은 stdin/stdout 하나뿐이다 (ADR-0006).
+// NewService 는 채점 서비스를 만든다.
 func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Service {
 	return &Service{
 		kinds: map[string]Kind{
 			contract.KindJudgeStdio: NewStdioJudge(executor, log),
+			contract.KindJudgeSQL:   NewSqlJudge(executor, log),
 		},
 		events: events,
 		log:    log,

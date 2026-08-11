@@ -124,10 +124,25 @@ export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "QUIZ" | "MANUAL";
 /** 지금 고를 수 있는 채점 방식. 나머지는 채점기 구현이 없어 서버가 거절한다. */
 export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_STDIO: "코드 실행 (stdin/stdout)",
+  JUDGE_SQL: "SQL",
 };
+
+/**
+ * SQL 문제의 스펙 (#60).
+ *
+ * **정답은 결과 집합이 아니라 쿼리다.** 시드 데이터가 바뀌면 기대 결과도 따라간다.
+ */
+export interface SqlSpec {
+  schemaSql: string;
+  answerSql: string;
+  /** 문제가 정렬을 요구하지 않으면 켜 둔다. 켠 채로 두는 것이 기본이다. */
+  ignoreRowOrder: boolean;
+}
 
 export interface AdminProblemDetail extends ProblemSummary {
   problemKind: ProblemKind;
+  /** SQL 유형이 아니면 null (#60). */
+  sqlSpec: SqlSpec | null;
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;

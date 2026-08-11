@@ -1,6 +1,7 @@
 "use client";
 
 import { ALL_DIFFICULTIES, CATEGORY_LABELS, SELECTABLE_KINDS, difficultyLabel } from "@/entities/problem";
+import type { SqlSpec } from "@/entities/problem";
 import type { AdminProblemDetail, Difficulty, ProblemRuntimeLimit, ProblemSolution, ProblemTemplate, ProblemVerification, Testcase } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
@@ -8,6 +9,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
+import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
 import { Alert, Button, Card, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
 
@@ -17,6 +19,8 @@ export interface ProblemFormValues {
   category: string;
   /** 채점 방식 (#59). 분야(category)와 다른 축이다. */
   problemKind: string;
+  /** SQL 유형일 때만 보낸다 (#60). */
+  sqlSpec: SqlSpec | null;
   difficulty: Difficulty;
   description: string;
   inputDescription: string;
@@ -32,12 +36,17 @@ export interface ProblemFormValues {
 
 const EMPTY_TESTCASE: Testcase = { seq: 1, input: "", expectedOutput: "", visibility: "PUBLIC" };
 
+// 행 순서 무시가 기본이다 — 문제가 정렬을 요구하지 않는데 순서를 비교하면
+// 맞는 답이 틀린 것으로 나온다.
+const BLANK_SQL_SPEC: SqlSpec = { schemaSql: "", answerSql: "", ignoreRowOrder: true };
+
 export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
   return {
     slug: problem.slug,
     title: problem.title,
     category: problem.category,
     problemKind: problem.problemKind,
+    sqlSpec: problem.sqlSpec,
     difficulty: problem.difficulty,
     description: problem.description,
     inputDescription: problem.inputDescription ?? "",
@@ -57,6 +66,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   title: "",
   category: "ALGORITHM",
   problemKind: "JUDGE_STDIO",
+  sqlSpec: null,
   difficulty: "BRONZE_5",
   description: "",
   inputDescription: "",
@@ -89,6 +99,21 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
 
   const update = <K extends keyof ProblemFormValues>(key: K, value: ProblemFormValues[K]) =>
     setValues((previous) => ({ ...previous, [key]: value }));
+
+  const isSql = values.problemKind === "JUDGE_SQL";
+
+  /**
+   * 채점 방식을 바꾸면 **그 유형의 자료만 남긴다** (#60).
+   *
+   * 둘 다 실어 보내면 서버가 거부한다 — 섞이면 어느 쪽이 진짜인지 알 수 없기 때문이다.
+   */
+  const changeKind = (nextKind: string) =>
+    setValues((previous) => ({
+      ...previous,
+      problemKind: nextKind,
+      sqlSpec: nextKind === "JUDGE_SQL" ? (previous.sqlSpec ?? BLANK_SQL_SPEC) : null,
+      testcases: nextKind === "JUDGE_SQL" ? [] : previous.testcases,
+    }));
 
   const updateTestcase = (index: number, patch: Partial<Testcase>) =>
     setValues((previous) => ({
@@ -166,7 +191,7 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         <Field label="채점 방식">
           <Select
             value={values.problemKind}
-            onChange={(event) => update("problemKind", event.target.value)}
+            onChange={(event) => changeKind(event.target.value)}
           >
             {Object.entries(SELECTABLE_KINDS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -230,6 +255,13 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         </div>
       </Card>
 
+      {/*
+        유형별 입력 묶음 (#59, #60). 채점 대상이 유형마다 다르다 —
+        stdin/stdout 은 테스트케이스, SQL 은 스키마와 정답 쿼리다.
+      */}
+      {isSql ? (
+        <SqlSpecEditor value={values.sqlSpec ?? BLANK_SQL_SPEC} onChange={(spec) => update("sqlSpec", spec)} />
+      ) : (
       <Card className="space-y-4 p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">테스트케이스</h2>
@@ -279,6 +311,7 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
           </div>
         ))}
       </Card>
+      )}
 
       <RuntimeLimitEditor
         limits={values.runtimeLimits}
