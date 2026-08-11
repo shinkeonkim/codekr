@@ -14,6 +14,7 @@ import codekr.api.queue.QueuePublisher
 import codekr.api.queue.JudgePriority
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.runtime.RuntimeRegistry
+import codekr.api.user.entity.WithdrawnUser
 import codekr.api.user.repository.UserRepository
 import codekr.api.submission.dto.RunRequest
 import codekr.api.submission.dto.RunResponse
@@ -157,7 +158,7 @@ class SubmissionService(
                 SubmissionSummaryResponse.of(
                     submission = submission,
                     problem = problems[submission.problemId],
-                    nickname = nicknames[submission.userId] ?: "(탈퇴한 사용자)",
+                    nickname = nicknames[submission.userId] ?: WithdrawnUser.LABEL,
                     sourceVisible = submission.isSourceVisibleTo(principal.userId, principal.isAdmin),
                 )
             },
@@ -170,7 +171,7 @@ class SubmissionService(
             .orElse(SubmissionVisibility.PRIVATE)
 
     private fun nicknameOf(userId: Long): String =
-        userRepository.findById(userId).map { it.nickname }.orElse("(탈퇴한 사용자)")
+        WithdrawnUser.nicknameOf(userRepository.findById(userId).orElse(null))
 
     fun findMine(userId: Long, problemSlug: String?, pageable: Pageable): PageResponse<SubmissionSummaryResponse> {
         val page = problemSlug

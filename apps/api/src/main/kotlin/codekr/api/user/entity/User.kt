@@ -14,13 +14,14 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.Table
+import java.time.Instant
 
 @Entity
 @Table(name = "users")
 class User(
 
     @Column(nullable = false, unique = true)
-    val email: String,
+    var email: String,
 
     @Column(name = "password_hash", nullable = false)
     var passwordHash: String,
@@ -96,6 +97,36 @@ class User(
 
     /** 어드민 영역에 들어올 수 있는가. 어떤 역할을 가졌는지와는 별개다. */
     val isAdmin: Boolean get() = roleSet.any { it in UserRole.ADMIN_AREA }
+
+    /** 탈퇴한 시각 (#140). null 이면 쓰고 있는 계정이다. */
+    @Column(name = "withdrawn_at")
+    var withdrawnAt: Instant? = null
+        protected set
+
+    val isWithdrawn: Boolean get() = withdrawnAt != null
+
+    /**
+     * 탈퇴한다 (#140).
+     *
+     * **글과 댓글의 작성자 참조는 그대로 둔다.** 끊으면 집계가 함께 깨지고 되돌릴 수 없다.
+     * 대신 **닉네임과 이메일을 익명 값으로 덮어쓴다** — 개인정보를 남기지 않는 것이
+     * 탈퇴의 뜻이다.
+     *
+     * 덮어쓰므로 닉네임은 다시 쓸 수 있게 된다. 나간 사람이 닉네임을 영구 점유하지 않는다.
+     */
+    fun withdraw(now: Instant = Instant.now()) {
+        if (isWithdrawn) return
+        withdrawnAt = now
+        // 되돌릴 수 없다. 유예 기간을 두지 않기로 했으므로 여기서 바로 지운다.
+        email = "withdrawn+${'$'}id@codekr.invalid"
+        nickname = "탈퇴회원${'$'}id"
+        // 로그인을 막는 것과 별개로, 남은 비밀번호 해시도 쓸모가 없어야 한다.
+        passwordHash = ""
+        avatarKey = null
+        // 없는 사람이 순위에 있으면 눌렀을 때 갈 곳이 없다.
+        rankingOptOut = true
+        viewNotificationEnabled = false
+    }
 
     fun has(role: UserRole): Boolean = role in roleSet
 

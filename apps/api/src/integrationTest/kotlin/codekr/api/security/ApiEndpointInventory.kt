@@ -97,6 +97,7 @@ object ApiEndpointInventory {
         Endpoint("POST", "/api/v1/collections", Access.AUTHENTICATED),
         Endpoint("PUT", "/api/v1/collections/{id}", Access.AUTHENTICATED),
         Endpoint("DELETE", "/api/v1/collections/{id}", Access.AUTHENTICATED),
+        Endpoint("DELETE", "/api/v1/users/me", Access.AUTHENTICATED),
         Endpoint("PUT", "/api/v1/users/me/avatar", Access.AUTHENTICATED),
         Endpoint("DELETE", "/api/v1/users/me/avatar", Access.AUTHENTICATED),
         Endpoint("GET", "/api/v1/users/me/settings", Access.AUTHENTICATED),
@@ -134,6 +135,7 @@ object ApiEndpointInventory {
             UserRole.CONTEST_MANAGER,
         ),
         Endpoint("DELETE", "/api/v1/admin/contests/{id}", Access.ADMIN, UserRole.CONTEST_MANAGER),
+        Endpoint("DELETE", "/api/v1/admin/users/{id}", Access.ADMIN, UserRole.SUPERUSER),
         Endpoint("PUT", "/api/v1/admin/users/{id}/roles", Access.ADMIN, UserRole.SUPERUSER),
         Endpoint("POST", "/api/v1/admin/users/{userId}/activity/recompute", Access.ADMIN, UserRole.SUPERUSER),
     )

@@ -19,6 +19,7 @@ import codekr.api.problem.repository.ProblemRepository
 import codekr.api.user.avatar.AvatarService
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
+import codekr.api.user.entity.WithdrawnUser
 import codekr.api.user.repository.UserRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -161,8 +162,9 @@ class PostService(
         val problem = post.problemId?.let { problems[it] }
         return PostSummaryResponse.of(
             post,
-            author?.nickname ?: "(탈퇴한 사용자)",
-            AvatarService.urlOf(author?.avatarKey),
+            // 참조는 그대로 두고 **상태로 판단해** 그린다 (#140).
+            WithdrawnUser.nicknameOf(author),
+            AvatarService.urlOf(WithdrawnUser.avatarKeyOf(author)),
             commentCount,
             problem?.slug,
             problem?.title,

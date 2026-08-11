@@ -14,6 +14,7 @@ import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.repository.ProblemRepository
+import codekr.api.user.entity.WithdrawnUser
 import codekr.api.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -172,7 +173,7 @@ class ProblemCollectionService(
     }
 
     private fun nicknameOf(userId: Long): String =
-        userRepository.findById(userId).map { it.nickname }.orElse("(탈퇴한 사용자)")
+        WithdrawnUser.nicknameOf(userRepository.findById(userId).orElse(null))
 
     private companion object {
         /** 1개짜리 묶음은 묶음이 아니다 — 문제 하나를 보내려면 문제 링크를 보내면 된다. */

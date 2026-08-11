@@ -49,6 +49,9 @@ export const userApi = {
 
   removeAvatar: () => request<void>("/api/v1/users/me/avatar", { method: "DELETE", auth: true }),
 
+  /** 회원 탈퇴 (#140). **되돌릴 수 없다** — 유예 기간을 두지 않았다. */
+  withdraw: () => request<void>("/api/v1/users/me", { method: "DELETE", auth: true }),
+
   /** 보내지 않은 항목은 바뀌지 않는다 (#104). */
   updateSettings: (body: Partial<UserSettings>) =>
     request<UserSettings>("/api/v1/users/me/settings", { method: "PATCH", body, auth: true }),

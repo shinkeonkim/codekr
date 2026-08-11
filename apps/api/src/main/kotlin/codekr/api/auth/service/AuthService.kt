@@ -42,7 +42,9 @@ class AuthService(
         val user = userRepository.findByEmail(request.email)
             ?: throw ApiException(ErrorCode.INVALID_CREDENTIALS)
         // 계정 존재 여부를 구분해서 알려주지 않는다 (계정 열거 방지).
-        if (!passwordEncoder.matches(request.password, user.passwordHash)) {
+        // 탈퇴한 계정도 같은 오류로 답한다 — "탈퇴한 계정입니다" 라고 알리면
+        // 그 이메일이 쓰였다는 사실이 새어 나간다 (#140).
+        if (user.isWithdrawn || !passwordEncoder.matches(request.password, user.passwordHash)) {
             throw ApiException(ErrorCode.INVALID_CREDENTIALS)
         }
         return issueTokens(user)
@@ -53,6 +55,8 @@ class AuthService(
             ?: throw ApiException(ErrorCode.INVALID_TOKEN)
         val user = userRepository.findById(principal.userId)
             .orElseThrow { ApiException(ErrorCode.USER_NOT_FOUND) }
+        // 탈퇴한 계정은 갱신 토큰으로도 되살아나지 않는다 (#140).
+        if (user.isWithdrawn) throw ApiException(ErrorCode.INVALID_TOKEN)
         return issueTokens(user)
     }
 
