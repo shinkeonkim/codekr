@@ -26,6 +26,7 @@ import codekr.api.submission.entity.Submission
 import codekr.api.submission.entity.SubmissionKind
 import codekr.api.submission.entity.SubmissionVisibility
 import codekr.api.submission.repository.SubmissionRepository
+import codekr.api.submission.view.SubmissionViewRecorder
 import codekr.api.submission.repository.SubmissionSearchCondition
 import codekr.api.submission.repository.SubmissionSearchRepository
 import codekr.api.submission.repository.SubmissionTestcaseResultRepository
@@ -47,6 +48,7 @@ class SubmissionService(
     private val judgeJobFactory: JudgeJobFactory,
     private val userRepository: UserRepository,
     private val properties: SubmissionProperties,
+    private val viewRecorder: SubmissionViewRecorder,
 ) {
 
     /** 임의 입력으로 1회 실행한다. 채점하지 않으므로 제출 이력을 남기지 않는다. */
@@ -105,13 +107,22 @@ class SubmissionService(
             throw ApiException(ErrorCode.SUBMISSION_NOT_FOUND)
         }
 
+        val sourceVisible = submission.isSourceVisibleTo(principal.userId, principal.isAdmin)
+        // 코드를 실제로 본 것만 기록한다 (#136). 작성자가 켜 두지 않았으면 아무 일도 없다.
+        viewRecorder.record(submission.userId, submission.id, principal.userId, sourceVisible, principal.isAdmin)
+
         return SubmissionDetailResponse.of(
             submission = submission,
             // 삭제된 문제라도 이력에는 보여야 하므로 소프트 삭제 여부를 따지지 않고 조회한다.
             problem = problemRepository.findById(submission.problemId).orElse(null),
             results = resultRepository.findBySubmissionIdOrderBySeqAsc(id),
             nickname = nicknameOf(submission.userId),
-            sourceVisible = submission.isSourceVisibleTo(principal.userId, principal.isAdmin),
+            sourceVisible = sourceVisible,
+            // **보는 사람에게도 알린다** (#136). 기록에 남는다면 보기 전에 그 사실을 알아야 한다.
+            viewNotified = sourceVisible &&
+                submission.userId != principal.userId &&
+                !principal.isAdmin &&
+                viewRecorder.isEnabledFor(submission.userId),
         )
     }
 

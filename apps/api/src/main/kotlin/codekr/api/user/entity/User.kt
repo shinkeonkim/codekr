@@ -65,6 +65,15 @@ class User(
     @Column(name = "avatar_key", length = 120)
     var avatarKey: String? = null,
 
+    /**
+     * 내 공개 코드를 누가 읽었는지 알림받을지 (#136). **기본은 끔이다.**
+     *
+     * 열람 기록은 조회자의 프라이버시를 건드린다. 켜져 있는 것이 기본이면
+     * "동의 없이 추적" 이 기본이 된다. 꺼져 있으면 **아예 기록하지 않는다.**
+     */
+    @Column(name = "view_notification_enabled", nullable = false)
+    var viewNotificationEnabled: Boolean = false,
+
 ) : BaseTimeEntity() {
 
     @Id

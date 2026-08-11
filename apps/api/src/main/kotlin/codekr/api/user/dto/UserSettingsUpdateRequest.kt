@@ -13,6 +13,8 @@ data class UserSettingsUpdateRequest(
     val defaultSubmissionVisibility: SubmissionVisibility? = null,
     /** 랭킹 비참여 (#58). */
     val rankingOptOut: Boolean? = null,
+    /** 코드 열람 알림 (#136). */
+    val viewNotificationEnabled: Boolean? = null,
     /** 수신을 끌 카테고리 전체. 부분 수정이 아니라 통째로 교체한다. */
     val mutedNotificationCategories: Set<NotificationCategory>? = null,
 )

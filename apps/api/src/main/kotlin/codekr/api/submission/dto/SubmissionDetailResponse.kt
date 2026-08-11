@@ -24,6 +24,13 @@ data class SubmissionDetailResponse(
     /** 볼 권한이 없으면 null 이다. 필드를 비우는 것이 아니라 값 자체를 내리지 않는다. */
     val sourceCode: String?,
     val sourceVisible: Boolean,
+    /**
+     * 이 열람이 작성자에게 알려지는가 (#136).
+     *
+     * **보기 전에 알아야 한다.** 남의 코드를 보는 것이 기록에 남는다면, 그 사실을
+     * 모른 채 보게 두는 것은 조회자 쪽에 불공정하다.
+     */
+    val viewNotified: Boolean = false,
     val nickname: String,
     val results: List<TestcaseResultResponse>,
     val createdAt: Instant,
@@ -35,6 +42,7 @@ data class SubmissionDetailResponse(
             results: List<SubmissionTestcaseResult>,
             nickname: String,
             sourceVisible: Boolean,
+            viewNotified: Boolean = false,
         ) = SubmissionDetailResponse(
             id = submission.id,
             problemSlug = problem?.slug.orEmpty(),
@@ -50,6 +58,7 @@ data class SubmissionDetailResponse(
             visibility = submission.visibility,
             sourceCode = submission.sourceCode.takeIf { sourceVisible },
             sourceVisible = sourceVisible,
+            viewNotified = viewNotified,
             nickname = nickname,
             results = results.map(TestcaseResultResponse::from),
             createdAt = submission.createdAt,

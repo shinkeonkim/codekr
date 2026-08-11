@@ -14,6 +14,12 @@ data class UserSettingsResponse(
     val defaultSubmissionVisibility: SubmissionVisibility,
     /** true 면 랭킹 목록에 나오지 않는다 (#58). 점수는 계속 쌓인다. */
     val rankingOptOut: Boolean,
+    /**
+     * 내 공개 코드를 누가 읽었는지 알림받을지 (#136). **기본은 끔.**
+     *
+     * 꺼져 있으면 아예 기록하지 않는다 — 켜는 것이 곧 추적에 대한 동의다.
+     */
+    val viewNotificationEnabled: Boolean,
     val mutedNotificationCategories: Set<NotificationCategory>,
     /** 끌 수 있는 카테고리와 이름. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
     val notificationCategories: List<NotificationCategoryOption>,
@@ -22,6 +28,7 @@ data class UserSettingsResponse(
         fun of(user: User, muted: Set<NotificationCategory>) = UserSettingsResponse(
             defaultSubmissionVisibility = user.defaultSubmissionVisibility,
             rankingOptOut = user.rankingOptOut,
+            viewNotificationEnabled = user.viewNotificationEnabled,
             mutedNotificationCategories = muted,
             notificationCategories = NotificationCategory.entries.map {
                 NotificationCategoryOption(it, it.label, it.mutable)

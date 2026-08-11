@@ -8,6 +8,7 @@ import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
+import { NotificationSettings } from "./NotificationSettings";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, EmptyState, Select, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
@@ -42,6 +43,19 @@ function SettingsView() {
       toast.success("알림 설정을 저장했습니다.");
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "알림 설정을 저장하지 못했습니다.");
+    }
+  };
+
+  const toggleViewNotification = async () => {
+    try {
+      setSettings(
+        await userApi.updateSettings({
+          viewNotificationEnabled: !settings!.viewNotificationEnabled,
+        }),
+      );
+      toast.success("열람 알림 설정을 저장했습니다.");
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "설정을 저장하지 못했습니다.");
     }
   };
 
@@ -123,37 +137,29 @@ function SettingsView() {
         </p>
       </Card>
 
+      <NotificationSettings settings={settings} onToggle={toggleCategory} />
+
       <Card className="space-y-3 p-5">
         <div>
-          <h2 className="text-sm font-semibold text-ink">알림</h2>
+          <h2 className="text-sm font-semibold text-ink">코드 열람 알림</h2>
           <p className="mt-1 text-xs text-ink-muted">
-            받고 싶지 않은 종류를 끌 수 있습니다. 끈 동안에는 알림이 만들어지지 않으므로,
-            다시 켜도 그동안의 알림은 오지 않습니다.
+            켜면 내 공개 코드를 몇 명이 읽었는지 하루 한 번 알려 드립니다.
+            <span className="block">
+              누가 읽었는지는 알려 드리지 않습니다. 끄면 열람 기록을 아예 남기지 않습니다.
+            </span>
           </p>
         </div>
 
-        <ul className="space-y-2">
-          {settings.notificationCategories.map((option) => {
-            const muted = settings.mutedNotificationCategories.includes(option.category);
-            return (
-              <li key={option.category} className="flex items-center gap-3">
-                <span className="min-w-20 text-sm text-ink">{option.label}</span>
-                {option.mutable ? (
-                  <Button
-                    variant={muted ? "secondary" : "primary"}
-                    className="px-3 py-1 text-xs"
-                    onClick={() => toggleCategory(option.category, muted)}
-                  >
-                    {muted ? "꺼짐" : "켜짐"}
-                  </Button>
-                ) : (
-                  // 끌 수 없는 것은 스위치를 아예 두지 않는다 — 눌러도 안 되는 버튼은 고장으로 보인다.
-                  <span className="text-xs text-ink-muted">항상 받음</span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <div className="flex items-center gap-3">
+          <span className="min-w-20 text-sm text-ink">열람 알림</span>
+          <Button
+            variant={settings.viewNotificationEnabled ? "primary" : "secondary"}
+            className="px-3 py-1 text-xs"
+            onClick={() => toggleViewNotification()}
+          >
+            {settings.viewNotificationEnabled ? "켜짐" : "꺼짐"}
+          </Button>
+        </div>
       </Card>
 
       <Card className="space-y-3 p-5">
