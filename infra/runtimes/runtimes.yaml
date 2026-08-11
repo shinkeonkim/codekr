@@ -28,6 +28,7 @@ runtimes:
     label: "Python 3.13"
     monacoLanguage: "python"
     image: "python:3.13-alpine"
+    digest: "sha256:540c7d91f98ff6880174c40e99067bf5941eb54d818a7a5e094d188b196a934d"
     sourceFile: "main.py"
     run: ["python3", "main.py"]
     template: |
@@ -43,6 +44,7 @@ runtimes:
     label: "Python 3.12"
     monacoLanguage: "python"
     image: "python:3.12-alpine"
+    digest: "sha256:6d43704baacd1bfbe7c295d7f13079d5d8104ed33568873133f8fc69980419df"
     sourceFile: "main.py"
     run: ["python3", "main.py"]
     template: |
@@ -58,6 +60,7 @@ runtimes:
     label: "Python 3.11"
     monacoLanguage: "python"
     image: "python:3.11-alpine"
+    digest: "sha256:25976e9d34a0fab1f278cae931f34c8303d97bf0c0d7f85b6b4dcf641d7702a4"
     sourceFile: "main.py"
     run: ["python3", "main.py"]
     template: |
@@ -74,6 +77,7 @@ runtimes:
     label: "JavaScript (Node 22)"
     monacoLanguage: "javascript"
     image: "node:22-alpine"
+    digest: "sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32"
     sourceFile: "main.js"
     run: ["node", "main.js"]
     template: |
@@ -84,6 +88,7 @@ runtimes:
     label: "JavaScript (Node 20)"
     monacoLanguage: "javascript"
     image: "node:20-alpine"
+    digest: "sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293"
     sourceFile: "main.js"
     run: ["node", "main.js"]
     template: |
@@ -95,6 +100,7 @@ runtimes:
     label: "C++17 (GCC 13)"
     monacoLanguage: "cpp"
     image: "gcc:13"
+    digest: "sha256:ad3bd9a25f8495c0d2830d9fdd15c6ce889ada806bc1a00f611f22411a1f8b7c"
     sourceFile: "main.cpp"
     compile: ["g++", "-O2", "-std=c++17", "-o", "main", "main.cpp"]
     run: ["./main"]
@@ -115,6 +121,7 @@ runtimes:
     label: "C++20 (GCC 13)"
     monacoLanguage: "cpp"
     image: "gcc:13"
+    digest: "sha256:ad3bd9a25f8495c0d2830d9fdd15c6ce889ada806bc1a00f611f22411a1f8b7c"
     sourceFile: "main.cpp"
     compile: ["g++", "-O2", "-std=c++20", "-o", "main", "main.cpp"]
     run: ["./main"]
@@ -135,6 +142,7 @@ runtimes:
     label: "C17 (GCC 13)"
     monacoLanguage: "c"
     image: "gcc:13"
+    digest: "sha256:ad3bd9a25f8495c0d2830d9fdd15c6ce889ada806bc1a00f611f22411a1f8b7c"
     sourceFile: "main.c"
     compile: ["gcc", "-O2", "-std=c17", "-o", "main", "main.c", "-lm"]
     run: ["./main"]
@@ -154,6 +162,7 @@ runtimes:
     label: "Java 21"
     monacoLanguage: "java"
     image: "eclipse-temurin:21-jdk-alpine"
+    digest: "sha256:1ff763083f2993d57d0bf374ab10bb3e2cb873af6c13a04458ebbd3e0337dc76"
     sourceFile: "Main.java"
     compile: ["javac", "Main.java"]
     run: ["java", "-XX:+UseSerialGC", "-Xss64m", "Main"]
@@ -188,6 +197,7 @@ runtimes:
     label: "Go 1.26"
     monacoLanguage: "go"
     image: "golang:1.26-alpine"
+    digest: "sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2"
     sourceFile: "main.go"
     # 캐시 디렉터리를 작업 디렉터리 안에 두어야 읽기 전용 rootfs 에서도 빌드된다.
     compile: ["sh", "-c", "GOCACHE=/work/.gocache GOFLAGS=-mod=mod go build -o main main.go"]
@@ -207,6 +217,7 @@ runtimes:
     label: "Rust 1.85"
     monacoLanguage: "rust"
     image: "rust:1.85-alpine"
+    digest: "sha256:4333721398de61f53ccbe53b0b855bcc4bb49e55828e8f652d7a8ac33dd0c118"
     sourceFile: "main.rs"
     compile: ["rustc", "-O", "-o", "main", "main.rs"]
     run: ["./main"]
@@ -225,6 +236,7 @@ runtimes:
     label: "Ruby 3.4"
     monacoLanguage: "ruby"
     image: "ruby:3.4-alpine"
+    digest: "sha256:c5a5064d190055633011c03aa800170cc36945ff3afb5f6c915329f92d6f1e00"
     sourceFile: "main.rb"
     run: ["ruby", "main.rb"]
     template: |
@@ -264,6 +276,7 @@ runtimes:
     # 이 런타임은 SQL 문제에서만 고를 수 있다 (#60).
     problemKind: "JUDGE_SQL"
     image: "postgres:16-alpine"
+    digest: "sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777"
     sourceFile: "query.sql"
     # PostgreSQL 을 띄우고 읽기 전용 롤을 만드는 스크립트. 실행기가 갖고 있다.
     harness: "sql"
