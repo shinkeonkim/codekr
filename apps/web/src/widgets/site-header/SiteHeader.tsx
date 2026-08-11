@@ -41,7 +41,8 @@ export function SiteHeader() {
           ))}
           {isAdmin ? (
             <Link
-              href="/admin/problems"
+              // 진입점은 하나다. 어느 구획으로 갈지는 어드민 첫 화면이 역할에 맞춰 보여준다 (#131).
+              href="/admin"
               className={`rounded-lg px-3 py-1.5 transition ${
                 pathname.startsWith("/admin") ? "bg-surface-muted text-ink" : "text-ink-muted hover:text-ink"
               }`}
