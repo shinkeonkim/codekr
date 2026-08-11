@@ -5,15 +5,22 @@ package runtimes
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 // Definition 은 런타임 하나의 실행 방법을 서술한다.
 type Definition struct {
-	ID         string   `yaml:"id"`
-	Label      string   `yaml:"label"`
-	Image      string   `yaml:"image"`
+	ID    string `yaml:"id"`
+	Label string `yaml:"label"`
+	Image string `yaml:"image"`
+	// Digest 는 이미지 다이제스트다 (#96). 비어 있으면 태그로만 받는다.
+	//
+	// **태그는 다시 붙을 수 있다.** python:3.13-alpine 이 어제와 오늘 다른 이미지일 수
+	// 있고, 그러면 우리가 검증한 것과 다른 것이 실행 노드에 들어간다 — 격리가 이미지
+	// 내용에 의존하는 이 프로젝트에서는 검증 결과의 의미가 약해진다.
+	Digest     string   `yaml:"digest"`
 	SourceFile string   `yaml:"sourceFile"`
 	Compile    []string `yaml:"compile"`
 	Run        []string `yaml:"run"`
@@ -31,6 +38,28 @@ type Definition struct {
 
 // NeedsCompile 은 실행 전 컴파일 단계가 필요한지 알려준다.
 func (d Definition) NeedsCompile() bool { return len(d.Compile) > 0 }
+
+// ImageRef 는 실제로 받아올 이미지 참조를 만든다 (#96).
+//
+// registry 가 있으면 그 앞에 붙인다 — 미러를 쓰는 노드와 원본을 쓰는 로컬이
+// **같은 정의 파일**을 쓰게 하기 위함이다.
+//
+// 다이제스트가 있으면 태그 대신 다이제스트로 고정한다. 미러링은 매니페스트를 그대로
+// 복사하므로 원본과 미러의 다이제스트가 같다 — 어느 쪽에서 받아도 같은 것이 온다.
+func (d Definition) ImageRef(registry string) string {
+	image := d.Image
+	if registry != "" {
+		image = strings.TrimSuffix(registry, "/") + "/" + image
+	}
+	if d.Digest == "" {
+		return image
+	}
+	// 태그와 다이제스트가 함께 있으면 다이제스트가 이긴다. 태그는 사람이 읽는 용도로 남긴다.
+	if index := strings.LastIndex(image, ":"); index > strings.LastIndex(image, "/") {
+		image = image[:index]
+	}
+	return image + "@" + d.Digest
+}
 
 // Registry 는 런타임 ID 로 정의를 찾아준다.
 type Registry struct {

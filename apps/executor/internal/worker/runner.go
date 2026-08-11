@@ -12,7 +12,9 @@ import (
 
 // Runner 는 실행 작업 하나를 결과로 바꾼다. 큐/전송과 무관하게 단독으로 테스트할 수 있다.
 type Runner struct {
-	registry             *runtimes.Registry
+	registry *runtimes.Registry
+	// runtimeRegistry 는 런타임 이미지를 받아올 레지스트리다 (#96). 비면 원본에서 받는다.
+	runtimeRegistry      string
 	box                  sandbox.Sandbox
 	compileTimeoutMs     int
 	compileMemoryLimitMb int
@@ -24,9 +26,11 @@ func NewRunner(
 	registry *runtimes.Registry,
 	box sandbox.Sandbox,
 	compileTimeoutMs, compileMemoryLimitMb, maxOutputBytes int,
+	runtimeRegistry string,
 ) *Runner {
 	return &Runner{
 		registry:             registry,
+		runtimeRegistry:      runtimeRegistry,
 		box:                  box,
 		compileTimeoutMs:     compileTimeoutMs,
 		compileMemoryLimitMb: compileMemoryLimitMb,
@@ -47,7 +51,7 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 	}
 
 	outcome, err := r.box.Run(ctx, sandbox.Spec{
-		Image:                definition.Image,
+		Image:                definition.ImageRef(r.runtimeRegistry),
 		SourceFile:           definition.SourceFile,
 		SourceCode:           job.SourceCode,
 		Stdin:                job.Stdin,

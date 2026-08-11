@@ -70,6 +70,12 @@ executor:
     - key: codekr/executor
       operator: Exists
       effect: NoSchedule
+  # 런타임 이미지를 받아올 레지스트리 (#96). 비우면 정의 파일의 주소(Docker Hub)에서 받는다.
+  #
+  # 미러를 쓰면 pull rate limit·속도·가용성 문제가 함께 풀리지만, **가장 큰 이유는
+  # 공급망**이다 — 태그는 다시 붙을 수 있어서, 우리가 검증한 것과 다른 것이 실행 노드에
+  # 들어갈 수 있다. runtimes.yaml 의 digest 와 함께 써야 그 문제가 막힌다.
+  runtimeRegistry: ""
   # 런타임 소켓 경로. containerd 노드 기준.
   runtimeSocket: /run/containerd/containerd.sock
   # 샌드박스 구현 (#45). containerd 네이티브 구현이 생기기 전까지는 엔진 API 뿐이다.
