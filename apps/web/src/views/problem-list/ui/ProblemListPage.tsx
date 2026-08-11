@@ -1,18 +1,12 @@
 "use client";
 
-import {
-  CATEGORY_LABELS,
-  PROBLEM_SORTS,
-  ProblemStatsCell,
-  TIER_LABELS,
-  TierBadge,
-  problemApi,
-} from "@/entities/problem";
-import type { ProblemCategory, ProblemSummary } from "@/entities/problem";
+import { CATEGORY_LABELS, PROBLEM_SORTS, TIER_LABELS, problemApi } from "@/entities/problem";
+import type { ProblemSummary } from "@/entities/problem";
 import type { Page } from "@/shared/api";
 import { EmptyState, Field, Input, Pagination, Select, Table } from "@/shared/ui";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { PROBLEM_COLUMNS } from "./problemColumns";
 
 /** URL 에 담는 목록 상태. 새로고침·뒤로가기·링크 공유 후에도 같은 목록이 나와야 한다 (#76 과 같은 규칙). */
 const KEYS = ["q", "category", "tier", "sort", "page"] as const;
@@ -101,7 +95,7 @@ export function ProblemListPage() {
           </Select>
         </Field>
         {/*
-          표 헤더 클릭이 아니라 Select 인 이유: 좁은 화면에서는 열이 숨는데(hideOnMobile),
+          표 헤더 클릭이 아니라 Select 인 이유: 좁은 화면에서는 열이 숨는데(hideBelow),
           숨은 열로는 정렬할 수 없다. #132 의 완료 조건이 "모바일에서도 바꿀 수 있다" 다.
         */}
         <Field label="정렬">
@@ -127,44 +121,7 @@ export function ProblemListPage() {
             rows={result.content}
             rowKey={(problem) => problem.id}
             href={(problem) => `/problems/${problem.slug}`}
-            columns={[
-              { key: "title", header: "문제", render: (problem) => problem.title },
-              {
-                key: "category",
-                header: "유형",
-                hideOnMobile: true,
-                render: (problem) => (
-                  <span className="text-ink-muted">
-                    {CATEGORY_LABELS[problem.category as ProblemCategory]}
-                  </span>
-                ),
-              },
-              {
-                key: "limits",
-                header: "제한",
-                hideOnMobile: true,
-                render: (problem) => (
-                  <span className="whitespace-nowrap text-xs text-ink-muted">
-                    {problem.timeLimitMs}ms · {problem.memoryLimitMb}MB
-                  </span>
-                ),
-              },
-              {
-                key: "stats",
-                header: "맞은 사람 · 정답률",
-                hideOnMobile: true,
-                align: "right",
-                render: (problem) => <ProblemStatsCell stats={problem.stats} />,
-              },
-              {
-                key: "difficulty",
-                header: "난이도",
-                align: "right",
-                render: (problem) => (
-                  <TierBadge difficulty={problem.difficulty} label={problem.difficultyLabel} />
-                ),
-              },
-            ]}
+            columns={PROBLEM_COLUMNS}
           />
           <Pagination
             page={result.page}
