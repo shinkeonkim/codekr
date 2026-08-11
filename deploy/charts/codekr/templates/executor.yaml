@@ -20,8 +20,17 @@ spec:
         app.kubernetes.io/component: executor
     spec:
       {{- include "codekr.imagePullSecrets" . | nindent 6 }}
-      nodeSelector: {{- toYaml .Values.executor.nodeSelector | nindent 8 }}
-      tolerations: {{- toYaml .Values.executor.tolerations | nindent 8 }}
+      {{/*
+        **비어 있으면 아예 넣지 않는다.** Helm 은 맵을 병합하므로 값 파일에
+        `nodeSelector: {}` 를 적어도 차트 기본값이 지워지지 않는다 — 그러면 라벨이 없는
+        클러스터에서 파드가 영영 Pending 으로 남는다(실제로 그랬다).
+      */}}
+      {{- with .Values.executor.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.executor.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: executor
           image: {{ include "codekr.image" (dict "root" . "name" "executor") }}
