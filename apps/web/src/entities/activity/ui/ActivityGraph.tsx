@@ -1,7 +1,7 @@
 "use client";
 
 import type { ActivityResponse } from "../model/types";
-import { ActivityCell } from "./ActivityCell";
+import { ActivityCell, CELL_SIZE } from "./ActivityCell";
 import { Button, Card } from "@/shared/ui";
 
 /** 활동량을 4단계로 나눈다. 색만으로 구분하지 않도록 각 칸에 정확한 수치를 함께 담는다. */
@@ -103,13 +103,13 @@ export function ActivityGraph({ activity, year, onYearChange }: Props) {
                 </th>
                 {weeks.map((week, weekIndex) => {
                   const day = week.find((date) => date.getUTCDay() === weekdayIndex);
-                  if (!day) return <td key={`${weekday}-empty`} className="h-3 w-3" />;
+                  if (!day) return <td key={`${weekday}-empty`} className={`p-0 ${CELL_SIZE}`} />;
 
                   const key = toKey(day);
                   const entry = byDate.get(key);
                   const count = entry?.count ?? 0;
                   return (
-                    <td key={key} className="p-0">
+                    <td key={key} className={`p-0 ${CELL_SIZE}`}>
                       <ActivityCell
                         label={key}
                         levelClassName={LEVELS[levelOf(count)].className}
