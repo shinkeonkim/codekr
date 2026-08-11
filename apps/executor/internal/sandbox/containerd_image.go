@@ -10,6 +10,7 @@ import (
 
 	"github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/core/content"
+	"github.com/containerd/containerd/v2/core/remotes/docker"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
@@ -22,13 +23,27 @@ pull 은 이미지를 받는다.
 func (s *containerdSandbox) pull(ctx context.Context, ref string) (client.Image, error) {
 	full := normalizeRef(ref)
 
-	image, err := s.cli.Pull(ctx, full,
+	opts := []client.RemoteOpt{
 		client.WithPlatformMatcher(targetPlatform()),
 		client.WithPullUnpack,
 		client.WithPullSnapshotter(defaultSnapshotter),
-	)
+	}
+	// 자격증명이 있을 때만 resolver 를 갈아 끼운다. 없으면 containerd 기본값(익명)이
+	// 그대로 돌아 공개 이미지 경로가 바뀌지 않는다.
+	if len(s.credentials) > 0 {
+		opts = append(opts, client.WithResolver(docker.NewResolver(docker.ResolverOptions{
+			Hosts: docker.ConfigureDefaultRegistries(
+				docker.WithAuthorizer(docker.NewDockerAuthorizer(
+					docker.WithAuthCreds(s.credentials.lookup),
+				)),
+			),
+		})))
+	}
+
+	image, err := s.cli.Pull(ctx, full, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("이미지를 받지 못했습니다 (%s): %w", full, err)
+		return nil, fmt.Errorf("이미지를 받지 못했습니다 (%s, 자격증명 %s): %w",
+			full, credentialState(s.credentials, full), err)
 	}
 	return image, nil
 }
@@ -95,4 +110,21 @@ func (s *containerdSandbox) imageEnv(ctx context.Context, image client.Image) []
 	}
 	// PATH 가 없는 이미지도 있다. 그때만 우리 기본값을 앞에 붙인다.
 	return append([]string{sandboxPath}, config.Config.Env...)
+}
+
+/*
+credentialState 는 오류 메시지에 "자격증명이 있었는지"를 적는다.
+
+403 을 받았을 때 가장 먼저 알아야 할 것이 이것이다. **비밀번호는 적지 않는다** — 로그에
+남는다.
+*/
+func credentialState(creds registryCredentials, ref string) string {
+	host, _, _ := strings.Cut(ref, "/")
+	if _, ok := creds[normalizeAuthHost(host)]; ok {
+		return "있음"
+	}
+	if len(creds) == 0 {
+		return "없음"
+	}
+	return "이 호스트에는 없음"
 }
