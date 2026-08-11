@@ -123,6 +123,7 @@ object ApiEndpointInventory {
         Endpoint("DELETE", "/api/v1/admin/problems/{id}", Access.ADMIN, UserRole.PROBLEM_SETTER),
         Endpoint("POST", "/api/v1/admin/problems/{id}/verify", Access.ADMIN, UserRole.PROBLEM_SETTER),
         Endpoint("POST", "/api/v1/admin/problems/{id}/rejudge", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("GET", "/api/v1/admin/problems/{id}/rejudge", Access.ADMIN, UserRole.PROBLEM_SETTER),
         Endpoint("GET", "/api/v1/admin/queues", Access.ADMIN, UserRole.ADMIN),
         Endpoint("GET", "/api/v1/admin/executors", Access.ADMIN, UserRole.ADMIN),
         Endpoint("POST", "/api/v1/admin/executors/scale", Access.ADMIN, UserRole.ADMIN),
