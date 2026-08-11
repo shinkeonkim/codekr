@@ -114,7 +114,10 @@ class QueueContractTest {
         // 키가 어긋나면 워커가 아무것도 못 읽는데, 오류 없이 조용히 멈춰서 발견이 늦다 (#102).
         val keys = mapper.readValue(fixture("queue-keys.json"), QueueKeysFixture::class.java)
 
-        assertEquals(keys.judgeStreamsByPriority, QueueKeys.JUDGE_STREAMS)
+        assertEquals(keys.judgeStreamsByPriority, QueueKeys.JUDGE_PRIORITY_STREAMS)
+        // 대회 큐는 등급 목록 밖이다 — 일반 워커가 읽으면 격리가 되지 않는다 (#62).
+        assertEquals(keys.judgeContestStream, QueueKeys.JUDGE_STREAM_CONTEST)
+        assertTrue(QueueKeys.JUDGE_STREAM_CONTEST !in QueueKeys.JUDGE_PRIORITY_STREAMS)
         assertEquals(keys.execStream, QueueKeys.EXEC_STREAM)
         assertEquals(keys.judgeGroup, QueueKeys.JUDGE_GROUP)
         assertEquals(keys.execGroup, QueueKeys.EXEC_GROUP)
@@ -131,6 +134,7 @@ class QueueContractTest {
 
     private data class QueueKeysFixture(
         val judgeStreamsByPriority: List<String>,
+        val judgeContestStream: String,
         val execStream: String,
         val judgeGroup: String,
         val execGroup: String,

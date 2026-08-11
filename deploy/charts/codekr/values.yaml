@@ -36,6 +36,15 @@ web:
 judge:
   replicas: 1
   concurrency: 4
+  # 대회 제출 전용 워커 (#62). 일반 워커와 나누는 것이 격리의 전부다 —
+  # 같은 워커가 둘을 읽으면 대회 제출이 몰릴 때 평소 제출이 그만큼 밀린다.
+  #
+  # 대회가 없어도 띄워 둔다. 큐가 비면 아무 일도 하지 않아 비용이 거의 없고,
+  # 대회 직전에 띄우는 방식은 그때 실패하면 대회를 망친다.
+  contest:
+    enabled: true
+    replicas: 1
+    concurrency: 4
   resources:
     requests: { cpu: 100m, memory: 128Mi }
     limits: { memory: 256Mi }

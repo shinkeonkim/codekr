@@ -60,6 +60,11 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/contests", Access.PUBLIC),
         Endpoint("GET", "/api/v1/contests/{slug}", Access.PUBLIC),
         Endpoint("POST", "/api/v1/contests/{slug}/registrations", Access.AUTHENTICATED),
+        Endpoint(
+            "POST",
+            "/api/v1/contests/{contestSlug}/problems/{problemSlug}/submissions",
+            Access.AUTHENTICATED,
+        ),
 
         // --- 제출 ---
         Endpoint("POST", "/api/v1/problems/{slug}/run", Access.AUTHENTICATED),

@@ -1,7 +1,5 @@
 package worker
 
-import contract "github.com/shinkeonkim/codekr/libs/gocontract"
-
 /*
 등급 사이의 순서를 정하는 규칙 (#102).
 
@@ -22,8 +20,8 @@ const starvationInterval = 10
 // streamOrder 는 이번 차례에 어떤 순서로 스트림을 시도할지 돌려준다.
 //
 // cycle 이 starvationInterval 의 배수일 때만 순서를 뒤집는다. 그 외에는 높은 등급부터다.
-func streamOrder(cycle int) []string {
-	streams := contract.JudgeStreamsByPriority()
+// 스트림이 하나뿐인 차선(대회, #62)에서는 뒤집어도 같은 목록이라 아무 일도 없다.
+func streamOrder(streams []string, cycle int) []string {
 	if cycle > 0 && cycle%starvationInterval == 0 {
 		return reversed(streams)
 	}

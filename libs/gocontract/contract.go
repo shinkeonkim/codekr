@@ -27,11 +27,38 @@ const (
 	StreamJudgeHigh   = "codekr:judge:high"
 	StreamJudgeNormal = "codekr:judge:normal"
 	StreamJudgeLow    = "codekr:judge:low"
+	// StreamJudgeContest 는 대회 제출 전용이다 (#62). 전용 워커만 읽는다.
+	StreamJudgeContest = "codekr:judge:contest"
 )
 
 // JudgeStreamsByPriority 는 **높은 등급부터** 나열한다. 소비자는 이 순서로 시도한다.
 func JudgeStreamsByPriority() []string {
 	return []string{StreamJudgeHigh, StreamJudgeNormal, StreamJudgeLow}
+}
+
+// 채점 차선 (#62).
+//
+// **등급이 아니라 차선이다.** 같은 워커가 등급만 나눠 읽으면, 대회 제출이 몰릴 때
+// 평소 제출이 그만큼 밀린다 — 등급 순서를 어떻게 정하든 워커 수가 유한하기 때문이다.
+// 격리는 **워커를 나눠야** 생긴다.
+const (
+	LaneGeneral = "general"
+	LaneContest = "contest"
+)
+
+// JudgeStreamsFor 는 그 차선의 워커가 읽을 스트림을 돌려준다.
+//
+// 알 수 없는 차선은 일반으로 읽지 않고 **빈 목록**을 준다 — 오타 하나로 대회 워커가
+// 일반 큐를 먹어 치우는 것보다, 아무것도 처리하지 않아 즉시 드러나는 편이 낫다.
+func JudgeStreamsFor(lane string) []string {
+	switch lane {
+	case "", LaneGeneral:
+		return JudgeStreamsByPriority()
+	case LaneContest:
+		return []string{StreamJudgeContest}
+	default:
+		return nil
+	}
 }
 
 // Verdict 는 테스트케이스 및 제출 단위의 판정 값이다.

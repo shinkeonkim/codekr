@@ -22,6 +22,15 @@ enum class JudgePriority(val stream: String) {
 
     /** 실행이 무거워 다른 문제를 밀어내는 문제. 어드민이 문제마다 내릴 수 있다. */
     LOW(QueueKeys.JUDGE_STREAM_LOW),
+
+    /**
+     * 대회 제출 (#62).
+     *
+     * **등급이 아니라 차선이다.** 전용 워커만 이 스트림을 읽는다 — 같은 워커가
+     * 등급만 나눠 읽으면 대회 제출이 몰릴 때 평소 제출이 그만큼 밀린다.
+     * 격리는 워커를 나눠야 생긴다.
+     */
+    CONTEST(QueueKeys.JUDGE_STREAM_CONTEST),
     ;
 
     companion object {
@@ -32,9 +41,12 @@ enum class JudgePriority(val stream: String) {
          * 결국 모든 문제가 HIGH 가 되고 등급이 의미를 잃는다. 문제 설정으로 고를 수
          * 있는 것은 NORMAL 과 LOW 뿐이다 (ProblemJudgePriority).
          */
-        fun of(kind: SubmissionKind, problem: Problem): JudgePriority = when (kind) {
-            SubmissionKind.SOLUTION_VERIFICATION -> HIGH
-            SubmissionKind.USER -> problem.judgePriority.toQueuePriority()
+        fun of(kind: SubmissionKind, problem: Problem, contestId: Long? = null): JudgePriority = when {
+            kind == SubmissionKind.SOLUTION_VERIFICATION -> HIGH
+            // 대회 제출은 문제 설정보다 차선이 앞선다. 대회 중 어떤 문제든
+            // 대회 워커가 처리해야 평소 제출과 섞이지 않는다.
+            contestId != null -> CONTEST
+            else -> problem.judgePriority.toQueuePriority()
         }
     }
 }

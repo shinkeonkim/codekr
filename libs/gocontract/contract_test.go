@@ -89,6 +89,7 @@ func TestQueueKeysMatchFixture(t *testing.T) {
 
 	var fixture struct {
 		JudgeStreamsByPriority []string `json:"judgeStreamsByPriority"`
+		JudgeContestStream     string   `json:"judgeContestStream"`
 		ExecStream             string   `json:"execStream"`
 		JudgeGroup             string   `json:"judgeGroup"`
 		ExecGroup              string   `json:"execGroup"`
@@ -98,6 +99,11 @@ func TestQueueKeysMatchFixture(t *testing.T) {
 	}
 	if err := json.Unmarshal(raw, &fixture); err != nil {
 		t.Fatalf("고정 JSON 파싱 실패: %v", err)
+	}
+
+	// 대회 큐는 등급 목록에 넣지 않는다 — 일반 워커가 읽으면 격리가 되지 않는다 (#62).
+	if fixture.JudgeContestStream != StreamJudgeContest {
+		t.Fatalf("대회 스트림 키가 다릅니다: %s vs %s", fixture.JudgeContestStream, StreamJudgeContest)
 	}
 
 	actual := JudgeStreamsByPriority()
@@ -148,5 +154,30 @@ func TestJudgeJobSQLFixtureMatchesContract(t *testing.T) {
 	// SQL 문제의 채점 단위는 정답 쿼리 하나다.
 	if len(job.Testcases) != 0 {
 		t.Fatalf("테스트케이스가 없어야 합니다: %+v", job.Testcases)
+	}
+}
+
+// 차선을 잘못 적었을 때 일반 큐를 먹어 치우지 않아야 한다 (#62).
+func TestJudgeStreamsForUnknownLaneIsEmpty(t *testing.T) {
+	if streams := JudgeStreamsFor("contets"); len(streams) != 0 {
+		t.Fatalf("알 수 없는 차선은 아무것도 읽지 않아야 합니다: %v", streams)
+	}
+}
+
+func TestJudgeStreamsForSeparatesLanes(t *testing.T) {
+	general := JudgeStreamsFor(LaneGeneral)
+	contest := JudgeStreamsFor(LaneContest)
+
+	for _, stream := range general {
+		if stream == StreamJudgeContest {
+			t.Fatal("일반 워커가 대회 큐를 읽으면 격리가 되지 않습니다")
+		}
+	}
+	if len(contest) != 1 || contest[0] != StreamJudgeContest {
+		t.Fatalf("대회 워커는 대회 큐만 읽어야 합니다: %v", contest)
+	}
+	// 차선을 적지 않으면 일반이다 — 기존 배포가 그대로 돈다.
+	if len(JudgeStreamsFor("")) != len(general) {
+		t.Fatal("빈 차선은 일반이어야 합니다")
 	}
 }
