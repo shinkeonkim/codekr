@@ -43,6 +43,13 @@ codekr:
     locations: file:/etc/codekr/runtimes.yaml,file:../../infra/runtimes/runtimes.yaml
   cors:
     allowed-origins: ${CODEKR_CORS_ALLOWED_ORIGINS:http://localhost:13000}
+  storage:
+    # 오브젝트 스토리지 (#115). 비우면 업로드 API 가 503 을 낸다 —
+    # 아바타 때문에 서비스 전체가 뜨지 못하면 안 된다.
+    endpoint: ${CODEKR_STORAGE_ENDPOINT:}
+    bucket: ${CODEKR_STORAGE_BUCKET:codekr}
+    access-key: ${CODEKR_STORAGE_ACCESS_KEY:}
+    secret-key: ${CODEKR_STORAGE_SECRET_KEY:}
   jwt:
     secret: ${CODEKR_JWT_SECRET:local-development-only-secret-change-me-please-32b}
     access-ttl-seconds: ${CODEKR_JWT_ACCESS_TTL_SECONDS:3600}

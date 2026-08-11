@@ -25,6 +25,11 @@ spec:
           envFrom:
             - configMapRef: { name: codekr-config }
             - secretRef: { name: {{ .Values.postgres.secretName }} }
+            {{- if .Values.storage.endpoint }}
+            # 스토리지 자격증명 (#115). 차트에 두지 않고 시크릿에서 읽는다 —
+            # values.yaml 은 저장소에 남는다.
+            - secretRef: { name: {{ .Values.storage.secretName }} }
+            {{- end }}
           volumeMounts:
             - { name: runtimes, mountPath: /etc/codekr }
             - { name: tmp, mountPath: /tmp }

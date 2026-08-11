@@ -33,6 +33,16 @@ web:
     requests: { cpu: 100m, memory: 192Mi }
     limits: { memory: 512Mi }
 
+# 사용자가 올린 이미지를 두는 곳 (#115).
+#
+# **자격증명은 차트에 두지 않는다.** 시크릿에서 읽는다 — values.yaml 은 저장소에 남는다.
+storage:
+  # S3 호환 엔드포인트. 비우면 업로드가 503 이 되고 나머지 기능은 그대로 돈다.
+  endpoint: ""
+  bucket: codekr
+  # 자격증명이 든 시크릿 이름. 키는 accessKey / secretKey.
+  secretName: codekr-storage
+
 judge:
   replicas: 1
   concurrency: 4

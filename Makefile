@@ -3,14 +3,14 @@
 # 이 Makefile 은 그것들을 감싸는 얇은 진입점일 뿐이다.
 
 COMPOSE := docker compose --env-file .env -f infra/docker/compose.yml
-INFRA   := postgres redis
+INFRA   := postgres redis storage
 GO_MODULES := apps/executor apps/judge libs/gocontract
 # 로컬에 golangci-lint 가 없어도 CI 와 같은 버전으로 검사할 수 있게 컨테이너로 돌린다.
 GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \
-        pull-runtimes build-runtimes verify-runtimes verify-seccomp seed smoke test test-api test-web test-go lint lint-go
+        pull-runtimes build-runtimes verify-runtimes verify-seccomp verify-storage seed smoke test test-api test-web test-go lint lint-go
 
 help: ## 사용 가능한 명령 표시
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -56,6 +56,9 @@ verify-runtimes: ## 등록된 모든 런타임의 기본 템플릿이 실제로 
 	cd apps/executor && CODEKR_SANDBOX_TEST=1 \
 		CODEKR_SECCOMP_PROFILE=$(CURDIR)/infra/sandbox/seccomp.json \
 		go test ./internal/sandbox/ -run TestLiveEveryRegisteredRuntime -timeout 25m -v
+
+verify-storage: ## 오브젝트 스토리지에 실제로 올리고 받는지 확인 (#115, MinIO 필요)
+	cd apps/api && CODEKR_STORAGE_TEST=1 ./gradlew test --tests '*S3ObjectStorageLiveTest*'
 
 verify-seccomp: ## 좁힌 seccomp 프로파일이 실제로 위험한 syscall 을 막는지 확인 (#48)
 	cd apps/executor && CODEKR_SANDBOX_TEST=1 \

@@ -79,6 +79,8 @@ class SecurityConfig(
                         // 순위표는 관전자도 본다 (#63).
                         "/api/v1/contests/*/scoreboard",
                     ).permitAll()
+                    // 이미지는 공개다 (#115). 키에 내용 해시가 들어 있어 추측할 수 없다.
+                    .requestMatchers(HttpMethod.GET, "/api/v1/files/**").permitAll()
                     // 링크 공유 문제집은 로그인 없이도 열린다 (#87).
                     .requestMatchers(HttpMethod.GET, "/api/v1/collections/shared/*").permitAll()
                     .requestMatchers("/ws/**").permitAll()

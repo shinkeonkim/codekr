@@ -4,6 +4,11 @@ metadata:
   name: codekr-config
   labels: {{- include "codekr.labels" . | nindent 4 }}
 data:
+  {{- if .Values.storage.endpoint }}
+  # 오브젝트 스토리지 (#115). 자격증명은 시크릿에서 온다.
+  CODEKR_STORAGE_ENDPOINT: {{ .Values.storage.endpoint | quote }}
+  CODEKR_STORAGE_BUCKET: {{ .Values.storage.bucket | quote }}
+  {{- end }}
   CODEKR_DB_URL: "jdbc:postgresql://{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
   CODEKR_REDIS_HOST: "codekr-redis.{{ .Release.Namespace }}.svc.cluster.local"
   CODEKR_REDIS_PORT: "6379"
