@@ -1,6 +1,7 @@
 package codekr.api.activity
 
 import codekr.api.auth.security.JwtTokenProvider
+import codekr.api.activity.repository.UserDailyActivityRepository
 import codekr.api.support.IntegrationTestBase
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
@@ -20,6 +21,7 @@ class ActivityIntegrationTest : IntegrationTestBase() {
     @Autowired private lateinit var userRepository: UserRepository
     @Autowired private lateinit var tokenProvider: JwtTokenProvider
     @Autowired private lateinit var jdbcClient: JdbcClient
+    @Autowired private lateinit var activityRepository: UserDailyActivityRepository
 
     private val zone = ZoneId.of("Asia/Seoul")
     private var userId: Long = 0
@@ -91,6 +93,7 @@ class ActivityIntegrationTest : IntegrationTestBase() {
         val today = LocalDate.now(zone)
         // 한국 시간 23시 50분 — UTC 로 자르면 전날로 잡히는 시각이다.
         insertSubmission(today.atTime(23, 50).atZone(zone).toInstant().toString(), "COMPLETED")
+        refreshActivity()
 
         mockMvc.perform(get("/api/v1/users/me/activity").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
@@ -184,6 +187,15 @@ class ActivityIntegrationTest : IntegrationTestBase() {
 
     private fun submissionOn(date: LocalDate, status: String = "COMPLETED") {
         insertSubmission(date.atTime(12, 0).atZone(zone).toInstant().toString(), status)
+        refreshActivity()
+    }
+
+    /**
+     * 활동은 이제 별도 표에 있다 (#105). 원시 INSERT 는 채점 이벤트를 거치지 않으므로
+     * 재계산으로 표를 맞춘다 — 재계산 경로가 실제로 동작하는지도 함께 확인된다.
+     */
+    private fun refreshActivity() {
+        activityRepository.recomputeAll(userId)
     }
 
     private fun insertSubmission(createdAt: String, status: String) {

@@ -1,6 +1,6 @@
 package codekr.api.user.service
 
-import codekr.api.activity.repository.ActivityRepository
+import codekr.api.activity.repository.UserDailyActivityRepository
 import codekr.api.activity.service.StreakCalculator
 import codekr.api.activity.ActivityPolicy
 import codekr.api.common.error.ApiException
@@ -23,7 +23,7 @@ import java.time.LocalDate
 class UserProfileService(
     private val userRepository: UserRepository,
     private val profileRepository: UserProfileRepository,
-    private val activityRepository: ActivityRepository,
+    private val activityRepository: UserDailyActivityRepository,
 ) {
 
     fun findByNickname(nickname: String): UserProfileResponse {
