@@ -216,6 +216,15 @@ func (s *containerSandbox) create(ctx context.Context, spec Spec, budget time.Du
 		},
 	})
 	if err != nil {
+		// **이미지가 없을 때가 흔하다.** 엔진 API 구현은 이미지를 받지 않는다 —
+		// 노드에 미리 받아 두는 것이 전제다(#96). 다이제스트를 고정한 뒤 태그로만 받아
+		// 두면 여기서 걸리는데, 원문("No such image")만으로는 무엇을 해야 할지 알 수 없다.
+		if strings.Contains(err.Error(), "No such image") {
+			return "", fmt.Errorf(
+				"컨테이너 생성 실패: 이미지가 노드에 없습니다 (%s). "+
+					"`make pull-runtimes` 로 정의 파일의 다이제스트까지 받아 두십시오: %w",
+				spec.Image, err)
+		}
 		return "", fmt.Errorf("컨테이너 생성 실패: %w", err)
 	}
 	return created.ID, nil

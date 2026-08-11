@@ -8,12 +8,22 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REGISTRY="${ROOT_DIR}/infra/runtimes/runtimes.yaml"
 
+# **다이제스트가 있으면 그것으로 받는다.**
+#
+# 태그로만 받으면 정의 파일이 고정한 것과 **다른 이미지**가 로컬에 들어온다. 태그는 다시
+# 붙기 때문이다. 그러면 실행기가 고정된 다이제스트를 찾지 못해 모든 채점이
+# `No such image` 로 실패한다 — 실제로 그랬다 (#96 검수).
 list_images() {
   python3 -c '
 import sys, yaml
 definitions = yaml.safe_load(open(sys.argv[1]))["runtimes"]
-for image in dict.fromkeys(d["image"] for d in definitions):
-    print(image)
+seen = {}
+for definition in definitions:
+    image, digest = definition["image"], definition.get("digest")
+    reference = f"{image.split(chr(58))[0]}@{digest}" if digest else image
+    seen.setdefault(reference, None)
+for reference in seen:
+    print(reference)
 ' "${REGISTRY}"
 }
 
