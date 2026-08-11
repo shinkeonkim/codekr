@@ -34,7 +34,7 @@ abstract class IntegrationTestBase {
             TRUNCATE submission_testcase_results, submissions, problem_runtime_limits,
                      problem_templates, problem_testcases, problems,
                      notifications, notification_mutes, rejudge_batches, user_daily_activity,
-                     user_problem_scores, user_roles, users
+                     user_problem_scores, user_badges, user_roles, users
             RESTART IDENTITY CASCADE
             """,
         ).update()

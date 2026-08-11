@@ -3,6 +3,13 @@ package codekr.api.user.service
 import codekr.api.activity.service.ActivityService
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.ranking.badge.BadgeRepository
+import codekr.api.ranking.entity.RankingMetric
+import codekr.api.ranking.entity.RankingPeriod
+import codekr.api.ranking.entity.SkillTier
+import codekr.api.ranking.repository.UserProblemScoreRepository
+import codekr.api.ranking.service.RankingService
+import codekr.api.user.dto.SkillTierResponse
 import codekr.api.user.dto.UserProfileResponse
 import codekr.api.user.repository.UserProfileRepository
 import codekr.api.user.repository.UserRepository
@@ -21,12 +28,17 @@ class UserProfileService(
     private val userRepository: UserRepository,
     private val profileRepository: UserProfileRepository,
     private val activityService: ActivityService,
+    private val scoreRepository: UserProblemScoreRepository,
+    private val rankingService: RankingService,
+    private val badgeRepository: BadgeRepository,
 ) {
 
     fun findByNickname(nickname: String): UserProfileResponse {
         val user = userRepository.findByNickname(nickname) ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
         // 스트릭은 활동 서비스 한 곳에서 받는다 (#117). 여기서 다시 계산하면 언젠가 어긋난다.
         val streaks = activityService.streaksOf(user.id)
+        // 점수는 랭킹과 같은 규칙(상위 N개)으로 센다. 화면마다 다른 숫자가 보이면 안 된다.
+        val score = scoreRepository.totalsOf(user.id).first
 
         return UserProfileResponse(
             nickname = user.nickname,
@@ -36,6 +48,11 @@ class UserProfileService(
             solvedByTier = profileRepository.solvedByTier(user.id),
             currentStreak = streaks.current,
             longestStreak = streaks.longest,
+            score = score,
+            // 티어는 **도달했던 최고 점수**로 정한다. 강등이 없으므로 현재 점수와 갈라질 수 있다.
+            skillTier = SkillTier.of(user.peakScore)?.let(SkillTierResponse::from),
+            rank = rankingService.rankOf(nickname, RankingMetric.SCORE, RankingPeriod.ALL_TIME)?.rank,
+            badges = badgeRepository.findAll(user.id),
         )
     }
 }

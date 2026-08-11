@@ -2,9 +2,11 @@ package codekr.api.submission.service
 
 import codekr.api.activity.service.ActivityRecorder
 import codekr.api.queue.message.JudgeEventMessage
+import codekr.api.ranking.badge.BadgeAwarder
 import codekr.api.ranking.service.ScoreRecorder
 import codekr.api.rejudge.service.RejudgeCompletion
 import codekr.api.submission.entity.SubmissionKind
+import codekr.api.submission.entity.Verdict
 import codekr.api.submission.entity.SubmissionTestcaseResult
 import codekr.api.submission.repository.SubmissionRepository
 import codekr.api.submission.repository.SubmissionTestcaseResultRepository
@@ -24,6 +26,7 @@ class JudgeResultRecorder(
     private val rejudgeCompletion: RejudgeCompletion,
     private val activityRecorder: ActivityRecorder,
     private val scoreRecorder: ScoreRecorder,
+    private val badgeAwarder: BadgeAwarder,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -51,6 +54,10 @@ class JudgeResultRecorder(
                 if (submission.kind == SubmissionKind.USER) {
                     activityRecorder.recordCompletion(submission.userId, submission.createdAt)
                     scoreDelta = scoreRecorder.record(submission.userId, submission.problemId)
+                    // 뱃지는 점수를 기록한 뒤에 확인한다 — '최초 해결자'가 점수 표를 본다 (#58).
+                    if (submission.verdict == Verdict.ACCEPTED) {
+                        badgeAwarder.onAccepted(submission.userId, submission.problemId)
+                    }
                 }
                 // 재채점이었으면 판정이 바뀌었는지 보고 알린다 (#107).
                 // 여기서 부르는 이유: 결과가 확정되는 유일한 지점이다.
