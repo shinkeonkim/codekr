@@ -31,7 +31,8 @@ abstract class IntegrationTestBase {
     fun truncateAll() {
         jdbcClient.sql(
             """
-            TRUNCATE submission_testcase_results, submissions, problem_runtime_limits,
+            TRUNCATE contest_registrations, contest_problems, contests,
+                     submission_testcase_results, submissions, problem_runtime_limits,
                      problem_sql_specs,
                      problem_templates, problem_testcases, problems,
                      notifications, notification_mutes, rejudge_batches, user_daily_activity,
