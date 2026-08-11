@@ -26,6 +26,9 @@ interface SubmissionRepository : JpaRepository<Submission, Long> {
         pageable: Pageable,
     ): Page<Submission>
 
+    /** 재채점 대상 (#107). 정답 검증 제출은 대상이 아니라 kind 로 거른다. */
+    fun findByProblemIdAndKindAndDeletedAtIsNull(problemId: Long, kind: SubmissionKind): List<Submission>
+
     /** 스위퍼가 오래 방치된 제출을 찾을 때 쓴다. */
     fun findByStatusInAndCreatedAtBefore(
         statuses: Collection<SubmissionStatus>,

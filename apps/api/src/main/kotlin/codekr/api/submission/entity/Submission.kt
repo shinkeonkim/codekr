@@ -63,6 +63,41 @@ class Submission(
     @Column(name = "compile_error", columnDefinition = "text")
     var compileError: String? = null
 
+    /** 재채점 중이면 그 배치. 끝나면 비운다 (#107). */
+    @Column(name = "rejudge_batch_id")
+    var rejudgeBatchId: Long? = null
+
+    /**
+     * 재채점 직전의 판정.
+     *
+     * 결과가 도착했을 때 **바뀌었는가**를 알아야 알림을 보낼지 정할 수 있다.
+     * 안 바뀐 사람에게 보내면 소음이다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "previous_verdict", length = 30)
+    var previousVerdict: Verdict? = null
+
+    /**
+     * 재채점을 시작한다. 판정을 지우지 않고 **이전 값을 따로 보관**한다 —
+     * 재채점 중에도 목록에는 지금까지의 판정이 보여야 한다.
+     */
+    fun startRejudge(batchId: Long) {
+        rejudgeBatchId = batchId
+        previousVerdict = verdict
+        status = SubmissionStatus.PENDING
+        passedCount = 0
+    }
+
+    /** 재채점 결과를 반영하고 **판정이 바뀌었는지** 돌려준다. */
+    fun finishRejudge(): Boolean {
+        val changed = previousVerdict != verdict
+        rejudgeBatchId = null
+        previousVerdict = null
+        return changed
+    }
+
+    val isRejudging: Boolean get() = rejudgeBatchId != null
+
     /** 채점기가 작업을 집어 든 시점. 이미 종결된 제출은 되돌리지 않는다. */
     fun markJudging(totalCount: Int) {
         if (status == SubmissionStatus.PENDING) {
