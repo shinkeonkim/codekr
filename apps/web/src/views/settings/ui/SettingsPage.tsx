@@ -6,7 +6,7 @@ import { userApi } from "@/entities/user";
 import type { UserSettings } from "@/entities/user";
 import { RequireAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { Alert, Card, EmptyState, Select } from "@/shared/ui";
+import { Alert, Card, EmptyState, Select, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 export function SettingsPage() {
@@ -18,9 +18,9 @@ export function SettingsPage() {
 }
 
 function SettingsView() {
+  const toast = useToast();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     userApi
@@ -31,13 +31,12 @@ function SettingsView() {
 
   const change = async (visibility: SubmissionVisibility) => {
     setError(null);
-    setSaved(false);
     try {
       // 바꾼 항목만 보낸다. 전체를 보내면 새 항목이 생겼을 때 옛 화면이 그것을 지운다.
       setSettings(await userApi.updateSettings({ defaultSubmissionVisibility: visibility }));
-      setSaved(true);
+      toast.success("설정을 저장했습니다.");
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "설정을 저장하지 못했습니다.");
+      toast.error(caught instanceof ApiError ? caught.message : "설정을 저장하지 못했습니다.");
     }
   };
 
@@ -81,7 +80,6 @@ function SettingsView() {
           이미 제출한 코드의 공개 범위는 바뀌지 않습니다. 제출 상세에서 하나씩 바꿀 수 있습니다.
         </p>
 
-        {saved ? <p className="text-xs text-ok">저장했습니다.</p> : null}
       </Card>
     </div>
   );
