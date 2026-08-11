@@ -11,11 +11,22 @@
 ## 만들기
 
 ```bash
-make build-runtimes      # 로컬 빌드
+make build-runtimes                              # 엔진 API 저장소로 (로컬 개발)
+CODEKR_IMAGE_BUILDER=nerdctl sudo -E \
+  bash scripts/build-runtimes.sh                 # containerd 의 codekr 네임스페이스로
 ```
+
+**빌더를 잘못 고르면 이미지를 못 찾는다.** docker 로 빌드한 이미지는 엔진의 저장소에
+들어가는데, containerd 구현은 containerd 의 `codekr` 네임스페이스를 본다 — 빌드는
+성공했는데 실행기는 없다고 한다.
 
 CI 는 `infra/runtimes/images/**` 가 바뀔 때만 빌드해 `ghcr.io` 로 올린다
 (`.github/workflows/runtime-images.yml`).
+
+## 레지스트리 없이 도는가
+
+**돈다.** 실행기는 이미지가 이미 있으면 레지스트리에 묻지 않는다 (#171). 노드에 미리
+받아 두거나 여기서 빌드해 두면, 레지스트리가 비공개이거나 잠깐 흔들려도 채점은 계속된다.
 
 ## 새 이미지를 추가할 때
 

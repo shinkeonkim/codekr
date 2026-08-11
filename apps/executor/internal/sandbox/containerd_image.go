@@ -15,13 +15,23 @@ import (
 )
 
 /*
-pull 은 이미지를 받는다.
+pull 은 이미지를 준비한다.
 
-이미 있으면 받지 않는다 — 노드에 미리 받아 두는 것이 전제이고(#96), 매 실행마다
-레지스트리에 묻는 것은 느리고 rate limit 에 걸린다.
+**이미 있으면 레지스트리에 묻지 않는다.** `client.Pull` 은 이미지가 로컬에 있어도 매번
+매니페스트를 다시 해석하러 나간다 — 제출마다 레지스트리 왕복이 붙고, 익명 pull 제한에
+걸리고, 레지스트리가 잠깐 흔들리면 채점이 멈춘다.
+
+노드에 미리 받아 두는 것이 전제이므로(#96) 있는 것을 쓰는 쪽이 정상 경로다. 미러가
+비공개라 자격증명이 필요한 환경에서도, 미리 받아 둔 노드는 그것 없이 돈다.
 */
 func (s *containerdSandbox) pull(ctx context.Context, ref string) (client.Image, error) {
 	full := normalizeRef(ref)
+
+	if image, err := s.localImage(ctx, full); err != nil {
+		return nil, err
+	} else if image != nil {
+		return image, nil
+	}
 
 	opts := []client.RemoteOpt{
 		client.WithPlatformMatcher(targetPlatform()),
@@ -110,6 +120,31 @@ func (s *containerdSandbox) imageEnv(ctx context.Context, image client.Image) []
 	}
 	// PATH 가 없는 이미지도 있다. 그때만 우리 기본값을 앞에 붙인다.
 	return append([]string{sandboxPath}, config.Config.Env...)
+}
+
+/*
+localImage 는 이미 받아 둔 이미지를 찾는다. 없으면 (nil, nil) 이다.
+
+**풀려 있는지까지 확인한다.** 이미지 레코드만 있고 스냅샷이 없는 상태가 있는데
+(예: 다른 스냅샷터로 받아 둔 경우), 그대로 쓰면 컨테이너 생성에서 "parent snapshot does
+not exist" 로 실패한다 — 원인이 이미지 쪽이라는 것을 알기 어려운 형태다.
+*/
+func (s *containerdSandbox) localImage(ctx context.Context, ref string) (client.Image, error) {
+	image, err := s.cli.GetImage(ctx, ref)
+	if err != nil {
+		// 없는 것은 오류가 아니다. 받으면 된다.
+		return nil, nil
+	}
+	unpacked, err := image.IsUnpacked(ctx, defaultSnapshotter)
+	if err != nil {
+		return nil, fmt.Errorf("이미지 상태를 확인하지 못했습니다 (%s): %w", ref, err)
+	}
+	if !unpacked {
+		if err := image.Unpack(ctx, defaultSnapshotter); err != nil {
+			return nil, fmt.Errorf("이미지를 펼치지 못했습니다 (%s): %w", ref, err)
+		}
+	}
+	return image, nil
 }
 
 /*
