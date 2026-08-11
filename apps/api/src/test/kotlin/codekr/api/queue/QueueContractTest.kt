@@ -1,6 +1,7 @@
 package codekr.api.queue
 
 import codekr.api.problem.entity.ExecutionLimits
+import codekr.api.problem.entity.ProblemKind
 import codekr.api.queue.message.ExecJobMessage
 import codekr.api.queue.message.ExecResultMessage
 import codekr.api.queue.message.JudgeEventMessage
@@ -41,6 +42,8 @@ class QueueContractTest {
         assertEquals(256, job.memoryLimitMb)
         assertEquals(1, job.testcases.size)
         assertEquals("3\n", job.testcases.first().expectedOutput)
+        // 유형 필드가 없는 옛 작업은 stdin/stdout 으로 읽는다 (#59). 채점기(Go)도 같게 읽는다.
+        assertEquals(ProblemKind.JUDGE_STDIO, job.kind)
     }
 
     @Test

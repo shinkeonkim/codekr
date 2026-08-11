@@ -31,6 +31,15 @@ class Problem(
     var category: ProblemCategory,
 
     /**
+     * 채점 방식 (#59). 카테고리(무엇에 대한 문제인가)와는 다른 축이다.
+     *
+     * 지금 있는 문제는 전부 stdin/stdout 이라 기본값이 그것이다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "problem_kind", nullable = false, length = 20)
+    var problemKind: ProblemKind = ProblemKind.JUDGE_STDIO,
+
+    /**
      * 난이도를 정수로 저장하는 이유: 티어 범위 검색과 정렬을 인덱스로 처리하기 위함이다.
      * 애플리케이션에서는 [difficulty] 로만 다루고 이 값을 직접 쓰지 않는다.
      */

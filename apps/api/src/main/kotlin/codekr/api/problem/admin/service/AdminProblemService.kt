@@ -53,6 +53,7 @@ class AdminProblemService(
             slug = request.slug,
             title = request.title,
             category = request.category,
+            problemKind = request.problemKind,
             difficultyLevel = request.difficulty.level,
             description = request.description,
             inputDescription = request.inputDescription,
@@ -85,6 +86,7 @@ class AdminProblemService(
             slug = request.slug
             title = request.title
             category = request.category
+            problemKind = request.problemKind
             difficulty = request.difficulty
             description = request.description
             inputDescription = request.inputDescription
@@ -117,6 +119,14 @@ class AdminProblemService(
         problemRepository.findByIdAndDeletedAtIsNull(id) ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
 
     private fun validate(request: ProblemUpsertRequest) {
+        // 채점기 구현도 스펙 테이블도 없는 유형으로는 문제를 만들 수 없다 (#59).
+        // 허용하면 채점되지 않는 문제가 만들어지고, 그 사실은 누가 제출한 뒤에야 드러난다.
+        if (!request.problemKind.ready) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "아직 지원하지 않는 문제 유형입니다: ${request.problemKind.label}",
+            )
+        }
         // 채점할 대상이 없는 문제는 공개해도 아무 의미가 없다.
         if (request.published && request.testcases.isEmpty()) throw ApiException(ErrorCode.TESTCASE_REQUIRED)
 

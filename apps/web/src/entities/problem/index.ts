@@ -10,6 +10,7 @@ export {
   tierOf,
 } from "./model/labels";
 export { useProblem } from "./model/useProblem";
+export { SELECTABLE_KINDS } from "./model/types";
 export type {
   AdminProblemDetail,
   Difficulty,
@@ -17,6 +18,7 @@ export type {
   DifficultyTier,
   ProblemCategory,
   ProblemDetail,
+  ProblemKind,
   ProblemExample,
   ProblemRuntimeLimit,
   ProblemStats,

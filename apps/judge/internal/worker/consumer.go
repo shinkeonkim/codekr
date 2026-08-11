@@ -111,9 +111,7 @@ func (c *Consumer) pickOne(ctx context.Context, cycle int) bool {
 // 깨어난 뒤 다음 차례부터 다시 등급 순서대로 읽는다.
 func (c *Consumer) waitForAny(ctx context.Context) {
 	args := []string{}
-	for _, stream := range contract.JudgeStreamsByPriority() {
-		args = append(args, stream)
-	}
+	args = append(args, contract.JudgeStreamsByPriority()...)
 	for range contract.JudgeStreamsByPriority() {
 		args = append(args, ">")
 	}

@@ -96,15 +96,36 @@ type JudgeTestcase struct {
 	ExpectedOutput string `json:"expectedOutput"`
 }
 
+// 문제 유형 (#59). 유형마다 풀이 입력·실행 환경·정답 표현·비교 방식이 다르다.
+//
+// **빈 값은 KindJudgeStdio 로 읽는다.** 이 필드가 없던 시절에 큐에 들어간 작업이
+// 남아 있을 수 있고, 그것들은 전부 stdin/stdout 채점이다.
+const (
+	KindJudgeStdio = "JUDGE_STDIO"
+	KindJudgeSQL   = "JUDGE_SQL"
+	KindQuiz       = "QUIZ"
+	KindManual     = "MANUAL"
+)
+
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.
 type JudgeJob struct {
-	SubmissionID  int64           `json:"submissionId"`
-	ProblemID     int64           `json:"problemId"`
+	SubmissionID int64 `json:"submissionId"`
+	ProblemID    int64 `json:"problemId"`
+	// 빈 값이면 KindJudgeStdio 다. KindOf 로 읽는다.
+	Kind          string          `json:"kind"`
 	RuntimeID     string          `json:"runtimeId"`
 	SourceCode    string          `json:"sourceCode"`
 	TimeLimitMs   int             `json:"timeLimitMs"`
 	MemoryLimitMb int             `json:"memoryLimitMb"`
 	Testcases     []JudgeTestcase `json:"testcases"`
+}
+
+// KindOf 는 작업의 문제 유형을 돌려준다. 비어 있으면 stdin/stdout 채점이다.
+func (j JudgeJob) KindOf() string {
+	if j.Kind == "" {
+		return KindJudgeStdio
+	}
+	return j.Kind
 }
 
 // 채점 진행 이벤트 타입.

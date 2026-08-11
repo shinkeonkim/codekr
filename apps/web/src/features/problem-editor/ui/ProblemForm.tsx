@@ -1,6 +1,6 @@
 "use client";
 
-import { ALL_DIFFICULTIES, CATEGORY_LABELS, difficultyLabel } from "@/entities/problem";
+import { ALL_DIFFICULTIES, CATEGORY_LABELS, SELECTABLE_KINDS, difficultyLabel } from "@/entities/problem";
 import type { AdminProblemDetail, Difficulty, ProblemRuntimeLimit, ProblemSolution, ProblemTemplate, ProblemVerification, Testcase } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,8 @@ export interface ProblemFormValues {
   slug: string;
   title: string;
   category: string;
+  /** 채점 방식 (#59). 분야(category)와 다른 축이다. */
+  problemKind: string;
   difficulty: Difficulty;
   description: string;
   inputDescription: string;
@@ -35,6 +37,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     slug: problem.slug,
     title: problem.title,
     category: problem.category,
+    problemKind: problem.problemKind,
     difficulty: problem.difficulty,
     description: problem.description,
     inputDescription: problem.inputDescription ?? "",
@@ -53,6 +56,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   slug: "",
   title: "",
   category: "ALGORITHM",
+  problemKind: "JUDGE_STDIO",
   difficulty: "BRONZE_5",
   description: "",
   inputDescription: "",
@@ -145,9 +149,26 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         <Field label="제목">
           <Input value={values.title} onChange={(event) => update("title", event.target.value)} required />
         </Field>
-        <Field label="유형">
+        {/* '유형'이라 부르면 채점 방식과 헷갈린다. 무엇에 대한 문제인지는 '분야'다. */}
+        <Field label="분야">
           <Select value={values.category} onChange={(event) => update("category", event.target.value)}>
             {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {/*
+          채점 방식 (#59). 지금 고를 수 있는 것은 하나뿐이지만 자리를 만들어 둔다 —
+          유형별 폼은 이 값에 따라 아래 입력 묶음을 갈아 끼우는 방식이 된다.
+        */}
+        <Field label="채점 방식">
+          <Select
+            value={values.problemKind}
+            onChange={(event) => update("problemKind", event.target.value)}
+          >
+            {Object.entries(SELECTABLE_KINDS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>

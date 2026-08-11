@@ -20,24 +20,57 @@ type EventSink interface {
 	Publish(ctx context.Context, event contract.Event) error
 }
 
-// Service 는 채점 작업 하나를 처음부터 끝까지 수행한다.
-type Service struct {
-	executor ExecutorClient
-	events   EventSink
-	log      *slog.Logger
+// Emitter 는 채점 도중의 진행 이벤트를 내보낸다. 유형 구현이 발행 경로를 알 필요가 없게 한다.
+type Emitter func(contract.Event)
+
+// Outcome 은 유형 구현이 돌려주는 채점 결과다. 완료 이벤트는 Service 가 만든다 —
+// 유형마다 완료 이벤트 모양이 달라지면 api 쪽 처리가 유형을 알아야 한다.
+type Outcome struct {
+	Summary      Summary
+	CompileError string
 }
 
-// NewService 는 채점 서비스를 만든다.
-func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Service {
-	return &Service{executor: executor, events: events, log: log}
-}
-
-// Judge 는 테스트케이스를 순서대로 실행하고 진행 상황을 이벤트로 알린다.
+// Kind 는 문제 유형 하나의 채점 방식이다 (#59).
 //
-// 첫 실패에서 멈추지 않고 끝까지 채점한다 — 학습자에게는 "몇 개를 통과했는가"가
-// 중요한 정보이기 때문이다. 다만 컴파일 실패는 이후 케이스가 전부 같은 결과이므로
-// 즉시 종료한다.
+// **새 유형을 추가할 때 손대는 곳은 여기 구현 하나와 아래 kinds 맵뿐이다.**
+// 진행/완료 이벤트, 제약 검증, 실패 처리는 Service 가 공통으로 맡는다.
+type Kind interface {
+	Judge(ctx context.Context, job contract.JudgeJob, emit Emitter) Outcome
+}
+
+// Service 는 작업을 유형에 맞는 채점기로 넘기고 공통 처리를 맡는다.
+type Service struct {
+	kinds  map[string]Kind
+	events EventSink
+	log    *slog.Logger
+}
+
+// NewService 는 채점 서비스를 만든다. 지금 아는 유형은 stdin/stdout 하나뿐이다 (ADR-0006).
+func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Service {
+	return &Service{
+		kinds: map[string]Kind{
+			contract.KindJudgeStdio: NewStdioJudge(executor, log),
+		},
+		events: events,
+		log:    log,
+	}
+}
+
+// Judge 는 작업 하나를 처음부터 끝까지 수행한다.
 func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
+	kind, known := s.kinds[job.KindOf()]
+	if !known {
+		// 우리가 모르는 유형이다. **채점을 시도하지 않는다** — stdin/stdout 으로 넘겨
+		// 짐작해 채점하면 엉뚱한 판정이 사용자 기록에 남는다.
+		s.log.Error("처리할 수 없는 문제 유형입니다",
+			"submissionId", job.SubmissionID, "kind", job.KindOf())
+		s.complete(ctx, job, Summary{
+			Verdict:    contract.VerdictSystemError,
+			TotalCount: len(job.Testcases),
+		}, "")
+		return
+	}
+
 	// 제약이 잘못된 작업은 테스트케이스를 하나도 돌리지 않고 즉시 종결한다.
 	// 실행기에서 케이스마다 같은 오류를 반복해 내는 것보다 낫다.
 	if err := contract.ValidateLimits(job.TimeLimitMs, job.MemoryLimitMb); err != nil {
@@ -51,55 +84,8 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 		return
 	}
 
-	total := len(job.Testcases)
-	s.publish(ctx, contract.Event{
-		Type: contract.EventJudging, SubmissionID: job.SubmissionID, TotalCount: total,
-	})
-
-	accumulator := NewAccumulator(total)
-	for _, testcase := range job.Testcases {
-		result := s.runTestcase(ctx, job, testcase)
-		verdict := VerdictOf(result, testcase.ExpectedOutput)
-		accumulator.Add(verdict, result.RuntimeMs, result.MemoryKb)
-
-		s.publish(ctx, contract.Event{
-			Type:          contract.EventTestcase,
-			SubmissionID:  job.SubmissionID,
-			Seq:           testcase.Seq,
-			Verdict:       verdict,
-			RuntimeMs:     result.RuntimeMs,
-			MemoryKb:      result.MemoryKb,
-			StderrExcerpt: excerpt(result.Stderr),
-		})
-
-		if verdict == contract.VerdictCompileError {
-			s.complete(ctx, job, accumulator.Summarize(), excerpt(result.Stderr))
-			return
-		}
-	}
-
-	s.complete(ctx, job, accumulator.Summarize(), "")
-}
-
-func (s *Service) runTestcase(
-	ctx context.Context,
-	job contract.JudgeJob,
-	testcase contract.JudgeTestcase,
-) contract.ExecResult {
-	result, err := s.executor.Run(ctx, contract.ExecJob{
-		RuntimeID:     job.RuntimeID,
-		SourceCode:    job.SourceCode,
-		Stdin:         testcase.Input,
-		TimeLimitMs:   job.TimeLimitMs,
-		MemoryLimitMb: job.MemoryLimitMb,
-	})
-	if err != nil {
-		// 실행기가 응답하지 않아도 제출을 미결 상태로 두지 않는다.
-		s.log.Error("실행 요청 실패",
-			"submissionId", job.SubmissionID, "seq", testcase.Seq, "error", err)
-		return contract.ExecResult{Status: contract.StatusSystemError, Stderr: err.Error()}
-	}
-	return result
+	outcome := kind.Judge(ctx, job, func(event contract.Event) { s.publish(ctx, event) })
+	s.complete(ctx, job, outcome.Summary, outcome.CompileError)
 }
 
 func (s *Service) complete(ctx context.Context, job contract.JudgeJob, summary Summary, compileError string) {

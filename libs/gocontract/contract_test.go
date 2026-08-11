@@ -32,6 +32,10 @@ func TestJudgeJobFixtureMatchesContract(t *testing.T) {
 	if len(job.Testcases) != 1 || job.Testcases[0].ExpectedOutput != "3\n" {
 		t.Fatalf("테스트케이스가 손실되었습니다: %+v", job.Testcases)
 	}
+	// 유형 필드가 없는 옛 작업은 stdin/stdout 으로 읽는다 (#59). api(Kotlin)도 같게 읽는다.
+	if job.KindOf() != KindJudgeStdio {
+		t.Fatalf("유형이 없으면 stdin/stdout 이어야 합니다: %s", job.KindOf())
+	}
 }
 
 func TestExecJobFixtureMatchesContract(t *testing.T) {
