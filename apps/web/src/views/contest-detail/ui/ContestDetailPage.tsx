@@ -8,6 +8,7 @@ import { formatDateTime } from "@/shared/lib";
 import { Alert, Button, Card, EmptyState, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
+import { ContestBoard } from "./ContestBoard";
 import { Scoreboard } from "./Scoreboard";
 
 /**
@@ -102,6 +103,8 @@ function DetailView({ slug }: { slug: string }) {
       ) : null}
 
       <ProblemList contest={contest} />
+
+      <ContestBoard slug={slug} registered={contest.registered} />
 
       {scoreboard ? (
         <Scoreboard
