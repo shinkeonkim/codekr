@@ -24,6 +24,7 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
       go: ${{ steps.filter.outputs.go }}
+      sandbox: ${{ steps.filter.outputs.sandbox }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -39,6 +40,10 @@ jobs:
               - 'apps/executor/**'
               - 'apps/judge/**'
               - 'libs/gocontract/**'
+            sandbox:
+              - 'apps/executor/**'
+              - 'infra/sandbox/**'
+              - 'infra/runtimes/**'
 
   api-test:
     name: api 단위 테스트
@@ -99,6 +104,70 @@ jobs:
       # 컨테이너 런타임이 필요한 라이브 샌드박스 테스트는 CODEKR_SANDBOX_TEST 로 분리돼 있다.
       - run: go test ./...
         working-directory: apps/${{ matrix.module }}
+
+  sandbox-live:
+    # 러너에는 containerd 가 이미 있다. macOS 에서 겪은 FIFO 제약(#70)이 없다 —
+    # 클라이언트와 containerd 가 같은 커널을 쓰기 때문이다.
+    name: 샌드박스 라이브 검증 (containerd)
+    needs: changes
+    if: needs.changes.outputs.sandbox == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: apps/executor/go.sum
+
+      - name: containerd 소켓 확인
+        run: |
+          # 소켓이 없으면 뒤 단계가 전부 SKIP 으로 조용히 넘어간다. 여기서 끊는다.
+          test -S /run/containerd/containerd.sock
+          sudo ctr version || echo "ctr 없음 — 소켓만 확인하고 넘어간다"
+
+      # 소켓이 root 소유라 시험을 sudo 로 돌려야 한다. `go test` 를 sudo 로 돌리면
+      # 캐시·모듈 경로가 root 것으로 바뀌므로, 바이너리로 뽑아서 그것만 올린다.
+      - name: 시험 바이너리 빌드
+        working-directory: apps/executor
+        run: |
+          go test -c -o /tmp/selftest.test ./internal/selftest/
+          go test -c -o /tmp/sandbox.test  ./internal/sandbox/
+
+      - name: "--self-test 7개"
+        working-directory: apps/executor
+        env:
+          CODEKR_SANDBOX_TEST: "1"
+          CODEKR_SANDBOX_RUNTIME: containerd
+          CONTAINERD_ADDRESS: /run/containerd/containerd.sock
+          CODEKR_SECCOMP_PROFILE: ${{ github.workspace }}/infra/sandbox/seccomp.json
+        run: |
+          sudo -E /tmp/selftest.test -test.run TestLive -test.v 2>&1 | tee /tmp/selftest.log
+          # **통과보다 실제로 돌았는지가 중요하다.** 환경 변수를 빠뜨리면 전부 SKIP 인데
+          # 초록으로 보인다 — 그것이 가장 나쁜 결과다.
+          passed=$(grep -c '^    --- PASS' /tmp/selftest.log || true)
+          echo "통과한 검사: ${passed}개"
+          test "$passed" -eq 7
+
+      - name: 채점 흐름 · seccomp · SQL · 재매핑
+        working-directory: apps/executor/internal/sandbox
+        env:
+          CODEKR_SANDBOX_TEST: "1"
+          CODEKR_SANDBOX_RUNTIME: containerd
+          CONTAINERD_ADDRESS: /run/containerd/containerd.sock
+          CODEKR_SECCOMP_PROFILE: ${{ github.workspace }}/infra/sandbox/seccomp.json
+          # 재매핑까지 걸어 둔다 (#130). 걸리지 않으면 TestLiveUserNamespaceRemapping 이
+          # /proc/self/uid_map 을 읽어 잡는다.
+          CODEKR_USERNS_HOST_OFFSET: "100000"
+        run: |
+          # 런타임 매트릭스는 뺀다. 15개 중 2개가 아직 없는 이미지를 가리켜 실패한다 (#171).
+          # 이미지가 올라가면 이 제외를 지운다.
+          sudo -E /tmp/sandbox.test -test.v -test.timeout 30m \
+            -test.run 'TestLive(Runs|Detects|Blocks|Hardening|Narrowed|SQL|UserNamespace)' \
+            2>&1 | tee /tmp/sandbox.log
+          ran=$(grep -cE '^(    )?--- (PASS|FAIL)' /tmp/sandbox.log || true)
+          echo "돌아간 검사: ${ran}개"
+          # SKIP 만 남은 상태를 막는 하한이다. 검사를 늘리면 이 숫자도 올린다.
+          test "$ran" -ge 15
 
   web-check:
     name: web 린트 · 타입 체크 · 빌드
