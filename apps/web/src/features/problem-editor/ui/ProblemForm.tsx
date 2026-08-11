@@ -1,84 +1,20 @@
 "use client";
 
 import { ALL_DIFFICULTIES, CATEGORY_LABELS, SELECTABLE_KINDS, difficultyLabel } from "@/entities/problem";
-import type { SqlSpec } from "@/entities/problem";
-import type { AdminProblemDetail, Difficulty, ProblemRuntimeLimit, ProblemSolution, ProblemTemplate, ProblemVerification, Testcase } from "@/entities/problem";
+import type { Difficulty, ProblemVerification, SqlSpec, Testcase } from "@/entities/problem";
+import { BLANK_SQL_SPEC, EMPTY_TESTCASE } from "../model/values";
+import type { ProblemFormValues } from "../model/values";
 import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { ProblemDescriptionFields } from "./ProblemDescriptionFields";
+import { ProblemMetaFields } from "./ProblemMetaFields";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
 import { Alert, Button, Card, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
-
-export interface ProblemFormValues {
-  slug: string;
-  title: string;
-  category: string;
-  /** 채점 방식 (#59). 분야(category)와 다른 축이다. */
-  problemKind: string;
-  /** SQL 유형일 때만 보낸다 (#60). */
-  sqlSpec: SqlSpec | null;
-  difficulty: Difficulty;
-  description: string;
-  inputDescription: string;
-  outputDescription: string;
-  timeLimitMs: number;
-  memoryLimitMb: number;
-  published: boolean;
-  testcases: Testcase[];
-  templates: ProblemTemplate[];
-  runtimeLimits: ProblemRuntimeLimit[];
-  solution: ProblemSolution | null;
-}
-
-const EMPTY_TESTCASE: Testcase = { seq: 1, input: "", expectedOutput: "", visibility: "PUBLIC" };
-
-// 행 순서 무시가 기본이다 — 문제가 정렬을 요구하지 않는데 순서를 비교하면
-// 맞는 답이 틀린 것으로 나온다.
-const BLANK_SQL_SPEC: SqlSpec = { schemaSql: "", answerSql: "", ignoreRowOrder: true };
-
-export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
-  return {
-    slug: problem.slug,
-    title: problem.title,
-    category: problem.category,
-    problemKind: problem.problemKind,
-    sqlSpec: problem.sqlSpec,
-    difficulty: problem.difficulty,
-    description: problem.description,
-    inputDescription: problem.inputDescription ?? "",
-    outputDescription: problem.outputDescription ?? "",
-    timeLimitMs: problem.timeLimitMs,
-    memoryLimitMb: problem.memoryLimitMb,
-    published: problem.published,
-    testcases: problem.testcases,
-    templates: problem.templates,
-    runtimeLimits: problem.runtimeLimits ?? [],
-    solution: problem.solution,
-  };
-}
-
-export const BLANK_PROBLEM: ProblemFormValues = {
-  slug: "",
-  title: "",
-  category: "ALGORITHM",
-  problemKind: "JUDGE_STDIO",
-  sqlSpec: null,
-  difficulty: "BRONZE_5",
-  description: "",
-  inputDescription: "",
-  outputDescription: "",
-  timeLimitMs: 2000,
-  memoryLimitMb: 256,
-  published: false,
-  testcases: [EMPTY_TESTCASE],
-  templates: [],
-  runtimeLimits: [],
-  solution: null,
-};
 
 interface Props {
   initial: ProblemFormValues;
@@ -89,7 +25,6 @@ interface Props {
   verification?: ProblemVerification | null;
 }
 
-/** 문제 등록과 수정이 같은 폼을 쓴다 — 요청 본문 모양이 동일하기 때문이다. */
 export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verification }: Props) {
   const toast = useToast();
   const router = useRouter();
@@ -162,98 +97,9 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
     <form className="space-y-4" onSubmit={handleSubmit}>
       {error ? <Alert>{error}</Alert> : null}
 
-      <Card className="grid gap-4 p-5 sm:grid-cols-2">
-        <Field label="slug (URL 식별자)">
-          <Input
-            value={values.slug}
-            onChange={(event) => update("slug", event.target.value)}
-            placeholder="two-sum"
-            required
-          />
-        </Field>
-        <Field label="제목">
-          <Input value={values.title} onChange={(event) => update("title", event.target.value)} required />
-        </Field>
-        {/* '유형'이라 부르면 채점 방식과 헷갈린다. 무엇에 대한 문제인지는 '분야'다. */}
-        <Field label="분야">
-          <Select value={values.category} onChange={(event) => update("category", event.target.value)}>
-            {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {/*
-          채점 방식 (#59). 지금 고를 수 있는 것은 하나뿐이지만 자리를 만들어 둔다 —
-          유형별 폼은 이 값에 따라 아래 입력 묶음을 갈아 끼우는 방식이 된다.
-        */}
-        <Field label="채점 방식">
-          <Select
-            value={values.problemKind}
-            onChange={(event) => changeKind(event.target.value)}
-          >
-            {Object.entries(SELECTABLE_KINDS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="난이도">
-          <Select
-            value={values.difficulty}
-            onChange={(event) => update("difficulty", event.target.value as Difficulty)}
-          >
-            {ALL_DIFFICULTIES.map((value) => (
-              <option key={value} value={value}>
-                {difficultyLabel(value)}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="시간 제한 (ms)">
-          <Input
-            type="number"
-            value={values.timeLimitMs}
-            onChange={(event) => update("timeLimitMs", Number(event.target.value))}
-          />
-        </Field>
-        <Field label="메모리 제한 (MB)">
-          <Input
-            type="number"
-            value={values.memoryLimitMb}
-            onChange={(event) => update("memoryLimitMb", Number(event.target.value))}
-          />
-        </Field>
-      </Card>
+      <ProblemMetaFields values={values} onChange={update} onChangeKind={changeKind} />
 
-      <Card className="space-y-4 p-5">
-        <Field label="문제 설명">
-          <Textarea
-            rows={8}
-            value={values.description}
-            onChange={(event) => update("description", event.target.value)}
-            required
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="입력 형식">
-            <Textarea
-              rows={3}
-              value={values.inputDescription}
-              onChange={(event) => update("inputDescription", event.target.value)}
-            />
-          </Field>
-          <Field label="출력 형식">
-            <Textarea
-              rows={3}
-              value={values.outputDescription}
-              onChange={(event) => update("outputDescription", event.target.value)}
-            />
-          </Field>
-        </div>
-      </Card>
+      <ProblemDescriptionFields values={values} onChange={update} />
 
       {/*
         유형별 입력 묶음 (#59, #60). 채점 대상이 유형마다 다르다 —
