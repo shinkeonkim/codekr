@@ -14,6 +14,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/shinkeonkim/codekr/apps/executor/internal/config"
 	"github.com/shinkeonkim/codekr/apps/executor/internal/httpapi"
+	"github.com/shinkeonkim/codekr/apps/executor/internal/readiness"
 	"github.com/shinkeonkim/codekr/apps/executor/internal/runtimes"
 	"github.com/shinkeonkim/codekr/apps/executor/internal/sandbox"
 	"github.com/shinkeonkim/codekr/apps/executor/internal/selftest"
@@ -30,6 +31,12 @@ func run() int {
 	// 샌드박스 방어는 노드마다 결과가 다를 수 있어서(런타임·커널·cgroup 설정),
 	// 배포된 곳에서 직접 확인할 수단이 필요하다 (#45, docs/09 §5).
 	selfTest := flag.Bool("self-test", false, "샌드박스 방어를 검증하고 종료한다")
+	// 격리와 준비 상태는 다른 질문이다 (#218). 합치면 실패했을 때 무엇이 잘못됐는지 흐려진다.
+	verifyRuntimes := flag.Bool(
+		"verify-runtimes",
+		false,
+		"정의 파일의 모든 런타임이 이 노드에서 도는지 확인하고 종료한다",
+	)
 	flag.Parse()
 
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -51,15 +58,19 @@ func run() int {
 		return 1
 	}
 
-	// 자체 검증은 큐도 런타임 정의도 필요 없다. 노드에 실행기 이미지만 있으면 돌아간다.
-	if *selfTest {
-		return runSelfTest(box, log)
-	}
-
+	// 검사도 정의 파일을 읽는다 (#218). 박아 둔 이미지로 검사하면 정의 파일과 노드가
+	// 어긋나도 전부 통과한다 — 그래서 실제로 한 번 놓쳤다 (PR #217).
 	registry, err := runtimes.Load(cfg.RuntimesPath)
 	if err != nil {
 		log.Error("런타임 정의 로드 실패", "error", err)
 		return 1
+	}
+
+	if *selfTest {
+		return runSelfTest(box, registry, cfg.RuntimeRegistry, log)
+	}
+	if *verifyRuntimes {
+		return runVerifyRuntimes(box, registry, cfg.RuntimeRegistry, log)
 	}
 
 	redisClient := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
@@ -105,16 +116,50 @@ func run() int {
 //
 // 하나가 실패해도 나머지를 계속 돌린다 — 무엇이 뚫려 있는지 한 번에 다 알아야
 // 배포 여부를 판단할 수 있다.
-func runSelfTest(box sandbox.Sandbox, log *slog.Logger) int {
-	log.Info("샌드박스 방어 검증 시작", "image", selftest.ProbeImage)
+func runSelfTest(
+	box sandbox.Sandbox,
+	registry *runtimes.Registry,
+	registryPrefix string,
+	log *slog.Logger,
+) int {
+	probe, err := selftest.ProbeFrom(registry, registryPrefix)
+	if err != nil {
+		log.Error("검사용 런타임을 찾지 못했습니다", "error", err)
+		return 1
+	}
+	log.Info("샌드박스 방어 검증 시작", "runtime", selftest.ProbeRuntimeID, "image", probe.Image)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	if selftest.Report(os.Stdout, selftest.Run(ctx, box)) {
+	if selftest.Report(os.Stdout, selftest.Run(ctx, box, probe)) {
 		log.Error("샌드박스 방어 검증 실패 — 이 노드에 배포하면 안 됩니다")
 		return 1
 	}
 	log.Info("샌드박스 방어 검증 통과")
+	return 0
+}
+
+// runVerifyRuntimes 는 정의 파일의 런타임이 이 노드에서 실제로 도는지 확인한다 (#218).
+//
+// 격리 검사와 나눠 둔 이유는 readiness 패키지 주석에 있다. 이쪽이 실패했다는 것은
+// "이 노드는 아직 채점할 준비가 안 됐다" 는 뜻이지, 방어가 뚫렸다는 뜻이 아니다.
+func runVerifyRuntimes(
+	box sandbox.Sandbox,
+	registry *runtimes.Registry,
+	registryPrefix string,
+	log *slog.Logger,
+) int {
+	log.Info("런타임 준비 상태 확인 시작", "runtimes", len(registry.All()))
+
+	// 언어 수만큼 컴파일이 돌아간다. 5분으로는 모자란다.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer cancel()
+
+	if readiness.Report(os.Stdout, readiness.Check(ctx, box, registry, registryPrefix)) {
+		log.Error("런타임 준비 상태 확인 실패 — 이 노드는 그 언어를 채점할 수 없습니다")
+		return 1
+	}
+	log.Info("런타임 준비 상태 확인 통과")
 	return 0
 }
