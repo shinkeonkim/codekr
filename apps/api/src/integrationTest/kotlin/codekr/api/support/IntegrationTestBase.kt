@@ -1,6 +1,7 @@
 package codekr.api.support
 
 import org.junit.jupiter.api.BeforeEach
+import codekr.api.contest.scoreboard.ScoreboardCache
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -27,8 +28,12 @@ abstract class IntegrationTestBase {
     private lateinit var jdbcClient: JdbcClient
 
     /** 테스트 클래스 사이에 데이터가 새지 않도록 매 테스트 전에 전체를 비운다. */
+    @Autowired private lateinit var scoreboardCache: ScoreboardCache
+
     @BeforeEach
     fun truncateAll() {
+        // 순위표 캐시는 애플리케이션 전체가 공유한다. 비우지 않으면 앞 시험의 결과가 남는다.
+        scoreboardCache.clear()
         jdbcClient.sql(
             """
             TRUNCATE contest_registrations, contest_problems, contests,

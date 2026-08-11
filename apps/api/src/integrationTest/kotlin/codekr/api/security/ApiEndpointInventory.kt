@@ -59,6 +59,7 @@ object ApiEndpointInventory {
         Endpoint("GET", "/api/v1/rankings/metrics", Access.PUBLIC),
         Endpoint("GET", "/api/v1/contests", Access.PUBLIC),
         Endpoint("GET", "/api/v1/contests/{slug}", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/contests/{slug}/scoreboard", Access.PUBLIC),
         Endpoint("POST", "/api/v1/contests/{slug}/registrations", Access.AUTHENTICATED),
         Endpoint(
             "POST",
