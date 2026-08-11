@@ -79,6 +79,35 @@ class UserProblemScoreRepository(private val jdbcClient: JdbcClient) {
             .update()
     }
 
+    /** 그 사용자가 맞힌 문제들. 뱃지를 다시 맞출 때 문제마다 조건을 확인해야 한다 (#177). */
+    fun solvedProblemIds(userId: Long): List<Long> =
+        jdbcClient.sql("SELECT problem_id FROM user_problem_scores WHERE user_id = :userId ORDER BY solved_at")
+            .param("userId", userId)
+            .query { rs, _ -> rs.getLong("problem_id") }
+            .list()
+
+    /**
+     * 점수가 잡혀야 할 사용자들 (#177).
+     *
+     * **점수 표가 아니라 제출에서 찾는다.** 표에서 찾으면 아직 한 번도 반영되지 않은
+     * 사용자가 빠지는데, 기능 도입 직후에는 그쪽이 전부다.
+     */
+    fun userIdsWithAcceptedSubmissions(): List<Long> =
+        jdbcClient.sql(
+            """
+            SELECT DISTINCT s.user_id
+            FROM submissions s
+            JOIN problems p ON p.id = s.problem_id
+            WHERE s.verdict = 'ACCEPTED'
+              AND s.kind = 'USER'
+              AND s.deleted_at IS NULL
+              AND p.deleted_at IS NULL
+              AND p.published = true
+            """,
+        )
+            .query { rs, _ -> rs.getLong("user_id") }
+            .list()
+
     /** 그 사용자의 지표 값. 랭킹 목록과 같은 규칙(상위 N개)으로 계산한다. */
     fun totalsOf(userId: Long): Pair<Int, Int> =
         jdbcClient.sql(

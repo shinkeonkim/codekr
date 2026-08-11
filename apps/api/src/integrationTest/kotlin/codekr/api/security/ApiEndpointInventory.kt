@@ -150,6 +150,8 @@ object ApiEndpointInventory {
         Endpoint("DELETE", "/api/v1/admin/users/{id}", Access.ADMIN, UserRole.SUPERUSER),
         Endpoint("PUT", "/api/v1/admin/users/{id}/roles", Access.ADMIN, UserRole.SUPERUSER),
         Endpoint("POST", "/api/v1/admin/users/{userId}/activity/recompute", Access.ADMIN, UserRole.SUPERUSER),
+        Endpoint("POST", "/api/v1/admin/users/{userId}/ranking/recompute", Access.ADMIN, UserRole.SUPERUSER),
+        Endpoint("POST", "/api/v1/admin/ranking/recompute", Access.ADMIN, UserRole.SUPERUSER),
     )
 
     /** 인증이 필요한(=비공개) 엔드포인트. */
