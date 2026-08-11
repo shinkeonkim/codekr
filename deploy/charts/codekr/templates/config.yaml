@@ -40,6 +40,9 @@ metadata:
   labels:
     app.kubernetes.io/name: codekr
 data:
+  # **files/runtimes.yaml 은 infra/runtimes/runtimes.yaml 로 가는 심볼릭 링크다.**
+  # 전에는 사본이었고, 실제로 갈라졌다 — 이미지 이름을 바꾼 뒤(#171) 차트 쪽 사본이
+  # 옛 주소를 들고 있어 배포된 실행기가 없는 이미지를 받으려 했다.
   runtimes.yaml: |
 {{ $.Files.Get "files/runtimes.yaml" | indent 4 }}
 {{- end }}
