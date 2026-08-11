@@ -15,6 +15,7 @@ import (
 
 	"github.com/containerd/containerd/v2/client"
 	"github.com/containerd/containerd/v2/core/containers"
+	"github.com/containerd/containerd/v2/core/snapshots"
 	"github.com/containerd/containerd/v2/pkg/oci"
 	"github.com/containerd/platforms"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -62,6 +63,26 @@ func (s *containerdSandbox) create(
 		opts = append(opts, withSeccompProfile(s.seccompProfile))
 	}
 
+	/*
+		user namespace 재매핑 (#130).
+
+		**containerd 에서는 컨테이너별로 건다.** 엔진 API 는 daemon 설정(`--userns-remap`)
+		이라 파드 스펙으로 켤 수 없지만, 여기서는 spec 의 한 줄이다.
+
+		스냅샷에도 같은 매핑을 라벨로 붙여야 한다. 그래야 rootfs 가 **idmapped mount** 로
+		붙는다 — 붙지 않으면 레이어를 통째로 다시 풀어야(chown) 하고, 그것은 이미지마다
+		디스크를 한 벌씩 더 먹는다.
+	*/
+	snapshotOpts := []snapshots.Opt{}
+	mapping, remap, err := usernsMapping()
+	if err != nil {
+		return nil, err
+	}
+	if remap {
+		opts = append(opts, oci.WithUserNamespace(mapping, mapping))
+		snapshotOpts = append(snapshotOpts, client.WithUserNSRemapperLabels(mapping, mapping))
+	}
+
 	container, err := s.cli.NewContainer(
 		ctx,
 		id,
@@ -71,7 +92,7 @@ func (s *containerdSandbox) create(
 		client.WithSnapshotter(defaultSnapshotter),
 		// 런타임 이름도 명시한다. 클라이언트가 리눅스가 아니면 기본값이 채워지지 않는다.
 		client.WithRuntime(defaultRuntime, nil),
-		client.WithNewSnapshot(id+"-snapshot", image),
+		client.WithNewSnapshot(id+"-snapshot", image, snapshotOpts...),
 		client.WithNewSpec(opts...),
 	)
 	if err != nil {

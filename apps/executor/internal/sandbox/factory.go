@@ -22,6 +22,14 @@ const (
 func New(runtime, seccompProfilePath string) (Sandbox, error) {
 	switch runtime {
 	case "", RuntimeEngineAPI:
+		// **켤 수 없는 것을 켠 것처럼 두지 않는다** (#130). 재매핑은 컨테이너별 spec 으로
+		// 거는 것이고, 엔진 API 에서는 daemon 설정이라 여기서 할 수 있는 것이 없다.
+		// 조용히 무시하면 재매핑이 걸린 줄 알고 운영한다.
+		if os.Getenv(usernsOffsetEnv) != "" {
+			return nil, fmt.Errorf(
+				"%s 는 %s 런타임에서만 쓸 수 있습니다 — 엔진 API 에서는 daemon 의 --userns-remap 설정입니다",
+				usernsOffsetEnv, RuntimeContainerd)
+		}
 		return NewContainerSandbox(seccompProfilePath)
 	case RuntimeContainerd:
 		// 소켓 경로는 환경마다 다르다. 비우면 기본 경로를 쓴다 (#68).
