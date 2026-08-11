@@ -1,6 +1,7 @@
 "use client";
 
 import type { ActivityResponse } from "../model/types";
+import { ActivityCell } from "./ActivityCell";
 import { Button, Card } from "@/shared/ui";
 
 /** 활동량을 4단계로 나눈다. 색만으로 구분하지 않도록 각 칸에 정확한 수치를 함께 담는다. */
@@ -37,6 +38,9 @@ function toKey(date: Date): string {
  * 주 단위 열로 쌓고, 각 칸은 하루다. 색은 강도를 빠르게 훑기 위한 것이고,
  * 실제 정보(날짜·활동량)는 `title` 과 스크린 리더용 텍스트로 함께 제공한다.
  */
+/** 툴팁이 화면 밖으로 나가지 않게 끝에서 몇 주를 예외로 볼지. */
+const EDGE_WEEKS = 4;
+
 interface Props {
   activity: ActivityResponse;
   /** 보고 있는 연도. 주지 않으면 연도 선택을 그리지 않는다 (기본 365일 보기). */
@@ -45,7 +49,7 @@ interface Props {
 }
 
 export function ActivityGraph({ activity, year, onYearChange }: Props) {
-  const counts = new Map(activity.days.map((day) => [day.date, day.count]));
+  const byDate = new Map(activity.days.map((day) => [day.date, day]));
 
   // 그래프가 항상 일요일에서 시작하도록 시작일을 그 주의 일요일로 당긴다.
   const start = parseDate(activity.from);
@@ -97,21 +101,29 @@ export function ActivityGraph({ activity, year, onYearChange }: Props) {
                   {/* 월·수·금만 표시해 촘촘함을 덜어낸다. */}
                   {weekdayIndex % 2 === 1 ? weekday : ""}
                 </th>
-                {weeks.map((week) => {
+                {weeks.map((week, weekIndex) => {
                   const day = week.find((date) => date.getUTCDay() === weekdayIndex);
                   if (!day) return <td key={`${weekday}-empty`} className="h-3 w-3" />;
 
                   const key = toKey(day);
-                  const count = counts.get(key) ?? 0;
-                  const description = `${key}: 채점 완료 ${count}회`;
+                  const entry = byDate.get(key);
+                  const count = entry?.count ?? 0;
                   return (
                     <td key={key} className="p-0">
-                      <div
-                        className={`h-3 w-3 rounded-sm ${LEVELS[levelOf(count)].className}`}
-                        title={description}
-                      >
-                        <span className="sr-only">{description}</span>
-                      </div>
+                      <ActivityCell
+                        label={key}
+                        levelClassName={LEVELS[levelOf(count)].className}
+                        submissions={count}
+                        solved={entry?.solvedCount ?? 0}
+                        // 양 끝에서는 툴팁이 화면 밖으로 나가지 않게 붙이는 쪽을 바꾼다.
+                        align={
+                          weekIndex < EDGE_WEEKS
+                            ? "start"
+                            : weekIndex >= weeks.length - EDGE_WEEKS
+                              ? "end"
+                              : "center"
+                        }
+                      />
                     </td>
                   );
                 })}

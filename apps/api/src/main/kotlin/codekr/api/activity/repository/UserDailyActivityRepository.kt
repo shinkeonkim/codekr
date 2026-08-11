@@ -18,7 +18,7 @@ class UserDailyActivityRepository(private val jdbcClient: JdbcClient) {
 
     /** 하루치를 제출에서 다시 세어 덮어쓴다. 0 이 되면 행을 지운다. */
     fun refreshDay(userId: Long, date: LocalDate) {
-        val count = countFromSubmissions(userId, date)
+        val (count, solved) = countFromSubmissions(userId, date)
         if (count == 0) {
             jdbcClient.sql("DELETE FROM user_daily_activity WHERE user_id = :userId AND activity_date = :date")
                 .param("userId", userId)
@@ -28,15 +28,18 @@ class UserDailyActivityRepository(private val jdbcClient: JdbcClient) {
         }
         jdbcClient.sql(
             """
-            INSERT INTO user_daily_activity (user_id, activity_date, submission_count)
-            VALUES (:userId, :date, :count)
+            INSERT INTO user_daily_activity (user_id, activity_date, submission_count, solved_count)
+            VALUES (:userId, :date, :count, :solved)
             ON CONFLICT (user_id, activity_date)
-            DO UPDATE SET submission_count = EXCLUDED.submission_count, updated_at = now()
+            DO UPDATE SET submission_count = EXCLUDED.submission_count,
+                          solved_count = EXCLUDED.solved_count,
+                          updated_at = now()
             """,
         )
             .param("userId", userId)
             .param("date", date)
             .param("count", count)
+            .param("solved", solved)
             .update()
     }
 
@@ -53,8 +56,13 @@ class UserDailyActivityRepository(private val jdbcClient: JdbcClient) {
 
         return jdbcClient.sql(
             """
-            INSERT INTO user_daily_activity (user_id, activity_date, submission_count)
-            SELECT user_id, (created_at AT TIME ZONE :zone)::date, count(*)
+            INSERT INTO user_daily_activity (user_id, activity_date, submission_count, solved_count)
+            SELECT user_id,
+                   (created_at AT TIME ZONE :zone)::date,
+                   count(*),
+                   -- **집계 경로와 재계산 경로 양쪽에 있어야 한다** (#133).
+                   -- 한쪽만 고치면 재계산이 값을 지운다.
+                   count(DISTINCT problem_id) FILTER (WHERE verdict = 'ACCEPTED')
             FROM submissions
             WHERE user_id = :userId AND deleted_at IS NULL AND kind = 'USER' AND status = 'COMPLETED'
             -- 같은 식을 두 번 쓰면 바인딩 자리마다 다른 식으로 취급된다. 순서로 묶는다.
@@ -69,7 +77,7 @@ class UserDailyActivityRepository(private val jdbcClient: JdbcClient) {
     fun findDailyCounts(userId: Long, from: LocalDate, to: LocalDate): List<DailyActivity> =
         jdbcClient.sql(
             """
-            SELECT activity_date, submission_count
+            SELECT activity_date, submission_count, solved_count
             FROM user_daily_activity
             WHERE user_id = :userId AND activity_date BETWEEN :from AND :to
             ORDER BY activity_date
@@ -78,7 +86,13 @@ class UserDailyActivityRepository(private val jdbcClient: JdbcClient) {
             .param("userId", userId)
             .param("from", from)
             .param("to", to)
-            .query { rs, _ -> DailyActivity(rs.getDate("activity_date").toLocalDate(), rs.getInt("submission_count")) }
+            .query { rs, _ ->
+                DailyActivity(
+                    rs.getDate("activity_date").toLocalDate(),
+                    rs.getInt("submission_count"),
+                    rs.getInt("solved_count"),
+                )
+            }
             .list()
 
     /** 활동이 있었던 모든 날짜. 스트릭은 조회 범위가 아니라 전체 기간을 본다 (#81). */
@@ -89,10 +103,12 @@ class UserDailyActivityRepository(private val jdbcClient: JdbcClient) {
             .list()
             .toSet()
 
-    private fun countFromSubmissions(userId: Long, date: LocalDate): Int =
+    /** @return 제출 수와 **맞힌 문제 수**(서로 다른 문제 기준). */
+    private fun countFromSubmissions(userId: Long, date: LocalDate): Pair<Int, Int> =
         jdbcClient.sql(
             """
-            SELECT count(*)
+            SELECT count(*)                                                          AS submissions,
+                   count(DISTINCT problem_id) FILTER (WHERE verdict = 'ACCEPTED')    AS solved
             FROM submissions
             WHERE user_id = :userId
               AND deleted_at IS NULL
@@ -104,6 +120,6 @@ class UserDailyActivityRepository(private val jdbcClient: JdbcClient) {
             .param("userId", userId)
             .param("zone", ActivityPolicy.ZONE.id)
             .param("date", date)
-            .query(Int::class.java)
+            .query { rs, _ -> rs.getInt("submissions") to rs.getInt("solved") }
             .single()
 }
