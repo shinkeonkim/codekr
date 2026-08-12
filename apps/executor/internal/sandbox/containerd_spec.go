@@ -62,6 +62,7 @@ func (s *containerdSandbox) create(
 		// CNI 를 붙이지 않으므로 루프백만 남는다.
 		withTmpfs(workDir, "mode=1777", "size=512m"),
 		withTmpfs("/tmp", "mode=1777", "size=256m"),
+		withCgroupNamespace(),
 	}
 	if s.seccompProfile != "" {
 		opts = append(opts, withSeccompProfile(s.seccompProfile))
@@ -186,4 +187,32 @@ func splitUser(value string, index int) uint32 {
 		return 0
 	}
 	return uint32(parsed)
+}
+
+/*
+withCgroupNamespace 는 컨테이너가 **자기 cgroup** 을 보게 한다 (#259).
+
+이것이 없으면 `/sys/fs/cgroup` 이 호스트의 cgroup 루트로 보인다. 루트에는 컨트롤러
+파일이 없어서, 래퍼 스크립트가 읽는 `memory.peak` 이 아예 존재하지 않는다 — 그래서
+홈랩에서 모든 제출의 메모리 사용량이 0 으로 기록됐다.
+
+엔진 API 구현에서는 같은 문제가 나지 않았다. 도커가 cgroup v2 호스트에서 이
+네임스페이스를 기본으로 켜기 때문이다. **두 구현을 같은 잣대로 보려면**(#68) 여기서도
+켜야 한다.
+
+격리도 함께 좋아진다 — 컨테이너가 호스트의 cgroup 구조를 들여다볼 수 없게 된다.
+*/
+func withCgroupNamespace() oci.SpecOpts {
+	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
+		if s.Linux == nil {
+			s.Linux = &specs.Linux{}
+		}
+		for _, ns := range s.Linux.Namespaces {
+			if ns.Type == specs.CgroupNamespace {
+				return nil
+			}
+		}
+		s.Linux.Namespaces = append(s.Linux.Namespaces, specs.LinuxNamespace{Type: specs.CgroupNamespace})
+		return nil
+	}
 }

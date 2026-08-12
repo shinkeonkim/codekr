@@ -55,6 +55,33 @@ func TestLiveRunsPythonAndCapturesStdout(t *testing.T) {
 	}
 }
 
+/*
+계측이 실제로 채워지는지 (#259).
+
+**0 은 "안 썼다" 가 아니라 "못 읽었다" 였다.** 홈랩에서 모든 제출의 메모리가 0 으로
+기록됐는데, 컨테이너가 자기 cgroup 이 아니라 호스트 루트를 보고 있어서 읽을 파일이
+없었던 것이다. 값이 화면에 보이는 항목이므로(#34, #84) 여기서 못 박는다.
+
+시간도 함께 본다 — 같은 줄에서 오고, 하나만 살아 있는 경우를 구분할 수 있어야 한다.
+*/
+func TestLiveReportsRuntimeAndMemory(t *testing.T) {
+	box := newLiveSandbox(t)
+	// 눈에 띄게 쓰도록 한 번에 여러 MB 를 잡는다. 너무 적으면 측정 잡음에 묻힌다.
+	spec := pythonSpec("data = bytearray(24 * 1024 * 1024)\nprint(len(data))")
+
+	outcome, err := box.Run(context.Background(), spec)
+
+	if err != nil {
+		t.Fatalf("실행 실패: %v", err)
+	}
+	if outcome.MemoryKb <= 0 {
+		t.Errorf("메모리 사용량이 기록되지 않았습니다: %dKB (컨테이너가 자기 cgroup 을 보는지 확인)", outcome.MemoryKb)
+	}
+	if outcome.RuntimeMs <= 0 {
+		t.Errorf("실행 시간이 기록되지 않았습니다: %dms", outcome.RuntimeMs)
+	}
+}
+
 func TestLiveDetectsTimeLimitExceeded(t *testing.T) {
 	box := newLiveSandbox(t)
 
