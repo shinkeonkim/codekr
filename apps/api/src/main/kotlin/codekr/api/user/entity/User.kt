@@ -47,6 +47,15 @@ class User(
      *
      * 현재 점수와 갈라질 수 있고, 그게 의도다. 재채점으로 점수가 내려가도 티어는 남는다.
      */
+    /**
+     * 고른 화면 테마 (#274). **`null` 이 "고르지 않음" 이다.**
+     *
+     * 기본값을 박으면 나중에 기본값을 바꿀 때 이미 저장된 사람들이 그것을 이긴다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "theme", length = 16)
+    var theme: UserTheme? = null,
+
     @Column(name = "peak_score", nullable = false)
     var peakScore: Int = 0,
 

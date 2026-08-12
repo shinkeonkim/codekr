@@ -7,7 +7,7 @@ import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
-import { ThemePicker } from "@/features/theme";
+import { ThemePicker, applyAccountTheme, fromServer } from "@/features/theme";
 import { WithdrawalCard } from "./WithdrawalCard";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, EmptyState, Select, useToast } from "@/shared/ui";
@@ -30,7 +30,12 @@ function SettingsView() {
   useEffect(() => {
     userApi
       .settings()
-      .then(setSettings)
+      .then((loaded) => {
+        setSettings(loaded);
+        // 계정에 저장된 테마가 이 기기의 선택을 이긴다 (#274). 고른 적이 없으면
+        // 그대로 둔다 — 서버가 모른다고 덮어쓰면 안 된다.
+        applyAccountTheme(fromServer(loaded.theme));
+      })
       .catch(() => setError("설정을 불러오지 못했습니다."));
   }, []);
 
@@ -77,7 +82,7 @@ function SettingsView() {
         <div>
           <h2 className="text-sm font-semibold text-ink">화면 테마</h2>
           <p className="mt-1 text-xs text-ink-muted">
-            이 기기에만 적용됩니다. 다른 기기에서는 따로 고릅니다.
+            로그인해 두면 다른 기기에서도 같은 테마로 열립니다.
           </p>
         </div>
         <ThemePicker />

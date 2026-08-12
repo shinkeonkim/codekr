@@ -97,6 +97,46 @@ class UserSettingsIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `테마는 고른 적이 없으면 비어 있다`() {
+        // **null 이 "고르지 않음" 이다** (#274). 기본값을 박으면 나중에 기본값을 바꿀 때
+        // 아무것도 고른 적 없는 사람이 옛 값에 묶인다.
+        mockMvc.perform(get("/api/v1/users/me/settings").header("Authorization", "Bearer $token"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.theme").doesNotExist())
+    }
+
+    @Test
+    fun `고른 테마가 계정에 남는다`() {
+        mockMvc.perform(
+            patch("/api/v1/users/me/settings")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"theme":"DARK"}"""),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.theme").value("DARK"))
+
+        // 다른 기기에서 열어도 따라온다 — 같은 계정의 설정을 다시 읽는다.
+        mockMvc.perform(get("/api/v1/users/me/settings").header("Authorization", "Bearer $token"))
+            .andExpect(jsonPath("$.theme").value("DARK"))
+    }
+
+    @Test
+    fun `테마만 보내도 다른 설정은 그대로다`() {
+        changeDefault("PUBLIC")
+
+        mockMvc.perform(
+            patch("/api/v1/users/me/settings")
+                .header("Authorization", "Bearer $token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"theme":"LIGHT"}"""),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.theme").value("LIGHT"))
+            .andExpect(jsonPath("$.defaultSubmissionVisibility").value("PUBLIC"))
+    }
+
+    @Test
     fun `기본값을 바꿔도 이미 낸 제출은 그대로다`() {
         submit(body = """{"runtimeId":"python:3.12","sourceCode":"print(3)"}""")
         changeDefault("PUBLIC")
