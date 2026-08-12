@@ -2,6 +2,7 @@ package codekr.api.user.dto
 
 import codekr.api.ranking.badge.AwardedBadge
 import codekr.api.ranking.entity.SkillTier
+import codekr.api.user.repository.SolvedByTag
 import java.time.Instant
 
 /**
@@ -20,6 +21,13 @@ data class UserProfileResponse(
     val solvedCount: Int,
     val submissionCount: Int,
     val solvedByTier: List<SolvedByTier>,
+    /**
+     * 태그별 푼 문제 수 (#232). 무엇을 잘하고 무엇을 안 풀어 봤는지가 여기서 드러난다.
+     *
+     * 합이 [solvedCount] 와 다를 수 있다 — 태그가 없는 문제는 어디에도 세지 않고,
+     * 태그가 둘인 문제는 두 곳에 센다.
+     */
+    val solvedByTag: List<SolvedByTag>,
     /** 전체 기간 기준 (#81). */
     val currentStreak: Int,
     val longestStreak: Int,

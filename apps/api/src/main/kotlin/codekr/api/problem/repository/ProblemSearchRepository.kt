@@ -1,8 +1,11 @@
 package codekr.api.problem.repository
 
 import codekr.api.problem.entity.QProblem
+import codekr.api.tag.entity.QProblemTag
+import codekr.api.tag.entity.QTag
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.OrderSpecifier
+import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import codekr.api.problem.entity.Problem
 import org.springframework.data.domain.Page
@@ -26,6 +29,13 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
             condition.keyword?.takeIf { it.isNotBlank() }?.let {
                 and(problem.title.containsIgnoreCase(it.trim()))
             }
+            // 태그마다 "이 문제에 그 태그가 있는가" 를 하나씩 건다 (#232).
+            //
+            // 조인 한 번으로 IN 을 쓰면 **또는**이 된다. 조인을 태그 수만큼 늘리는 방법도
+            // 있지만, 문제당 태그가 몇 개뿐이라 존재 검사가 읽기 쉽고 인덱스도 그대로 탄다.
+            condition.tagSlugs.filter { it.isNotBlank() }.distinct().forEach { slug ->
+                and(hasTag(problem, slug))
+            }
         }
 
         val content = queryFactory
@@ -44,6 +54,13 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
 
         return PageImpl(content, pageable, total)
     }
+
+    private fun hasTag(problem: QProblem, slug: String) = JPAExpressions
+        .selectOne()
+        .from(QProblemTag.problemTag)
+        .join(QTag.tag).on(QTag.tag.id.eq(QProblemTag.problemTag.id.tagId))
+        .where(QProblemTag.problemTag.id.problemId.eq(problem.id), QTag.tag.slug.eq(slug))
+        .exists()
 
     private fun orderBy(sort: ProblemSort): Array<OrderSpecifier<*>> {
         val problem = QProblem.problem

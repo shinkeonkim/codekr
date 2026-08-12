@@ -47,7 +47,7 @@ class AdminProblemController(
         @RequestParam(defaultValue = "20") size: Int,
     ): PageResponse<ProblemSummaryResponse> {
         // published = null → 미공개 문제까지 포함한다.
-        val condition = ProblemSearchCondition(q, category, tier, sort, published = null)
+        val condition = ProblemSearchCondition(q, category, tier, sort = sort, published = null)
         return adminProblemService.search(condition, PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)))
     }
 

@@ -65,6 +65,61 @@ create_problem() {
   esac
 }
 
+# 알고리즘 분류를 만들고 시드 문제에 붙인다 (#232).
+#
+# **비어 있는 채로 시작하면 필터가 아무것도 걸러 주지 못한다.** 태그 기능만 있고 붙은
+# 문제가 없으면, 처음 켠 사람은 그것이 고장 난 것인지 원래 그런 것인지 알 수 없다.
+#
+# 이미 있는 태그·이미 붙은 문제는 그대로 둔다 — 시드는 여러 번 돌 수 있어야 한다.
+seed_tags() {
+  local token="$1"
+  API="${API}" TOKEN="${token}" python3 - "${ROOT_DIR}/scripts/seed-tags.json" <<'PYTHON'
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+api, token = os.environ["API"], os.environ["TOKEN"]
+seed = json.load(open(sys.argv[1], encoding="utf-8"))
+
+
+def call(method, path, body=None):
+    data = json.dumps(body).encode() if body is not None else None
+    request = urllib.request.Request(f"{api}{path}", data=data, method=method)
+    request.add_header("Authorization", f"Bearer {token}")
+    if data:
+        request.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(request) as response:
+            return json.loads(response.read() or "null")
+    except urllib.error.HTTPError as error:
+        # 이미 있는 태그는 400, 없는 문제는 404 로 돌아온다. 둘 다 넘어간다.
+        if error.code in (400, 404):
+            return None
+        raise
+
+
+for tag in seed["tags"]:
+    call("POST", "/api/v1/admin/tags", tag)
+
+by_slug = {tag["slug"]: tag["id"] for tag in call("GET", "/api/v1/tags")}
+print(f"  태그 {len(by_slug)}개")
+
+for problem_slug, tag_slugs in seed["problems"].items():
+    problem = call("GET", f"/api/v1/problems/{problem_slug}")
+    if problem is None:
+        print(f"  건너뜀(문제 없음): {problem_slug}")
+        continue
+    call(
+        "PUT",
+        f"/api/v1/admin/problems/{problem['id']}/tags",
+        {"tagIds": [by_slug[slug] for slug in tag_slugs if slug in by_slug]},
+    )
+    print(f"  {problem_slug}: {', '.join(tag_slugs)}")
+PYTHON
+}
+
 wait_for_api
 
 log "데모 계정 준비"
@@ -78,6 +133,9 @@ log "시드 문제 주입"
 for problem in "${ROOT_DIR}"/scripts/seed-problems/*.json; do
   create_problem "${TOKEN}" "${problem}"
 done
+
+log "알고리즘 분류 주입"
+seed_tags "${TOKEN}"
 
 log "완료"
 echo "  어드민: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}"

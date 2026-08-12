@@ -12,6 +12,7 @@ import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
 import { Card, EmptyState } from "@/shared/ui";
 import { use, useEffect, useState } from "react";
+import { SolvedByTagView } from "./SolvedByTagView";
 
 export function UserProfilePage({ params }: { params: Promise<{ nickname: string }> }) {
   const { nickname } = use(params);
@@ -78,6 +79,8 @@ function ProfileView({ nickname }: { nickname: string }) {
       {activity ? <ActivityGraph activity={activity} year={year} onYearChange={setYear} /> : null}
 
       <SolvedByTierView profile={profile} />
+      {/* 난이도 분포가 '얼마나 어려운 것' 이면, 이것은 '무엇을' 이다 (#232). */}
+      <SolvedByTagView solvedByTag={profile.solvedByTag} />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-ink">최근 제출</h2>

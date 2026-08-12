@@ -50,6 +50,7 @@ class UserProfileService(
             solvedCount = profileRepository.countSolvedProblems(user.id),
             submissionCount = profileRepository.countSubmissions(user.id),
             solvedByTier = profileRepository.solvedByTier(user.id),
+            solvedByTag = profileRepository.solvedByTag(user.id),
             currentStreak = streaks.current,
             longestStreak = streaks.longest,
             score = score,

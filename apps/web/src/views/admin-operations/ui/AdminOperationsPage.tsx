@@ -3,6 +3,7 @@
 import { activityApi } from "@/entities/activity";
 import { rankingApi } from "@/entities/ranking";
 import { RejudgePanel } from "@/features/rejudge";
+import { TagAdminPanel } from "@/features/tag-admin";
 import { useToast } from "@/shared/ui";
 import { OperationCard } from "./OperationCard";
 import type { Operation } from "./OperationCard";
@@ -80,6 +81,9 @@ export function AdminOperationsPage() {
           배열에 억지로 끼우면 그 배열이 무엇이든 담는 것이 되어 형태가 사라진다.
         */}
         <RejudgePanel onError={toast.error} />
+
+        {/* 태그는 어드민만 만든다 (#232). 만드는 자리도 어드민에 있어야 한다. */}
+        <TagAdminPanel />
       </div>
     </div>
   );

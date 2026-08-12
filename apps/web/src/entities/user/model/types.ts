@@ -37,6 +37,13 @@ export interface SolvedByTier {
   solvedCount: number;
 }
 
+/** 태그별로 몇 문제를 풀었는지 (#232). */
+export interface SolvedByTag {
+  slug: string;
+  name: string;
+  solved: number;
+}
+
 /**
  * 공개 프로필 (#83).
  *
@@ -50,6 +57,7 @@ export interface UserProfile {
   solvedCount: number;
   submissionCount: number;
   solvedByTier: SolvedByTier[];
+  solvedByTag: SolvedByTag[];
   /** 전체 기간 기준 (#81). */
   currentStreak: number;
   longestStreak: number;

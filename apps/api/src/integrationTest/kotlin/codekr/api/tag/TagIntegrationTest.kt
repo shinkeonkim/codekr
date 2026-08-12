@@ -111,6 +111,32 @@ class TagIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `여러 태그를 걸면 모두 붙은 문제만 나온다`() {
+        // **또는이 아니라 그리고다** (#232). 또는이면 고를수록 결과가 넓어져 필터 구실을 못 한다.
+        insertProblem(3, "only-dp", published = true)
+        val dp = createTag("dp", "다이나믹 프로그래밍")
+        val graph = createTag("graph", "그래프")
+        replaceTags(1, dp, graph)
+        replaceTags(3, dp)
+
+        mockMvc.perform(get("/api/v1/problems?tag=dp"))
+            .andExpect(jsonPath("$.content.length()").value(2))
+
+        mockMvc.perform(get("/api/v1/problems?tag=dp&tag=graph"))
+            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content[0].slug").value("two-sum"))
+    }
+
+    @Test
+    fun `없는 태그로 거르면 아무것도 나오지 않는다`() {
+        // 조용히 전체를 돌려주면 필터가 걸린 줄 알고 잘못된 목록을 본다.
+        replaceTags(1, createTag("dp", "다이나믹 프로그래밍"))
+
+        mockMvc.perform(get("/api/v1/problems?tag=nonexistent"))
+            .andExpect(jsonPath("$.content.length()").value(0))
+    }
+
+    @Test
     fun `없는 태그를 붙이려 하면 거부한다`() {
         mockMvc.perform(
             put("/api/v1/admin/problems/1/tags")

@@ -3,13 +3,14 @@
 import { CATEGORY_LABELS, PROBLEM_SORTS, TIER_LABELS, problemApi } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import type { Page } from "@/shared/api";
+import { TagFilter } from "@/features/tag-filter";
 import { EmptyState, Field, Input, Pagination, Select, Table } from "@/shared/ui";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { PROBLEM_COLUMNS } from "./problemColumns";
 
 /** URL 에 담는 목록 상태. 새로고침·뒤로가기·링크 공유 후에도 같은 목록이 나와야 한다 (#76 과 같은 규칙). */
-const KEYS = ["q", "category", "tier", "sort", "page"] as const;
+const KEYS = ["q", "category", "tier", "sort", "page", "tag"] as const;
 type Key = (typeof KEYS)[number];
 
 export function ProblemListPage() {
@@ -35,6 +36,21 @@ export function ProblemListPage() {
     [pathname, router, searchParams],
   );
 
+  /** 태그는 여러 개가 같은 이름으로 들어온다 (`?tag=dp&tag=graph`). */
+  const tags = searchParams.getAll("tag");
+
+  const setTags = useCallback(
+    (next: string[]) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("tag");
+      next.forEach((slug) => params.append("tag", slug));
+      // 조건이 바뀌면 첫 페이지부터 다시 본다.
+      params.delete("page");
+      router.replace(params.size > 0 ? `${pathname}?${params}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   // 입력할 때마다 요청하지 않도록 잠깐 기다렸다가 조회한다.
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -43,6 +59,7 @@ export function ProblemListPage() {
           q: keyword,
           category: value("category"),
           tier: value("tier"),
+          tag: searchParams.getAll("tag"),
           sort: value("sort") || "LATEST",
           page: value("page") || 0,
           size: 20,
@@ -109,10 +126,20 @@ export function ProblemListPage() {
         </Field>
       </div>
 
+      {/* 태그는 개수가 정해져 있지 않아 Select 에 담기지 않는다. 칩으로 둔다 (#232). */}
+      <TagFilter selected={tags} onChange={setTags} />
+
       {error ? <EmptyState title={error} /> : null}
 
       {result && result.content.length === 0 ? (
-        <EmptyState title="조건에 맞는 문제가 없습니다." description="검색어나 필터를 바꿔 보세요." />
+        <EmptyState
+          title="조건에 맞는 문제가 없습니다."
+          description={
+            tags.length > 1
+              ? "고른 분류를 모두 만족하는 문제만 나옵니다. 하나씩 빼 보세요."
+              : "검색어나 필터를 바꿔 보세요."
+          }
+        />
       ) : null}
 
       {result && result.content.length > 0 ? (
