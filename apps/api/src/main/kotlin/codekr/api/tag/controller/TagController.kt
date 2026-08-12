@@ -1,5 +1,6 @@
 package codekr.api.tag.controller
 
+import codekr.api.config.security.PublicApi
 import codekr.api.tag.dto.TagResponse
 import codekr.api.tag.service.TagService
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/tags")
 class TagController(private val tagService: TagService) {
 
+    @PublicApi
     @GetMapping
     fun list(): List<TagResponse> = tagService.list()
 }

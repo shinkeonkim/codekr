@@ -1,5 +1,7 @@
 package codekr.api.activity.controller
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.activity.repository.UserDailyActivityRepository
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/users")
 class AdminActivityController(private val activityRepository: UserDailyActivityRepository) {
 
+    @AdminApi(UserRole.SUPERUSER)
     @PostMapping("/{userId}/activity/recompute")
     fun recompute(@PathVariable userId: Long): Map<String, Int> =
         mapOf("days" to activityRepository.recomputeAll(userId))

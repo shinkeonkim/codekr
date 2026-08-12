@@ -1,5 +1,7 @@
 package codekr.api.contest.controller
 
+import codekr.api.config.security.PublicApi
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
 import codekr.api.contest.dto.ContestDetailResponse
@@ -20,17 +22,20 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/contests")
 class ContestController(private val contestService: ContestService) {
 
+    @PublicApi
     @GetMapping
     fun findAll(
         @PageableDefault(size = 20) pageable: Pageable,
     ): PageResponse<ContestSummaryResponse> = contestService.findAll(pageable)
 
+    @PublicApi
     @GetMapping("/{slug}")
     fun findDetail(
         @PathVariable slug: String,
         principal: AuthPrincipal?,
     ): ContestDetailResponse = contestService.findDetail(slug, principal?.userId)
 
+    @AuthenticatedApi
     @PostMapping("/{slug}/registrations")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun register(

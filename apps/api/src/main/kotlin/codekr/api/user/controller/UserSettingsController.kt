@@ -1,5 +1,6 @@
 package codekr.api.user.controller
 
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.user.dto.UserSettingsResponse
 import codekr.api.user.dto.UserSettingsUpdateRequest
@@ -16,10 +17,12 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/users/me/settings")
 class UserSettingsController(private val userSettingsService: UserSettingsService) {
 
+    @AuthenticatedApi
     @GetMapping
     fun findSettings(principal: AuthPrincipal): UserSettingsResponse =
         userSettingsService.findSettings(principal.userId)
 
+    @AuthenticatedApi
     @PatchMapping
     fun updateSettings(
         @Valid @RequestBody request: UserSettingsUpdateRequest,

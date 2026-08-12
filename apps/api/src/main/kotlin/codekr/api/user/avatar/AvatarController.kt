@@ -1,5 +1,6 @@
 package codekr.api.user.avatar
 
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
@@ -17,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/v1/users/me/avatar")
 class AvatarController(private val avatarService: AvatarService) {
 
+    @AuthenticatedApi
     @PutMapping
     fun replace(
         @RequestPart("file") file: MultipartFile,
@@ -28,6 +30,7 @@ class AvatarController(private val avatarService: AvatarService) {
         return AvatarResponse(AvatarService.urlOf(key))
     }
 
+    @AuthenticatedApi
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun remove(principal: AuthPrincipal) = avatarService.remove(principal.userId)

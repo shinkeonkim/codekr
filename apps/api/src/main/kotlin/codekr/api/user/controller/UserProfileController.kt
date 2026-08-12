@@ -1,5 +1,6 @@
 package codekr.api.user.controller
 
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.user.dto.UserProfileResponse
 import codekr.api.user.service.UserProfileService
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,6 +19,7 @@ class UserProfileController(private val userProfileService: UserProfileService) 
      * 그것을 사람 기준으로 묶은 이 화면만 더 열어 둘 이유가 없다. 공개 범위를 바꾼다면
      * 두 곳을 함께 바꿔야 한다 — 한쪽만 열면 우회로가 된다.
      */
+    @AuthenticatedApi
     @GetMapping("/{nickname}")
     fun findProfile(@PathVariable nickname: String): UserProfileResponse =
         userProfileService.findByNickname(nickname)

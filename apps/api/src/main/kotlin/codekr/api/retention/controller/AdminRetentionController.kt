@@ -1,5 +1,7 @@
 package codekr.api.retention.controller
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.retention.dto.RetentionReport
 import codekr.api.retention.service.RetentionService
 import org.springframework.web.bind.annotation.PostMapping
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/retention")
 class AdminRetentionController(private val retentionService: RetentionService) {
 
+    @AdminApi(UserRole.ADMIN)
     @PostMapping("/cleanup")
     fun cleanup(): RetentionReport = retentionService.cleanup()
 }

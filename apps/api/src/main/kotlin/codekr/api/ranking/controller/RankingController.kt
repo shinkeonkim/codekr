@@ -1,5 +1,6 @@
 package codekr.api.ranking.controller
 
+import codekr.api.config.security.PublicApi
 import codekr.api.common.dto.PageResponse
 import codekr.api.ranking.dto.RankingEntry
 import codekr.api.ranking.dto.RankingMetricResponse
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController
 @Validated
 class RankingController(private val rankingService: RankingService) {
 
+    @PublicApi
     @GetMapping
     fun list(
         @RequestParam(defaultValue = "SCORE") metric: RankingMetric,
@@ -34,6 +36,7 @@ class RankingController(private val rankingService: RankingService) {
      * 지표 목록. **화면이 지표를 하드코딩하지 않게 서버가 알려준다** —
      * 지표가 늘어날 때 화면을 같이 고쳐야 하는 구조를 만들지 않는다.
      */
+    @PublicApi
     @GetMapping("/metrics")
     fun metrics(): RankingOptionsResponse = RankingOptionsResponse(
         metrics = RankingMetric.entries.map(RankingMetricResponse::from),

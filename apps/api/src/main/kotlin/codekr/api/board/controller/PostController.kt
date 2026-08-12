@@ -1,5 +1,7 @@
 package codekr.api.board.controller
 
+import codekr.api.config.security.PublicApi
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.board.dto.BoardOption
 import codekr.api.board.dto.PostDetailResponse
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/posts")
 class PostController(private val postService: PostService) {
 
+    @PublicApi
     @GetMapping
     fun findAll(
         @RequestParam(required = false) board: Board?,
@@ -43,6 +46,7 @@ class PostController(private val postService: PostService) {
     ): PageResponse<PostSummaryResponse> = postService.findPage(board, q, pageable)
 
     /** 게시판 목록. **화면이 하드코딩하지 않게 서버가 알려준다** — 쓸 수 있는지도 함께. */
+    @PublicApi
     @GetMapping("/boards")
     fun boards(principal: AuthPrincipal?): List<BoardOption> = postService.boards(principal)
 
@@ -52,16 +56,19 @@ class PostController(private val postService: PostService) {
      * 문제 상세의 질문 탭이 쓴다. 커뮤니티 목록에도 **함께 보인다** —
      * 분리하면 질문이 두 곳에 흩어지고, "다음 사람이 먼저 읽고 간다" 는 목적이 약해진다.
      */
+    @PublicApi
     @GetMapping("/by-problem/{problemId}")
     fun findByProblem(
         @PathVariable problemId: Long,
         @PageableDefault(size = 20) pageable: Pageable,
     ): PageResponse<PostSummaryResponse> = postService.findByProblem(problemId, pageable)
 
+    @PublicApi
     @GetMapping("/{id}")
     fun findOne(@PathVariable id: Long, principal: AuthPrincipal?): PostDetailResponse =
         postService.findDetail(id, principal)
 
+    @AuthenticatedApi
     @PostMapping
     fun create(
         @RequestBody @Valid request: PostUpsertRequest,
@@ -69,6 +76,7 @@ class PostController(private val postService: PostService) {
     ): ResponseEntity<PostDetailResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(postService.create(principal, request))
 
+    @AuthenticatedApi
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
@@ -76,6 +84,7 @@ class PostController(private val postService: PostService) {
         principal: AuthPrincipal,
     ): PostDetailResponse = postService.update(id, principal, request)
 
+    @AuthenticatedApi
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long, principal: AuthPrincipal) = postService.delete(id, principal)

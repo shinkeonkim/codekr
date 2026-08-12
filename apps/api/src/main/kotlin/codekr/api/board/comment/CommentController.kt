@@ -1,5 +1,7 @@
 package codekr.api.board.comment
 
+import codekr.api.config.security.PublicApi
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -21,11 +23,13 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1")
 class CommentController(private val commentService: CommentService) {
 
+    @PublicApi
     @GetMapping("/posts/{postId}/comments")
     fun findAll(@PathVariable postId: Long, principal: AuthPrincipal?): List<CommentResponse> =
         commentService.findTree(postId, principal)
 
     /** 익명 댓글을 받지 않는다 — 로그인 필수다. */
+    @AuthenticatedApi
     @PostMapping("/posts/{postId}/comments")
     fun create(
         @PathVariable postId: Long,
@@ -33,6 +37,7 @@ class CommentController(private val commentService: CommentService) {
         principal: AuthPrincipal,
     ): List<CommentResponse> = commentService.create(postId, principal, request)
 
+    @AuthenticatedApi
     @PutMapping("/comments/{id}")
     fun update(
         @PathVariable id: Long,
@@ -40,6 +45,7 @@ class CommentController(private val commentService: CommentService) {
         principal: AuthPrincipal,
     ): List<CommentResponse> = commentService.update(id, principal, request)
 
+    @AuthenticatedApi
     @DeleteMapping("/comments/{id}")
     fun delete(@PathVariable id: Long, principal: AuthPrincipal): List<CommentResponse> =
         commentService.delete(id, principal)
