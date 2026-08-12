@@ -7,6 +7,7 @@ import codekr.api.auth.security.AuthPrincipal
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -29,5 +30,10 @@ class WithdrawalController(private val withdrawalService: WithdrawalService) {
     @AdminApi(UserRole.SUPERUSER)
     @DeleteMapping("/api/v1/admin/users/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun forceWithdraw(@PathVariable id: Long) = withdrawalService.withdraw(id)
+    fun forceWithdraw(
+        @PathVariable id: Long,
+        /** 사유는 필수다 (#225). 되돌릴 수 없는 조치라 기록이 유일한 답이 된다. */
+        @RequestParam(required = false) reason: String?,
+        principal: AuthPrincipal,
+    ) = withdrawalService.withdraw(id, actorId = principal.userId, reason = reason)
 }

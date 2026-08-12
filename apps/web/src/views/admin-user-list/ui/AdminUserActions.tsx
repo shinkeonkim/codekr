@@ -30,6 +30,7 @@ export function AdminUserActions({
   const [open, setOpen] = useState(false);
   const [roles, setRoles] = useState<string[]>(target.roles);
   const [confirmation, setConfirmation] = useState("");
+  const [reason, setReason] = useState("");
   const [running, setRunning] = useState(false);
 
   if (!isSuperuser || target.withdrawnAt) return null;
@@ -40,6 +41,7 @@ export function AdminUserActions({
       await action();
       setOpen(false);
       setConfirmation("");
+      setReason("");
       onDone(message);
     } catch (caught) {
       onError(caught instanceof ApiError ? caught.message : "작업에 실패했습니다.");
@@ -92,11 +94,23 @@ export function AdminUserActions({
             value={confirmation}
             onChange={(event) => setConfirmation(event.target.value)}
           />
+          {/*
+            사유는 **서버가 요구한다** (#225). 계정이 지워진 뒤에 "누가 왜" 를 물으면
+            기록의 사유가 유일한 답이 된다.
+          */}
+          <Input
+            placeholder="사유 (필수)"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
           <Button
             variant="danger"
-            disabled={running || confirmation !== target.nickname}
+            disabled={running || confirmation !== target.nickname || reason.trim().length === 0}
             onClick={() =>
-              run(() => userApi.forceWithdraw(target.id), `${target.nickname} 을(를) 탈퇴 처리했습니다.`)
+              run(
+                () => userApi.forceWithdraw(target.id, reason.trim()),
+                `${target.nickname} 을(를) 탈퇴 처리했습니다.`,
+              )
             }
           >
             강제 탈퇴
