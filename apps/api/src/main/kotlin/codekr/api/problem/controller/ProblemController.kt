@@ -4,6 +4,7 @@ import codekr.api.config.security.PublicApi
 import codekr.api.common.dto.PageResponse
 import codekr.api.problem.dto.ProblemDetailResponse
 import codekr.api.problem.dto.ProblemSummaryResponse
+import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.problem.entity.ProblemCategory
@@ -30,6 +31,8 @@ class ProblemController(private val problemService: ProblemService) {
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) category: ProblemCategory?,
         @RequestParam(required = false) tier: DifficultyTier?,
+        /** 난이도 상태 (#195). 미평가·평가안함은 티어 범위로 잡히지 않는다. */
+        @RequestParam(required = false) difficultyState: DifficultyState?,
         /** 태그 주소. 여러 번 넘기면 **모두** 붙은 문제만 나온다 (#232). */
         @RequestParam(required = false) tag: List<String>?,
         /** 채점 방식 (#59). "SQL 문제만" 처럼 고르는 축이다. */
@@ -54,6 +57,7 @@ class ProblemController(private val problemService: ProblemService) {
             keyword = q,
             category = category,
             tier = tier,
+            difficultyState = difficultyState,
             tagSlugs = tag.orEmpty(),
             sort = sort,
             published = true,

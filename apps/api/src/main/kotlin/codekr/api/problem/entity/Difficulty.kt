@@ -30,5 +30,13 @@ enum class Difficulty {
         fun ofLevel(level: Int): Difficulty =
             entries.getOrNull(level - 1)
                 ?: throw IllegalArgumentException("난이도 레벨 범위를 벗어났습니다: $level")
+
+        /**
+         * 범위 밖이면 `null` 이다 (#195).
+         *
+         * **예외를 던지지 않는 길이 필요하다.** 프로필의 난이도 분포처럼 여러 문제를
+         * 훑는 자리에서는 미평가 문제 하나가 화면 전체를 터뜨린다.
+         */
+        fun ofLevelOrNull(level: Int?): Difficulty? = level?.let { entries.getOrNull(it - 1) }
     }
 }

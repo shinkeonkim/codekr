@@ -14,6 +14,7 @@ import codekr.api.problem.dto.ProblemSummaryResponse
 import codekr.api.problem.repository.ProblemStatsRepository
 import codekr.api.ranking.service.ProblemScoreResyncService
 import codekr.api.tag.service.TagService
+import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemSqlSpec
@@ -86,7 +87,8 @@ class AdminProblemService(
             title = request.title,
             category = request.category,
             problemKind = request.problemKind,
-            difficultyLevel = request.difficulty.level,
+            difficultyLevel = request.difficulty?.level,
+            difficultyState = resolveState(request),
             description = request.description,
             inputDescription = request.inputDescription,
             outputDescription = request.outputDescription,
@@ -122,7 +124,8 @@ class AdminProblemService(
             title = request.title
             category = request.category
             problemKind = request.problemKind
-            difficulty = request.difficulty
+            difficultyLevel = request.difficulty?.level
+            difficultyState = resolveState(request)
             description = request.description
             inputDescription = request.inputDescription
             outputDescription = request.outputDescription
@@ -175,6 +178,17 @@ class AdminProblemService(
         problemRepository.flush()
         scoreResyncService.resync(id)
     }
+
+    /**
+     * 난이도와 상태를 맞춘다 (#195).
+     *
+     * **난이도를 골랐으면 RATED 다.** 화면이 둘을 각각 보내므로 어긋난 조합이 올 수
+     * 있는데(난이도를 고르고 상태는 미평가), 그때는 고른 값이 이긴다 — 사람이 마지막에
+     * 한 행동이 그것이다.
+     */
+    private fun resolveState(request: ProblemUpsertRequest): DifficultyState =
+        if (request.difficulty != null) DifficultyState.RATED
+        else request.difficultyState.takeIf { !it.scored } ?: DifficultyState.UNRATED
 
     private fun require(id: Long): Problem =
         problemRepository.findByIdAndDeletedAtIsNull(id) ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)

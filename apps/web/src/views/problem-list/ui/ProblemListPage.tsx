@@ -25,6 +25,8 @@ const KEYS = [
   "solversFrom",
   "solversTo",
   "solved",
+  // 난이도 상태 (#195). 티어 범위로는 잡히지 않는다.
+  "difficultyState",
 ] as const;
 type Key = (typeof KEYS)[number];
 
@@ -75,6 +77,7 @@ export function ProblemListPage() {
           q: keyword,
           category: value("category"),
           tier: value("tier"),
+          difficultyState: value("difficultyState"),
           tag: searchParams.getAll("tag"),
           sort: value("sort") || "LATEST",
           kind: value("kind"),
@@ -125,13 +128,27 @@ export function ProblemListPage() {
           </Select>
         </Field>
         <Field label="티어">
-          <Select value={value("tier")} onChange={(event) => setParam("tier", event.target.value)}>
+          {/*
+            난이도가 없는 문제는 티어 범위에 안 잡힌다 (#195). **같은 칸에서 고르게 한다** —
+            칸을 따로 만들면 "티어도 미평가도 아닌" 조합이 생긴다.
+          */}
+          <Select
+            value={value("difficultyState") ? `state:${value("difficultyState")}` : value("tier")}
+            onChange={(event) => {
+              const picked = event.target.value;
+              const isState = picked.startsWith("state:");
+              setParam("tier", isState ? "" : picked);
+              setParam("difficultyState", isState ? picked.slice("state:".length) : "");
+            }}
+          >
             <option value="">전체</option>
             {Object.entries(TIER_LABELS).map(([option, label]) => (
               <option key={option} value={option}>
                 {label}
               </option>
             ))}
+            <option value="state:UNRATED">미평가</option>
+            <option value="state:NO_RATE">평가 안 함</option>
           </Select>
         </Field>
         {/*

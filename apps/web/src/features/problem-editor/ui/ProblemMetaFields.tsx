@@ -7,7 +7,7 @@ import {
   SELECTABLE_KINDS,
   difficultyLabel,
 } from "@/entities/problem";
-import type { Difficulty, OutputComparison } from "@/entities/problem";
+import type { Difficulty, DifficultyState, OutputComparison } from "@/entities/problem";
 import { Card, Field, Input, Select } from "@/shared/ui";
 import type { ProblemFormValues } from "../model/values";
 
@@ -69,15 +69,36 @@ export function ProblemMetaFields({
         </Field>
         <Field label="난이도">
           <Select
-            value={values.difficulty}
-            onChange={(event) => update("difficulty", event.target.value as Difficulty)}
+            // 빈 값이면 미평가다 (#195). 난이도를 고르면 상태도 함께 따라간다.
+            value={values.difficulty ?? ""}
+            onChange={(event) => {
+              const picked = event.target.value;
+              update("difficulty", (picked || null) as Difficulty | null);
+              update("difficultyState", picked ? "RATED" : "UNRATED");
+            }}
           >
+            {/*
+              **비워 두는 것이 기본이다** (#195). 실제 난이도는 사람들이 풀어 봐야 아는
+              값이고, 등록 시점에 아무 값이나 박아 넣으면 그 숫자가 곧바로 점수가 된다.
+            */}
+            <option value="">미평가 (아직 정하지 않음)</option>
             {ALL_DIFFICULTIES.map((value) => (
               <option key={value} value={value}>
                 {difficultyLabel(value)}
               </option>
             ))}
           </Select>
+          {/* 영영 점수를 주지 않는 문제는 따로 고른다 — 튜토리얼·설문형 (#195). */}
+          {values.difficulty === null ? (
+            <Select
+              aria-label="난이도 상태"
+              value={values.difficultyState}
+              onChange={(event) => update("difficultyState", event.target.value as DifficultyState)}
+            >
+              <option value="UNRATED">미평가 — 나중에 난이도를 매긴다</option>
+              <option value="NO_RATE">평가 안 함 — 영영 점수를 주지 않는다</option>
+            </Select>
+          ) : null}
         </Field>
         <Field label="시간 제한 (ms)">
           <Input

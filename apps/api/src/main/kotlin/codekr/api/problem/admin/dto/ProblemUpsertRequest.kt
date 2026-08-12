@@ -1,6 +1,7 @@
 package codekr.api.problem.admin.dto
 
 import codekr.api.problem.entity.Difficulty
+import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.ExecutionLimits
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemJudgePriority
@@ -36,7 +37,21 @@ data class ProblemUpsertRequest(
     @field:Valid
     val sqlSpec: SqlSpecRequest? = null,
 
-    val difficulty: Difficulty,
+    /**
+     * 난이도 (#195). **비워 둘 수 있다** — 실제 난이도는 사람들이 풀어 봐야 아는 값이라,
+     * 등록 시점에 아무 값이나 박아 넣으면 그 숫자가 곧바로 점수가 되어 랭킹에 반영된다.
+     *
+     * 비우면 `difficultyState` 가 뜻을 갖는다.
+     */
+    val difficulty: Difficulty? = null,
+
+    /**
+     * 난이도 상태 (#195). 기본은 **미평가**다.
+     *
+     * 기본을 브론즈로 두면 "아직 안 정했다" 와 "쉽다" 가 구분되지 않는다 — 등록은
+     * 쉬워지지만 거짓 정보가 섞인다.
+     */
+    val difficultyState: DifficultyState = DifficultyState.UNRATED,
 
     @field:NotBlank
     val description: String,

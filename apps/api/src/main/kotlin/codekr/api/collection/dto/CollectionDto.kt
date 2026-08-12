@@ -75,7 +75,8 @@ data class CollectionProblemResponse(
     val slug: String,
     val title: String,
     /** 화면이 난이도 뱃지를 그대로 쓰도록 티어가 아니라 난이도를 준다. */
-    val difficulty: Difficulty,
+    /** 미평가·평가안함이면 `null` 이다 (#195). */
+    val difficulty: Difficulty?,
     val difficultyLabel: String,
     /** 그 사람이 이미 푼 문제인가. 진행률을 줄로 세어 보여주기 위함이다. */
     val solved: Boolean,

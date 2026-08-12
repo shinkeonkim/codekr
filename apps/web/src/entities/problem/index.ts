@@ -12,7 +12,9 @@ export {
 export { useProblem } from "./model/useProblem";
 export { PROBLEM_SORTS, SELECTABLE_KINDS } from "./model/types";
 export { OUTPUT_COMPARISON_LABELS } from "./model/types";
+export { DIFFICULTY_STATE_LABELS } from "./ui/TierBadge";
 export type {
+  DifficultyState,
   OutputComparison,
   AdminProblemDetail,
   Difficulty,

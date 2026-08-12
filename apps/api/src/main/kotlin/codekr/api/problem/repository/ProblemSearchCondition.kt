@@ -1,5 +1,6 @@
 package codekr.api.problem.repository
 
+import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemKind
@@ -37,6 +38,8 @@ data class ProblemSearchCondition(
     val keyword: String? = null,
     val category: ProblemCategory? = null,
     val tier: DifficultyTier? = null,
+    /** 난이도 상태 (#195). 미평가·평가안함은 티어 범위로 잡히지 않는다. */
+    val difficultyState: DifficultyState? = null,
     /**
      * 태그 주소 목록 (#232). 여러 개면 **그리고**로 건다.
      *

@@ -55,7 +55,7 @@ export function StartHere() {
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
                 {problem.title}
               </span>
-              <TierBadge difficulty={problem.difficulty} />
+              <TierBadge difficulty={problem.difficulty} state={problem.difficultyState} />
             </Link>
           ))}
         </Card>
