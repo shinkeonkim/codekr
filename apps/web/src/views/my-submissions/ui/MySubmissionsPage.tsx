@@ -65,7 +65,7 @@ function SubmissionList() {
                 key: "problem",
                 header: "문제",
                 // 문제 열은 문제로 간다 (#197).
-                href: (submission) => `/problems/${submission.problemSlug}`,
+                href: (submission) => (submission.problemId ? `/problems/${submission.problemId}` : null),
                 render: (submission) => submission.problemTitle,
               },
               {

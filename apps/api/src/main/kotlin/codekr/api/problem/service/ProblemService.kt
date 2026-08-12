@@ -48,8 +48,30 @@ class ProblemService(
         )
     }
 
-    /** 미공개되었거나 삭제된 문제는 존재 자체를 알리지 않는다 — 404 로 응답한다. */
-    fun requirePublished(slug: String): Problem =
-        problemRepository.findBySlugAndDeletedAtIsNull(slug)?.takeIf { it.published }
-            ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
+    /**
+     * 미공개되었거나 삭제된 문제는 존재 자체를 알리지 않는다 — 404 로 응답한다.
+     *
+     * **번호로도 연다** (#204). 사람은 문제를 "1000번" 이라고 부르는데, 그렇게 부른 것을
+     * 주소창에 넣었을 때 열리지 않으면 번호를 보여 주는 뜻이 없다.
+     *
+     * slug 는 그대로 정본이다 — 검색 결과에 `두-수의-합` 이 뜨는 것과 `1000` 이 뜨는
+     * 것은 다르고, 이미 공유된 링크도 slug 다.
+     */
+    fun requirePublished(key: String): Problem =
+        findByKey(key)?.takeIf { it.published } ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
+
+    /**
+     * 숫자면 번호로, 아니면 slug 로 찾는다.
+     *
+     * **숫자로만 이루어진 slug 는 만들 수 없다** — 어드민 검증이 slug 에 글자를 요구하지
+     * 않으므로, 그런 slug 가 생기면 번호와 부딪힌다. 그때는 번호가 이긴다(먼저 본다).
+     * 지금 그런 문제는 없고, 생기면 이 주석이 그것을 설명한다.
+     */
+    private fun findByKey(key: String): Problem? {
+        val id = key.toLongOrNull()
+        if (id != null) {
+            problemRepository.findByIdAndDeletedAtIsNull(id)?.let { return it }
+        }
+        return problemRepository.findBySlugAndDeletedAtIsNull(key)
+    }
 }

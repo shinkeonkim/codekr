@@ -109,6 +109,35 @@ class ProblemSearchIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `번호로도 문제를 연다`() {
+        // 사람은 문제를 "1000번" 이라고 부른다 (#204). 그렇게 부른 것을 주소창에 넣었을 때
+        // 열리지 않으면 번호를 보여 주는 뜻이 없다.
+        val id = problemRepository.findBySlugAndDeletedAtIsNull("two-sum")!!.id
+
+        mockMvc.perform(get("/api/v1/problems/$id"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.slug").value("two-sum"))
+    }
+
+    @Test
+    fun `번호로 열어도 미공개는 404 다`() {
+        // 번호로 여는 길이 공개 여부를 우회하면 안 된다.
+        val id = problemRepository.findBySlugAndDeletedAtIsNull("draft")!!.id
+
+        mockMvc.perform(get("/api/v1/problems/$id")).andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `검색창에 번호를 넣으면 그 문제가 나온다`() {
+        val id = problemRepository.findBySlugAndDeletedAtIsNull("two-sum")!!.id
+
+        mockMvc.perform(get("/api/v1/problems").param("q", id.toString()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].slug").value("two-sum"))
+    }
+
+    @Test
     fun `소프트 삭제된 문제는 목록과 상세에서 사라진다`() {
         transactionTemplate.executeWithoutResult {
             problemRepository.findBySlugAndDeletedAtIsNull("two-sum")!!.delete()

@@ -9,6 +9,8 @@ import java.time.Instant
 
 data class SubmissionSummaryResponse(
     val id: Long,
+    /** 문제 번호 (#204). 주소가 번호로 가므로 링크를 만들려면 필요하다. */
+    val problemId: Long?,
     val problemSlug: String,
     val problemTitle: String,
     val runtimeId: String,
@@ -34,6 +36,7 @@ data class SubmissionSummaryResponse(
             sourceVisible: Boolean = false,
         ) = SubmissionSummaryResponse(
             id = submission.id,
+            problemId = problem?.id,
             problemSlug = problem?.slug.orEmpty(),
             problemTitle = problem?.title ?: "(삭제된 문제)",
             runtimeId = submission.runtimeId,

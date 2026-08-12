@@ -129,6 +129,7 @@ class ProblemCollectionService(
             editable = collection.ownerId == viewerId,
             problems = problems.map {
                 CollectionProblemResponse(
+                    id = it.id,
                     slug = it.slug,
                     title = it.title,
                     difficulty = it.difficulty,

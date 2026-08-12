@@ -139,7 +139,7 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
                 header: "문제",
                 // **문제 열은 문제로 간다** (#197). 전에는 행 전체가 제출 상세로 가서
                 // 열 이름과 목적지가 어긋났다.
-                href: (submission) => `/problems/${submission.problemSlug}`,
+                href: (submission) => (submission.problemId ? `/problems/${submission.problemId}` : null),
                 render: (submission) => submission.problemTitle,
               },
               {

@@ -27,7 +27,17 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
                 and(problem.difficultyLevel.between(it.levelRange.first, it.levelRange.last))
             }
             condition.keyword?.takeIf { it.isNotBlank() }?.let {
-                and(problem.title.containsIgnoreCase(it.trim()))
+                val keyword = it.trim()
+                /*
+                    번호로도 찾는다 (#204). 사람은 문제를 "1000번" 이라고 부르고,
+                    그 숫자를 검색창에 넣는다.
+
+                    제목 검색을 **대체하지 않고 더한다** — "3" 을 넣은 사람이 3번 문제를
+                    찾는 것인지 제목에 3이 든 문제를 찾는 것인지 알 수 없다. 둘 다 보인다.
+                */
+                keyword.toLongOrNull()
+                    ?.let { number -> and(problem.title.containsIgnoreCase(keyword).or(problem.id.eq(number))) }
+                    ?: and(problem.title.containsIgnoreCase(keyword))
             }
             // 태그마다 "이 문제에 그 태그가 있는가" 를 하나씩 건다 (#232).
             //

@@ -11,6 +11,11 @@ import { usePathname } from "next/navigation";
  */
 export function ProblemTabs({ slug }: { slug: string }) {
   const pathname = usePathname();
+  /*
+    주소의 한 칸을 그대로 이어 붙인다. **그 값은 번호일 수도 slug 일 수도 있다** (#204) —
+    지금 링크는 전부 번호로 가지만, 옛 링크(slug)로 들어온 사람의 탭이 번호로 바뀌면
+    주소가 도중에 갈린다. 들어온 대로 유지한다.
+  */
   const base = `/problems/${slug}`;
 
   const tabs = [

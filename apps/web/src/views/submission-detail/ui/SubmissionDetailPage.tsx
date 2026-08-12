@@ -81,7 +81,7 @@ function SubmissionView({ id }: { id: number }) {
     <div className="space-y-5">
       <header className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <Link href={`/problems/${submission.problemSlug}`} className="text-sm text-brand hover:underline">
+          <Link href={`/problems/${submission.problemId}`} className="text-sm text-brand hover:underline">
             {submission.problemTitle}
           </Link>
           <h1 className="text-2xl font-bold text-ink">제출 #{submission.id}</h1>

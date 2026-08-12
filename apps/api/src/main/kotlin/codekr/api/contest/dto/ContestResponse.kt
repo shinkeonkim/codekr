@@ -48,6 +48,8 @@ data class ContestDetailResponse(
 data class ContestProblemResponse(
     /** 대회 안에서의 표기. A, B, C… */
     val label: String,
+    /** 문제 번호 (#204). 주소가 번호로 간다. */
+    val id: Long,
     val slug: String,
     val title: String,
     val score: Int,

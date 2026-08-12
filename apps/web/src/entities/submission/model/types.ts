@@ -26,6 +26,8 @@ export type SubmissionVisibility = "PUBLIC" | "PRIVATE" | "ACCEPTED_ONLY";
 
 export interface SubmissionDetail {
   id: number;
+  /** 문제 번호 (#204). 삭제된 문제면 없다. */
+  problemId: number | null;
   problemSlug: string;
   problemTitle: string;
   runtimeId: string;
@@ -49,6 +51,8 @@ export interface SubmissionDetail {
 
 export interface SubmissionSummary {
   id: number;
+  /** 문제 번호 (#204). 삭제된 문제면 없다. */
+  problemId: number | null;
   problemSlug: string;
   problemTitle: string;
   runtimeId: string;

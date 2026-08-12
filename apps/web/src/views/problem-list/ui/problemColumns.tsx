@@ -21,6 +21,18 @@ import type { Column } from "@/shared/ui";
  * 실행 제한은 풀기 전까지 판단에 거의 쓰이지 않으므로 `lg`.
  */
 export const PROBLEM_COLUMNS: Column<ProblemSummary>[] = [
+  {
+    key: "id",
+    header: "번호",
+    /*
+      **번호가 맨 왼쪽이다** (#204). 사람이 문제를 부르는 이름이고, 목록에서 "어디쯤인지"
+      를 가늠하는 유일한 단서다.
+
+      폭을 고정한다 — 자릿수가 1자리에서 5자리까지 섞이면 제목의 시작점이 줄마다 흔들린다.
+    */
+    width: "w-20",
+    render: (problem) => <span className="tabular-nums text-ink-muted">{problem.id}</span>,
+  },
   { key: "title", header: "문제", render: (problem) => problem.title },
   {
     key: "category",
