@@ -5,7 +5,9 @@ import codekr.api.common.dto.PageResponse
 import codekr.api.problem.dto.ProblemDetailResponse
 import codekr.api.problem.dto.ProblemSummaryResponse
 import codekr.api.problem.entity.DifficultyTier
+import codekr.api.auth.security.AuthPrincipal
 import codekr.api.problem.entity.ProblemCategory
+import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.repository.ProblemSearchCondition
 import codekr.api.problem.repository.ProblemSort
 import codekr.api.problem.service.ProblemService
@@ -30,11 +32,39 @@ class ProblemController(private val problemService: ProblemService) {
         @RequestParam(required = false) tier: DifficultyTier?,
         /** 태그 주소. 여러 번 넘기면 **모두** 붙은 문제만 나온다 (#232). */
         @RequestParam(required = false) tag: List<String>?,
+        /** 채점 방식 (#59). "SQL 문제만" 처럼 고르는 축이다. */
+        @RequestParam(required = false) kind: ProblemKind?,
+        /** 정답률 범위(%). 티어와 다른 축이다 — 쉬운 문제인데 함정이 있는 것들이 있다. */
+        @RequestParam(required = false) acceptanceFrom: Int?,
+        @RequestParam(required = false) acceptanceTo: Int?,
+        /** 푼 사람 수 범위. "검증된 문제부터" 를 고르는 축이다. */
+        @RequestParam(required = false) solversFrom: Int?,
+        @RequestParam(required = false) solversTo: Int?,
+        /**
+         * 해결 여부 (#239). **로그인해야 뜻이 있다** — 비로그인이 넘기면 무시한다.
+         * 누를 수 없는 필터를 만들지 않는 것은 화면의 몫이고, 서버는 조용히 넘긴다.
+         */
+        @RequestParam(required = false) solved: Boolean?,
         @RequestParam(defaultValue = "LATEST") sort: ProblemSort,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
+        principal: AuthPrincipal?,
     ): PageResponse<ProblemSummaryResponse> {
-        val condition = ProblemSearchCondition(q, category, tier, tag.orEmpty(), sort, published = true)
+        val condition = ProblemSearchCondition(
+            keyword = q,
+            category = category,
+            tier = tier,
+            tagSlugs = tag.orEmpty(),
+            sort = sort,
+            published = true,
+            problemKind = kind,
+            acceptanceFrom = acceptanceFrom,
+            acceptanceTo = acceptanceTo,
+            solversFrom = solversFrom,
+            solversTo = solversTo,
+            viewerId = principal?.userId,
+            solved = solved,
+        )
         return problemService.search(condition, PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)))
     }
 

@@ -1,5 +1,6 @@
 package codekr.api.problem
 
+import codekr.api.auth.security.JwtTokenProvider
 import codekr.api.problem.repository.ProblemStatsSyncRepository
 import codekr.api.queue.message.JudgeEventMessage
 import codekr.api.submission.entity.Verdict
@@ -29,6 +30,7 @@ class ProblemStatsSyncIntegrationTest : IntegrationTestBase() {
     @Autowired private lateinit var jdbcClient: JdbcClient
     @Autowired private lateinit var recorder: JudgeResultRecorder
     @Autowired private lateinit var statsSync: ProblemStatsSyncRepository
+    @Autowired private lateinit var tokenProvider: JwtTokenProvider
 
     private var userId: Long = 0
     private var otherId: Long = 0
@@ -108,6 +110,73 @@ class ProblemStatsSyncIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.content[0].id").value(1))
             .andExpect(jsonPath("$.content[1].id").value(2))
     }
+
+    @Test
+    fun `정답률 범위로 거른다`() {
+        problem(2)
+        // 1번: 2명 중 1명 = 50%
+        accept(userId, 1)
+        judge(insert(otherId, 1), Verdict.WRONG_ANSWER)
+        // 2번: 1명 중 1명 = 100%
+        accept(userId, 2)
+
+        mockMvc.perform(get("/api/v1/problems").param("acceptanceTo", "60"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].id").value(1))
+    }
+
+    @Test
+    fun `제출자가 없는 문제는 정답률 범위에 들지 않는다`() {
+        // 0/0 은 0% 가 아니다 — 0~100 을 걸어도 걸리면 안 된다.
+        problem(2)
+
+        mockMvc.perform(get("/api/v1/problems").param("acceptanceFrom", "0").param("acceptanceTo", "100"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(0))
+    }
+
+    @Test
+    fun `푼 사람 수 범위로 거른다`() {
+        problem(2)
+        accept(userId, 1)
+        accept(otherId, 1)
+        accept(userId, 2)
+
+        mockMvc.perform(get("/api/v1/problems").param("solversFrom", "2"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].id").value(1))
+    }
+
+    @Test
+    fun `안 푼 것만 고른다`() {
+        problem(2)
+        accept(userId, 1)
+
+        mockMvc.perform(
+            get("/api/v1/problems").param("solved", "false")
+                .header("Authorization", "Bearer ${token(userId)}"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].id").value(2))
+    }
+
+    @Test
+    fun `비로그인이 해결 여부를 넘기면 무시한다`() {
+        // 누를 수 없는 필터를 만들지 않는 것은 화면의 몫이다. 서버는 조용히 넘긴다 —
+        // 여기서 401 을 내면 공개 목록이 로그인해야 열리는 화면이 된다.
+        problem(2)
+        accept(userId, 1)
+
+        mockMvc.perform(get("/api/v1/problems").param("solved", "false"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(2))
+    }
+
+    private fun token(userId: Long): String =
+        tokenProvider.issueAccessToken(userRepository.findById(userId).orElseThrow())
 
     private fun stored(problemId: Long): Pair<Int, Int> =
         jdbcClient.sql("SELECT submitters, solvers FROM problem_stats WHERE problem_id = :id")
