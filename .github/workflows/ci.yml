@@ -140,6 +140,10 @@ jobs:
           CODEKR_SANDBOX_RUNTIME: containerd
           CONTAINERD_ADDRESS: /run/containerd/containerd.sock
           CODEKR_SECCOMP_PROFILE: ${{ github.workspace }}/infra/sandbox/seccomp.json
+          # 검사 이미지는 정의 파일에서 온다 (#218). 여기서 가리키지 않으면 시험이
+          # 저장소 루트를 스스로 찾아야 하는데, 바이너리를 apps/executor 에서 돌리므로
+          # 기준 폴더가 `go test` 와 다르다.
+          CODEKR_RUNTIMES_PATH: ${{ github.workspace }}/infra/runtimes/runtimes.yaml
         run: |
           # **pipefail 이 없으면 tee 가 시험 실패를 삼킨다.** 실제로 그랬다 — 라이브
           # 시험 하나가 실패했는데 잡은 초록이었다.

@@ -16,10 +16,6 @@ import (
 	"github.com/shinkeonkim/codekr/apps/executor/internal/sandbox"
 )
 
-// ProbeImage 는 검사에 쓰는 이미지다. 파이썬은 표준 라이브러리만으로 커널 경계를
-// 들여다볼 수 있어서 검사 코드가 짧아진다.
-const ProbeImage = "python:3.12-alpine"
-
 // Check 는 방어 하나를 확인한다.
 type Check struct {
 	Name string

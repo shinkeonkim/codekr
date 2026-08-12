@@ -19,16 +19,16 @@ func (r Result) Passed() bool { return r.Err == nil }
 
 // Run 은 모든 검사를 순서대로 돌린다. 하나가 실패해도 나머지를 계속한다 —
 // 무엇이 뚫려 있는지 한 번에 다 알아야 판단할 수 있기 때문이다.
-func Run(ctx context.Context, box sandbox.Sandbox) []Result {
+func Run(ctx context.Context, box sandbox.Sandbox, probe Probe) []Result {
 	results := make([]Result, 0, len(Checks()))
 	for _, check := range Checks() {
-		results = append(results, Result{Name: check.Name, Err: run(ctx, box, check)})
+		results = append(results, Result{Name: check.Name, Err: run(ctx, box, check, probe)})
 	}
 	return results
 }
 
-func run(ctx context.Context, box sandbox.Sandbox, check Check) error {
-	spec := ProbeSpec(check)
+func run(ctx context.Context, box sandbox.Sandbox, check Check, probe Probe) error {
+	spec := ProbeSpec(check, probe)
 	outcome, err := box.Run(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("검사 실행 자체가 실패했습니다: %w", err)
@@ -37,12 +37,12 @@ func run(ctx context.Context, box sandbox.Sandbox, check Check) error {
 }
 
 // ProbeSpec 은 검사를 돌릴 실행 스펙을 만든다. 라이브 테스트도 같은 스펙을 쓴다.
-func ProbeSpec(check Check) sandbox.Spec {
+func ProbeSpec(check Check, probe Probe) sandbox.Spec {
 	spec := sandbox.Spec{
-		Image:            ProbeImage,
-		SourceFile:       "main.py",
+		Image:            probe.Image,
+		SourceFile:       probe.SourceFile,
 		SourceCode:       check.Code,
-		Run:              []string{"python3", "main.py"},
+		Run:              probe.Run,
 		TimeLimitMs:      5000,
 		MemoryLimitMb:    256,
 		CompileTimeoutMs: 15000,
