@@ -47,6 +47,9 @@ export function SelectContent({
   className,
   children,
   position = "popper",
+  // **트리거에서 띄운다** (#306). 붙어 있으면 항목을 고른 탭이 목록이 닫힌 자리
+  // 아래의 트리거로 뚫고 내려가 다시 열린다 — 터치에서 흔한 증상이다.
+  sideOffset = 4,
   ...props
 }: ComponentProps<typeof SelectPrimitive.Content>) {
   return (
@@ -56,10 +59,15 @@ export function SelectContent({
         // 열렸을 때 목록이 헤더 뒤로 숨으면 고를 수가 없다 (#134 의 층 표).
         className={cn(
           "relative z-tooltip max-h-96 min-w-32 overflow-y-auto overflow-x-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
-          position === "popper" && "w-[var(--radix-select-trigger-width)]",
+          position === "popper" && [
+            "w-[var(--radix-select-trigger-width)]",
+            "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
+            "data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1",
+          ],
           className,
         )}
         position={position}
+        sideOffset={sideOffset}
         {...props}
       >
         <SelectPrimitive.ScrollUpButton className="flex items-center justify-center py-1">

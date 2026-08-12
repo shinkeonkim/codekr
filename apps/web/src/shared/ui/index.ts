@@ -11,7 +11,8 @@ export { ToastViewport } from "./toast/ToastViewport";
 export { Pagination } from "./Pagination";
 export { Table } from "./Table";
 export type { Column } from "./Table";
-export { Button, Card, EmptyState, Field } from "./primitives";
+export { Button, Card, EmptyState } from "./primitives";
+export { Field } from "./Field";
 // shadcn 기반으로 옮긴 잎 프리미티브 (#291 1단계).
 export { Alert } from "./alert";
 export { Badge } from "./badge";

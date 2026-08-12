@@ -1,5 +1,4 @@
 import { BrandCharacter } from "./brand/BrandCharacter";
-import { Label } from "./label";
 import type { BrandCharacterName } from "./brand/BrandCharacter";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
@@ -26,22 +25,6 @@ export function Button({ variant = "primary", className = "", ...props }: Button
       {...props}
       className={`inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${className}`}
     />
-  );
-}
-
-/**
- * 이름표 + 오류를 한 묶음으로 두는 우리 것 (#291).
- *
- * shadcn 의 `Form` 은 `react-hook-form` 을 전제하므로 들이지 않았다. 이름표만
- * `Label` 로 갈아 끼운다 — 같은 것을 두 곳에 적지 않기 위해서다.
- */
-export function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
-  return (
-    <label className="block space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-      {error ? <span className="block text-xs text-danger">{error}</span> : null}
-    </label>
   );
 }
 
