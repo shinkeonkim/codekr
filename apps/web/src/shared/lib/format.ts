@@ -15,3 +15,17 @@ export function formatDateTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+/**
+ * 날짜만 (#263).
+ *
+ * 공지처럼 **하루 단위로 읽는 것**에 시:분을 붙이면 눈이 걸린다. 분 단위가 뜻을 갖는
+ * 자리(제출 시각)에는 formatDateTime 을 쓴다.
+ */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}

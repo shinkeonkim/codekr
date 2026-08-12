@@ -133,6 +133,7 @@ export function ProblemListPage() {
 
       {result && result.content.length === 0 ? (
         <EmptyState
+          mascot="laptop"
           title="조건에 맞는 문제가 없습니다."
           description={
             tags.length > 1

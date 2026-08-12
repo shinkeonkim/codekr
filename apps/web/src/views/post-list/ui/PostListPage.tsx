@@ -76,6 +76,7 @@ export function PostListPage() {
 
       {result && result.content.length === 0 ? (
         <EmptyState
+          mascot="laptop"
           title={keyword || board ? "조건에 맞는 글이 없습니다." : "아직 글이 없습니다."}
           description={keyword || board ? "검색어나 게시판을 바꿔 보세요." : "첫 글을 써 보세요."}
         />

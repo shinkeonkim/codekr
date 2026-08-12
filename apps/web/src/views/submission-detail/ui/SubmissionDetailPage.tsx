@@ -2,6 +2,7 @@
 
 import { STATUS_LABELS, VERDICT_LABELS, VISIBILITY_LABELS, submissionApi, verdictTone } from "@/entities/submission";
 import type { SubmissionDetail, SubmissionVisibility } from "@/entities/submission";
+import { VerdictMascot } from "@/entities/submission";
 import { UserLink } from "@/entities/user";
 import { RequireAuth, useAuth } from "@/features/auth";
 import { JudgeProgressPanel, useJudgeStream } from "@/features/judge-stream";
@@ -89,11 +90,19 @@ function SubmissionView({ id }: { id: number }) {
             {formatDateTime(submission.createdAt)}
           </p>
         </div>
-        {submission.verdict ? (
-          <Badge tone={verdictTone(submission.verdict)}>{VERDICT_LABELS[submission.verdict]}</Badge>
-        ) : (
-          <Badge>{STATUS_LABELS[submission.status]}</Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {/*
+            판정이 난 순간에만 캐릭터를 붙인다 (#261). 맞았는지 틀렸는지는 이 화면에
+            들어온 사람이 가장 먼저 알고 싶은 것이고, 뱃지 하나보다 눈에 먼저 들어온다.
+            채점 중에는 붙이지 않는다 — 아직 아무 일도 일어나지 않았다.
+          */}
+          <VerdictMascot verdict={submission.verdict} />
+          {submission.verdict ? (
+            <Badge tone={verdictTone(submission.verdict)}>{VERDICT_LABELS[submission.verdict]}</Badge>
+          ) : (
+            <Badge>{STATUS_LABELS[submission.status]}</Badge>
+          )}
+        </div>
       </header>
 
       {judging ? (

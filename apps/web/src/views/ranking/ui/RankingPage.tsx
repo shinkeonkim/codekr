@@ -76,7 +76,7 @@ export function RankingPage() {
       {error ? <Alert>{error}</Alert> : null}
 
       {entries.length === 0 && !error ? (
-        <EmptyState title="아직 랭킹에 오른 사람이 없습니다." />
+        <EmptyState mascot="award" title="아직 랭킹에 오른 사람이 없습니다." />
       ) : (
         <Card className="divide-y divide-line p-0">
           {entries.map((entry) => (
