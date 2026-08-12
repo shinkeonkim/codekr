@@ -12,6 +12,13 @@ export interface Operation {
   argument?: { label: string; placeholder: string };
   /** 누르기 전에 받을 확인 문구. 없으면 바로 실행한다. */
   confirm?: string;
+  /**
+   * 손으로 옮겨 적어야 실행되는 문구 (#285).
+   *
+   * **되돌릴 수 없는 작업에만 쓴다.** "실행" 버튼 하나는 잘못 눌린다 — 옮겨 적는
+   * 동안 무엇을 하려는지 한 번 더 읽게 된다.
+   */
+  confirmPhrase?: string;
   run: (argument: number) => Promise<string>;
 }
 
@@ -29,6 +36,7 @@ export function OperationCard({
   onError: (message: string) => void;
 }) {
   const [argument, setArgument] = useState("");
+  const [phrase, setPhrase] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -37,8 +45,11 @@ export function OperationCard({
   const parsed = Number(argument);
   const argumentValid = !needsArgument || (argument.trim() !== "" && Number.isInteger(parsed) && parsed > 0);
 
+  const phraseMatches = !operation.confirmPhrase || phrase === operation.confirmPhrase;
+
   const execute = async () => {
     setConfirming(false);
+    setPhrase("");
     setRunning(true);
     setResult(null);
     try {
@@ -75,8 +86,13 @@ export function OperationCard({
         {confirming ? (
           <div className="space-y-2 rounded-lg border border-warn/40 bg-warn/10 p-3">
             <p className="text-xs text-ink">{operation.confirm}</p>
+            {operation.confirmPhrase ? (
+              <Field label={`확인을 위해 "${operation.confirmPhrase}" 를 그대로 입력하세요`}>
+                <Input value={phrase} onChange={(event) => setPhrase(event.target.value)} />
+              </Field>
+            ) : null}
             <div className="flex gap-2">
-              <Button onClick={execute} disabled={running}>
+              <Button onClick={execute} disabled={running || !phraseMatches}>
                 실행
               </Button>
               <Button variant="ghost" onClick={() => setConfirming(false)}>
