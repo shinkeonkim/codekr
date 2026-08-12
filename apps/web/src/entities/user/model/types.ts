@@ -82,14 +82,6 @@ export interface UserProfile {
  */
 export interface UserSettings {
   defaultSubmissionVisibility: SubmissionVisibility;
-  /** 수신을 **끈** 카테고리만 담긴다 (#106). */
-  mutedNotificationCategories: NotificationCategory[];
   /** 전체 카테고리와 라벨. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
   notificationCategories: NotificationCategoryOption[];
-  /**
-   * 내 공개 코드를 누가 읽었는지 알림받을지 (#136). **기본은 끔.**
-   *
-   * 꺼져 있으면 아예 기록하지 않는다 — 켜는 것이 곧 추적에 대한 동의다.
-   */
-  viewNotificationEnabled: boolean;
 }

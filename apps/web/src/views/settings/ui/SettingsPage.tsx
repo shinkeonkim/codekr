@@ -2,13 +2,11 @@
 
 import { VISIBILITY_DESCRIPTIONS, VISIBILITY_LABELS } from "@/entities/submission";
 import type { SubmissionVisibility } from "@/entities/submission";
-import type { NotificationCategory } from "@/entities/notification";
 import { userApi } from "@/entities/user";
 import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
-import { NotificationSettings } from "./NotificationSettings";
 import { WithdrawalCard } from "./WithdrawalCard";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, EmptyState, Select, useToast } from "@/shared/ui";
@@ -34,31 +32,6 @@ function SettingsView() {
       .then(setSettings)
       .catch(() => setError("설정을 불러오지 못했습니다."));
   }, []);
-
-  const toggleCategory = async (category: NotificationCategory, muted: boolean) => {
-    const next = muted
-      ? settings!.mutedNotificationCategories.filter((it) => it !== category)
-      : [...settings!.mutedNotificationCategories, category];
-    try {
-      setSettings(await userApi.updateSettings({ mutedNotificationCategories: next }));
-      toast.success("알림 설정을 저장했습니다.");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "알림 설정을 저장하지 못했습니다.");
-    }
-  };
-
-  const toggleViewNotification = async () => {
-    try {
-      setSettings(
-        await userApi.updateSettings({
-          viewNotificationEnabled: !settings!.viewNotificationEnabled,
-        }),
-      );
-      toast.success("열람 알림 설정을 저장했습니다.");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "설정을 저장하지 못했습니다.");
-    }
-  };
 
   const change = async (visibility: SubmissionVisibility) => {
     setError(null);
@@ -129,32 +102,7 @@ function SettingsView() {
         </p>
       </Card>
 
-      <NotificationSettings settings={settings} onToggle={toggleCategory} />
-
       <WithdrawalCard />
-
-      <Card className="space-y-3 p-5">
-        <div>
-          <h2 className="text-sm font-semibold text-ink">코드 열람 알림</h2>
-          <p className="mt-1 text-xs text-ink-muted">
-            켜면 내 공개 코드를 몇 명이 읽었는지 하루 한 번 알려 드립니다.
-            <span className="block">
-              누가 읽었는지는 알려 드리지 않습니다. 끄면 열람 기록을 아예 남기지 않습니다.
-            </span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="min-w-20 text-sm text-ink">열람 알림</span>
-          <Button
-            variant={settings.viewNotificationEnabled ? "primary" : "secondary"}
-            className="px-3 py-1 text-xs"
-            onClick={() => toggleViewNotification()}
-          >
-            {settings.viewNotificationEnabled ? "켜짐" : "꺼짐"}
-          </Button>
-        </div>
-      </Card>
 
     </div>
   );

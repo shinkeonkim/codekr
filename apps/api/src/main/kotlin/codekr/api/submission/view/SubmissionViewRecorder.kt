@@ -1,7 +1,6 @@
 package codekr.api.submission.view
 
 import codekr.api.activity.ActivityPolicy
-import codekr.api.user.repository.UserRepository
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -10,14 +9,15 @@ import java.time.Instant
 /**
  * 제출 코드 열람을 기록한다 (#136).
  *
- * **작성자가 켜 둔 경우에만 기록한다.** 그래서 대부분의 조회에는 쓰기가 아예 없다 —
- * 조회가 폭주해도 쓰기가 폭주하지 않는다는 요구를 설정 하나로 해결한다.
+ * **작성자 설정을 보지 않는다** (#199). 전에는 켜 둔 사람의 것만 기록해서 대부분의 조회에
+ * 쓰기가 없었는데, 그 설정 자체가 걷혔다.
+ *
+ * 그래도 쓰기가 폭주하지 않는 이유는 **하루 한 번으로 묶기 때문**이다 — 같은 사람이 같은
+ * 제출을 몇 번 열어도 그날의 행은 하나다 (`viewRepository.record` 의 upsert).
+ * 남의 공개 코드를 읽는 일 자체가 흔하지 않다는 점도 있다.
  */
 @Component
-class SubmissionViewRecorder(
-    private val viewRepository: SubmissionViewRepository,
-    private val userRepository: UserRepository,
-) {
+class SubmissionViewRecorder(private val viewRepository: SubmissionViewRepository) {
 
     /**
      * @param sourceVisible 소스 코드가 실제로 내려갔는가. **판정만 본 것은 세지 않는다** —
@@ -31,14 +31,6 @@ class SubmissionViewRecorder(
         // 자기 것을 보는 것과 운영 행위는 알림이 될 이유가 없다.
         if (viewerId == null || viewerId == authorId || isAdmin) return
 
-        val author = userRepository.findById(authorId).orElse(null) ?: return
-        if (!author.viewNotificationEnabled) return
-
         viewRepository.record(submissionId, viewerId, Instant.now().atZone(ActivityPolicy.ZONE).toLocalDate())
     }
-
-    /** 이 작성자가 열람 알림을 켜 두었는가. 조회자에게 그 사실을 알리는 데 쓴다. */
-    @Transactional(readOnly = true)
-    fun isEnabledFor(authorId: Long): Boolean =
-        userRepository.findById(authorId).map { it.viewNotificationEnabled }.orElse(false)
 }

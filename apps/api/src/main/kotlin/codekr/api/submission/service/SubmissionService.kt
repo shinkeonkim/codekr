@@ -132,10 +132,13 @@ class SubmissionService(
             nickname = nicknameOf(submission.userId),
             sourceVisible = sourceVisible,
             // **보는 사람에게도 알린다** (#136). 기록에 남는다면 보기 전에 그 사실을 알아야 한다.
+            //
+            // 조건이 record 와 같아야 한다 — 알린 것과 실제로 기록하는 것이 어긋나면
+            // 안내가 거짓말이 된다. 작성자 설정 확인이 빠지면서(#199) 제출 상세마다
+            // 나가던 사용자 조회 한 번도 함께 사라졌다.
             viewNotified = sourceVisible &&
                 submission.userId != principal.userId &&
-                !principal.isAdmin &&
-                viewRecorder.isEnabledFor(submission.userId),
+                !principal.isAdmin,
         )
     }
 
