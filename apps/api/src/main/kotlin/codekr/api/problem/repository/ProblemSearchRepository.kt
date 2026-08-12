@@ -1,6 +1,11 @@
 package codekr.api.problem.repository
 
 import codekr.api.problem.entity.QProblem
+import codekr.api.ranking.entity.QUserProblemScoreRef
+import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.dsl.BooleanExpression
+import java.math.BigDecimal
+import java.math.RoundingMode
 import codekr.api.problem.entity.QProblemStat
 import codekr.api.tag.entity.QProblemTag
 import codekr.api.tag.entity.QTag
@@ -15,6 +20,8 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Repository
 
 /** 문제 목록의 동적 검색. 조건 조합이 늘어나도 문자열 JPQL 을 붙이지 않도록 Querydsl 로 조립한다. */
+private val HUNDRED = BigDecimal(100)
+
 @Repository
 class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
 
@@ -47,6 +54,33 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
             condition.tagSlugs.filter { it.isNotBlank() }.distinct().forEach { slug ->
                 and(hasTag(problem, slug))
             }
+            condition.problemKind?.let { and(problem.problemKind.eq(it)) }
+
+            /*
+                정답률·푼 사람 수 범위 (#239).
+
+                **제출자가 없는 문제는 어느 범위에도 들지 않는다.** 정답률이 `NULL` 이라
+                비교가 참이 되지 않는다 — `0/0` 은 0% 가 아니다 (#205).
+            */
+            val stat = QProblemStat.problemStat
+            condition.acceptanceFrom?.let { and(statExists(stat.acceptance.goe(ratio(it)))) }
+            condition.acceptanceTo?.let { and(statExists(stat.acceptance.loe(ratio(it)))) }
+            condition.solversFrom?.let { and(statExists(stat.solvers.goe(it))) }
+            condition.solversTo?.let { and(statExists(stat.solvers.loe(it))) }
+
+            /*
+                내가 푼 것 / 안 푼 것 (#239).
+
+                **목록을 여는 가장 흔한 이유인데 방법이 없었다.** 해결 기록은 랭킹 점수
+                표에 있다 (#57) — 거기 행이 있으면 푼 것이다.
+
+                비로그인이면 `viewerId` 가 없고, 그때 이 조건 자체가 걸리지 않는다.
+            */
+            val viewerId = condition.viewerId
+            if (viewerId != null && condition.solved != null) {
+                val solvedProblem = solvedBy(problem, viewerId)
+                if (condition.solved) and(solvedProblem) else and(solvedProblem.not())
+            }
         }
 
         val stat = QProblemStat.problemStat
@@ -69,6 +103,35 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
 
         return PageImpl(content, pageable, total)
     }
+
+    /** 백분율을 비율로. 저장된 정답률은 0~1 이다. */
+    private fun ratio(percent: Int): BigDecimal =
+        BigDecimal(percent).divide(HUNDRED, 6, RoundingMode.HALF_UP)
+
+    /**
+     * 통계 조건을 **존재 검사로** 건다.
+     *
+     * 조인으로 걸면 정렬용 조인과 겹쳐 같은 문제가 두 번 나올 수 있다. 존재 검사는
+     * 조인 상태와 무관하게 같은 뜻이다.
+     */
+    private fun statExists(condition: BooleanExpression): Predicate {
+        val stat = QProblemStat.problemStat
+        val problem = QProblem.problem
+        return JPAExpressions.selectOne()
+            .from(stat)
+            .where(stat.problemId.eq(problem.id), condition)
+            .exists()
+    }
+
+    /** 그 사람이 푼 문제인가. 점수 표에 행이 있으면 푼 것이다 (#57). */
+    private fun solvedBy(problem: QProblem, userId: Long) = JPAExpressions
+        .selectOne()
+        .from(QUserProblemScoreRef.userProblemScoreRef)
+        .where(
+            QUserProblemScoreRef.userProblemScoreRef.problemId.eq(problem.id),
+            QUserProblemScoreRef.userProblemScoreRef.userId.eq(userId),
+        )
+        .exists()
 
     private fun hasTag(problem: QProblem, slug: String) = JPAExpressions
         .selectOne()

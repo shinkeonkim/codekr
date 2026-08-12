@@ -2,6 +2,7 @@ package codekr.api.problem.repository
 
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.ProblemCategory
+import codekr.api.problem.entity.ProblemKind
 
 /**
  * 문제 목록의 정렬 기준 (#132, #205).
@@ -47,4 +48,40 @@ data class ProblemSearchCondition(
     val sort: ProblemSort = ProblemSort.LATEST,
     /** null 이면 공개 여부와 무관하게 조회한다 (어드민 목록). */
     val published: Boolean? = true,
+
+    /** 채점 방식 (#59). "SQL 문제만" 처럼 고를 수 있어야 한다. */
+    val problemKind: ProblemKind? = null,
+
+    /**
+     * 정답률 범위 (0~100). 티어와 **다른 축이다** — 쉬운 문제인데 함정이 있는 것들이 있다.
+     *
+     * 제출자가 없는 문제는 정답률이 `NULL` 이라 어느 범위에도 들지 않는다 (#205) —
+     * `0/0` 은 0% 가 아니다.
+     */
+    val acceptanceFrom: Int? = null,
+    val acceptanceTo: Int? = null,
+
+    /** 푼 사람 수 범위. "검증된 문제부터" 를 고르는 축이다. */
+    val solversFrom: Int? = null,
+    val solversTo: Int? = null,
+
+    /**
+     * 해결 여부로 거르는 사람. **비로그인이면 null 이고, 그때 이 필터는 없다** —
+     * 누를 수 없는 필터를 보여 주지 않는다.
+     */
+    val viewerId: Long? = null,
+
+    /** `true` 면 푼 것만, `false` 면 안 푼 것만. `viewerId` 가 있을 때만 뜻이 있다. */
+    val solved: Boolean? = null,
+
+    /*
+        **"허용 언어" 필터는 두지 않았다** (#239).
+
+        이슈는 "Python 으로 풀 수 있는 것" 을 들었지만, 이 저장소에는 문제별 허용 언어라는
+        것이 없다. `problem_runtime_limits` 는 **제한 오버라이드**이지 목록이 아니고(#97),
+        어떤 언어로 풀 수 있는지는 **문제 유형**이 정한다 — SQL 문제는 SQL 로만 푼다.
+
+        없는 데이터로 필터를 만들면 "걸었는데 아무 일도 안 일어나는" 칸이 생긴다.
+        가장 가까운 진짜 축인 `problemKind` 를 대신 연다.
+    */
 )
