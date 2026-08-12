@@ -1,7 +1,12 @@
 import { PostNewPage } from "@/views/post-edit";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
-export const metadata = { title: "새 글 · 코드.kr" };
+export const metadata: Metadata = {
+  title: "새 글",
+  robots: { index: false, follow: false },
+};
+
 
 export default function Page() {
   // 문제 질문에서 넘어올 때 ?problemId= 를 읽는다 (#139).
