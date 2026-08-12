@@ -4,6 +4,7 @@ import { problemApi } from "@/entities/problem";
 import type { Runtime } from "@/entities/problem";
 import { SubmissionResult, submissionApi } from "@/entities/submission";
 import { UserLink } from "@/entities/user";
+import { LockIcon } from "lucide-react";
 import type { SubmissionSummary } from "@/entities/submission";
 import type { Page } from "@/shared/api";
 import { formatDateTime, formatMemory } from "@/shared/lib";
@@ -120,6 +121,20 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
             rowKey={(submission) => submission.id}
             columns={[
               {
+                key: "detail",
+                header: "제출",
+                /*
+                  **줄을 식별하는 값이 맨 왼쪽에 온다** (#288). 표에서 눈은 왼쪽부터
+                  훑는데, 그 줄이 무엇인지 알려주는 값이 끝에 있으면 끝까지 가야 한다.
+                  좁은 화면에서 가운데 열들이 숨으면 순서가 더 어긋났다.
+
+                  목적지는 그대로 제출 상세다 (#197 — 열 이름과 가는 곳이 어긋나면 안 된다).
+                */
+                width: "w-24",
+                href: (submission) => `/submissions/${submission.id}`,
+                render: (submission) => <SubmissionLink submission={submission} />,
+              },
+              {
                 key: "problem",
                 header: "문제",
                 // **문제 열은 문제로 간다** (#197). 전에는 행 전체가 제출 상세로 가서
@@ -172,15 +187,6 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
                   </span>
                 ),
               },
-              {
-                key: "detail",
-                header: "제출",
-                align: "right",
-                // 제출 상세로 가는 길에 이름을 준다 (#197). 전에는 "문제" 열에 숨어 있어
-                // 그 사실을 이미 아는 사람만 갈 수 있었다.
-                href: (submission) => `/submissions/${submission.id}`,
-                render: (submission) => <SubmissionLink submission={submission} />,
-              },
             ]}
           />
           <Pagination
@@ -206,12 +212,19 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
  */
 function SubmissionLink({ submission }: { submission: SubmissionSummary }) {
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+    <span
+      className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums"
+      // 무엇이 되고 무엇이 안 되는지 함께 말한다 — "비공개" 만 보이면 상세로 갈 수
+      // 없다고 읽힌다. (#291 의 `Tooltip` 이 오면 `title` 을 그것으로 바꾼다.)
+      title={
+        submission.sourceVisible
+          ? undefined
+          : "코드는 비공개입니다 — 판정·시간·메모리는 볼 수 있습니다"
+      }
+    >
       <span className="text-xs">#{submission.id}</span>
       {submission.sourceVisible ? null : (
-        <span className="text-[10px] text-ink-muted" title="코드는 작성자가 공개한 경우에만 보입니다">
-          코드 비공개
-        </span>
+        <LockIcon className="size-3 shrink-0 text-ink-muted" aria-label="코드 비공개" />
       )}
     </span>
   );
