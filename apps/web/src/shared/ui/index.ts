@@ -3,6 +3,7 @@
 export { BrandCharacter } from "./brand/BrandCharacter";
 export type { BrandCharacterName } from "./brand/BrandCharacter";
 export { BrandSymbol } from "./brand/BrandSymbol";
+export { BrandWordmark } from "./brand/BrandWordmark";
 export { CodeEditor } from "./CodeEditor";
 export { Markdown, isSafeUrl } from "./markdown/Markdown";
 export { ToastProvider, useToast } from "./toast/ToastContext";

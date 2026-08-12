@@ -3,7 +3,7 @@
 import { UserLink } from "@/entities/user";
 import { NotificationBell } from "./NotificationBell";
 import { useAuth } from "@/features/auth";
-import { BrandSymbol } from "@/shared/ui";
+import { BrandWordmark } from "@/shared/ui";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -19,11 +19,10 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-header border-b border-border bg-surface/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
-        <Link href="/" className="flex items-center gap-2 text-lg font-bold tracking-tight text-ink">
-          {/* 글자를 그림으로 바꾸지 않는다 — 심벌을 옆에 둔다 (#261).
-              워드마크 그림은 어두운 배경에서 "코드" 가 읽히지 않는다. */}
-          <BrandSymbol />
-          코드<span className="text-brand">.kr</span>
+        {/* 워드마크 하나로 둔다 (#261) — "드" 안에 이미 `</>` 가 있어 심벌을 나란히
+            놓으면 같은 표시가 두 번 나온다. */}
+        <Link href="/" className="flex shrink-0 items-center">
+          <BrandWordmark height={28} />
         </Link>
 
         <nav className="flex items-center gap-1 text-sm">

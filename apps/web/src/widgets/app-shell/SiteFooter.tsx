@@ -1,4 +1,4 @@
-import { BrandCharacter, BrandSymbol } from "@/shared/ui";
+import { BrandCharacter, BrandWordmark } from "@/shared/ui";
 import Link from "next/link";
 
 /**
@@ -15,10 +15,7 @@ export function SiteFooter() {
     <footer className="mt-16 border-t border-border bg-surface-muted/30">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_auto]">
         <div>
-          <div className="flex items-center gap-2 text-base font-bold text-ink">
-            <BrandSymbol size={22} />
-            코드<span className="text-brand">.kr</span>
-          </div>
+          <BrandWordmark height={30} />
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
             알고리즘·SQL·CS 문제를 풀고, 채점이 도는 과정을 실시간으로 보면서 코딩 실력을
             증명하는 오픈소스 온라인 저지입니다.
