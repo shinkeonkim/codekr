@@ -17,7 +17,14 @@ export const metadata: Metadata = {
     값은 퓨니코드다 (ADR-0009). `URL` 이 어차피 정규화하고, 구글은 둘을 같게 본다.
   */
   metadataBase: new URL(SITE_ORIGIN),
-  title: `${SITE_NAME} — 코딩 테스트 문제 풀이 플랫폼`,
+  title: {
+    /*
+      접미를 **한 곳에서** 붙인다 (#278). 화면마다 "· 코드.kr" 을 적어 두면 사이트
+      이름을 바꿀 때 서른 곳을 고쳐야 하고, 실제로 몇 곳은 빠져 있었다.
+    */
+    default: `${SITE_NAME} — 코딩 테스트 문제 풀이 플랫폼`,
+    template: `%s · ${SITE_NAME}`,
+  },
   description: SITE_DESCRIPTION,
   openGraph: {
     type: "website",
