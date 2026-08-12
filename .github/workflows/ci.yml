@@ -240,7 +240,15 @@ jobs:
     needs: images
     # 이미지가 실제로 올라간 뒤에만 태그를 적는다. 순서가 뒤집히면 매니페스트가
     # 아직 없는 이미지를 가리키고, 클러스터는 ImagePullBackOff 로 멈춘다.
-    if: github.ref == 'refs/heads/main'
+    #
+    # **`!cancelled()` 가 없으면 이 잡은 조용히 건너뛰어진다** (#248). `images` 는
+    # 성공했는데도 그랬다 — 앞선 잡(api-test·web-check)이 변경 없음으로 건너뛰어지면,
+    # 그 뒤를 잇는 잡도 스스로 "건너뛴 조상이 있어도 돈다" 고 밝히지 않는 한 함께
+    # 건너뛰어진다. `images` 는 그렇게 밝혀 두었지만 여기는 빠뜨렸다.
+    #
+    # 그래서 CI 는 초록인데 배포 태그는 그대로였다 — **돌지 않았는데 초록인 것**이
+    # 가장 나쁜 결과다(#172). `needs.images.result` 를 직접 보게 해 그 침묵을 없앤다.
+    if: github.ref == 'refs/heads/main' && !cancelled() && needs.images.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       # 같은 저장소에 커밋한다 — ArgoCD 가 이 저장소의 차트를 직접 읽기 때문이다 (#246).
