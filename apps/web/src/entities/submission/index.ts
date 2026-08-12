@@ -16,3 +16,4 @@ export type {
   Verdict,
 } from "./model/types";
 export { SubmissionResult } from "./ui/SubmissionResult";
+export { VerdictMascot } from "./ui/VerdictMascot";

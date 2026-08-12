@@ -49,7 +49,11 @@ function SubmissionList() {
       ) : null}
 
       {result && result.content.length === 0 ? (
-        <EmptyState title="아직 제출한 코드가 없습니다." description="문제를 골라 풀어 보세요." />
+        <EmptyState
+          mascot="laptop"
+          title="아직 제출한 코드가 없습니다."
+          description="문제를 골라 풀어 보세요."
+        />
       ) : null}
       {result && result.content.length > 0 ? (
         <>
