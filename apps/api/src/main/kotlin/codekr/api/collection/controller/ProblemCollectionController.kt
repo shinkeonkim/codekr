@@ -1,5 +1,7 @@
 package codekr.api.collection.controller
 
+import codekr.api.config.security.PublicApi
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.collection.dto.CollectionDetailResponse
 import codekr.api.collection.dto.CollectionSummaryResponse
@@ -28,10 +30,12 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/collections")
 class ProblemCollectionController(private val collectionService: ProblemCollectionService) {
 
+    @AuthenticatedApi
     @GetMapping("/me")
     fun findMine(principal: AuthPrincipal): List<CollectionSummaryResponse> =
         collectionService.findMine(principal.userId)
 
+    @AuthenticatedApi
     @GetMapping("/{id}")
     fun findOne(
         @PathVariable id: Long,
@@ -39,12 +43,14 @@ class ProblemCollectionController(private val collectionService: ProblemCollecti
     ): CollectionDetailResponse = collectionService.findOne(id, principal?.userId)
 
     /** 링크 공유. 번호로 훑을 수 없게 추측 불가능한 토큰을 쓴다. */
+    @PublicApi
     @GetMapping("/shared/{shareToken}")
     fun findShared(
         @PathVariable shareToken: String,
         principal: AuthPrincipal?,
     ): CollectionDetailResponse = collectionService.findByToken(shareToken, principal?.userId)
 
+    @AuthenticatedApi
     @PostMapping
     fun create(
         @RequestBody @Valid request: CollectionUpsertRequest,
@@ -53,6 +59,7 @@ class ProblemCollectionController(private val collectionService: ProblemCollecti
         .status(HttpStatus.CREATED)
         .body(collectionService.create(principal.userId, request))
 
+    @AuthenticatedApi
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
@@ -60,6 +67,7 @@ class ProblemCollectionController(private val collectionService: ProblemCollecti
         principal: AuthPrincipal,
     ): CollectionDetailResponse = collectionService.update(id, principal.userId, request)
 
+    @AuthenticatedApi
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long, principal: AuthPrincipal) =

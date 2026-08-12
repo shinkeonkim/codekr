@@ -21,9 +21,17 @@ class UserProfileRepository(private val jdbcClient: JdbcClient) {
     fun countSolvedProblems(userId: Long): Int =
         jdbcClient.sql(
             """
-            SELECT count(DISTINCT problem_id)
-            FROM submissions
-            WHERE user_id = :userId AND deleted_at IS NULL AND kind = 'USER' AND verdict = 'ACCEPTED'
+            SELECT count(DISTINCT s.problem_id)
+            FROM submissions s
+            JOIN problems p ON p.id = s.problem_id
+            WHERE s.user_id = :userId
+              AND s.deleted_at IS NULL
+              AND s.kind = 'USER'
+              AND s.verdict = 'ACCEPTED'
+              -- 점수·분포와 같은 기준 (#269). 제출만 보고 세면 어드민이 내린 문제까지
+              -- 들어가, 같은 화면의 세 숫자가 각각 다른 집합을 말하게 된다.
+              AND p.deleted_at IS NULL
+              AND p.published = true
             """,
         ).param("userId", userId).query(Int::class.java).single()
 
@@ -50,6 +58,10 @@ class UserProfileRepository(private val jdbcClient: JdbcClient) {
               AND s.deleted_at IS NULL
               AND s.kind = 'USER'
               AND s.verdict = 'ACCEPTED'
+              -- 점수와 같은 기준으로 센다 (#269). 이것이 없으면 어드민이 문제를 내렸을 때
+              -- 점수는 빠지는데 분포에는 남아, 같은 화면의 두 숫자가 다른 집합을 말한다.
+              AND p.deleted_at IS NULL
+              AND p.published = true
             GROUP BY p.difficulty_level
             """,
         )
@@ -65,6 +77,8 @@ class UserProfileRepository(private val jdbcClient: JdbcClient) {
      *
      * **태그가 없는 문제는 어디에도 세지 않는다.** 합계가 푼 문제 수와 다를 수 있는데,
      * 그것이 사실이다 — "분류가 붙은 문제 중에서" 의 분포다.
+     *
+     * 비공개·삭제된 문제는 빠진다 (#269) — 점수와 같은 기준이다.
      */
     fun solvedByTag(userId: Long): List<SolvedByTag> =
         jdbcClient.sql(
@@ -79,6 +93,7 @@ class UserProfileRepository(private val jdbcClient: JdbcClient) {
               AND s.kind = 'USER'
               AND s.verdict = 'ACCEPTED'
               AND p.deleted_at IS NULL
+              AND p.published = true
             GROUP BY t.slug, t.name
             ORDER BY solved DESC, t.name
             """,

@@ -75,6 +75,9 @@ services:
       CODEKR_JWT_ACCESS_TTL_SECONDS: ${CODEKR_JWT_ACCESS_TTL_SECONDS:-3600}
       CODEKR_JWT_REFRESH_TTL_SECONDS: ${CODEKR_JWT_REFRESH_TTL_SECONDS:-1209600}
       CODEKR_CORS_ALLOWED_ORIGINS: ${CODEKR_CORS_ALLOWED_ORIGINS:-http://localhost:13000}
+      # 로컬은 켜 둔다 (#285). 기능을 붙이고 시험 데이터를 넣고 다시 비우는 일이 반복된다.
+      # **배포에서는 기본이 꺼짐이다** — 운영을 시작하는 날 그대로 두면 된다.
+      CODEKR_DATA_RESET_ENABLED: ${CODEKR_DATA_RESET_ENABLED:-true}
       # 오브젝트 스토리지 (#115). 운영은 S3 호환, 로컬은 MinIO — **같은 코드 경로**다.
       CODEKR_STORAGE_ENDPOINT: http://storage:9000
       CODEKR_STORAGE_BUCKET: ${STORAGE_BUCKET:-codekr}
@@ -152,6 +155,10 @@ services:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:18080}
         NEXT_PUBLIC_WS_BASE_URL: ${NEXT_PUBLIC_WS_BASE_URL:-ws://localhost:18080}
     container_name: codekr-web
+    environment:
+      # sitemap 이 서버에서 문제 목록을 받아 올 주소 (#271).
+      # 위의 build args 와 달리 **컨테이너 이름**이다 — 브라우저가 아니라 web 컨테이너가 부른다.
+      API_INTERNAL_BASE_URL: http://api:8080
     ports:
       - "${WEB_HOST_PORT:-13000}:3000"
     depends_on:

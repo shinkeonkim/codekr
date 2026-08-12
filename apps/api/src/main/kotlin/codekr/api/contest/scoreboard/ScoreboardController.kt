@@ -1,5 +1,6 @@
 package codekr.api.contest.scoreboard
 
+import codekr.api.config.security.PublicApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.user.entity.UserRole
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy
@@ -23,6 +24,7 @@ class ScoreboardController(
     private val roleHierarchy: RoleHierarchy,
 ) {
 
+    @PublicApi
     @GetMapping
     fun of(
         @PathVariable slug: String,

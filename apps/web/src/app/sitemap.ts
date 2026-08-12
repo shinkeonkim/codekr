@@ -1,3 +1,4 @@
+import { API_INTERNAL_BASE_URL } from "@/shared/config/server";
 import { PUBLIC_ROUTES } from "@/shared/config/routes";
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
@@ -15,15 +16,57 @@ import { headers } from "next/headers";
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = await origin();
-  const paths = ["/", ...Object.values(PUBLIC_ROUTES).flatMap((links) => links.map((l) => l.href))];
+  const fixed = ["/", ...Object.values(PUBLIC_ROUTES).flatMap((links) => links.map((l) => l.href))];
+  const problems = await problemPaths();
 
-  return paths.map((path) => ({
+  return [...fixed, ...problems].map((path) => ({
     url: `${base}${path}`,
     changeFrequency: path === "/" ? "daily" : "weekly",
     // 첫 화면만 1.0. 나머지에 굳이 등급을 매기지 않는다 — 근거 없는 숫자를 넣느니
     // 크롤러의 판단에 맡긴다.
     priority: path === "/" ? 1 : 0.7,
   }));
+}
+
+/** 한 번에 받아 오는 문제 수. 서버가 허용하는 최댓값이다. */
+const PAGE_SIZE = 100;
+
+/**
+ * 문제 상세 주소 (#271).
+ *
+ * **공개 목록 API 만 쓴다.** 어드민 API 를 부르면 미공개 문제가 sitemap 으로 새어
+ * 나간다 — 서버가 이미 `published = true` 만 내려주므로 여기서 다시 거르지 않는다.
+ *
+ * 서버 전용 주소가 없으면(로컬·미리보기) **고정 화면만 내보낸다.** sitemap 때문에
+ * 개발이 막히면 안 된다.
+ *
+ * 실패해도 빈 배열이다. 문제 목록을 못 받았다고 sitemap 전체가 500 이 되면, 있던
+ * 고정 화면마저 색인에서 빠진다.
+ */
+async function problemPaths(): Promise<string[]> {
+  if (!API_INTERNAL_BASE_URL) return [];
+
+  try {
+    const paths: string[] = [];
+    // 쪽수를 따라간다. 첫 응답이 전체 쪽수를 알려 준다.
+    for (let page = 0; ; page++) {
+      const response = await fetch(
+        `${API_INTERNAL_BASE_URL}/api/v1/problems?page=${page}&size=${PAGE_SIZE}`,
+        // 매 요청마다 문제 목록을 다시 받을 이유가 없다. 크롤러는 자주 오지 않는다.
+        { next: { revalidate: 3600 } },
+      );
+      if (!response.ok) break;
+
+      const body = (await response.json()) as { content: { id: number }[]; totalPages: number };
+      // **번호가 정본 주소다** (#204). 화면의 링크도 번호로 가므로 여기도 같아야 한다 —
+      // 크롤러가 sitemap 과 링크에서 다른 주소를 보면 같은 문서를 둘로 센다.
+      paths.push(...body.content.map((problem) => `/problems/${problem.id}`));
+      if (page + 1 >= body.totalPages) break;
+    }
+    return paths;
+  } catch {
+    return [];
+  }
 }
 
 /**

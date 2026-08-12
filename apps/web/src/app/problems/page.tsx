@@ -1,7 +1,12 @@
 import { ProblemListPage } from "@/views/problem-list";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
-export const metadata = { title: "문제 · 코드.kr" };
+export const metadata: Metadata = {
+  title: "문제",
+  description: "알고리즘·SQL·CS 문제를 난이도와 유형으로 골라 풉니다.",
+};
+
 
 export default function Page() {
   // 목록 상태를 URL 에 두므로 useSearchParams 를 쓴다 (#132).

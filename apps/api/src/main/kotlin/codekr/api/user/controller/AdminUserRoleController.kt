@@ -1,5 +1,6 @@
 package codekr.api.user.controller
 
+import codekr.api.config.security.AdminApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.user.dto.RoleChangeRequest
 import codekr.api.user.entity.UserRole
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/users")
 class AdminUserRoleController(private val userRoleService: UserRoleService) {
 
+    @AdminApi(UserRole.SUPERUSER)
     @PutMapping("/{id}/roles")
     fun replaceRoles(
         @PathVariable id: Long,

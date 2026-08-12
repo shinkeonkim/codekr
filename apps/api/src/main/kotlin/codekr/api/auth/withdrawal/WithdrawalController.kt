@@ -1,5 +1,8 @@
 package codekr.api.auth.withdrawal
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AuthenticatedApi
+import codekr.api.config.security.AdminApi
 import codekr.api.auth.security.AuthPrincipal
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 class WithdrawalController(private val withdrawalService: WithdrawalService) {
 
     /** 본인 탈퇴. **되돌릴 수 없다** — 유예 기간을 두지 않았다. */
+    @AuthenticatedApi
     @DeleteMapping("/api/v1/users/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun withdraw(principal: AuthPrincipal) = withdrawalService.withdraw(principal.userId)
@@ -22,6 +26,7 @@ class WithdrawalController(private val withdrawalService: WithdrawalService) {
      *
      * 본인 탈퇴와 **같은 경로**를 쓴다 — 두 벌로 두면 한쪽만 고치는 일이 생긴다.
      */
+    @AdminApi(UserRole.SUPERUSER)
     @DeleteMapping("/api/v1/admin/users/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun forceWithdraw(@PathVariable id: Long) = withdrawalService.withdraw(id)

@@ -1,5 +1,7 @@
 package codekr.api.rejudge.controller
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.rejudge.dto.RejudgeRequest
 import codekr.api.rejudge.dto.RejudgeResponse
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/problems")
 class AdminRejudgeController(private val rejudgeService: RejudgeService) {
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @PostMapping("/{id}/rejudge")
     fun rejudge(
         @PathVariable id: Long,
@@ -26,6 +29,7 @@ class AdminRejudgeController(private val rejudgeService: RejudgeService) {
     ): RejudgeResponse = rejudgeService.rejudgeProblem(id, request.reason, principal.userId)
 
     /** 누르기 전에 대상 수와 진행 중인 배치를 확인한다 (#219). */
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @GetMapping("/{id}/rejudge")
     fun status(@PathVariable id: Long): RejudgeStatusResponse = rejudgeService.status(id)
 }

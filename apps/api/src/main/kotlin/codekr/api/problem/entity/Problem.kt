@@ -61,6 +61,25 @@ class Problem(
     @Column(name = "memory_limit_mb", nullable = false)
     var memoryLimitMb: Int = ExecutionLimits.DEFAULT_MEMORY_LIMIT_MB,
 
+    /**
+     * 출력 비교 방식 (#279, ADR-0010).
+     *
+     * **기본은 정확 일치다.** 이미 등록된 문제의 판정이 하나도 바뀌면 안 된다 —
+     * 비교 방식이 바뀌면 재채점(#107)에서 판정이 뒤집힌다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "output_comparison", nullable = false, length = 16)
+    var outputComparison: OutputComparison = OutputComparison.EXACT,
+
+    /**
+     * 허용 오차. `FLOAT` 일 때만 쓰인다.
+     *
+     * 절대·상대 중 **하나만 만족해도** 맞다고 본다 — 답이 0 근처일 때와 아주 클 때
+     * 같은 잣대를 쓸 수 없다.
+     */
+    @Column(name = "float_epsilon", nullable = false)
+    var floatEpsilon: Double = 0.0,
+
     /** 채점 큐 우선순위 (#102). 실행이 무거운 문제를 뒤로 미룰 수 있다. */
     @Enumerated(EnumType.STRING)
     @Column(name = "judge_priority", nullable = false, length = 20)
@@ -189,6 +208,9 @@ class Problem(
     fun verificationSignature(): String {
         val content = buildString {
             append(timeLimitMs).append('|').append(memoryLimitMb).append('|')
+            // 비교 방식도 판정을 바꾼다 (#279). 빠뜨리면 오차만 고쳤을 때 검증이
+            // 낡지 않은 것으로 남는다.
+            append(outputComparison).append('/').append(floatEpsilon).append('|')
             // 런타임별 제한도 판정을 바꾼다. 빠뜨리면 제한만 고쳤을 때 검증이 낡지 않은 것으로 남는다.
             runtimeLimits.sortedBy { it.runtimeId }.forEach {
                 append(it.runtimeId).append('=').append(it.timeLimitMs).append('/')

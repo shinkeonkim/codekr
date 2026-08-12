@@ -4,10 +4,12 @@ import contract "github.com/shinkeonkim/codekr/libs/gocontract"
 
 // VerdictOf 는 실행 결과 하나를 테스트케이스 판정으로 옮긴다.
 // 정답 비교는 실행이 정상으로 끝난 경우에만 의미가 있다.
-func VerdictOf(result contract.ExecResult, expectedOutput string) contract.Verdict {
+//
+// 비교 방식과 오차는 작업(JudgeJob)에서 온다 (#279). 빈 방식은 정확 일치다.
+func VerdictOf(result contract.ExecResult, expectedOutput, comparison string, epsilon float64) contract.Verdict {
 	switch result.Status {
 	case contract.StatusOK:
-		if OutputMatches(result.Stdout, expectedOutput) {
+		if OutputMatchesWithin(result.Stdout, expectedOutput, comparison, epsilon) {
 			return contract.VerdictAccepted
 		}
 		return contract.VerdictWrongAnswer

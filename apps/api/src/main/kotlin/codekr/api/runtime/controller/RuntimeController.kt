@@ -1,5 +1,6 @@
 package codekr.api.runtime.controller
 
+import codekr.api.config.security.PublicApi
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.runtime.RuntimeDefinition
 import codekr.api.runtime.RuntimeRegistry
@@ -18,6 +19,7 @@ class RuntimeController(private val runtimeRegistry: RuntimeRegistry) {
      * 기본값이 stdin/stdout 인 이유: 이 인자가 없던 시절의 화면이 SQL 런타임을
      * 알고리즘 문제의 선택지로 보여주면 안 된다.
      */
+    @PublicApi
     @GetMapping
     fun findAll(
         @RequestParam(defaultValue = "JUDGE_STDIO") problemKind: ProblemKind,

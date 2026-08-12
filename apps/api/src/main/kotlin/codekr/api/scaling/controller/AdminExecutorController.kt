@@ -1,5 +1,7 @@
 package codekr.api.scaling.controller
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.scaling.dto.ExecutorScaleStatus
 import codekr.api.scaling.dto.ScaleRequest
 import codekr.api.scaling.service.ExecutorScaleService
@@ -15,9 +17,11 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/executors")
 class AdminExecutorController(private val scaleService: ExecutorScaleService) {
 
+    @AdminApi(UserRole.ADMIN)
     @GetMapping
     fun status(): ExecutorScaleStatus = scaleService.status()
 
+    @AdminApi(UserRole.ADMIN)
     @PostMapping("/scale")
     fun scale(@Valid @RequestBody request: ScaleRequest): ExecutorScaleStatus =
         scaleService.scale(request.replicas)

@@ -4,6 +4,8 @@ import codekr.api.auth.security.JwtAuthenticationFilter
 import codekr.api.common.error.ErrorCode
 import codekr.api.common.error.ErrorResponse
 import codekr.api.config.properties.CorsProperties
+import codekr.api.config.security.ApiAccessLevel
+import codekr.api.config.security.ApiAccessScanner
 import codekr.api.user.entity.UserRole
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
@@ -64,63 +66,36 @@ class SecurityConfig(
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
             .authorizeHttpRequests { registry ->
+                /*
+                    인가 규칙을 **컨트롤러의 선언에서 끌어낸다** (#198).
+
+                    전에는 여기에 경로 패턴을 손으로 적었다. 컨트롤러의 매핑과 이 목록과
+                    시험의 목록이 각각 경로를 다시 적었고, **경로가 바뀌어도 셋 다
+                    컴파일됐다.** 게다가 패턴은 순서에 의존해서, 새 규칙을 잘못된 자리에
+                    끼우면 조용히 덮였다.
+
+                    지금은 (메서드, 경로) 단위의 정확한 규칙이라 순서가 뜻을 갖지 않는다.
+                    집행 지점은 그대로 여기다 — 본문 바인딩 **전에** 막아야 하기 때문이다.
+                */
+                for (rule in ApiAccessScanner.scan()) {
+                    val matcher = registry.requestMatchers(HttpMethod.valueOf(rule.method), rule.pattern)
+                    when (val level = rule.level) {
+                        is ApiAccessLevel.Public -> matcher.permitAll()
+                        is ApiAccessLevel.Authenticated -> matcher.authenticated()
+                        is ApiAccessLevel.Role -> matcher.hasRole(level.role.name)
+                    }
+                }
+
                 registry
+                    // 컨트롤러가 아닌 것들. 스캔에 잡히지 않으므로 여기 남는다.
                     .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
-                    .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/problems", "/api/v1/problems/*").permitAll()
-                    // 무엇으로 문제를 고를 수 있는지는 로그인 전에도 보여야 한다 (#232).
-                    .requestMatchers(HttpMethod.GET, "/api/v1/tags").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/v1/runtimes").permitAll()
-                    // 랭킹은 공개 정보다 (#57, #85).
-                    .requestMatchers(HttpMethod.GET, "/api/v1/rankings", "/api/v1/rankings/*").permitAll()
-                    // 대회 목록·상세는 공개다. 참가 등록만 로그인이 필요하다 (#61).
-                    .requestMatchers(
-                        HttpMethod.GET,
-                        "/api/v1/contests",
-                        "/api/v1/contests/*",
-                        // 순위표는 관전자도 본다 (#63).
-                        "/api/v1/contests/*/scoreboard",
-                        // 공지는 공개다 (#147). 대회가 끝난 뒤 기록으로 남아야 한다.
-                        "/api/v1/contests/*/notices",
-                        "/api/v1/contests/*/questions",
-                    ).permitAll()
-                    // 게시판 읽기는 공개다 (#137). 로그인해야 읽을 수 있으면
-                    // 검색으로 들어온 사람이 아무것도 볼 수 없다.
-                    .requestMatchers(
-                        HttpMethod.GET,
-                        "/api/v1/posts",
-                        "/api/v1/posts/*",
-                        "/api/v1/posts/*/comments",
-                        "/api/v1/posts/by-problem/*",
-                    ).permitAll()
-                    // 이미지는 공개다 (#115). 키에 내용 해시가 들어 있어 추측할 수 없다.
-                    .requestMatchers(HttpMethod.GET, "/api/v1/files/**").permitAll()
-                    // 링크 공유 문제집은 로그인 없이도 열린다 (#87).
-                    .requestMatchers(HttpMethod.GET, "/api/v1/collections/shared/*").permitAll()
+                    // 웹소켓은 핸드셰이크 뒤 자체 인증을 한다 (#40).
                     .requestMatchers("/ws/**").permitAll()
-                    // 어드민 영역의 역할 규칙 (#103).
-                    //
-                    // 메서드 보안(@PreAuthorize)이 아니라 여기에 두는 이유:
-                    //   1. 메서드 보안은 **본문 바인딩 뒤에** 돈다. 권한 없는 요청이
-                    //      400(검증 실패)을 먼저 받아, 막혔다는 사실조차 알 수 없다
-                    //   2. 인가가 두 곳에 흩어지면 새 컨트롤러에서 어느 쪽을 써야 하는지 헷갈린다
-                    // 대회 운영은 대회 관리자 이상 (#61, #103).
-                    .requestMatchers("/api/v1/admin/contests/**")
-                    .hasRole(UserRole.CONTEST_MANAGER.name)
-                    // 태그를 만들고 다는 것은 문제를 만드는 일의 일부다 (#232).
-                    .requestMatchers("/api/v1/admin/problems/**", "/api/v1/admin/tags/**")
-                    .hasRole(UserRole.PROBLEM_SETTER.name)
-                    .requestMatchers(
-                        "/api/v1/admin/queues/**",
-                        "/api/v1/admin/executors/**",
-                        "/api/v1/admin/retention/**",
-                    )
-                    .hasRole(UserRole.ADMIN.name)
-                    // **위에 적히지 않은 어드민 경로는 최고 관리자만.**
-                    // 규칙을 적지 않고 어드민 API 를 늘리면 아무도 못 쓰게 되지,
-                    // 모두가 쓸 수 있게 되지 않는다 (안전한 기본값).
-                    .requestMatchers("/api/v1/admin/**")
-                    .hasRole(UserRole.SUPERUSER.name)
+                    /*
+                        **선언되지 않은 것은 막는다.** 컨트롤러 핸들러는 스캐너가 기동에서
+                        붙잡으므로 여기 오지 않는다. 여기 오는 것은 오류 페이지처럼
+                        우리가 만들지 않은 경로다.
+                    */
                     .anyRequest().authenticated()
             }
             .exceptionHandling { handling ->

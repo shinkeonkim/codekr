@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/features/auth";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from "@/shared/config/site";
 import { ThemeScript } from "@/shared/theme";
 import { ToastProvider, ToastViewport } from "@/shared/ui";
 import { AppShell } from "@/widgets/app-shell";
@@ -8,9 +9,38 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "코드.kr — 코딩 테스트 문제 풀이 플랫폼",
-  description:
-    "알고리즘, 자료구조, SQL, 네트워크, 운영체제, 시스템 설계까지. 실시간 채점 과정을 보며 문제를 풉니다.",
+  /*
+    공유 카드의 그림·주소는 **절대 주소**여야 한다 (#277). 기준이 없으면 Next 가
+    `http://localhost:3000` 을 바탕으로 만들고, 카카오톡 서버는 그 주소로 그림을
+    받으러 갈 수 없다 — **그림이 있는데 안 뜨는** 상태가 그것이었다.
+
+    값은 퓨니코드다 (ADR-0009). `URL` 이 어차피 정규화하고, 구글은 둘을 같게 본다.
+  */
+  metadataBase: new URL(SITE_ORIGIN),
+  title: {
+    /*
+      접미를 **한 곳에서** 붙인다 (#278). 화면마다 "· 코드.kr" 을 적어 두면 사이트
+      이름을 바꿀 때 서른 곳을 고쳐야 하고, 실제로 몇 곳은 빠져 있었다.
+    */
+    default: `${SITE_NAME} — 코딩 테스트 문제 풀이 플랫폼`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    // 카드에 뜨는 사이트 이름. **여기만 한글이다** — 주소는 퓨니코드로 뜬다.
+    siteName: SITE_NAME,
+    locale: "ko_KR",
+    title: `${SITE_NAME} — 코딩 테스트 문제 풀이 플랫폼`,
+    description: SITE_DESCRIPTION,
+    url: "/",
+  },
+  twitter: {
+    // 큰 카드. `summary` 는 그림이 우표만 하게 뜬다 — 준비해 둔 그림을 쓰는 뜻이 없어진다.
+    card: "summary_large_image",
+    title: `${SITE_NAME} — 코딩 테스트 문제 풀이 플랫폼`,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -1,5 +1,7 @@
 package codekr.api.tag.admin
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.tag.dto.ProblemTagResponse
 import codekr.api.tag.dto.TagResponse
 import codekr.api.tag.service.TagService
@@ -19,10 +21,12 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/tags")
 class AdminTagController(private val tagService: TagService) {
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @PostMapping
     fun create(@Valid @RequestBody request: TagCreateRequest): TagResponse =
         tagService.create(request.slug, request.name, request.description)
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @PutMapping("/{id}")
     fun update(@PathVariable id: Long, @Valid @RequestBody request: TagUpdateRequest): TagResponse =
         tagService.update(id, request.name, request.description)
@@ -33,6 +37,7 @@ class AdminTagController(private val tagService: TagService) {
 @RequestMapping("/api/v1/admin/problems")
 class AdminProblemTagController(private val tagService: TagService) {
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @PutMapping("/{id}/tags")
     fun replace(@PathVariable id: Long, @Valid @RequestBody request: ProblemTagsRequest): List<ProblemTagResponse> =
         tagService.replaceTagsOf(id, request.tagIds)

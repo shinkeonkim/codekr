@@ -1,6 +1,10 @@
 import { ContestDetailPage } from "@/views/contest-detail";
+import type { Metadata } from "next";
 
-export const metadata = { title: "대회 · 코드.kr" };
+export const metadata: Metadata = {
+  title: "대회",
+};
+
 
 export default function Page({ params }: { params: Promise<{ slug: string }> }) {
   return <ContestDetailPage params={params} />;

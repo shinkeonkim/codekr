@@ -33,7 +33,7 @@ func (j *StdioJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emit
 	accumulator := NewAccumulator(total)
 	for _, testcase := range job.Testcases {
 		result := j.runTestcase(ctx, job, testcase)
-		verdict := VerdictOf(result, testcase.ExpectedOutput)
+		verdict := VerdictOf(result, testcase.ExpectedOutput, job.ComparisonOf(), job.Epsilon)
 		accumulator.Add(verdict, result.RuntimeMs, result.MemoryKb)
 
 		emit(contract.Event{

@@ -181,3 +181,17 @@ func TestJudgeStreamsForSeparatesLanes(t *testing.T) {
 		t.Fatal("빈 차선은 일반이어야 합니다")
 	}
 }
+
+// 실수 오차 비교 작업을 두 언어가 같게 읽는지 (#279). api(Kotlin)도 같은 파일을 읽는다.
+func TestJudgeJobFloatComparisonFixture(t *testing.T) {
+	var job JudgeJob
+	if err := json.Unmarshal(readFixture(t, "judge-job-float.json"), &job); err != nil {
+		t.Fatalf("고정 JSON 을 읽지 못했습니다: %v", err)
+	}
+	if job.ComparisonOf() != CompareFloat {
+		t.Fatalf("비교 방식이 손실되었습니다: %q", job.Comparison)
+	}
+	if job.Epsilon != 0.000001 {
+		t.Fatalf("허용 오차가 손실되었습니다: %v", job.Epsilon)
+	}
+}
