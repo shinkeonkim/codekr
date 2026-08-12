@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cellTarget } from "./tableLink";
 
 export interface Column<T> {
   key: string;
@@ -6,6 +7,15 @@ export interface Column<T> {
   /** 좁은 화면에서 숨긴다. 목록에서 판단에 꼭 필요하지 않은 열에 쓴다. */
   hideOnMobile?: boolean;
   align?: "left" | "right";
+  /**
+   * 이 열만의 목적지 (#197).
+   *
+   * **행 하나에 목적지가 하나뿐이면 열 이름과 가는 곳이 어긋난다.** 제출 목록에서
+   * "문제" 열을 눌렀는데 제출 상세로 가던 것이 그 예다.
+   *
+   * `null` 을 돌려주면 그 행에서는 링크로 만들지 않는다.
+   */
+  href?: (row: T) => string | null;
   render: (row: T) => ReactNode;
 }
 
@@ -13,7 +23,11 @@ interface Props<T> {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string | number;
-  /** 행 전체를 링크로 만들 때의 목적지. */
+  /**
+   * 행 전체(첫 칸)를 링크로 만들 때의 목적지.
+   *
+   * 목적지가 하나뿐인 목록에만 쓴다. 열마다 다른 곳으로 가야 하면 `Column.href` 를 쓴다.
+   */
   href?: (row: T) => string;
 }
 
@@ -57,14 +71,8 @@ export function Table<T>({ columns, rows, rowKey, href }: Props<T>) {
                     column.hideOnMobile ? "hidden sm:table-cell" : ""
                   }`}
                 >
-                  {/* 행 전체를 <a> 로 감싸면 HTML 이 깨지므로 첫 칸만 링크로 만들고 나머지는 그대로 둔다. */}
-                  {href && index === 0 ? (
-                    <a href={href(row)} className="block font-medium text-ink hover:text-brand">
-                      {column.render(row)}
-                    </a>
-                  ) : (
-                    column.render(row)
-                  )}
+                  {/* 행 전체를 <a> 로 감싸면 HTML 이 깨지므로 칸 단위로 링크를 만든다. */}
+                  <CellContent column={column} row={row} rowHref={index === 0 ? href : undefined} />
                 </td>
               ))}
             </tr>
@@ -72,5 +80,24 @@ export function Table<T>({ columns, rows, rowKey, href }: Props<T>) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function CellContent<T>({
+  column,
+  row,
+  rowHref,
+}: {
+  column: Column<T>;
+  row: T;
+  rowHref?: (row: T) => string;
+}) {
+  const target = cellTarget(column, row, rowHref);
+  if (!target) return <>{column.render(row)}</>;
+
+  return (
+    <a href={target} className="block font-medium text-ink hover:text-brand">
+      {column.render(row)}
+    </a>
   );
 }

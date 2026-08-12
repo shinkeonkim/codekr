@@ -118,9 +118,15 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
           <Table
             rows={result.content}
             rowKey={(submission) => submission.id}
-            href={(submission) => `/submissions/${submission.id}`}
             columns={[
-              { key: "problem", header: "문제", render: (submission) => submission.problemTitle },
+              {
+                key: "problem",
+                header: "문제",
+                // **문제 열은 문제로 간다** (#197). 전에는 행 전체가 제출 상세로 가서
+                // 열 이름과 목적지가 어긋났다.
+                href: (submission) => `/problems/${submission.problemSlug}`,
+                render: (submission) => submission.problemTitle,
+              },
               {
                 key: "nickname",
                 header: "제출자",
@@ -166,6 +172,15 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
                   </span>
                 ),
               },
+              {
+                key: "detail",
+                header: "제출",
+                align: "right",
+                // 제출 상세로 가는 길에 이름을 준다 (#197). 전에는 "문제" 열에 숨어 있어
+                // 그 사실을 이미 아는 사람만 갈 수 있었다.
+                href: (submission) => `/submissions/${submission.id}`,
+                render: (submission) => <SubmissionLink submission={submission} />,
+              },
             ]}
           />
           <Pagination
@@ -177,5 +192,27 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
         </>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * 제출 상세로 가는 칸 (#197).
+ *
+ * **막지 않는다.** 코드가 비공개여도 판정·시간·메모리는 볼 수 있으므로 상세 자체는
+ * 열린다. 다만 **누르기 전에** 코드를 볼 수 없다는 사실은 알려준다 — 코드를 보려고
+ * 눌렀다가 그때서야 알게 하지 않는다.
+ *
+ * 공개 범위를 여기서 다시 판정하지 않는다. 서버가 계산한 `sourceVisible` 을 그대로 쓴다.
+ */
+function SubmissionLink({ submission }: { submission: SubmissionSummary }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <span className="text-xs">#{submission.id}</span>
+      {submission.sourceVisible ? null : (
+        <span className="text-[10px] text-ink-muted" title="코드는 작성자가 공개한 경우에만 보입니다">
+          코드 비공개
+        </span>
+      )}
+    </span>
   );
 }
