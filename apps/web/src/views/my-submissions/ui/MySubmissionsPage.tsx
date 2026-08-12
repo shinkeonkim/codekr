@@ -67,7 +67,7 @@ function SubmissionList() {
               {
                 key: "runtime",
                 header: "언어",
-                hideOnMobile: true,
+                hideBelow: "sm",
                 render: (submission) => (
                   <span className="whitespace-nowrap text-xs text-ink-muted">{submission.runtimeId}</span>
                 ),
@@ -80,7 +80,7 @@ function SubmissionList() {
               {
                 key: "cost",
                 header: "시간 · 메모리",
-                hideOnMobile: true,
+                hideBelow: "sm",
                 align: "right",
                 render: (submission) =>
                   submission.status === "COMPLETED" ? (
@@ -94,7 +94,7 @@ function SubmissionList() {
               {
                 key: "createdAt",
                 header: "제출 시각",
-                hideOnMobile: true,
+                hideBelow: "sm",
                 align: "right",
                 render: (submission) => (
                   <span className="whitespace-nowrap text-xs text-ink-muted">

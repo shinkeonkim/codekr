@@ -32,6 +32,6 @@ export type {
   Testcase,
   TestcaseVisibility,
 } from "./model/types";
-export { ProblemStatsCell, ProblemStatsSummary, acceptanceLabel } from "./ui/ProblemStatsView";
+export { ProblemStatsSummary, acceptanceLabel, solverLabel } from "./ui/ProblemStatsView";
 export { RuntimeLimitNotice } from "./ui/RuntimeLimitNotice";
 export { TierBadge } from "./ui/TierBadge";

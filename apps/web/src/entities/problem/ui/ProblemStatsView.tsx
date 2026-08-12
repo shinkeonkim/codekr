@@ -6,16 +6,18 @@ export function acceptanceLabel(stats: ProblemStats): string {
   return `${Math.round(stats.acceptanceRate * 100)}%`;
 }
 
-/** 목록 한 칸에 들어가는 압축 표시. */
-export function ProblemStatsCell({ stats }: { stats: ProblemStats }) {
-  if (stats.submitterCount === 0) {
-    return <span className="whitespace-nowrap text-xs text-ink-muted">아직 없음</span>;
-  }
-  return (
-    <span className="whitespace-nowrap text-xs text-ink-muted">
-      {stats.solverCount}/{stats.submitterCount}명 · {acceptanceLabel(stats)}
-    </span>
-  );
+/**
+ * 맞은 사람 수 표시.
+ *
+ * 아무도 제출하지 않았으면 `0` 이 아니라 `-` 다 — 정답률과 같은 규칙이고(#84), 목록에서
+ * "아무도 안 풀었다" 와 "다들 틀렸다" 가 같은 값으로 보이면 안 된다.
+ *
+ * "아직 없음" 같은 문장 대신 `-` 인 이유: 열로 나뉜 뒤에는(#193) 이 칸이 세로로 비교되는데,
+ * 한 줄만 길어지면 축이 흔들린다.
+ */
+export function solverLabel(stats: ProblemStats): string {
+  if (stats.submitterCount === 0) return "-";
+  return stats.solverCount.toLocaleString("ko-KR");
 }
 
 /** 문제 상세의 통계 묶음. */

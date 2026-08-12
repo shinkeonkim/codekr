@@ -1,12 +1,23 @@
 import type { ReactNode } from "react";
+import type { Align, Breakpoint } from "./tableCell";
+import { cellClass } from "./tableCell";
 import { cellTarget } from "./tableLink";
 
 export interface Column<T> {
   key: string;
   header: string;
-  /** 좁은 화면에서 숨긴다. 목록에서 판단에 꼭 필요하지 않은 열에 쓴다. */
-  hideOnMobile?: boolean;
-  align?: "left" | "right";
+  /**
+   * 이 폭보다 좁으면 감춘다 (#193).
+   *
+   * **좁은 화면에 남는 열은 셋까지다.** 넷째부터는 한 줄이 접혀서 오히려 못 읽는다.
+   * 그래서 고르는 데 꼭 필요한 열만 남기고, 판단을 돕는 열은 `sm`, 참고용 수치는 `lg`.
+   */
+  hideBelow?: Breakpoint;
+  /**
+   * 값이 균일한 수치 열은 `center` 로 둔다 (#193) — 세로로 비교되려면 축이 맞아야 한다.
+   * 길이가 제각각인 텍스트는 왼쪽 그대로다. 가운데로 몰면 줄마다 시작점이 흔들린다.
+   */
+  align?: Align;
   /**
    * 이 열만의 목적지 (#197).
    *
@@ -49,9 +60,7 @@ export function Table<T>({ columns, rows, rowKey, href }: Props<T>) {
               <th
                 key={column.key}
                 scope="col"
-                className={`px-4 py-2.5 text-xs font-medium text-ink-muted ${
-                  column.align === "right" ? "text-right" : ""
-                } ${column.hideOnMobile ? "hidden sm:table-cell" : ""}`}
+                className={`px-4 py-2.5 text-xs font-medium text-ink-muted ${cellClass(column)}`}
               >
                 {column.header}
               </th>
@@ -67,9 +76,7 @@ export function Table<T>({ columns, rows, rowKey, href }: Props<T>) {
               {columns.map((column, index) => (
                 <td
                   key={column.key}
-                  className={`px-4 py-3 ${column.align === "right" ? "text-right" : ""} ${
-                    column.hideOnMobile ? "hidden sm:table-cell" : ""
-                  }`}
+                  className={`px-4 py-3 ${cellClass(column)}`}
                 >
                   {/* 행 전체를 <a> 로 감싸면 HTML 이 깨지므로 칸 단위로 링크를 만든다. */}
                   <CellContent column={column} row={row} rowHref={index === 0 ? href : undefined} />
