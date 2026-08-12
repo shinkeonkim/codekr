@@ -87,6 +87,16 @@ executor:
   #
   # 켜면 위 `runtimeRegistry` 호스트에만 적용된다. 다른 곳은 그대로 TLS 다.
   runtimeRegistryPlainHTTP: false
+  # 그 레지스트리로 나가는 길을 연다 (#251).
+  #
+  # 실행기의 egress 는 기본이 "DNS 와 채점 큐뿐" 이다. 레지스트리 규칙이 없으면
+  # **노드에 미리 받아 둔 이미지로만 채점이 된다** — 그리고 그 사실이 채점을 실제로
+  # 해 보기 전까지 드러나지 않는다.
+  #
+  # namespace 를 비우면 규칙을 만들지 않는다(바깥 레지스트리를 쓰는 환경).
+  runtimeRegistryEgress:
+    namespace: ""
+    port: 5000
   # 기동할 때 샌드박스 방어를 확인하고 나서 서비스한다 (#246).
   #
   # **자동 배포에는 사람이 `--self-test` 를 돌려 보는 단계가 없다.** 그래서 그 확인을
