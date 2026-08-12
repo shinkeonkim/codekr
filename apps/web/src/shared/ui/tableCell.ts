@@ -23,8 +23,17 @@ const HIDE_CLASS: Record<Breakpoint, string> = {
   lg: "hidden lg:table-cell",
 };
 
-export function cellClass(column: { align?: Align; hideBelow?: Breakpoint }): string {
-  return [ALIGN_CLASS[column.align ?? "left"], column.hideBelow ? HIDE_CLASS[column.hideBelow] : ""]
+export function cellClass(column: {
+  align?: Align;
+  hideBelow?: Breakpoint;
+  width?: string;
+}): string {
+  return [
+    ALIGN_CLASS[column.align ?? "left"],
+    column.hideBelow ? HIDE_CLASS[column.hideBelow] : "",
+    // 폭은 부르는 쪽이 온전한 클래스로 넘긴다. 여기서 조립하면 Tailwind 가 못 찾는다.
+    column.width ?? "",
+  ]
     .filter(Boolean)
     .join(" ");
 }

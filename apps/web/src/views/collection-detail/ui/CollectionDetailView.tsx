@@ -38,7 +38,7 @@ export function CollectionDetailView({
           </span>{" "}
           문제를 풀었습니다
         </p>
-        <div className="h-1.5 overflow-hidden rounded-full bg-line">
+        <div className="h-1.5 overflow-hidden rounded-full bg-border">
           <div className="h-full rounded-full bg-brand" style={{ width: `${progress}%` }} />
         </div>
       </Card>
