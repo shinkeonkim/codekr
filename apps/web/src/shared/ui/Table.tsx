@@ -27,6 +27,13 @@ export interface Column<T> {
    * `null` 을 돌려주면 그 행에서는 링크로 만들지 않는다.
    */
   href?: (row: T) => string | null;
+  /**
+   * 이 열의 폭을 고정하는 클래스 (`w-20` 등).
+   *
+   * **자릿수가 늘 때 옆 열이 밀리는 것을 막는다** (#288). 제출 번호처럼 값의 길이가
+   * 자라는 열에만 쓴다 — 글자 열에 폭을 박으면 잘린다.
+   */
+  width?: string;
   render: (row: T) => ReactNode;
 }
 
