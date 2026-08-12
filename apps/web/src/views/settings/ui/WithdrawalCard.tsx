@@ -3,7 +3,7 @@
 import { userApi } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { Button, Card, Input, useToast } from "@/shared/ui";
+import { BrandCharacter, Button, Card, Input, useToast } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -53,6 +53,8 @@ export function WithdrawalCard() {
 
       {open ? (
         <div className="space-y-2">
+          {/* 떠나는 자리다 (#261). 웃으며 축하하는 그림은 어울리지 않는다. */}
+          <BrandCharacter name="goodbye" size={200} className="mx-auto" />
           <p className="text-xs text-ink">
             확인을 위해 닉네임 <strong>{user.nickname}</strong> 을 입력하세요.
           </p>

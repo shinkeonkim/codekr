@@ -35,7 +35,7 @@ function MyCollections() {
 
       {collections.length === 0 ? (
         <EmptyState
-          mascot="laptop"
+          mascot="study"
           title="아직 문제집이 없습니다."
           description="풀 문제를 주제나 순서로 묶어 두면 다음에 무엇을 풀지 고르는 시간이 줄어듭니다."
         />

@@ -1,6 +1,6 @@
 # 브랜드 자산 (#261)
 
-원본은 별도 저장소(`codekr-asset`)에 있고, 여기 있는 것은 **화면용으로 줄인 사본**이다.
+원본은 이 저장소의 `assets/brand/` 에 있고(백업), 여기 있는 것은 **화면용으로 줄인 사본**이다.
 원본은 1254~1536px PNG 라 그대로 쓰면 첫 화면만 수 MB 가 된다.
 
 | 파일 | 출처 | 쓰는 곳 |
@@ -12,7 +12,16 @@
 | `character-fail.webp` | `character/11-fail.png` | 오답 판정 |
 | `character-celebration.webp` | `character/08-celebration.png` | (예약) 축하 |
 | `symbol-dark.webp` | `favicon/04-dark-circle.png` | 헤더 심벌 — **라이트 테마** |
-| `symbol-light.webp` | `favicon/05-white-circle.png` | 헤더 심벌 — **다크 테마** |
+| `symbol-light.webp` | `favicon/05-white-circle.png` | 좁은 자리 심벌 — **다크 테마** |
+| `state-not-found.webp` | `404.png` | 404 화면 (**장면 전체** — 가짜 버튼이 없다) |
+| `state-server-error.webp` | `500.png` | 오류 화면 (그림 속 "TRY AGAIN" 버튼은 잘라 냄) |
+| `state-forbidden.webp` | `403.png` | 어드민 접근 거부 (그림 속 "로그인 하기" 버튼은 잘라 냄) |
+| `state-welcome.webp` | `welcome.png` | 회원가입 화면 |
+| `state-goodbye.webp` | `goodbye.png` | 탈퇴 확인 |
+| `state-award.webp` | `award.png` | 랭킹·대회 빈 화면 |
+| `state-study.webp` | `study.png` | 문제집 빈 화면 |
+| `state-working.webp` | `working-in-progress.png` | 채점 진행 (가로로 납작한 구도) |
+| `mascot-cat.webp` | `cat1.png` | 알림 빈 화면 |
 | `wordmark.webp` | `logo/codekr-wordmark2.png` | 헤더·푸터 로고 |
 
 파비콘·앱 아이콘·OG 이미지는 Next 규약대로 `src/app/` 에 둔다

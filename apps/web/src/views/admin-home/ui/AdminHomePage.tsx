@@ -16,7 +16,7 @@ export function AdminHomePage() {
   const items = visibleNav(user?.roles ?? []);
 
   if (items.length === 0) {
-    return <EmptyState title="접근할 수 있는 어드민 구획이 없습니다." />;
+    return <EmptyState mascot="forbidden" title="접근할 수 있는 어드민 구획이 없습니다." />;
   }
 
   return (

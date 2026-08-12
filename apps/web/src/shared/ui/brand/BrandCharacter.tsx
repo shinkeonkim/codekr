@@ -19,6 +19,26 @@ const CHARACTERS = {
   fail: { src: "/brand/character-fail.webp", width: 480, height: 375 },
   /** 처음 맞힌 순간처럼 크게 축하할 때만. 자주 쓰면 축하가 아니게 된다. */
   celebration: { src: "/brand/character-celebration.webp", width: 480, height: 334 },
+
+  /*
+    상황 그림 (#261). 위의 다섯이 "표정" 이라면 아래는 **그 자리에만 쓰는 장면**이다.
+
+    원본에는 그림 안에 안내판과 버튼이 그려져 있었다 — 500 의 "TRY AGAIN", 403 의
+    "로그인 하기" 같은 것들. **그 부분은 잘라 냈다.** 눌리지 않는 버튼 그림은 함정이고,
+    안내 문구는 화면이 글자로 말해야 화면 폭과 스크린 리더에 대응한다.
+  */
+  /** 404 만 장면 전체를 쓴다 — 가짜 버튼이 없고, 표지판·안내판이 상황을 설명해 준다. */
+  notFound: { src: "/brand/state-not-found.webp", width: 520, height: 492 },
+  serverError: { src: "/brand/state-server-error.webp", width: 460, height: 671 },
+  forbidden: { src: "/brand/state-forbidden.webp", width: 460, height: 372 },
+  welcome: { src: "/brand/state-welcome.webp", width: 460, height: 473 },
+  goodbye: { src: "/brand/state-goodbye.webp", width: 460, height: 427 },
+  award: { src: "/brand/state-award.webp", width: 460, height: 347 },
+  study: { src: "/brand/state-study.webp", width: 520, height: 333 },
+  /** 가로로 납작한 구도라 진행 막대 옆에 놓아도 줄이 밀리지 않는다. */
+  working: { src: "/brand/state-working.webp", width: 560, height: 360 },
+  /** 고양이만. 사람이 들어가기엔 좁은 자리에 쓴다. */
+  cat: { src: "/brand/mascot-cat.webp", width: 320, height: 498 },
 } as const;
 
 export type BrandCharacterName = keyof typeof CHARACTERS;

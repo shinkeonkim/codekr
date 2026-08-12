@@ -3,7 +3,7 @@
 import { VERDICT_LABELS, verdictTone } from "@/entities/submission";
 import type { JudgeProgress } from "../model/useJudgeStream";
 import { formatMemory } from "@/shared/lib";
-import { Badge, Card } from "@/shared/ui";
+import { Badge, BrandCharacter, Card } from "@/shared/ui";
 import Link from "next/link";
 
 interface Props {
@@ -25,6 +25,14 @@ export function JudgeProgressPanel({ progress, pending = false }: Props) {
 
   return (
     <Card className="space-y-4 p-4">
+      {/*
+        채점이 도는 동안에만 그림을 둔다 (#261). 끝나면 결과가 주인공이라 치운다.
+        가로로 납작한 구도를 골랐다 — 정사각 그림을 넣으면 진행 막대가 아래로 밀린다.
+      */}
+      {progress.finished ? null : (
+        <BrandCharacter name="working" size={260} className="mx-auto" />
+      )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-ink">
           {progress.finished

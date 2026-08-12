@@ -9,7 +9,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
-import { Alert, Button, Card, Field, Input } from "@/shared/ui";
+import { Alert, BrandCharacter, Button, Card, Field, Input } from "@/shared/ui";
+import type { BrandCharacterName } from "@/shared/ui";
 
 export interface AuthFormField {
   name: string;
@@ -20,6 +21,13 @@ export interface AuthFormField {
 }
 
 interface Props {
+  /**
+   * 함께 보일 그림 (#261).
+   *
+   * **로그인 화면에는 두지 않는다.** 매번 지나는 길목이라 그림이 금방 지겨워지고,
+   * 여기서 하려는 일은 빨리 들어가는 것이다. 가입처럼 **한 번뿐인 자리**에만 둔다.
+   */
+  mascot?: BrandCharacterName;
   title: string;
   description: string;
   fields: AuthFormField[];
@@ -29,7 +37,7 @@ interface Props {
 }
 
 /** 로그인과 회원가입이 공유하는 폼. 다른 것은 필드 목록과 제출 동작뿐이다. */
-export function AuthForm({ title, description, fields, submitLabel, footer, onSubmit }: Props) {
+export function AuthForm({ mascot, title, description, fields, submitLabel, footer, onSubmit }: Props) {
   const router = useRouter();
   const { signIn } = useAuth();
   const [values, setValues] = useState<Record<string, string>>({});
@@ -64,6 +72,7 @@ export function AuthForm({ title, description, fields, submitLabel, footer, onSu
   return (
     <div className="mx-auto max-w-md py-8">
       <Card className="p-6">
+        {mascot ? <BrandCharacter name={mascot} size={200} className="mx-auto mb-2" /> : null}
         <h1 className="text-xl font-bold text-ink">{title}</h1>
         <p className="mt-1 text-sm text-ink-muted">{description}</p>
 

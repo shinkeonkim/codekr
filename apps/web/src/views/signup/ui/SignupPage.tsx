@@ -5,6 +5,7 @@ import { AuthForm } from "@/features/auth";
 export function SignupPage() {
   return (
     <AuthForm
+      mascot="welcome"
       title="회원가입"
       description="이메일과 비밀번호만 있으면 바로 시작할 수 있습니다."
       submitLabel="가입하고 시작하기"
