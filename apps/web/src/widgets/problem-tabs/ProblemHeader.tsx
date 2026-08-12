@@ -31,7 +31,15 @@ export function ProblemHeader({ problem, runtime }: Props) {
           <Badge tone="warn">{runtime.label} 전용 제한</Badge>
         ) : null}
       </div>
-      <h1 className="text-2xl font-bold text-ink">{problem.title}</h1>
+      {/*
+        `1000번: A + B` — 화면마다 다르게 적지 않는다 (#204). 표에서는 번호가 제 열을
+        갖고, 제목과 나란히 쓸 때는 이 형태다.
+      */}
+      <h1 className="text-2xl font-bold text-ink">
+        <span className="tabular-nums text-ink-muted">{problem.id}번</span>
+        <span className="text-ink-muted">: </span>
+        {problem.title}
+      </h1>
     </header>
   );
 }
