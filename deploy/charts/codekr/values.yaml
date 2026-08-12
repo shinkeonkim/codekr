@@ -107,6 +107,15 @@ executor:
   selfTestOnStart: true
   # 런타임 소켓 경로. containerd 노드 기준.
   runtimeSocket: /run/containerd/containerd.sock
+  # containerd 로 명령을 돌릴 때 쓰는 FIFO 를 둘 **노드 위의** 경로 (#256).
+  #
+  # **파드 안 경로로는 안 된다.** FIFO 는 실행기(클라이언트)와 containerd shim(호스트)이
+  # 함께 여는 파일이라, 양쪽이 같은 경로에서 같은 것을 봐야 한다. emptyDir 은 호스트에서
+  # 보이지 않고, 기본값(/run/containerd/fifo)은 소켓을 쓰려고 읽기 전용으로 마운트한
+  # 자리라 만들 수 없다 — 파드로 띄웠을 때만 드러나는 차이다.
+  #
+  # 비우면 설정하지 않는다(노드 위에서 그냥 돌리는 로컬·CI 경로).
+  fifoHostPath: /run/codekr/fifo
   # 샌드박스 구현. engine-api 또는 containerd (#68).
   # 값이 틀리면 실행기가 기동에서 실패한다 — 첫 제출에서 드러나지 않게.
   #

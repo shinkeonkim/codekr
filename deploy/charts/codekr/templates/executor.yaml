@@ -40,6 +40,9 @@ spec:
             - { name: EXECUTOR_CONCURRENCY, value: "{{ .Values.executor.concurrency }}" }
             # 기동 전에 방어를 확인한다 (#246). 통과하지 못하면 파드가 뜨지 않는다.
             - { name: EXECUTOR_SELF_TEST_ON_START, value: "{{ .Values.executor.selfTestOnStart }}" }
+            {{- if .Values.executor.fifoHostPath }}
+            - { name: CODEKR_CONTAINERD_FIFO_DIR, value: "{{ .Values.executor.fifoHostPath }}" }
+            {{- end }}
             {{- if and .Values.executor.runtimeRegistryPlainHTTP .Values.executor.runtimeRegistry }}
             # 클러스터 안 레지스트리는 TLS 가 없다 (#251). 이 호스트에만 적용된다.
             - { name: EXECUTOR_REGISTRY_PLAIN_HTTP, value: "{{ .Values.executor.runtimeRegistry }}" }
@@ -78,6 +81,10 @@ spec:
             - { name: seccomp, mountPath: /etc/codekr/seccomp }
             {{- end }}
             - { name: runtime-socket, mountPath: {{ .Values.executor.runtimeSocket }} }
+            {{- if .Values.executor.fifoHostPath }}
+            # 파드 안팎의 경로가 같아야 한다 — shim 이 호스트에서 같은 파일을 연다.
+            - { name: containerd-fifo, mountPath: {{ .Values.executor.fifoHostPath }} }
+            {{- end }}
             {{- if .Values.executor.runtimeRegistrySecret }}
             - { name: registry-auth, mountPath: /etc/codekr/registry, readOnly: true }
             {{- end }}
@@ -114,6 +121,13 @@ spec:
             # config.json 을 찾는다 (DOCKER_CONFIG 규약).
             items:
               - { key: .dockerconfigjson, path: config.json }
+        {{- end }}
+        {{- if .Values.executor.fifoHostPath }}
+        - name: containerd-fifo
+          hostPath:
+            path: {{ .Values.executor.fifoHostPath }}
+            # 노드에 없으면 만든다. 실행기가 root 로 돌므로 별도 권한 조정이 필요 없다.
+            type: DirectoryOrCreate
         {{- end }}
         - name: runtime-socket
           hostPath:
