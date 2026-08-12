@@ -86,7 +86,7 @@ func (j *SqlJudge) verdictOf(
 	// 실행 자체가 실패한 경우는 stdin/stdout 과 같게 읽는다 — 시간·메모리·인프라 실패의
 	// 뜻은 유형과 무관하다.
 	if result.Status != contract.StatusOK && result.Status != contract.StatusRuntimeError {
-		return VerdictOf(result, ""), result.Stderr
+		return VerdictOf(result, "", contract.CompareExact, 0), result.Stderr
 	}
 
 	expected, actual, found := contract.SplitSQLResults(result.Stdout)

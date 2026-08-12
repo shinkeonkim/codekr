@@ -157,7 +157,17 @@ export interface SqlSpec {
   ignoreRowOrder: boolean;
 }
 
+/** 출력 비교 방식 (#279). */
+export type OutputComparison = "EXACT" | "FLOAT";
+
+export const OUTPUT_COMPARISON_LABELS: Record<OutputComparison, string> = {
+  EXACT: "정확 일치",
+  FLOAT: "실수 오차 허용",
+};
+
 export interface AdminProblemDetail extends ProblemSummary {
+  outputComparison: OutputComparison;
+  floatEpsilon: number;
   problemKind: ProblemKind;
   /** SQL 유형이 아니면 null (#60). */
   sqlSpec: SqlSpec | null;

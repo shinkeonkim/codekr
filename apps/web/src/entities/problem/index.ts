@@ -11,7 +11,9 @@ export {
 } from "./model/labels";
 export { useProblem } from "./model/useProblem";
 export { PROBLEM_SORTS, SELECTABLE_KINDS } from "./model/types";
+export { OUTPUT_COMPARISON_LABELS } from "./model/types";
 export type {
+  OutputComparison,
   AdminProblemDetail,
   Difficulty,
   DifficultyStep,

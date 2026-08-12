@@ -150,11 +150,35 @@ type JudgeJob struct {
 	TimeLimitMs   int             `json:"timeLimitMs"`
 	MemoryLimitMb int             `json:"memoryLimitMb"`
 	Testcases     []JudgeTestcase `json:"testcases"`
+	// Comparison 은 출력 비교 방식 (#279). 빈 값이면 CompareExact 다 —
+	// 이 필드가 없던 시절에 큐에 들어간 작업이 남아 있을 수 있고, 전부 정확 일치였다.
+	Comparison string `json:"comparison,omitempty"`
+	// Epsilon 은 CompareFloat 일 때의 허용 오차. 절대·상대 중 **하나만 만족해도** 맞다.
+	Epsilon float64 `json:"epsilon,omitempty"`
 	// SQL 은 KindJudgeSQL 일 때만 실린다 (#60).
 	//
 	// 유형별 자료를 공통 필드에 섞지 않고 블록으로 나눈 이유: 유형이 늘어날 때
 	// 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
 	SQL *JudgeSQLSpec `json:"sql,omitempty"`
+}
+
+// 출력 비교 방식 (#279, ADR-0010).
+//
+// **문제 단위다.** 한 문제 안에서 케이스마다 정밀도가 다른 경우는 드물고, 케이스마다
+// 두면 어드민이 채워야 할 칸이 케이스 수만큼 늘어난다.
+const (
+	// CompareExact 는 지금까지의 동작 — 줄 끝 공백과 끝의 빈 줄만 무시하고 정확히 맞춘다.
+	CompareExact = "EXACT"
+	// CompareFloat 는 토큰마다 숫자로 읽히면 오차 안에서 비교한다.
+	CompareFloat = "FLOAT"
+)
+
+// ComparisonOf 는 빈 값을 CompareExact 로 읽는다. 옛 작업과 새 채점기를 잇는다.
+func (j JudgeJob) ComparisonOf() string {
+	if j.Comparison == "" {
+		return CompareExact
+	}
+	return j.Comparison
 }
 
 // JudgeSQLSpec 은 SQL 채점에 필요한 자료다 (#60).

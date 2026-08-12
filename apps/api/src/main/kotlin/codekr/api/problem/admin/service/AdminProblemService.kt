@@ -93,6 +93,8 @@ class AdminProblemService(
             timeLimitMs = request.timeLimitMs,
             memoryLimitMb = request.memoryLimitMb,
             judgePriority = request.judgePriority,
+            outputComparison = request.outputComparison,
+            floatEpsilon = request.floatEpsilon,
             published = request.published,
             createdBy = createdBy,
         ).apply {
@@ -127,6 +129,8 @@ class AdminProblemService(
             timeLimitMs = request.timeLimitMs
             memoryLimitMb = request.memoryLimitMb
             judgePriority = request.judgePriority
+            outputComparison = request.outputComparison
+            floatEpsilon = request.floatEpsilon
             published = request.published
             softDeleteTestcases()
             softDeleteTemplates()
