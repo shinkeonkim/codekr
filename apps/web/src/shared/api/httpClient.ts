@@ -39,6 +39,11 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const { method = "GET", body, auth = false, query } = options;
   const url = apiUrl(path);
   Object.entries(query ?? {}).forEach(([key, value]) => {
+    // 배열은 같은 이름으로 여러 번 붙인다 — 서버가 List<String> 으로 받는다 (#232).
+    if (Array.isArray(value)) {
+      value.filter((it) => it !== "").forEach((it) => url.searchParams.append(key, it));
+      return;
+    }
     if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
   });
 

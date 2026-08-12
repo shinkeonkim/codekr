@@ -59,4 +59,34 @@ class UserProfileRepository(private val jdbcClient: JdbcClient) {
             .groupBy({ it.first }, { it.second })
             .map { (tier, counts) -> SolvedByTier(tier, counts.sum()) }
             .sortedBy { it.tier.ordinal }
+
+    /**
+     * 태그별 푼 문제 수 (#232). 난이도 분포와 같은 자리에 놓인다.
+     *
+     * **태그가 없는 문제는 어디에도 세지 않는다.** 합계가 푼 문제 수와 다를 수 있는데,
+     * 그것이 사실이다 — "분류가 붙은 문제 중에서" 의 분포다.
+     */
+    fun solvedByTag(userId: Long): List<SolvedByTag> =
+        jdbcClient.sql(
+            """
+            SELECT t.slug, t.name, count(DISTINCT p.id) AS solved
+            FROM submissions s
+            JOIN problems p ON p.id = s.problem_id
+            JOIN problem_tags pt ON pt.problem_id = p.id
+            JOIN tags t ON t.id = pt.tag_id
+            WHERE s.user_id = :userId
+              AND s.deleted_at IS NULL
+              AND s.kind = 'USER'
+              AND s.verdict = 'ACCEPTED'
+              AND p.deleted_at IS NULL
+            GROUP BY t.slug, t.name
+            ORDER BY solved DESC, t.name
+            """,
+        )
+            .param("userId", userId)
+            .query { rs, _ -> SolvedByTag(rs.getString("slug"), rs.getString("name"), rs.getInt("solved")) }
+            .list()
 }
+
+/** 태그별 푼 문제 수 (#232). */
+data class SolvedByTag(val slug: String, val name: String, val solved: Int)

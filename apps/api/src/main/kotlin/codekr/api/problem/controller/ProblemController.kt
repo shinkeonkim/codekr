@@ -26,11 +26,13 @@ class ProblemController(private val problemService: ProblemService) {
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) category: ProblemCategory?,
         @RequestParam(required = false) tier: DifficultyTier?,
+        /** 태그 주소. 여러 번 넘기면 **모두** 붙은 문제만 나온다 (#232). */
+        @RequestParam(required = false) tag: List<String>?,
         @RequestParam(defaultValue = "LATEST") sort: ProblemSort,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
     ): PageResponse<ProblemSummaryResponse> {
-        val condition = ProblemSearchCondition(q, category, tier, sort, published = true)
+        val condition = ProblemSearchCondition(q, category, tier, tag.orEmpty(), sort, published = true)
         return problemService.search(condition, PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)))
     }
 
