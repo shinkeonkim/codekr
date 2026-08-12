@@ -3,6 +3,13 @@
 import { useState } from "react";
 
 /**
+ * 칸 한 변의 크기. **한 곳에서만 정한다** (#196).
+ *
+ * 감싸는 상자·버튼·빈 칸이 각자 크기를 들고 있으면 하나만 바뀌어도 격자가 어긋난다.
+ */
+export const CELL_SIZE = "h-3 w-3";
+
+/**
  * 활동 그래프의 칸 하나와 툴팁 (#133).
  *
  * 브라우저 기본 `title` 을 쓰지 않는 이유:
@@ -31,14 +38,22 @@ export function ActivityCell({
   const description = describe(label, submissions, solved);
 
   return (
-    <span className="relative inline-flex">
+    /*
+      **블록 상자다.** `inline-flex` 였을 때 격자의 세로 간격이 벌어졌다 (#196) —
+      인라인 레벨 상자는 줄 기준선 위에 앉아서 `line-height` 만큼 아래에 여유가 생기고,
+      3px 격자에서는 그것이 눈에 띈다.
+
+      툴팁을 `absolute` 로 띄우려면 기준 상자가 필요한데, 그 상자가 레이아웃에
+      끼어들지 않아야 한다.
+    */
+    <span className={`relative block ${CELL_SIZE}`}>
       {/*
         button 인 이유: 키보드 포커스를 받아야 하고, 포커스에서도 툴팁이 떠야 한다.
         div + tabIndex 로도 되지만 그때는 역할을 따로 알려야 한다.
       */}
       <button
         type="button"
-        className={`h-3 w-3 rounded-sm ${levelClassName}`}
+        className={`block rounded-sm ${CELL_SIZE} ${levelClassName}`}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
