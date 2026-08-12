@@ -4,8 +4,6 @@ export type NotificationCategory = "JUDGE" | "CONTEST" | "SYSTEM";
 export interface NotificationCategoryOption {
   category: NotificationCategory;
   label: string;
-  /** false 면 끄기 스위치를 보여주지 않는다 (시스템 공지). */
-  mutable: boolean;
 }
 
 /**

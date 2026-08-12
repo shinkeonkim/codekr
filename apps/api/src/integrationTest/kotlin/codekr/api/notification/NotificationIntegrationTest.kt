@@ -17,8 +17,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 /** 웹 내 알림 (#106). */
 class NotificationIntegrationTest : IntegrationTestBase() {
@@ -64,42 +62,6 @@ class NotificationIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `수신을 끈 카테고리는 아예 만들지 않는다`() {
-        muteJudge()
-
-        val created = notificationService.notify(userId, NotificationCategory.JUDGE, "안 받을 알림")
-
-        assertFalse(created, "수신을 껐으면 만들지 않아야 합니다")
-        mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer $token"))
-            .andExpect(jsonPath("$.content.length()").value(0))
-    }
-
-    @Test
-    fun `수신을 껐다가 다시 켜도 그동안의 알림이 쏟아지지 않는다`() {
-        muteJudge()
-        notificationService.notify(userId, NotificationCategory.JUDGE, "껐을 때 온 것")
-
-        // 다시 켠다.
-        updateMuted("[]")
-        notificationService.notify(userId, NotificationCategory.JUDGE, "켠 뒤에 온 것")
-
-        // 껐던 기간의 일은 이미 지나간 일이다 — 만들어 두고 감추는 방식이면 여기서 2건이 된다.
-        mockMvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer $token"))
-            .andExpect(jsonPath("$.content.length()").value(1))
-            .andExpect(jsonPath("$.content[0].title").value("켠 뒤에 온 것"))
-    }
-
-    @Test
-    fun `시스템 알림은 끌 수 없다`() {
-        // 화면이 보내더라도 저장소가 걸러낸다.
-        updateMuted("""["SYSTEM"]""")
-
-        val created = notificationService.notify(userId, NotificationCategory.SYSTEM, "점검 안내")
-
-        assertTrue(created, "시스템 알림은 꺼지지 않아야 합니다")
-    }
-
-    @Test
     fun `모두 읽음 처리하면 미읽음이 0 이 된다`() {
         repeat(3) { notificationService.notify(userId, NotificationCategory.JUDGE, "알림 $it") }
 
@@ -111,25 +73,25 @@ class NotificationIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `대량 발송은 수신 거부자를 제외한다`() {
-        muteJudge()
-
+    fun `대량 발송은 받는 사람 수만큼 만든다`() {
+        // 수신 거부가 사라졌으므로(#199) 넘긴 사람은 모두 받는다.
         val created = notificationService.notifyAll(
             listOf(userId, otherId),
             NotificationCategory.JUDGE,
             "재채점 결과가 바뀌었습니다",
         )
 
-        assertEquals(1, created, "수신을 끈 사용자는 빠져야 합니다")
+        assertEquals(2, created)
     }
 
     @Test
-    fun `설정 응답이 끌 수 있는 카테고리를 알려준다`() {
+    fun `설정 응답이 카테고리 목록을 알려준다`() {
         mockMvc.perform(get("/api/v1/users/me/settings").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
             // 화면이 카테고리 목록을 하드코딩하지 않게 서버가 알려준다.
             .andExpect(jsonPath("$.notificationCategories.length()").value(NotificationCategory.entries.size))
-            .andExpect(jsonPath("$.mutedNotificationCategories.length()").value(0))
+            // 끄는 항목은 사라졌지만 목록은 남아야 한다 — 알림 탭이 이것으로 만들어진다 (#135, #199).
+            .andExpect(jsonPath("$.mutedNotificationCategories").doesNotExist())
     }
 
     @Test
@@ -202,14 +164,4 @@ class NotificationIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.byCategory.SYSTEM").value(0))
     }
 
-    private fun muteJudge() = updateMuted("""["JUDGE"]""")
-
-    private fun updateMuted(json: String) {
-        mockMvc.perform(
-            patch("/api/v1/users/me/settings")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"mutedNotificationCategories":$json}"""),
-        ).andExpect(status().isOk)
-    }
 }

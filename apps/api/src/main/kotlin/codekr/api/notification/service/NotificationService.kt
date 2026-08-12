@@ -4,7 +4,6 @@ import codekr.api.common.dto.PageResponse
 import codekr.api.notification.dto.NotificationResponse
 import codekr.api.notification.entity.Notification
 import codekr.api.notification.entity.NotificationCategory
-import codekr.api.notification.repository.NotificationMuteRepository
 import codekr.api.notification.repository.NotificationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Pageable
@@ -15,23 +14,19 @@ import java.time.Instant
 /**
  * 웹 내 알림 (#106).
  *
- * 알림을 만드는 쪽(재채점·대회 공지)은 이 서비스만 부른다. 수신 거부 확인과 저장 방식은
- * 여기 한 곳에 둔다 — 부르는 곳마다 확인하면 언젠가 빠뜨린다.
+ * 알림을 만드는 쪽(재채점·대회 공지)은 이 서비스만 부른다. 저장 방식은 여기 한 곳에 둔다.
  */
 @Service
 @Transactional(readOnly = true)
-class NotificationService(
-    private val notificationRepository: NotificationRepository,
-    private val muteRepository: NotificationMuteRepository,
-) {
+class NotificationService(private val notificationRepository: NotificationRepository) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
-     * 한 사람에게 알린다. 수신을 껐으면 **아무것도 만들지 않는다.**
+     * 한 사람에게 알린다.
      *
-     * 만들어 두고 감추는 방식이 아닌 이유: 나중에 다시 켰을 때 그동안의 알림이 쏟아진다.
-     * 껐던 기간의 일은 이미 지나간 일이다.
+     * **끄는 수단이 없다** (#199). 사용자 설정과 무관하게 항상 만들어진다 — 끌 수 있게
+     * 두었더니 끈 동안의 알림이 아예 만들어지지 않아 되돌릴 수 없었다.
      */
     @Transactional
     fun notify(
@@ -40,10 +35,8 @@ class NotificationService(
         title: String,
         body: String? = null,
         link: String? = null,
-    ): Boolean {
-        if (category in muteRepository.findMuted(userId)) return false
+    ) {
         notificationRepository.save(Notification(userId, category, title, body, link))
-        return true
     }
 
     /**
@@ -62,13 +55,12 @@ class NotificationService(
     ): Int {
         if (userIds.isEmpty()) return 0
 
-        val muted = muteRepository.findMutedBy(userIds, category)
-        val targets = userIds.distinct().filterNot { it in muted }
+        val targets = userIds.distinct()
         notificationRepository.saveAll(
             targets.map { Notification(it, category, title, body, link(it)) },
         )
 
-        log.info("알림 {}건 생성: category={} (수신 거부 {}명 제외)", targets.size, category, muted.size)
+        log.info("알림 {}건 생성: category={}", targets.size, category)
         return targets.size
     }
 

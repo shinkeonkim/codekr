@@ -47,7 +47,7 @@ abstract class IntegrationTestBase {
                      submission_testcase_results, submissions, problem_runtime_limits,
                      problem_sql_specs,
                      problem_templates, problem_testcases, problems,
-                     notifications, notification_mutes, rejudge_batches, user_daily_activity,
+                     notifications, rejudge_batches, user_daily_activity,
                      problem_tags, tags,
                      user_problem_scores, user_badges, user_roles, users
             RESTART IDENTITY CASCADE

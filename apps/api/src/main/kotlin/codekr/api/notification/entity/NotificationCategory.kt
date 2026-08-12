@@ -3,33 +3,27 @@ package codekr.api.notification.entity
 /**
  * 알림 카테고리 (#106).
  *
- * 종류별로 끄고 켤 수 있어야 한다. 하나로 뭉치면 필요한 알림까지 끄게 된다.
+ * **끄고 켜는 단위가 아니다** (#199). 종류별 수신 거부는 걷어냈다 — 끈 동안의 알림은
+ * 아예 만들어지지 않아 되돌릴 수 없었고, 같은 목적의 설정이 두 곳에 살았다.
+ *
+ * 지금 이 값이 하는 일은 **알림 목록의 탭을 나누는 것**이다 (#135). 화면이 카테고리를
+ * 하드코딩하지 않도록 서버가 이 목록과 라벨을 내려준다.
  */
-enum class NotificationCategory(val label: String, val mutable: Boolean) {
+enum class NotificationCategory(val label: String) {
     /** 재채점으로 내 제출 결과가 바뀜 등 (#107). */
-    JUDGE("채점", mutable = true),
+    JUDGE("채점"),
 
     /** 대회 공지, 질의 답변 (#63). */
-    CONTEST("대회", mutable = true),
+    CONTEST("대회"),
 
     /**
      * 내 공개 코드를 누가 읽었는지 (#136).
      *
-     * 채점에 얹지 않고 따로 둔 이유: 채점 알림은 **내 기록이 바뀐 것**이고 이것은
-     * **남이 내 것을 본 것**이다. 뜻이 다르면 끄고 켜는 단위도 달라야 한다.
+     * 채점과 따로 둔 이유: 채점 알림은 **내 기록이 바뀐 것**이고 이것은 **남이 내 것을
+     * 본 것**이다. 뜻이 다르면 목록에서도 나뉘어야 한다.
      */
-    SUBMISSION_VIEW("코드 열람", mutable = true),
+    SUBMISSION_VIEW("코드 열람"),
 
-    /**
-     * 점검·정책 변경. **끌 수 없다.**
-     *
-     * 서비스가 사용자에게 반드시 전해야 하는 것만 여기 넣는다. 끌 수 있게 하면
-     * "안 알려줬다" 와 "껐다" 를 구분할 수 없어진다.
-     */
-    SYSTEM("시스템", mutable = false),
-    ;
-
-    companion object {
-        val MUTABLE: List<NotificationCategory> = entries.filter { it.mutable }
-    }
+    /** 점검·정책 변경. */
+    SYSTEM("시스템"),
 }
