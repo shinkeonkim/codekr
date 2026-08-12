@@ -1,0 +1,107 @@
+{{- if .Values.predeployDump.enabled }}
+{{/*
+  배포 직전 DB 덤프 (#246).
+
+  **매니페스트를 되돌려도 스키마는 되돌아오지 않는다.** Flyway 는 앞으로만 가고
+  커뮤니티 판에는 undo 가 없다. 그래서 되돌릴 지점을 배포 **전에** 만들어 둔다.
+
+  ArgoCD PreSync 훅인 이유: CI 가 클러스터에 닿지 않아도 된다. 배포를 일으키는 것은
+  git 커밋 하나이고, 그 커밋이 적용되기 직전에 클러스터 안에서 덤프가 돈다.
+
+  **자동으로 복원하지는 않는다.** 복원은 그 사이에 쌓인 사용자 데이터를 지우는 일이라
+  사람이 판단해야 한다. 절차는 docs/09 §7 에 있다.
+*/}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: codekr-db-dumps
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+    # 덤프는 앱보다 오래 살아야 한다. 차트를 지워도 남긴다.
+    argocd.argoproj.io/sync-options: Delete=false
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  # 데이터 디렉터리는 Longhorn 이지만 **백업은 NFS 로 보낸다** — 용량이 그쪽에 있고,
+  # 클러스터가 무너져도 파일이 클러스터 밖에 남는다.
+  storageClassName: {{ .Values.predeployDump.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.predeployDump.size }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: codekr-db-predeploy-dump
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    # 다음 sync 가 시작될 때 앞의 잡을 지운다. 실패한 잡을 남겨 두면 무엇 때문에
+    # 배포가 멈췄는지 보러 갈 곳이 있다.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  # 덤프가 실패하면 배포도 멈춘다 — 되돌릴 지점 없이 스키마를 바꾸지 않는다.
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: codekr-db-predeploy-dump }
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 26
+        runAsGroup: 26
+        fsGroup: 26
+      containers:
+        - name: dump
+          # 서버와 같은 이미지를 쓴다. pg_dump 는 자기보다 새 서버를 덤프하지 못한다.
+          image: {{ .Values.predeployDump.image }}
+          command: [/bin/bash, -c]
+          args:
+            - |
+              set -euo pipefail
+              target="/dumps/${RELEASE_TAG}.dump"
+
+              # **같은 배포를 다시 sync 해도 덤프는 한 번뿐이다.** selfHeal 로 sync 가
+              # 자주 도는데 그때마다 뜨면 디스크만 찬다. 되돌릴 지점은 "그 배포 직전"
+              # 하나면 된다.
+              if [ -f "$target" ]; then
+                echo "이미 있는 덤프입니다: $target"
+                exit 0
+              fi
+
+              echo "덤프 시작: $target"
+              pg_dump --format=custom --no-owner --no-privileges --file="${target}.partial"
+              # 다 쓴 뒤에 이름을 바꾼다 — 중간에 죽은 파일이 온전한 덤프로 보이면 안 된다.
+              mv "${target}.partial" "$target"
+              ls -lh "$target"
+
+              # 오래된 덤프를 지운다. 남길 개수는 values 로 정한다.
+              cd /dumps
+              ls -1t *.dump 2>/dev/null | tail -n +$((KEEP + 1)) | xargs -r rm -v --
+          env:
+            - name: RELEASE_TAG
+              # 배포 태그가 곧 덤프 이름이다. 어느 배포 직전 상태인지가 이름에 드러난다.
+              value: {{ .Values.global.imageTag | quote }}
+            - name: KEEP
+              value: {{ .Values.predeployDump.keep | quote }}
+            - name: PGHOST
+              value: {{ .Values.postgres.host }}
+            - name: PGPORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: PGDATABASE
+              value: {{ .Values.postgres.database }}
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.postgres.secretName }}, key: CODEKR_DB_USERNAME }
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.postgres.secretName }}, key: CODEKR_DB_PASSWORD }
+          volumeMounts:
+            - { name: dumps, mountPath: /dumps }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { memory: 512Mi }
+      volumes:
+        - name: dumps
+          persistentVolumeClaim: { claimName: codekr-db-dumps }
+{{- end }}

@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [main]
+    # 배포 태그 커밋(아래 release 잡)이 CI 를 다시 돌리지 않게 한다 (#246).
+    # 그 커밋에는 이 파일 하나만 들어 있으므로, 이 제외 하나로 고리가 끊긴다.
+    paths-ignore:
+      - "deploy/charts/codekr/values-release.yaml"
 
 # 같은 브랜치에 새 커밋이 오면 진행 중이던 실행은 취소한다.
 concurrency:
@@ -230,3 +234,35 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/codekr-${{ matrix.app }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  release:
+    name: 배포 태그 갱신
+    needs: images
+    # 이미지가 실제로 올라간 뒤에만 태그를 적는다. 순서가 뒤집히면 매니페스트가
+    # 아직 없는 이미지를 가리키고, 클러스터는 ImagePullBackOff 로 멈춘다.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      # 같은 저장소에 커밋한다 — ArgoCD 가 이 저장소의 차트를 직접 읽기 때문이다 (#246).
+      # 다른 저장소였다면 홈랩 전체에 쓰기 권한을 가진 토큰이 필요했다.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 배포 태그를 이 커밋으로 적는다
+        run: |
+          set -euo pipefail
+          file=deploy/charts/codekr/values-release.yaml
+          # 주석(= 이 파일이 왜 있는지)은 남기고 값만 바꾼다.
+          sed -i "s|^  imageTag: .*|  imageTag: ${GITHUB_SHA}|" "$file"
+          git diff --quiet "$file" && { echo "태그가 이미 ${GITHUB_SHA} 입니다"; exit 0; }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$file"
+          git commit -m "chore(deploy): ${GITHUB_SHA:0:7} 배포 (#246)"
+          # 사람이 그사이 main 에 밀어 넣었을 수 있다. 덮어쓰지 않고 다시 시도한다.
+          for attempt in 1 2 3; do
+            git push && exit 0
+            git pull --rebase origin main
+          done
+          exit 1

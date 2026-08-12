@@ -79,6 +79,14 @@ executor:
   # 공급망**이다 — 태그는 다시 붙을 수 있어서, 우리가 검증한 것과 다른 것이 실행 노드에
   # 들어갈 수 있다. runtimes.yaml 의 digest 와 함께 써야 그 문제가 막힌다.
   runtimeRegistry: ""
+  # 기동할 때 샌드박스 방어를 확인하고 나서 서비스한다 (#246).
+  #
+  # **자동 배포에는 사람이 `--self-test` 를 돌려 보는 단계가 없다.** 그래서 그 확인을
+  # 기동에 붙인다 — 통과하지 못하면 파드가 뜨지 않고, 배포는 눈에 띄게 실패하며,
+  # 앞 버전이 계속 돈다. 뚫린 채로 채점을 받는 것보다 낫다.
+  #
+  # 대신 기동이 몇 초 늦고, 검사용 런타임 이미지를 받아야 한다.
+  selfTestOnStart: true
   # 런타임 소켓 경로. containerd 노드 기준.
   runtimeSocket: /run/containerd/containerd.sock
   # 샌드박스 구현. engine-api 또는 containerd (#68).
@@ -134,3 +142,27 @@ postgres:
   database: codekr
   # 자격증명은 SOPS 시크릿에서 온다.
   secretName: codekr-secrets
+
+# 배포 직전 DB 덤프 (#246).
+#
+# **되돌릴 지점이 없으면 되돌릴 수 없다.** 매니페스트를 되돌리면 이미지는 돌아오지만
+# 스키마는 돌아오지 않는다 — Flyway 는 앞으로만 가고 undo 가 없다.
+predeployDump:
+  enabled: true
+  # 서버와 같은 이미지. pg_dump 는 자기보다 새 서버를 덤프하지 못한다.
+  image: ghcr.io/cloudnative-pg/postgresql:18.4-system-trixie
+  # 데이터는 Longhorn 이지만 백업은 NFS 로 보낸다 — 용량이 그쪽에 있고,
+  # 클러스터가 무너져도 파일이 클러스터 밖에 남는다.
+  storageClass: nfs-mac
+  size: 5Gi
+  # 남길 덤프 개수. 되돌리는 대상은 보통 직전 한두 배포다.
+  keep: 10
+
+# 배포 후 검증 (#246).
+#
+# 자동 배포가 붙으면 아무도 확인하지 않는 배포가 된다. 사람이 하던 확인을 sync 뒤에
+# 자동으로 돌린다.
+postdeployVerify:
+  enabled: true
+  # wget 만 있으면 된다. 앱 이미지를 쓰지 않는 이유는 검증이 앱과 함께 깨지지 않게 하려는 것.
+  image: busybox:1.37
