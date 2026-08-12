@@ -100,7 +100,7 @@ describe("인라인 스크립트", () => {
     // 없다. 키를 한쪽만 바꾸면 고른 테마가 조용히 무시되고, 그 증상은 "가끔 번쩍인다"
     // 라서 원인을 짚기 어렵다.
     const source = await Bun.file(
-      new URL("../ui/ThemeScript.tsx", import.meta.url).pathname,
+      new URL("./ThemeScript.tsx", import.meta.url).pathname,
     ).text();
     expect(source).toContain(`"${THEME_STORAGE_KEY}"`);
   });

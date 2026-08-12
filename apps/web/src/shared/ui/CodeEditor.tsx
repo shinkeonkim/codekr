@@ -1,6 +1,6 @@
 "use client";
 
-import { useTheme } from "@/features/theme";
+import { useTheme } from "@/shared/theme";
 import Editor from "@monaco-editor/react";
 
 interface Props {

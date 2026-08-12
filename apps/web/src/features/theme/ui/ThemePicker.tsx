@@ -1,8 +1,7 @@
 "use client";
 
-import { THEME_LABELS } from "../model/theme";
-import type { Theme } from "../model/theme";
-import { useTheme } from "../model/ThemeProvider";
+import { THEME_LABELS, useTheme } from "@/shared/theme";
+import type { Theme } from "@/shared/theme";
 
 const OPTIONS: Theme[] = ["system", "light", "dark"];
 
