@@ -1,0 +1,74 @@
+{
+  "slug": "a-divided-by-b",
+  "title": "A ÷ B",
+  "category": "ALGORITHM",
+  "difficulty": "BRONZE_5",
+  "description": "두 정수 A와 B가 주어졌을 때, A ÷ B을 출력하는 프로그램을 작성하세요.\n\n입력을 읽고, 계산하고, 출력하는 것 자체를 익히는 문제입니다. **정답은 실수입니다.** 정수 몫이 아니라 실수 나눗셈을 출력하세요 — 몫으로 내면 음수에서 언어마다 답이 갈립니다.",
+  "inputDescription": "첫째 줄에 A와 B가 공백으로 구분되어 주어집니다. (-64 ≤ A, B ≤ 63, B ≠ 0)",
+  "outputDescription": "A ÷ B의 값을 실수로 출력합니다. 절대 오차 또는 상대 오차가 10^-6 이하이면 맞은 답으로 봅니다 — 3.5 로 내든 3.500000 으로 내든 됩니다.",
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "outputComparison": "FLOAT",
+  "floatEpsilon": 1e-06,
+  "published": true,
+  "testcases": [
+    {
+      "seq": 1,
+      "input": "7 2\n",
+      "expectedOutput": "3.5\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 2,
+      "input": "-7 2\n",
+      "expectedOutput": "-3.5\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 3,
+      "input": "63 1\n",
+      "expectedOutput": "63.0\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 4,
+      "input": "-64 1\n",
+      "expectedOutput": "-64.0\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 5,
+      "input": "1 63\n",
+      "expectedOutput": "0.015873015873015872\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 6,
+      "input": "-7 -2\n",
+      "expectedOutput": "3.5\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 7,
+      "input": "0 13\n",
+      "expectedOutput": "0.0\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 8,
+      "input": "-13 13\n",
+      "expectedOutput": "-1.0\n",
+      "visibility": "HIDDEN"
+    }
+  ],
+  "templates": [
+    {
+      "runtimeId": "python:3.13",
+      "sourceCode": "import sys\n\n\ndef main() -> None:\n    data = sys.stdin.read().split()\n    # 여기에 작성하세요\n\n\nmain()\n"
+    }
+  ],
+  "solution": {
+    "runtimeId": "python:3.13",
+    "sourceCode": "import sys\n\n\ndef main() -> None:\n    a, b = map(int, sys.stdin.read().split())\n    print(a / b)\n\n\nmain()\n"
+  }
+}
