@@ -8,6 +8,8 @@ import codekr.api.support.IntegrationTestBase
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
 import codekr.api.user.repository.UserRepository
+import java.time.Clock
+import java.time.LocalDate
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,6 +25,7 @@ import kotlin.test.assertEquals
 class SubmissionViewIntegrationTest : IntegrationTestBase() {
 
     @Autowired private lateinit var userRepository: UserRepository
+    @Autowired private lateinit var clock: Clock
     @Autowired private lateinit var tokenProvider: JwtTokenProvider
     @Autowired private lateinit var jdbcClient: JdbcClient
     @Autowired private lateinit var viewRepository: SubmissionViewRepository
@@ -134,7 +137,7 @@ class SubmissionViewIntegrationTest : IntegrationTestBase() {
         view(publicSubmission, viewerToken)
         view(second, viewerToken)
         // 어제 날짜로 옮겨 알림 대상이 되게 한다.
-        jdbcClient.sql("UPDATE submission_views SET viewed_on = current_date - 1").update()
+        moveViewsTo(seoulToday().minusDays(1))
 
         notifier.notifyYesterday()
 
@@ -149,13 +152,33 @@ class SubmissionViewIntegrationTest : IntegrationTestBase() {
     fun `오래된 기록은 지운다`() {
         enableNotification()
         view(publicSubmission, viewerToken)
-        jdbcClient.sql("UPDATE submission_views SET viewed_on = current_date - 90").update()
+        moveViewsTo(seoulToday().minusDays(90))
 
         notifier.purgeOld()
 
         // 알림을 만들고 나면 원자료가 할 일은 끝난다 (ADR-0007).
         assertEquals(0, viewCount())
     }
+
+    /**
+     * 열람 기록을 특정 날짜로 옮긴다 (#241).
+     *
+     * **`current_date` 를 쓰지 않는다.** PostgreSQL JDBC 드라이버는 세션 시간대를 클라이언트
+     * JVM 의 기본 시간대로 맞추므로, `current_date` 는 시험이 도는 기계의 시간대를 따른다.
+     * 앱은 서울 날짜로 찾는데(`SubmissionViewNotifier`), 러너가 UTC 면 서울 자정~오전 9시
+     * 사이에 하루가 어긋나 시험이 **하루 중 언제 도는지에 따라** 깨졌다.
+     */
+    private fun moveViewsTo(day: LocalDate) {
+        jdbcClient.sql("UPDATE submission_views SET viewed_on = :day").param("day", day).update()
+    }
+
+    /**
+     * 오늘. **앱이 보는 시계를 그대로 본다** (#241).
+     *
+     * 시간대를 여기에 다시 적지 않는다 — 적는 순간 앱과 시험이 각자의 기준을 갖게 되고,
+     * 그것이 이 시험을 깨뜨린 원인이었다.
+     */
+    private fun seoulToday(): LocalDate = LocalDate.now(clock)
 
     private fun enableNotification() {
         mockMvc.perform(

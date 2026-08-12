@@ -1,12 +1,12 @@
 package codekr.api.submission.view
 
-import codekr.api.activity.ActivityPolicy
 import codekr.api.notification.entity.NotificationCategory
 import codekr.api.notification.service.NotificationService
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.LocalDate
 
 /**
@@ -19,6 +19,12 @@ import java.time.LocalDate
 class SubmissionViewNotifier(
     private val viewRepository: SubmissionViewRepository,
     private val notificationService: NotificationService,
+    /**
+     * 오늘이 며칠인지 정하는 시계 (#241). 시간대를 이것이 들고 있다.
+     *
+     * 주입받는 이유: 날짜 경계에서만 나는 문제는 시계를 고정해야 재현된다.
+     */
+    private val clock: Clock,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -27,7 +33,7 @@ class SubmissionViewNotifier(
     @Scheduled(cron = "0 10 5 * * *", zone = "Asia/Seoul")
     @Transactional
     fun notifyYesterday() {
-        val day = LocalDate.now(ActivityPolicy.ZONE).minusDays(1)
+        val day = LocalDate.now(clock).minusDays(1)
         val counts = viewRepository.dailyViewerCounts(day)
         if (counts.isEmpty()) return
 
@@ -48,7 +54,7 @@ class SubmissionViewNotifier(
     @Scheduled(cron = "0 20 5 * * *", zone = "Asia/Seoul")
     @Transactional
     fun purgeOld() {
-        val removed = viewRepository.deleteOlderThan(LocalDate.now(ActivityPolicy.ZONE).minusDays(RETENTION_DAYS))
+        val removed = viewRepository.deleteOlderThan(LocalDate.now(clock).minusDays(RETENTION_DAYS))
         if (removed > 0) log.info("오래된 열람 기록 {}건 삭제", removed)
     }
 

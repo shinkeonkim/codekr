@@ -8,11 +8,16 @@ import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.LocalDate
 
 @Service
 @Transactional(readOnly = true)
-class ActivityService(private val activityRepository: UserDailyActivityRepository) {
+class ActivityService(
+    private val activityRepository: UserDailyActivityRepository,
+    /** 오늘의 기준 (#241). 스트릭은 "오늘" 이 언제냐에 따라 끊기고 이어진다. */
+    private val clock: Clock,
+) {
 
     /**
      * 활동 그래프와 스트릭.
@@ -27,7 +32,7 @@ class ActivityService(private val activityRepository: UserDailyActivityRepositor
      */
     fun streaksOf(userId: Long): Streaks {
         val activeDates = activityRepository.findActiveDates(userId)
-        val today = LocalDate.now(ActivityPolicy.ZONE)
+        val today = LocalDate.now(clock)
         return Streaks(
             current = StreakCalculator.current(activeDates, today),
             longest = StreakCalculator.longest(activeDates),
@@ -35,7 +40,7 @@ class ActivityService(private val activityRepository: UserDailyActivityRepositor
     }
 
     fun findActivity(userId: Long, from: LocalDate?, to: LocalDate?, year: Int? = null): ActivityResponse {
-        val today = LocalDate.now(ActivityPolicy.ZONE)
+        val today = LocalDate.now(clock)
         val (start, end) = resolveRange(from, to, year, today)
 
         if (start.isAfter(end)) {
