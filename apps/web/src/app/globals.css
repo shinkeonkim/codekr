@@ -3,28 +3,36 @@
 /*
  * 디자인 토큰. 색은 여기서만 정의하고 화면에서는 시맨틱 이름으로만 쓴다.
  * 라이트/다크 모두 같은 토큰 이름을 쓰므로 컴포넌트는 테마를 알 필요가 없다.
+ *
+ * **두 값을 `light-dark()` 로 한 줄에 적는다** (#206). 전에는 다크 팔레트가
+ * `@media (prefers-color-scheme: dark)` 안에 따로 있었는데, 미디어 쿼리는 OS 가
+ * 정하는 것이라 **사용자의 선택으로 이길 수 없었다.** 지금은 무엇을 쓸지 `color-scheme`
+ * 이 정하고, 그 값은 `:root[data-theme]` 로 바뀐다 — 즉 선택이 이긴다.
+ *
+ * 팔레트를 두 벌 적지 않아도 되는 것이 이 방식의 값이다. 토큰이 늘어날 때 한쪽만
+ * 고쳐지는 일이 구조적으로 생기지 않는다.
  */
 @theme {
-  --color-surface: #ffffff;
-  --color-surface-muted: #f6f7f9;
-  --color-border: #e4e7ec;
-  --color-ink: #14181f;
-  --color-ink-muted: #5b6472;
-  --color-brand: #2f5bea;
-  --color-brand-ink: #ffffff;
+  --color-surface: light-dark(#ffffff, #12151b);
+  --color-surface-muted: light-dark(#f6f7f9, #1a1f28);
+  --color-border: light-dark(#e4e7ec, #2a313d);
+  --color-ink: light-dark(#14181f, #eef1f6);
+  --color-ink-muted: light-dark(#5b6472, #98a2b3);
+  --color-brand: light-dark(#2f5bea, #7c9bff);
+  --color-brand-ink: light-dark(#ffffff, #0b0e13);
 
   /* 난이도 티어 색 (solved.ac 체계) */
-  --color-tier-bronze: #9c6644;
-  --color-tier-silver: #6b7684;
-  --color-tier-gold: #b78500;
-  --color-tier-platinum: #1a917f;
-  --color-tier-diamond: #1f6fd6;
-  --color-tier-ruby: #c2185b;
+  --color-tier-bronze: light-dark(#9c6644, #c08552);
+  --color-tier-silver: light-dark(#6b7684, #9aa5b4);
+  --color-tier-gold: light-dark(#b78500, #e5b100);
+  --color-tier-platinum: light-dark(#1a917f, #2bc4aa);
+  --color-tier-diamond: light-dark(#1f6fd6, #5ba4f5);
+  --color-tier-ruby: light-dark(#c2185b, #f2558a);
 
-  --color-ok: #0f8a4d;
-  --color-warn: #b7791f;
-  --color-danger: #c62f2f;
-  --color-info: #2f5bea;
+  --color-ok: light-dark(#0f8a4d, #4ade80);
+  --color-warn: light-dark(#b7791f, #fbbf24);
+  --color-danger: light-dark(#c62f2f, #f87171);
+  --color-info: light-dark(#2f5bea, #7c9bff);
 
   --radius-card: 0.75rem;
 
@@ -37,27 +45,44 @@
   --z-toast: 50;
 }
 
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-surface: #12151b;
-    --color-surface-muted: #1a1f28;
-    --color-border: #2a313d;
-    --color-ink: #eef1f6;
-    --color-ink-muted: #98a2b3;
-    --color-brand: #7c9bff;
-    --color-brand-ink: #0b0e13;
+/*
+ * 어느 쪽을 쓸지 정하는 곳 (#206).
+ *
+ * 기본은 `light dark` — **OS 를 따른다.** 자바스크립트가 없어도 여기까지는 동작한다.
+ * 고른 값이 있으면 `data-theme` 이 붙고, 그때부터 OS 설정은 보지 않는다.
+ *
+ * `color-scheme` 은 스크롤바·기본 폼 컨트롤 같은 **브라우저가 그리는 부분**의 색도
+ * 함께 바꾼다. 클래스로 색만 뒤집는 방식이었다면 그 부분이 따로 놀았을 것이다.
+ */
+:root {
+  color-scheme: light dark;
+}
 
-    --color-tier-bronze: #c08552;
-    --color-tier-silver: #9aa5b4;
-    --color-tier-gold: #e5b100;
-    --color-tier-platinum: #2bc4aa;
-    --color-tier-diamond: #5ba4f5;
-    --color-tier-ruby: #f2558a;
+:root[data-theme="light"] {
+  color-scheme: light;
+}
 
-    --color-ok: #4ade80;
-    --color-warn: #fbbf24;
-    --color-danger: #f87171;
-    --color-info: #7c9bff;
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/*
+ * `dark:` 유틸도 선택을 따라야 한다 (#206).
+ *
+ * 기본 정의는 `@media (prefers-color-scheme: dark)` 하나뿐이라 **OS 만 본다.**
+ * 토큰은 선택을 따르는데 `dark:hidden` 같은 유틸만 OS 를 따르면, 어둡게 골랐을 때
+ * 심벌 로고가 밝은 판으로 남는 식으로 어긋난다.
+ *
+ * 두 갈래다 — 고른 것이 dark 이거나, 고르지 않았는데(=시스템 따름) OS 가 dark 이거나.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
   }
 }
 

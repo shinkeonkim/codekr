@@ -7,6 +7,7 @@ import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
+import { ThemePicker } from "@/features/theme";
 import { WithdrawalCard } from "./WithdrawalCard";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, EmptyState, Select, useToast } from "@/shared/ui";
@@ -70,6 +71,16 @@ function SettingsView() {
             onChange={() => refresh()}
           />
         ) : null}
+      </Card>
+
+      <Card className="space-y-3 p-5">
+        <div>
+          <h2 className="text-sm font-semibold text-ink">화면 테마</h2>
+          <p className="mt-1 text-xs text-ink-muted">
+            이 기기에만 적용됩니다. 다른 기기에서는 따로 고릅니다.
+          </p>
+        </div>
+        <ThemePicker />
       </Card>
 
       <Card className="space-y-3 p-5">

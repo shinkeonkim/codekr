@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/features/auth";
+import { ThemeScript } from "@/shared/theme";
 import { ToastProvider, ToastViewport } from "@/shared/ui";
 import { AppShell } from "@/widgets/app-shell";
 import type { Metadata } from "next";
@@ -14,7 +15,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/*
+          고른 테마를 **첫 그림 전에** 바른다 (#206). 리액트가 붙은 뒤에 바르면
+          밝은 화면이 한 번 번쩍이고, 그것이 이 이슈에서 가장 까다로운 부분이었다.
+          `<html>` 의 속성이 서버 HTML 과 달라지므로 경고를 끈다 — 다른 것이 정상이다.
+        */}
+        <ThemeScript />
+      </head>
       {/*
         본문이 짧은 화면에서도 Footer 가 바닥에 붙어 있게 세로 flex 로 잡고 main 이
         남는 공간을 차지하게 한다 (#74). 페이지마다 여백을 넣어 맞추면 다음 페이지에서
