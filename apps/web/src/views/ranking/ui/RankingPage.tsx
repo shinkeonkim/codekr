@@ -78,7 +78,7 @@ export function RankingPage() {
       {entries.length === 0 && !error ? (
         <EmptyState mascot="award" title="아직 랭킹에 오른 사람이 없습니다." />
       ) : (
-        <Card className="divide-y divide-line p-0">
+        <Card className="divide-y divide-border p-0">
           {entries.map((entry) => (
             <RankingRow key={entry.nickname} entry={entry} metric={metric} />
           ))}
@@ -138,7 +138,7 @@ function Choices({
   if (options.length === 0) return null;
 
   return (
-    <div className="inline-flex rounded-lg border border-line p-0.5">
+    <div className="inline-flex rounded-lg border border-border p-0.5">
       {options.map((option) => (
         <button
           key={option.value}

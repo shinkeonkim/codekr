@@ -111,7 +111,7 @@ function NextTier({ profile }: { profile: UserProfile }) {
       <p className="text-xs text-ink-muted">
         다음 실력 티어까지 <span className="font-semibold text-ink">{remaining.toLocaleString()}점</span>
       </p>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
         <div
           className="h-full rounded-full bg-brand"
           style={{ width: `${Math.min(100, (profile.score / tier.nextLevelScore) * 100)}%` }}
@@ -133,7 +133,7 @@ function Badges({ profile }: { profile: UserProfile }) {
           <li
             key={badge.code}
             title={badge.description}
-            className="rounded-full border border-line px-3 py-1 text-xs text-ink"
+            className="rounded-full border border-border px-3 py-1 text-xs text-ink"
           >
             {badge.label}
           </li>
