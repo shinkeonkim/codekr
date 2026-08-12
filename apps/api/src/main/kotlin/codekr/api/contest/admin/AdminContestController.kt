@@ -1,5 +1,7 @@
 package codekr.api.contest.admin
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
 import codekr.api.contest.audit.ContestAuditService
@@ -34,14 +36,17 @@ class AdminContestController(
     private val auditService: ContestAuditService,
 ) {
 
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @GetMapping
     fun findAll(
         @PageableDefault(size = 20) pageable: Pageable,
     ): PageResponse<AdminContestResponse> = adminContestService.findAll(pageable)
 
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @GetMapping("/{id}")
     fun findDetail(@PathVariable id: Long): AdminContestResponse = adminContestService.findDetail(id)
 
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @PostMapping
     fun create(
         @RequestBody @Valid request: ContestUpsertRequest,
@@ -49,12 +54,14 @@ class AdminContestController(
     ): ResponseEntity<AdminContestResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(adminContestService.create(request, principal.userId))
 
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
         @RequestBody @Valid request: ContestUpsertRequest,
     ): AdminContestResponse = adminContestService.update(id, request)
 
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @PutMapping("/{id}/status")
     fun changeStatus(
         @PathVariable id: Long,
@@ -62,9 +69,11 @@ class AdminContestController(
     ): AdminContestResponse = adminContestService.changeStatus(id, status)
 
     /** 최종 순위 공개 (#86). 자동이 아니라 사람이 누른다. */
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @PostMapping("/{id}/unfreeze")
     fun unfreeze(@PathVariable id: Long): AdminContestResponse = adminContestService.unfreeze(id)
 
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @PutMapping("/{id}/problems/{problemId}/exclusion")
     fun excludeProblem(
         @PathVariable id: Long,
@@ -78,10 +87,12 @@ class AdminContestController(
      * **전체 목록을 내리지 않는다.** 운영자가 이유 없이 참가자의 IP 를 훑을 수 있게 되면
      * 그것은 감사가 아니라 감시다. 계정이 둘 이상 겹치는 주소만 보여준다.
      */
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @GetMapping("/{id}/audit/shared-addresses")
     fun sharedAddresses(@PathVariable id: Long): List<SharedAddress> =
         auditService.sharedAddresses(id)
 
+    @AdminApi(UserRole.CONTEST_MANAGER)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) = adminContestService.delete(id)

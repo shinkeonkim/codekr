@@ -1,5 +1,6 @@
 package codekr.api.storage
 
+import codekr.api.config.security.PublicApi
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import org.springframework.http.CacheControl
@@ -25,6 +26,7 @@ import java.time.Duration
 @RequestMapping("/api/v1/files")
 class StorageController(private val storage: ObjectStorage) {
 
+    @PublicApi
     @GetMapping("/{prefix}/{name}")
     fun get(@PathVariable prefix: String, @PathVariable name: String): ResponseEntity<ByteArray> {
         // 경로 조각을 그대로 키로 쓰므로 조각에 구분자가 섞이면 안 된다.

@@ -1,5 +1,6 @@
 package codekr.api.activity.controller
 
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.activity.dto.ActivityResponse
 import codekr.api.activity.service.ActivityService
 import codekr.api.auth.security.AuthPrincipal
@@ -21,6 +22,7 @@ class ActivityController(
     private val userRepository: UserRepository,
 ) {
 
+    @AuthenticatedApi
     @GetMapping("/me/activity")
     fun findMyActivity(
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate?,
@@ -36,6 +38,7 @@ class ActivityController(
      * 프로필(#83)과 같은 선을 따른다 — 로그인이 필요하고, 전체 제출 목록에 이미 담긴
      * 정보를 날짜별로 묶은 것이다. 프로필만 열고 활동을 막으면 그게 우회로가 된다.
      */
+    @AuthenticatedApi
     @GetMapping("/{nickname}/activity")
     fun findUserActivity(
         @PathVariable nickname: String,

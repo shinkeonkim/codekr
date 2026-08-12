@@ -1,5 +1,7 @@
 package codekr.api.problem.admin.controller
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
 import codekr.api.problem.admin.dto.AdminProblemDetailResponse
@@ -37,6 +39,7 @@ class AdminProblemController(
     private val verificationService: SolutionVerificationService,
 ) {
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @GetMapping
     fun search(
         @RequestParam(required = false) q: String?,
@@ -51,9 +54,11 @@ class AdminProblemController(
         return adminProblemService.search(condition, PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)))
     }
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @GetMapping("/{id}")
     fun findOne(@PathVariable id: Long): AdminProblemDetailResponse = adminProblemService.findDetail(id)
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
@@ -61,6 +66,7 @@ class AdminProblemController(
         principal: AuthPrincipal,
     ): ProblemCreatedResponse = adminProblemService.create(request, principal.userId)
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
@@ -71,11 +77,13 @@ class AdminProblemController(
      * 등록한 정답 코드로 전체 테스트케이스를 검증한다.
      * 진행 상황은 문제 상세의 `verification` 으로 확인한다 (사용자 제출과 같은 채점 큐를 쓴다).
      */
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @PostMapping("/{id}/verify")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun verify(@PathVariable id: Long, principal: AuthPrincipal): VerificationResponse =
         verificationService.verify(id, principal.userId)
 
+    @AdminApi(UserRole.PROBLEM_SETTER)
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) = adminProblemService.delete(id)

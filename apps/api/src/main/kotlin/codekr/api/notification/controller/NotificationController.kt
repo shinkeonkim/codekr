@@ -1,5 +1,6 @@
 package codekr.api.notification.controller
 
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
 import codekr.api.notification.dto.NotificationResponse
@@ -23,6 +24,7 @@ private const val MAX_PAGE_SIZE = 50
 @RequestMapping("/api/v1/notifications")
 class NotificationController(private val notificationService: NotificationService) {
 
+    @AuthenticatedApi
     @GetMapping
     fun findAll(
         @RequestParam(defaultValue = "false") unreadOnly: Boolean,
@@ -39,17 +41,20 @@ class NotificationController(private val notificationService: NotificationServic
             PageRequest.of(page.coerceAtLeast(0), size.coerceIn(1, MAX_PAGE_SIZE)),
         )
 
+    @AuthenticatedApi
     @GetMapping("/unread-count")
     fun unreadCount(principal: AuthPrincipal) = UnreadCountResponse(
         notificationService.unreadCount(principal.userId),
         notificationService.unreadCountByCategory(principal.userId),
     )
 
+    @AuthenticatedApi
     @PostMapping("/{id}/read")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun markRead(@PathVariable id: Long, principal: AuthPrincipal) =
         notificationService.markRead(principal.userId, id)
 
+    @AuthenticatedApi
     @PostMapping("/read-all")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun markAllRead(

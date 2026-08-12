@@ -1,5 +1,6 @@
 package codekr.api.submission.controller
 
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
 import codekr.api.submission.dto.RunRequest
@@ -38,10 +39,12 @@ private val SERVICE_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
 @RequestMapping("/api/v1")
 class SubmissionController(private val submissionService: SubmissionService) {
 
+    @AuthenticatedApi
     @PostMapping("/problems/{slug}/run")
     fun run(@PathVariable slug: String, @Valid @RequestBody request: RunRequest): RunResponse =
         submissionService.run(slug, request)
 
+    @AuthenticatedApi
     @PostMapping("/problems/{slug}/submissions")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun submit(
@@ -50,10 +53,12 @@ class SubmissionController(private val submissionService: SubmissionService) {
         principal: AuthPrincipal,
     ): SubmitResponse = submissionService.submit(slug, principal.userId, request)
 
+    @AuthenticatedApi
     @GetMapping("/submissions/{id}")
     fun findOne(@PathVariable id: Long, principal: AuthPrincipal): SubmissionDetailResponse =
         submissionService.findDetail(id, principal)
 
+    @AuthenticatedApi
     @PatchMapping("/submissions/{id}/visibility")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun changeVisibility(
@@ -65,6 +70,7 @@ class SubmissionController(private val submissionService: SubmissionService) {
     /**
      * 전체 회원의 제출 목록. 소스 코드는 담기지 않으며 공개 범위는 상세에서 적용된다 (#33).
      */
+    @AuthenticatedApi
     @GetMapping("/submissions/explore")
     fun explore(
         @RequestParam(required = false) problemSlug: String?,
@@ -95,6 +101,7 @@ class SubmissionController(private val submissionService: SubmissionService) {
         )
     }
 
+    @AuthenticatedApi
     @GetMapping("/submissions")
     fun findMine(
         @RequestParam(required = false) problemSlug: String?,

@@ -1,5 +1,7 @@
 package codekr.api.queue.controller
 
+import codekr.api.user.entity.UserRole
+import codekr.api.config.security.AdminApi
 import codekr.api.queue.dto.QueueStatusResponse
 import codekr.api.queue.service.QueueMonitorService
 import org.springframework.web.bind.annotation.GetMapping
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/queues")
 class AdminQueueController(private val queueMonitorService: QueueMonitorService) {
 
+    @AdminApi(UserRole.ADMIN)
     @GetMapping
     fun status(): QueueStatusResponse = queueMonitorService.status()
 }

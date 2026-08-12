@@ -1,5 +1,7 @@
 package codekr.api.contest.board
 
+import codekr.api.config.security.PublicApi
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -23,9 +25,11 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/contests/{slug}")
 class ContestBoardController(private val boardService: ContestBoardService) {
 
+    @PublicApi
     @GetMapping("/notices")
     fun notices(@PathVariable slug: String): List<NoticeResponse> = boardService.notices(slug)
 
+    @AuthenticatedApi
     @PostMapping("/notices")
     fun addNotice(
         @PathVariable slug: String,
@@ -33,6 +37,7 @@ class ContestBoardController(private val boardService: ContestBoardService) {
         principal: AuthPrincipal,
     ): NoticeResponse = boardService.addNotice(slug, principal, request)
 
+    @AuthenticatedApi
     @DeleteMapping("/notices/{noticeId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteNotice(
@@ -41,10 +46,12 @@ class ContestBoardController(private val boardService: ContestBoardService) {
         principal: AuthPrincipal,
     ) = boardService.deleteNotice(slug, noticeId, principal)
 
+    @PublicApi
     @GetMapping("/questions")
     fun questions(@PathVariable slug: String, principal: AuthPrincipal?): List<QuestionResponse> =
         boardService.questions(slug, principal)
 
+    @AuthenticatedApi
     @PostMapping("/questions")
     fun ask(
         @PathVariable slug: String,
@@ -52,6 +59,7 @@ class ContestBoardController(private val boardService: ContestBoardService) {
         principal: AuthPrincipal,
     ): QuestionResponse = boardService.ask(slug, principal, request)
 
+    @AuthenticatedApi
     @PutMapping("/questions/{questionId}/answer")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun answer(

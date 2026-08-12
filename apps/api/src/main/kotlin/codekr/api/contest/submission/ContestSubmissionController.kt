@@ -1,5 +1,6 @@
 package codekr.api.contest.submission
 
+import codekr.api.config.security.AuthenticatedApi
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.submission.dto.SubmitRequest
 import codekr.api.submission.dto.SubmitResponse
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/contests/{contestSlug}/problems/{problemSlug}/submissions")
 class ContestSubmissionController(private val contestSubmissionService: ContestSubmissionService) {
 
+    @AuthenticatedApi
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun submit(

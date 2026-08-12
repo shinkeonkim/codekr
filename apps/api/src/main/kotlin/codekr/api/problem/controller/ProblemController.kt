@@ -1,5 +1,6 @@
 package codekr.api.problem.controller
 
+import codekr.api.config.security.PublicApi
 import codekr.api.common.dto.PageResponse
 import codekr.api.problem.dto.ProblemDetailResponse
 import codekr.api.problem.dto.ProblemSummaryResponse
@@ -21,6 +22,7 @@ private const val MAX_PAGE_SIZE = 100
 @RequestMapping("/api/v1/problems")
 class ProblemController(private val problemService: ProblemService) {
 
+    @PublicApi
     @GetMapping
     fun search(
         @RequestParam(required = false) q: String?,
@@ -36,6 +38,7 @@ class ProblemController(private val problemService: ProblemService) {
         return problemService.search(condition, PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)))
     }
 
+    @PublicApi
     @GetMapping("/{slug}")
     fun findOne(@PathVariable slug: String): ProblemDetailResponse = problemService.findPublishedDetail(slug)
 }
