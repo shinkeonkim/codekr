@@ -16,7 +16,15 @@ kind: PersistentVolumeClaim
 metadata:
   name: codekr-db-dumps
   annotations:
+    # **이것도 PreSync 훅이다** (#250). 일반 리소스로 두었더니 Sync 단계에서 만들어져,
+    # 그보다 먼저 도는 덤프 훅이 없는 PVC 를 기다리며 Pending 으로 멈췄다.
+    # sync-wave 는 **같은 단계 안에서만** 순서를 정한다 — 단계를 가로지르지 못한다.
+    argocd.argoproj.io/hook: PreSync
+    # 훅 안에서의 순서: PVC(-2) 가 먼저, 덤프 잡(-1) 이 뒤.
     argocd.argoproj.io/sync-wave: "-2"
+    # **지우지 않는다.** 기본 정책(BeforeHookCreation)이면 sync 마다 PVC 가 새로 만들어져
+    # 되돌릴 지점이 매번 사라진다. 실패했을 때만 지운다 — Bound 된 PVC 는 실패하지 않는다.
+    argocd.argoproj.io/hook-delete-policy: HookFailed
     # 덤프는 앱보다 오래 살아야 한다. 차트를 지워도 남긴다.
     argocd.argoproj.io/sync-options: Delete=false
     helm.sh/resource-policy: keep
@@ -35,6 +43,8 @@ metadata:
   name: codekr-db-predeploy-dump
   annotations:
     argocd.argoproj.io/hook: PreSync
+    # PVC(-2) 가 Bound 된 뒤에 돈다 (#250).
+    argocd.argoproj.io/sync-wave: "-1"
     # 다음 sync 가 시작될 때 앞의 잡을 지운다. 실패한 잡을 남겨 두면 무엇 때문에
     # 배포가 멈췄는지 보러 갈 곳이 있다.
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
@@ -60,6 +70,14 @@ spec:
             - |
               set -euo pipefail
               target="/dumps/${RELEASE_TAG}.dump"
+
+              # **처음 설치할 때는 DB 가 아직 없다** (#250). CNPG Cluster 는 Sync 단계에서
+              # 만들어지는데 이 훅은 그보다 먼저 돈다. 그때는 되돌릴 데이터도 없으므로
+              # 막지 않고 넘어간다 — 실패로 두면 첫 설치가 영영 끝나지 않는다.
+              if ! pg_isready --timeout=10 >/dev/null 2>&1; then
+                echo "DB 에 닿지 못했습니다 ($PGHOST). 첫 설치로 보고 건너뜁니다."
+                exit 0
+              fi
 
               # **같은 배포를 다시 sync 해도 덤프는 한 번뿐이다.** selfHeal 로 sync 가
               # 자주 도는데 그때마다 뜨면 디스크만 찬다. 되돌릴 지점은 "그 배포 직전"
