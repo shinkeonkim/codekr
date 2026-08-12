@@ -134,10 +134,11 @@ class WithdrawalIntegrationTest : IntegrationTestBase() {
     fun `랭킹에서 빠진다`() {
         withdraw()
 
-        val optOut = jdbcClient.sql("SELECT ranking_opt_out FROM users WHERE id = :id")
-            .param("id", leaverId).query(Boolean::class.java).single()
+        // **컬럼이 아니라 랭킹 응답으로 확인한다** (#207). 전에는 ranking_opt_out 이 true 인지
+        // 봤는데, 그 컬럼이 사라져도 "탈퇴자가 순위에 남지 않는다" 는 지켜져야 한다.
         // 없는 사람이 순위에 있으면 눌렀을 때 갈 곳이 없다.
-        assertEquals(true, optOut)
+        mockMvc.perform(get("/api/v1/rankings"))
+            .andExpect(jsonPath("$.content[?(@.nickname == '떠나는이')]").isEmpty)
     }
 
     @Test

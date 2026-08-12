@@ -114,29 +114,6 @@ class SkillTierBadgeIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `랭킹을 끄면 목록에서 빠지지만 점수는 남는다`() {
-        problem(id = 1, level = 11)
-        accept(userId, 1)
-        mockMvc.perform(get("/api/v1/rankings")).andExpect(jsonPath("$.content.length()").value(1))
-
-        mockMvc.perform(
-            patch("/api/v1/users/me/settings")
-                .header("Authorization", "Bearer $token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"rankingOptOut":true}"""),
-        ).andExpect(status().isOk).andExpect(jsonPath("$.rankingOptOut").value(true))
-
-        mockMvc.perform(get("/api/v1/rankings"))
-            .andExpect(jsonPath("$.content.length()").value(0))
-            .andExpect(jsonPath("$.totalElements").value(0))
-
-        // 점수는 그대로다 — 껐다 켤 때 기록이 사라지면 끄기가 되돌릴 수 없는 선택이 된다.
-        mockMvc.perform(get("/api/v1/users/풀이왕").header("Authorization", "Bearer $token"))
-            .andExpect(jsonPath("$.score").value(93))
-            .andExpect(jsonPath("$.rank").doesNotExist())
-    }
-
-    @Test
     fun `월간 랭킹은 이번 달에 푼 것만 센다`() {
         problem(id = 1, level = 11)
         problem(id = 2, level = 11)

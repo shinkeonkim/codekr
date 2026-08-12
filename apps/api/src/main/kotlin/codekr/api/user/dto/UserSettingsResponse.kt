@@ -12,8 +12,6 @@ import codekr.api.user.entity.User
  */
 data class UserSettingsResponse(
     val defaultSubmissionVisibility: SubmissionVisibility,
-    /** true 면 랭킹 목록에 나오지 않는다 (#58). 점수는 계속 쌓인다. */
-    val rankingOptOut: Boolean,
     /**
      * 내 공개 코드를 누가 읽었는지 알림받을지 (#136). **기본은 끔.**
      *
@@ -27,7 +25,6 @@ data class UserSettingsResponse(
     companion object {
         fun of(user: User, muted: Set<NotificationCategory>) = UserSettingsResponse(
             defaultSubmissionVisibility = user.defaultSubmissionVisibility,
-            rankingOptOut = user.rankingOptOut,
             viewNotificationEnabled = user.viewNotificationEnabled,
             mutedNotificationCategories = muted,
             notificationCategories = NotificationCategory.entries.map {

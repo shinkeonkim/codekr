@@ -4,7 +4,6 @@ import codekr.api.ranking.dto.RankingEntry
 import codekr.api.ranking.entity.RankingMetric
 import codekr.api.ranking.entity.RankingPeriod
 import codekr.api.ranking.entity.SCORE_PROBLEM_LIMIT
-import codekr.api.user.entity.UserRole
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import java.time.Instant
@@ -119,22 +118,15 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
 }
 
 /**
- * 랭킹에 올라갈 사람의 조건 (#188).
+ * 랭킹에 올라갈 사람의 조건 (#207).
  *
- * **관리 권한을 가진 계정은 제외한다.** 출제자는 정답을 이미 알고 있고, 문제 검증 과정에서
- * 정답 제출이 저절로 쌓인다. 같은 표에 놓으면 랭킹의 뜻이 흐려진다.
+ * **탈퇴한 사람만 뺀다.** 없는 사람이 순위에 있으면 눌렀을 때 갈 곳이 없다.
  *
- * 역할이 하나라도 관리 영역(`UserRole.ADMIN_AREA`)에 들면 제외한다 — 화면에서 어드민을
- * 볼 수 있는 사람과 같은 기준이다. 기준이 두 벌이면 "어드민인데 랭킹에는 있는" 상태가 생긴다.
+ * 전에는 비참여 설정(#41)과 어드민(#188)도 함께 걸렀다. 둘 다 걷어냈다 —
+ * **빠진 사람이 있는 순위에서 "3위" 는 무엇의 3위인지 알 수 없다.** 어드민이 정답을 보고
+ * 푸는 것이 문제라면 그것은 운영 규율의 문제이지 순위표를 접을 이유가 아니다.
  *
  * 조건을 문자열 상수로 두는 이유: 세 질의(목록·건수·내 순위)가 **같은 조건**을 써야 한다.
  * 한 곳만 고치면 목록에는 없는데 "내 순위"에는 있는 사람이 생긴다.
  */
-private val RANKED_USER_FILTER =
-    """
-    u.ranking_opt_out = false
-      AND NOT EXISTS (
-          SELECT 1 FROM user_roles r
-          WHERE r.user_id = u.id AND r.role IN (${UserRole.ADMIN_AREA.joinToString { "'" + it.name + "'" }})
-      )
-    """.trimIndent()
+private val RANKED_USER_FILTER = "u.withdrawn_at IS NULL"

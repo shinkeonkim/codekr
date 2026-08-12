@@ -60,15 +60,6 @@ function SettingsView() {
     }
   };
 
-  const toggleRanking = async () => {
-    try {
-      setSettings(await userApi.updateSettings({ rankingOptOut: !settings!.rankingOptOut }));
-      toast.success("랭킹 설정을 저장했습니다.");
-    } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "랭킹 설정을 저장하지 못했습니다.");
-    }
-  };
-
   const change = async (visibility: SubmissionVisibility) => {
     setError(null);
     try {
@@ -165,26 +156,6 @@ function SettingsView() {
         </div>
       </Card>
 
-      <Card className="space-y-3 p-5">
-        <div>
-          <h2 className="text-sm font-semibold text-ink">랭킹</h2>
-          <p className="mt-1 text-xs text-ink-muted">
-            끄면 랭킹 목록과 프로필의 순위에 나오지 않습니다. 점수는 계속 쌓이므로
-            다시 켜면 그동안의 기록이 그대로 반영됩니다.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="min-w-20 text-sm text-ink">랭킹 참여</span>
-          <Button
-            variant={settings.rankingOptOut ? "secondary" : "primary"}
-            className="px-3 py-1 text-xs"
-            onClick={() => toggleRanking()}
-          >
-            {settings.rankingOptOut ? "꺼짐" : "켜짐"}
-          </Button>
-        </div>
-      </Card>
     </div>
   );
 }

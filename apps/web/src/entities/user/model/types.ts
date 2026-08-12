@@ -86,8 +86,6 @@ export interface UserSettings {
   mutedNotificationCategories: NotificationCategory[];
   /** 전체 카테고리와 라벨. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
   notificationCategories: NotificationCategoryOption[];
-  /** 켜면 랭킹 목록에서 빠진다 (#58). 점수는 계속 쌓인다. */
-  rankingOptOut: boolean;
   /**
    * 내 공개 코드를 누가 읽었는지 알림받을지 (#136). **기본은 끔.**
    *
