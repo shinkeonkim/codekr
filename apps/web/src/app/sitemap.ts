@@ -57,8 +57,10 @@ async function problemPaths(): Promise<string[]> {
       );
       if (!response.ok) break;
 
-      const body = (await response.json()) as { content: { slug: string }[]; totalPages: number };
-      paths.push(...body.content.map((problem) => `/problems/${problem.slug}`));
+      const body = (await response.json()) as { content: { id: number }[]; totalPages: number };
+      // **번호가 정본 주소다** (#204). 화면의 링크도 번호로 가므로 여기도 같아야 한다 —
+      // 크롤러가 sitemap 과 링크에서 다른 주소를 보면 같은 문서를 둘로 센다.
+      paths.push(...body.content.map((problem) => `/problems/${problem.id}`));
       if (page + 1 >= body.totalPages) break;
     }
     return paths;
