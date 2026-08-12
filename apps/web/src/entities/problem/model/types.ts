@@ -1,3 +1,5 @@
+import type { ProblemTag } from "@/entities/tag";
+
 // 검증 결과(ProblemVerification)는 "정답 코드를 제출해서 채점한 결과"라 제출 도메인의
 // 타입을 그대로 쓴다. 같은 개념을 문제 쪽에 복제하면 두 벌이 어긋난다.
 import type { SubmissionStatus, TestcaseResult, Verdict } from "@/entities/submission";
@@ -69,6 +71,8 @@ export interface ProblemDetail extends Omit<ProblemSummary, "published"> {
   examples: ProblemExample[];
   /** template 은 문제가 지정한 초기 코드이며, 없으면 런타임 기본값이 들어온다. */
   runtimes: Runtime[];
+  /** 알고리즘 분류 (#232). 화면에서 기본으로 접어 둔다 — 풀이 힌트가 된다. */
+  tags: ProblemTag[];
 }
 
 export type TestcaseVisibility = "PUBLIC" | "HIDDEN";
@@ -165,4 +169,6 @@ export interface AdminProblemDetail extends ProblemSummary {
   runtimeLimits: ProblemRuntimeLimit[];
   solution: ProblemSolution | null;
   verification: ProblemVerification | null;
+  /** 지금 붙어 있는 알고리즘 분류 (#232). */
+  tags: ProblemTag[];
 }

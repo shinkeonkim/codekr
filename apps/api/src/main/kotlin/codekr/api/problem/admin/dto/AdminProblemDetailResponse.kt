@@ -7,6 +7,7 @@ import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemSqlSpec
+import codekr.api.tag.dto.ProblemTagResponse
 
 /** 어드민 편집 화면용 상세 — 히든 테스트케이스와 언어별 초기 코드를 포함한다. */
 data class AdminProblemDetailResponse(
@@ -33,12 +34,15 @@ data class AdminProblemDetailResponse(
     val judgePriority: ProblemJudgePriority,
     val solution: SolutionResponse?,
     val verification: VerificationResponse?,
+    /** 지금 붙어 있는 태그 (#232). 편집 화면이 무엇을 고쳐야 할지 알려면 필요하다. */
+    val tags: List<ProblemTagResponse> = emptyList(),
 ) {
     companion object {
         fun from(
             problem: Problem,
             verification: VerificationResponse? = null,
             sqlSpec: ProblemSqlSpec? = null,
+            tags: List<ProblemTagResponse> = emptyList(),
         ) = AdminProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
@@ -62,6 +66,7 @@ data class AdminProblemDetailResponse(
             judgePriority = problem.judgePriority,
             solution = SolutionResponse.from(problem),
             verification = verification,
+            tags = tags,
         )
     }
 }

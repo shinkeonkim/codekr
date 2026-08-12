@@ -12,6 +12,7 @@ import codekr.api.problem.admin.dto.TestcaseRequest
 import codekr.api.problem.dto.ProblemStats
 import codekr.api.problem.dto.ProblemSummaryResponse
 import codekr.api.problem.repository.ProblemStatsRepository
+import codekr.api.tag.service.TagService
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemSqlSpec
@@ -32,6 +33,7 @@ class AdminProblemService(
     private val runtimeRegistry: RuntimeRegistry,
     private val verificationService: SolutionVerificationService,
     private val statsRepository: ProblemStatsRepository,
+    private val tagService: TagService,
     private val sqlSpecRepository: ProblemSqlSpecRepository,
 ) {
 
@@ -47,6 +49,7 @@ class AdminProblemService(
             problem,
             verificationService.findLatest(problem),
             sqlSpecRepository.findById(id).orElse(null),
+            tagService.tagsOf(id),
         )
     }
 
@@ -135,7 +138,14 @@ class AdminProblemService(
         problem.addTemplates(request.templates.map(TemplateRequest::toEntity))
         problem.addRuntimeLimits(request.runtimeLimits.map(RuntimeLimitRequest::toEntity))
         problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
-        return AdminProblemDetailResponse.from(problem, verificationService.findLatest(problem), upsertSqlSpec(problem.id, request))
+        // 태그는 이 요청으로 바뀌지 않지만, 응답에서 빠지면 편집 화면이 저장 직후 태그를
+        // 잃어버린 것처럼 보인다.
+        return AdminProblemDetailResponse.from(
+            problem,
+            verificationService.findLatest(problem),
+            upsertSqlSpec(problem.id, request),
+            tagService.tagsOf(problem.id),
+        )
     }
 
     /**

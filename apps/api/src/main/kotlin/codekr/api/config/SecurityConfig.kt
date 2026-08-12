@@ -68,6 +68,8 @@ class SecurityConfig(
                     .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                     .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/problems", "/api/v1/problems/*").permitAll()
+                    // 무엇으로 문제를 고를 수 있는지는 로그인 전에도 보여야 한다 (#232).
+                    .requestMatchers(HttpMethod.GET, "/api/v1/tags").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/runtimes").permitAll()
                     // 랭킹은 공개 정보다 (#57, #85).
                     .requestMatchers(HttpMethod.GET, "/api/v1/rankings", "/api/v1/rankings/*").permitAll()
@@ -105,7 +107,8 @@ class SecurityConfig(
                     // 대회 운영은 대회 관리자 이상 (#61, #103).
                     .requestMatchers("/api/v1/admin/contests/**")
                     .hasRole(UserRole.CONTEST_MANAGER.name)
-                    .requestMatchers("/api/v1/admin/problems/**")
+                    // 태그를 만들고 다는 것은 문제를 만드는 일의 일부다 (#232).
+                    .requestMatchers("/api/v1/admin/problems/**", "/api/v1/admin/tags/**")
                     .hasRole(UserRole.PROBLEM_SETTER.name)
                     .requestMatchers(
                         "/api/v1/admin/queues/**",
