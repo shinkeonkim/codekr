@@ -1,6 +1,6 @@
 import { BrandCharacter } from "./brand/BrandCharacter";
 import type { BrandCharacterName } from "./brand/BrandCharacter";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
 type Tone = "ok" | "danger" | "warn" | "info" | "muted";
 
@@ -67,10 +67,6 @@ export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInpu
 
 export function Textarea({ className = "", ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return <textarea {...props} className={`${CONTROL_CLASS} font-mono ${className}`} />;
-}
-
-export function Select({ className = "", ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={`${CONTROL_CLASS} ${className}`} />;
 }
 
 export function Alert({ tone = "danger", children }: { tone?: Tone; children: ReactNode }) {
