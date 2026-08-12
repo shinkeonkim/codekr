@@ -12,6 +12,7 @@ import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.repository.ProblemSearchCondition
 import codekr.api.problem.repository.ProblemSearchRepository
 import codekr.api.runtime.RuntimeRegistry
+import codekr.api.tag.service.TagService
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -23,6 +24,7 @@ class ProblemService(
     private val problemSearchRepository: ProblemSearchRepository,
     private val runtimeRegistry: RuntimeRegistry,
     private val statsRepository: ProblemStatsRepository,
+    private val tagService: TagService,
 ) {
 
     fun search(condition: ProblemSearchCondition, pageable: Pageable): PageResponse<ProblemSummaryResponse> {
@@ -42,6 +44,7 @@ class ProblemService(
             problem,
             runtimeRegistry.findFor(problem.problemKind),
             statsRepository.findOne(problem.id),
+            tagService.tagsOf(problem.id),
         )
     }
 

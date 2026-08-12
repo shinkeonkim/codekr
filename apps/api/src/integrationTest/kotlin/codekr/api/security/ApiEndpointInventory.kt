@@ -54,6 +54,7 @@ object ApiEndpointInventory {
         // --- 문제 (읽기는 공개) ---
         Endpoint("GET", "/api/v1/problems", Access.PUBLIC),
         Endpoint("GET", "/api/v1/problems/{slug}", Access.PUBLIC),
+        Endpoint("GET", "/api/v1/tags", Access.PUBLIC),
         Endpoint("GET", "/api/v1/runtimes", Access.PUBLIC),
         Endpoint("GET", "/api/v1/rankings", Access.PUBLIC),
         Endpoint("GET", "/api/v1/rankings/metrics", Access.PUBLIC),
@@ -124,6 +125,9 @@ object ApiEndpointInventory {
         Endpoint("POST", "/api/v1/admin/problems/{id}/verify", Access.ADMIN, UserRole.PROBLEM_SETTER),
         Endpoint("POST", "/api/v1/admin/problems/{id}/rejudge", Access.ADMIN, UserRole.PROBLEM_SETTER),
         Endpoint("GET", "/api/v1/admin/problems/{id}/rejudge", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("PUT", "/api/v1/admin/problems/{id}/tags", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("POST", "/api/v1/admin/tags", Access.ADMIN, UserRole.PROBLEM_SETTER),
+        Endpoint("PUT", "/api/v1/admin/tags/{id}", Access.ADMIN, UserRole.PROBLEM_SETTER),
         Endpoint("GET", "/api/v1/admin/queues", Access.ADMIN, UserRole.ADMIN),
         Endpoint("GET", "/api/v1/admin/executors", Access.ADMIN, UserRole.ADMIN),
         Endpoint("POST", "/api/v1/admin/executors/scale", Access.ADMIN, UserRole.ADMIN),

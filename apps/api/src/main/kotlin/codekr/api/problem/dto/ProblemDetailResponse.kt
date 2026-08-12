@@ -5,6 +5,7 @@ import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.runtime.RuntimeDefinition
+import codekr.api.tag.dto.ProblemTagResponse
 
 /**
  * 문제 상세. 히든 테스트케이스는 이 타입에 담기지 않으므로
@@ -27,9 +28,23 @@ data class ProblemDetailResponse(
     val stats: ProblemStats,
     val examples: List<ProblemExampleResponse>,
     val runtimes: List<ProblemRuntimeResponse>,
+    /**
+     * 알고리즘 분류 (#232).
+     *
+     * **답의 일부다.** "이 문제는 DP" 를 알고 푸는 것과 모르고 푸는 것은 다른 문제라,
+     * 화면은 기본으로 접어 두고 펼쳤을 때만 보여 준다. 서버가 내리지 않는 방식(푼 뒤에만
+     * 내려주기)은 택하지 않았다 — 그러면 "태그를 보려면 먼저 풀어야 한다" 가 되어,
+     * 태그로 공부할 문제를 고르는 일 자체가 불가능해진다.
+     */
+    val tags: List<ProblemTagResponse>,
 ) {
     companion object {
-        fun of(problem: Problem, runtimes: List<RuntimeDefinition>, stats: ProblemStats) = ProblemDetailResponse(
+        fun of(
+            problem: Problem,
+            runtimes: List<RuntimeDefinition>,
+            stats: ProblemStats,
+            tags: List<ProblemTagResponse>,
+        ) = ProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
             title = problem.title,
@@ -48,6 +63,7 @@ data class ProblemDetailResponse(
             runtimes = runtimes.map {
                 ProblemRuntimeResponse.of(it, problem.templateOf(it.id), problem.limitsFor(it.id))
             },
+            tags = tags,
         )
     }
 }

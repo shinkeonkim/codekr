@@ -1,6 +1,7 @@
 "use client";
 
 import { ProblemStatsSummary, RuntimeLimitNotice, useProblem } from "@/entities/problem";
+import { TagChips } from "@/entities/tag";
 import { Button, Card, EmptyState } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
@@ -22,6 +23,10 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
             <ProblemStatsSummary stats={problem.stats} />
           </div>
           <RuntimeLimitNotice problem={problem} />
+          {/* 접혀 있다 — 태그는 답의 일부다 (#232). */}
+          <div className="mt-2">
+            <TagChips tags={problem.tags} />
+          </div>
         </div>
         <Link href={`/problems/${slug}/solve`}>
           <Button>코드 작성하기</Button>

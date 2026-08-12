@@ -2,8 +2,10 @@
 
 import { problemApi } from "@/entities/problem";
 import type { ProblemVerification } from "@/entities/problem";
+import type { ProblemTag } from "@/entities/tag";
 import { ProblemForm, toFormValues } from "@/features/problem-editor";
 import type { ProblemFormValues } from "@/features/problem-editor";
+import { ProblemTagEditor } from "@/features/problem-tags";
 import { EmptyState } from "@/shared/ui";
 import { use, useEffect, useState } from "react";
 
@@ -16,6 +18,7 @@ export function AdminProblemEditPage({ params }: { params: Promise<{ id: string 
 function EditProblem({ id }: { id: number }) {
   const [initial, setInitial] = useState<ProblemFormValues | null>(null);
   const [verification, setVerification] = useState<ProblemVerification | null>(null);
+  const [tags, setTags] = useState<ProblemTag[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,6 +27,7 @@ function EditProblem({ id }: { id: number }) {
       .then((problem) => {
         setInitial(toFormValues(problem));
         setVerification(problem.verification);
+        setTags(problem.tags);
       })
       .catch(() => setError("문제를 불러오지 못했습니다."));
   }, [id]);
@@ -41,6 +45,8 @@ function EditProblem({ id }: { id: number }) {
         verification={verification}
         onSubmit={(values) => problemApi.update(id, values)}
       />
+      {/* 문제 본문과 따로 저장한다 — 이유는 ProblemTagEditor 주석에 있다 (#232). */}
+      <ProblemTagEditor problemId={id} initial={tags} />
     </div>
   );
 }
