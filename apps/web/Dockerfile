@@ -18,8 +18,15 @@ COPY apps/web ./
 # 로컬 개발만 web(:13000)과 api(:18080)의 출처가 달라 값을 넣는다 (compose.yml).
 ARG NEXT_PUBLIC_API_BASE_URL=""
 ARG NEXT_PUBLIC_WS_BASE_URL=""
+# `/api` 를 넘길 곳 (#314). **빌드 시점에 박힌다** — Next 는 rewrite 를 빌드 때
+# routes-manifest 에 굳히므로 실행 시 환경 변수로는 바꿀 수 없다.
+#
+# 운영에서는 이 값이 쓰이지 않는다. Ingress 가 `/api` 를 api 로 먼저 보내므로 web
+# 파드에는 그 요청이 오지 않는다.
+ARG API_INTERNAL_BASE_URL="http://api:8080"
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_WS_BASE_URL=$NEXT_PUBLIC_WS_BASE_URL
+ENV API_INTERNAL_BASE_URL=$API_INTERNAL_BASE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun run build
 

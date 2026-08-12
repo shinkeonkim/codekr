@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 /**
@@ -33,11 +36,30 @@ export function Avatar({
 }) {
   const shape = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${SIZES[size]}`;
 
-  if (avatarUrl) {
+  /*
+    **이미지가 실패하면 기본 표현으로 떨어진다** (#314).
+
+    전에는 `<img>` 를 그리고 끝이라, 주소가 틀리거나 저장소가 안 붙으면 깨진 이미지
+    아이콘이 목록마다 박혔다. 대신 고장이 눈에 덜 띄게 되는 대가가 있는데, 그것은
+    화면이 아니라 저장소 상태로 알아야 하는 것이라고 본다.
+
+    주소가 바뀌면 다시 시도해야 하므로 실패한 주소를 기억한다 — 단순한 불리언이면
+    새 아바타를 올린 뒤에도 계속 기본 표현으로 남는다.
+  */
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  if (avatarUrl && avatarUrl !== failedUrl) {
     return (
       // 서버가 정사각 PNG 로 다시 만들어 주므로(#115) 비율이 깨질 일이 없다.
+      // 옆에 늘 이름이 함께 있으므로(UserLink) 그림 자체는 장식이다 — alt 는 비운다.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={avatarUrl} alt="" aria-hidden className={`${shape} object-cover`} />
+      <img
+        src={avatarUrl}
+        alt=""
+        aria-hidden
+        className={`${shape} object-cover`}
+        onError={() => setFailedUrl(avatarUrl)}
+      />
     );
   }
 
