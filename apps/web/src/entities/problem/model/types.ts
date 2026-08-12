@@ -131,11 +131,35 @@ export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "QUIZ" | "MANUAL";
  * **방향은 기준마다 하나로 고정한다.** 오름/내림을 열면 값이 두 배가 되는데,
  * "제목 내림차순" 처럼 아무도 쓰지 않는 조합이 절반이다.
  */
-export type ProblemSort = "LATEST" | "TITLE" | "DIFFICULTY";
+export type ProblemSort =
+  | "LATEST"
+  | "OLDEST"
+  | "TITLE"
+  | "DIFFICULTY"
+  | "DIFFICULTY_DESC"
+  | "SOLVERS_DESC"
+  | "SOLVERS_ASC"
+  | "ACCEPTANCE_DESC"
+  | "ACCEPTANCE_ASC";
 
+/**
+ * 정렬 선택지 (#132, #205).
+ *
+ * **Select 하나에 다 넣는다.** 기준과 방향을 두 칸으로 나누면 "제목순 내림차순" 같은
+ * 뜻 없는 조합이 생기고, 주소에 남는 상태도 둘이 된다 (#132 의 규칙).
+ *
+ * 이름을 방향까지 말하도록 적는다 — `많이 풀린 순` 이 `맞은 사람 내림차순` 보다 짧고
+ * 무엇을 찾는지에 가깝다.
+ */
 export const PROBLEM_SORTS: { value: ProblemSort; label: string }[] = [
   { value: "LATEST", label: "최신순" },
+  { value: "OLDEST", label: "오래된순" },
   { value: "DIFFICULTY", label: "쉬운순" },
+  { value: "DIFFICULTY_DESC", label: "어려운순" },
+  { value: "SOLVERS_DESC", label: "많이 풀린 순" },
+  { value: "SOLVERS_ASC", label: "적게 풀린 순" },
+  { value: "ACCEPTANCE_DESC", label: "정답률 높은 순" },
+  { value: "ACCEPTANCE_ASC", label: "정답률 낮은 순" },
   { value: "TITLE", label: "제목순" },
 ];
 
