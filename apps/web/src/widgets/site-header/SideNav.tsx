@@ -53,7 +53,7 @@ export function SideNav({ open, onClose }: { open: boolean; onClose: () => void 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-header md:hidden">
+    <div className="fixed inset-0 z-header lg:hidden">
       {/* 바깥을 눌러 닫는다. 키보드 사용자에게는 Esc 가 같은 일을 하므로 초점을 주지 않는다. */}
       <button
         type="button"
