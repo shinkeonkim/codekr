@@ -6,7 +6,7 @@ import Link from "next/link";
  * 처음 온 사람에게 보이는 첫 화면 (#261, #231).
  *
  * **이미 쓰는 사람에게는 보이지 않는다.** 매일 오는 사람에게 소개는 지나가야 할 벽이다 —
- * 그 사람의 첫 화면은 "오늘 무엇을 할지" 여야 하고, 그것은 #231 의 몫이다.
+ * 그 사람의 첫 화면은 "오늘 무엇을 할지" 여야 하고, 그것은 WelcomeBack 이 맡는다.
  *
  * 그림 안의 글자(원본 히어로의 왼쪽 패널)는 쓰지 않는다. 화면 폭에 맞춰 줄이 바뀌지
  * 않고, 스크린 리더가 읽지 못하며, 문구를 고치려면 그림을 다시 그려야 한다.
@@ -14,7 +14,7 @@ import Link from "next/link";
  */
 export function Hero() {
   return (
-    <section className="grid items-center gap-8 pt-4 lg:grid-cols-[1fr_1.1fr] lg:gap-10">
+    <section className="grid items-center gap-8 pt-4 lg:grid-cols-[0.9fr_1.3fr] lg:gap-12">
       <div className="text-center lg:text-left">
         <h1 className="text-4xl font-bold tracking-tight text-ink sm:text-5xl">
           문제로 성장하는

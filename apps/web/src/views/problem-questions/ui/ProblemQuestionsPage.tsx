@@ -50,6 +50,7 @@ export function ProblemQuestionsPage({ params }: { params: Promise<{ slug: strin
       {result && result.content.length === 0 ? (
         // 첫 질문을 쓰게 만드는 자리다.
         <EmptyState
+          mascot="thinking"
           title="아직 질문이 없습니다."
           description="막힌 곳을 남겨 두면 같은 곳에서 막힌 다음 사람이 먼저 읽고 갑니다."
         />

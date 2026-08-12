@@ -1,6 +1,7 @@
 "use client";
 
 import { SiteHeader } from "@/widgets/site-header";
+import { SiteFooter } from "./SiteFooter";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -18,9 +19,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <>
       <SiteHeader />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-      <footer className="border-t border-border py-6 text-center text-xs text-ink-muted">
-        코드.kr · 오픈소스 코딩 테스트 플랫폼
-      </footer>
+      <SiteFooter />
     </>
   );
 }

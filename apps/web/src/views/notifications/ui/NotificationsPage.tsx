@@ -115,6 +115,7 @@ function NotificationList() {
 
       {result && result.content.length === 0 ? (
         <EmptyState
+          mascot="success"
           title={unreadOnly ? "안 읽은 알림이 없습니다." : "받은 알림이 없습니다."}
           description="채점 결과가 바뀌거나 대회 공지가 올라오면 여기에 표시됩니다."
         />

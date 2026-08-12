@@ -12,7 +12,7 @@ import type { Verdict } from "../model/types";
  *
  * alt 를 비운 이유: 바로 옆에 판정 뱃지가 같은 것을 글자로 말한다.
  */
-export function VerdictMascot({ verdict, size = 56 }: { verdict: Verdict | null; size?: number }) {
+export function VerdictMascot({ verdict, size = 88 }: { verdict: Verdict | null; size?: number }) {
   if (!verdict || verdict === "SYSTEM_ERROR") return null;
   return <BrandCharacter name={verdict === "ACCEPTED" ? "success" : "fail"} size={size} />;
 }

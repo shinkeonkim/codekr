@@ -97,9 +97,9 @@ export function EmptyState({
   mascot?: BrandCharacterName;
 }) {
   return (
-    <div className="rounded-card border border-dashed border-border px-6 py-12 text-center">
+    <div className="rounded-card border border-dashed border-border px-6 py-14 text-center">
       {mascot ? (
-        <BrandCharacter name={mascot} size={140} className="mx-auto mb-3 opacity-90" />
+        <BrandCharacter name={mascot} size={220} className="mx-auto mb-4" />
       ) : null}
       <p className="font-medium text-ink">{title}</p>
       {description ? <p className="mt-1 text-sm text-ink-muted">{description}</p> : null}

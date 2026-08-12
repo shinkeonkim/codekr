@@ -38,7 +38,7 @@ export function ContestListPage() {
       </header>
 
       {contests.length === 0 ? (
-        <EmptyState title="아직 열린 대회가 없습니다." />
+        <EmptyState mascot="thinking" title="아직 열린 대회가 없습니다." />
       ) : (
         <div className="space-y-2">
           {contests.map((contest) => (
