@@ -42,4 +42,19 @@ spec:
               app.kubernetes.io/component: redis
       ports:
         - { protocol: TCP, port: 6379 }
+    {{- with .Values.executor.runtimeRegistryEgress }}
+    {{- if .namespace }}
+    # 런타임 이미지를 받을 레지스트리 (#251).
+    #
+    # **이미지를 받는 주체는 노드의 컨테이너 런타임이 아니라 실행기 프로세스 자신이다.**
+    # containerd 클라이언트의 resolver 가 호출자 프로세스에서 HTTP 를 낸다 — 그래서
+    # 이 정책에 걸린다. 이 규칙이 없으면 노드에 미리 받아 둔 이미지로만 채점이 된다.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .namespace }}
+      ports:
+        - { protocol: TCP, port: {{ .port }} }
+    {{- end }}
+    {{- end }}
 {{- end }}

@@ -38,15 +38,11 @@ func (s *containerdSandbox) pull(ctx context.Context, ref string) (client.Image,
 		client.WithPullUnpack,
 		client.WithPullSnapshotter(defaultSnapshotter),
 	}
-	// 자격증명이 있을 때만 resolver 를 갈아 끼운다. 없으면 containerd 기본값(익명)이
-	// 그대로 돌아 공개 이미지 경로가 바뀌지 않는다.
-	if len(s.credentials) > 0 {
+	// 자격증명이나 평문 호스트가 있을 때만 resolver 를 갈아 끼운다. 둘 다 없으면
+	// containerd 기본값(익명·TLS)이 그대로 돌아 공개 이미지 경로가 바뀌지 않는다.
+	if registryOpts := s.registryOptions(); len(registryOpts) > 0 {
 		opts = append(opts, client.WithResolver(docker.NewResolver(docker.ResolverOptions{
-			Hosts: docker.ConfigureDefaultRegistries(
-				docker.WithAuthorizer(docker.NewDockerAuthorizer(
-					docker.WithAuthCreds(s.credentials.lookup),
-				)),
-			),
+			Hosts: docker.ConfigureDefaultRegistries(registryOpts...),
 		})))
 	}
 
@@ -56,6 +52,31 @@ func (s *containerdSandbox) pull(ctx context.Context, ref string) (client.Image,
 			full, credentialState(s.credentials, full), err)
 	}
 	return image, nil
+}
+
+/*
+registryOptions 는 레지스트리를 부르는 방법을 정한다 (#171, #251).
+
+자격증명과 평문 여부는 **호스트마다 다르다.** 공개 이미지는 익명·TLS 로, 홈랩 미러는
+자격증명과 평문으로 부를 수 있어야 한다 — 하나의 설정으로 뭉뚱그리면 둘 중 하나가 깨진다.
+*/
+func (s *containerdSandbox) registryOptions() []docker.RegistryOpt {
+	var opts []docker.RegistryOpt
+
+	if len(s.credentials) > 0 {
+		opts = append(opts, docker.WithAuthorizer(docker.NewDockerAuthorizer(
+			docker.WithAuthCreds(s.credentials.lookup),
+		)))
+	}
+
+	if hosts := plainHTTPHosts(); len(hosts) > 0 {
+		opts = append(opts, docker.WithPlainHTTP(func(host string) (bool, error) {
+			_, ok := hosts[host]
+			return ok, nil
+		}))
+	}
+
+	return opts
 }
 
 /*
