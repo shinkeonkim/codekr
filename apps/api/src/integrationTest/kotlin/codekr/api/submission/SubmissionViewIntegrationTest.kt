@@ -1,6 +1,5 @@
 package codekr.api.submission
 
-import codekr.api.activity.ActivityPolicy
 import codekr.api.auth.security.JwtTokenProvider
 import codekr.api.notification.entity.NotificationCategory
 import codekr.api.submission.view.SubmissionViewNotifier
@@ -9,6 +8,7 @@ import codekr.api.support.IntegrationTestBase
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
 import codekr.api.user.repository.UserRepository
+import java.time.Clock
 import java.time.LocalDate
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -25,6 +25,7 @@ import kotlin.test.assertEquals
 class SubmissionViewIntegrationTest : IntegrationTestBase() {
 
     @Autowired private lateinit var userRepository: UserRepository
+    @Autowired private lateinit var clock: Clock
     @Autowired private lateinit var tokenProvider: JwtTokenProvider
     @Autowired private lateinit var jdbcClient: JdbcClient
     @Autowired private lateinit var viewRepository: SubmissionViewRepository
@@ -171,8 +172,13 @@ class SubmissionViewIntegrationTest : IntegrationTestBase() {
         jdbcClient.sql("UPDATE submission_views SET viewed_on = :day").param("day", day).update()
     }
 
-    /** 앱이 날짜를 판단하는 기준과 같은 시간대다 (ActivityPolicy.ZONE). */
-    private fun seoulToday(): LocalDate = LocalDate.now(ActivityPolicy.ZONE)
+    /**
+     * 오늘. **앱이 보는 시계를 그대로 본다** (#241).
+     *
+     * 시간대를 여기에 다시 적지 않는다 — 적는 순간 앱과 시험이 각자의 기준을 갖게 되고,
+     * 그것이 이 시험을 깨뜨린 원인이었다.
+     */
+    private fun seoulToday(): LocalDate = LocalDate.now(clock)
 
     private fun enableNotification() {
         mockMvc.perform(
