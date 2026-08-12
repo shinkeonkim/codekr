@@ -18,6 +18,18 @@ const containerdNamespace = "codekr"
 // 기동 시 연결 확인에 주는 시간.
 const connectTimeout = 5 * time.Second
 
+/*
+이미지를 받는 데 허용하는 시간 (#258).
+
+**실행 예산과 분리한다.** 제출의 시간 제한은 사용자 코드가 도는 시간에 대한 약속이지,
+노드가 이미지를 내려받는 시간에 대한 것이 아니다.
+
+넉넉하게 잡는다. 큰 런타임(JDK·닷넷)은 수백 MB 이고, 이 기다림은 그 런타임을 이 노드에서
+처음 쓸 때 한 번뿐이다. 그래도 끝은 있어야 한다 — 레지스트리가 응답하지 않을 때
+채점 워커가 영영 붙잡혀 있으면 큐가 멈춘다.
+*/
+const pullTimeout = 5 * time.Minute
+
 // 스냅샷터. containerd 의 기본값이고, 노드마다 다르면 이미지가 풀리지 않는다.
 const defaultSnapshotter = "overlayfs"
 
@@ -93,14 +105,23 @@ func (s *containerdSandbox) Preflight(ctx context.Context) error {
 
 // Run 은 제출 하나를 격리된 컨테이너에서 실행한다.
 func (s *containerdSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) {
-	budget := lifetime(spec)
-	ctx, cancel := context.WithTimeout(s.withNamespace(ctx), budget)
-	defer cancel()
-
-	image, err := s.pull(ctx, spec.Image)
+	// **이미지 받기는 실행 예산 밖이다** (#258).
+	//
+	// 한 예산 안에서 함께 하면, 노드에 없는 이미지를 처음 받는 제출이 내려받는 시간
+	// 때문에 시간을 다 쓰고 시스템 오류가 된다 — 실제로 그랬다. 사용자는 자기 코드와
+	// 무관한 실패를 받고, 같은 코드를 다시 내면 통과한다.
+	//
+	// 이미지는 노드에 남으므로 이 기다림은 **런타임마다 한 번**이다.
+	pullCtx, cancelPull := context.WithTimeout(s.withNamespace(ctx), pullTimeout)
+	image, err := s.pull(pullCtx, spec.Image)
+	cancelPull()
 	if err != nil {
 		return Outcome{}, err
 	}
+
+	budget := lifetime(spec)
+	ctx, cancel := context.WithTimeout(s.withNamespace(ctx), budget)
+	defer cancel()
 
 	env := s.imageEnv(ctx, image)
 
