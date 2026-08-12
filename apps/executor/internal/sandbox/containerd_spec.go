@@ -6,7 +6,6 @@ package sandbox
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"runtime"
 	"strconv"
@@ -14,12 +13,10 @@ import (
 	"time"
 
 	"github.com/containerd/containerd/v2/client"
-	"github.com/containerd/containerd/v2/core/containers"
 	"github.com/containerd/containerd/v2/core/snapshots"
 	"github.com/containerd/containerd/v2/pkg/oci"
 	"github.com/containerd/platforms"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 func (s *containerdSandbox) create(
@@ -63,6 +60,7 @@ func (s *containerdSandbox) create(
 		withTmpfs(workDir, "mode=1777", "size=512m"),
 		withTmpfs("/tmp", "mode=1777", "size=256m"),
 		withCgroupNamespace(),
+		withCgroupfs(),
 	}
 	if s.seccompProfile != "" {
 		opts = append(opts, withSeccompProfile(s.seccompProfile))
@@ -107,59 +105,6 @@ func (s *containerdSandbox) create(
 }
 
 /*
-withNumericUser 는 UID/GID 를 spec 에 바로 넣는다.
-
-이미지의 /etc/passwd 를 보지 않는다 — 우리는 이미지에 없어도 되는 계정을 쓴다 (ADR-0003).
-*/
-func withNumericUser(uid, gid uint32) oci.SpecOpts {
-	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
-		if s.Process == nil {
-			s.Process = &specs.Process{}
-		}
-		s.Process.User = specs.User{UID: uid, GID: gid}
-		return nil
-	}
-}
-
-/*
-withTmpfs 는 쓰기 가능한 tmpfs 를 붙인다.
-
-읽기 전용 rootfs 위에서 작업 디렉터리만 열어 두는 방식이다 — 컴파일 산출물과 임시
-파일이 여기 쌓이고, 컨테이너와 함께 사라진다.
-*/
-func withTmpfs(target string, options ...string) oci.SpecOpts {
-	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
-		s.Mounts = append(s.Mounts, specs.Mount{
-			Destination: target,
-			Type:        "tmpfs",
-			Source:      "tmpfs",
-			Options:     append([]string{"nosuid", "nodev", "rw", "exec"}, options...),
-		})
-		return nil
-	}
-}
-
-/*
-withSeccompProfile 은 좁힌 프로파일을 건다 (#48).
-
-**엔진 API 구현과 같은 파일을 쓴다.** 두 구현이 다른 프로파일로 돌면 한쪽에서 통과한
-검증이 다른 쪽에서 뜻을 잃는다.
-*/
-func withSeccompProfile(profileJSON string) oci.SpecOpts {
-	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
-		var profile specs.LinuxSeccomp
-		if err := json.Unmarshal([]byte(profileJSON), &profile); err != nil {
-			return fmt.Errorf("seccomp 프로파일을 읽지 못했습니다: %w", err)
-		}
-		if s.Linux == nil {
-			s.Linux = &specs.Linux{}
-		}
-		s.Linux.Seccomp = &profile
-		return nil
-	}
-}
-
-/*
 targetPlatform 은 이미지를 고를 플랫폼이다.
 
 **언제나 linux 다.** 아키텍처는 클라이언트와 같다고 본다 — macOS(arm64)에서 개발할 때
@@ -187,32 +132,4 @@ func splitUser(value string, index int) uint32 {
 		return 0
 	}
 	return uint32(parsed)
-}
-
-/*
-withCgroupNamespace 는 컨테이너가 **자기 cgroup** 을 보게 한다 (#259).
-
-이것이 없으면 `/sys/fs/cgroup` 이 호스트의 cgroup 루트로 보인다. 루트에는 컨트롤러
-파일이 없어서, 래퍼 스크립트가 읽는 `memory.peak` 이 아예 존재하지 않는다 — 그래서
-홈랩에서 모든 제출의 메모리 사용량이 0 으로 기록됐다.
-
-엔진 API 구현에서는 같은 문제가 나지 않았다. 도커가 cgroup v2 호스트에서 이
-네임스페이스를 기본으로 켜기 때문이다. **두 구현을 같은 잣대로 보려면**(#68) 여기서도
-켜야 한다.
-
-격리도 함께 좋아진다 — 컨테이너가 호스트의 cgroup 구조를 들여다볼 수 없게 된다.
-*/
-func withCgroupNamespace() oci.SpecOpts {
-	return func(_ context.Context, _ oci.Client, _ *containers.Container, s *oci.Spec) error {
-		if s.Linux == nil {
-			s.Linux = &specs.Linux{}
-		}
-		for _, ns := range s.Linux.Namespaces {
-			if ns.Type == specs.CgroupNamespace {
-				return nil
-			}
-		}
-		s.Linux.Namespaces = append(s.Linux.Namespaces, specs.LinuxNamespace{Type: specs.CgroupNamespace})
-		return nil
-	}
 }
