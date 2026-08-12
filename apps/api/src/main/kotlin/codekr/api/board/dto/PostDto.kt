@@ -41,6 +41,7 @@ data class PostSummaryResponse(
     /** 댓글 수 (#138). 답이 달렸는지가 목록에서 보여야 질문 글이 쓸모가 있다. */
     val commentCount: Long = 0,
     /** 문제에 붙은 질문이면 그 문제. 목록에서 어느 문제의 질문인지 보여야 한다 (#139). */
+    val problemId: Long? = null,
     val problemSlug: String? = null,
     val problemTitle: String? = null,
 ) {
@@ -50,6 +51,7 @@ data class PostSummaryResponse(
             nickname: String,
             avatarUrl: String?,
             commentCount: Long = 0,
+            problemId: Long? = null,
             problemSlug: String? = null,
             problemTitle: String? = null,
         ) = PostSummaryResponse(
@@ -63,6 +65,7 @@ data class PostSummaryResponse(
             updatedAt = post.updatedAt,
             edited = post.updatedAt.isAfter(post.createdAt.plusSeconds(EDIT_GRACE_SECONDS)),
             commentCount = commentCount,
+            problemId = problemId,
             problemSlug = problemSlug,
             problemTitle = problemTitle,
         )

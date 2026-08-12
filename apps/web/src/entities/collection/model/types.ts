@@ -30,6 +30,8 @@ export interface CollectionSummary {
 }
 
 export interface CollectionProblem {
+  /** 문제 번호 (#204). 주소가 번호로 간다. */
+  id: number;
   slug: string;
   title: string;
   /** 화면이 난이도 뱃지를 그대로 쓰도록 티어가 아니라 난이도가 온다. */

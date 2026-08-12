@@ -23,6 +23,7 @@ export interface PostSummary {
   /** 댓글 수 (#138). */
   commentCount: number;
   /** 문제에 붙은 질문이면 그 문제 (#139). */
+  problemId: number | null;
   problemSlug: string | null;
   problemTitle: string | null;
 }

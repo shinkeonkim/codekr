@@ -166,6 +166,7 @@ class PostService(
             WithdrawnUser.nicknameOf(author),
             AvatarService.urlOf(WithdrawnUser.avatarKeyOf(author)),
             commentCount,
+            problem?.id,
             problem?.slug,
             problem?.title,
         )

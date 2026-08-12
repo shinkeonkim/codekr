@@ -61,7 +61,7 @@ export function CollectionDetailView({
         {detail.problems.map((problem, index) => (
           <Link
             key={problem.slug}
-            href={`/problems/${encodeURIComponent(problem.slug)}`}
+            href={`/problems/${problem.id}`}
             className="flex items-center gap-3 px-5 py-3 transition hover:bg-surface-muted"
           >
             <span className="w-6 text-xs tabular-nums text-ink-muted">{index + 1}</span>

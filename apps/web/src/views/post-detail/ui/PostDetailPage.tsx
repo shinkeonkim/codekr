@@ -54,7 +54,7 @@ function Detail({ id }: { id: number }) {
           <Badge tone={summary.board === "NOTICE" ? "info" : "muted"}>{summary.boardLabel}</Badge>
           {/* 어느 문제의 질문인지 보여야 한다 (#139). */}
           {summary.problemSlug ? (
-            <Link href={`/problems/${summary.problemSlug}`} className="text-xs text-brand underline">
+            <Link href={`/problems/${summary.problemId}`} className="text-xs text-brand underline">
               {summary.problemTitle}
             </Link>
           ) : null}

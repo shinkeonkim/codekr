@@ -49,7 +49,7 @@ export function StartHere() {
           {problems.map((problem) => (
             <Link
               key={problem.slug}
-              href={`/problems/${problem.slug}`}
+              href={`/problems/${problem.id}`}
               className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-surface-muted/40"
             >
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">

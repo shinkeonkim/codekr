@@ -29,6 +29,8 @@ export interface ContestSummary {
 export interface ContestProblem {
   /** 대회 안에서의 표기. A, B, C… */
   label: string;
+  /** 문제 번호 (#204). 주소가 번호로 간다. */
+  id: number;
   slug: string;
   title: string;
   score: number;

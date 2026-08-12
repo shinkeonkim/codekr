@@ -93,6 +93,7 @@ class ContestService(
             val problem = problems[assignment.problemId] ?: return@mapNotNull null
             ContestProblemResponse(
                 label = labelOf(assignment.seq),
+                id = problem.id,
                 slug = problem.slug,
                 title = problem.title,
                 score = assignment.score,

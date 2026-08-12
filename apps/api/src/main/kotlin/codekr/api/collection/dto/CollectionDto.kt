@@ -70,6 +70,8 @@ data class CollectionDetailResponse(
 )
 
 data class CollectionProblemResponse(
+    /** 문제 번호 (#204). 주소가 번호로 간다. */
+    val id: Long,
     val slug: String,
     val title: String,
     /** 화면이 난이도 뱃지를 그대로 쓰도록 티어가 아니라 난이도를 준다. */
