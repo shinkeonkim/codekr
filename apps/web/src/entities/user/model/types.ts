@@ -87,3 +87,22 @@ export interface UserSettings {
   /** 전체 카테고리와 라벨. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
   notificationCategories: NotificationCategoryOption[];
 }
+
+/** 어드민 회원 목록의 한 줄 (#223). id 와 이메일을 함께 보여 사람을 특정할 수 있게 한다. */
+export interface AdminUserSummary {
+  id: number;
+  email: string;
+  nickname: string;
+  roles: UserRole[];
+  createdAt: string;
+  /** 탈퇴한 회원이면 그 시각. 목록에서 기본으로 빠진다. */
+  withdrawnAt: string | null;
+}
+
+/** 한 사람의 상태를 한 화면에서 (#223). */
+export interface AdminUserDetail extends AdminUserSummary {
+  score: number;
+  solvedCount: number;
+  submissionCount: number;
+  lastSubmittedAt: string | null;
+}

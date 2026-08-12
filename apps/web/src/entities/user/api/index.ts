@@ -1,5 +1,13 @@
 import { ApiError, apiUrl, request, tokenStore } from "@/shared/api";
-import type { TokenResponse, User, UserProfile, UserSettings } from "../model/types";
+import type { Page } from "@/shared/api";
+import type {
+  AdminUserDetail,
+  AdminUserSummary,
+  TokenResponse,
+  User,
+  UserProfile,
+  UserSettings,
+} from "../model/types";
 
 function authHeader(): Record<string, string> {
   const token = tokenStore.read();
@@ -55,6 +63,27 @@ export const userApi = {
   withdraw: () => request<void>("/api/v1/users/me", { method: "DELETE", auth: true }),
 
   /** 보내지 않은 항목은 바뀌지 않는다 (#104). */
+  /** 어드민 회원 검색 (#223). 찾는 것은 ADMIN 까지 열린다. */
+  adminSearch: (query: {
+    q?: string;
+    role?: string;
+    // Query 는 문자열만 받는다 — 불리언을 넣으면 타입이 어긋난다.
+    includeWithdrawn?: string;
+    page?: number;
+    size?: number;
+  }) => request<Page<AdminUserSummary>>("/api/v1/admin/users", { auth: true, query }),
+
+  adminDetail: (id: number) =>
+    request<AdminUserDetail>(`/api/v1/admin/users/${id}`, { auth: true }),
+
+  /** 역할 변경 (#103). **최고 관리자만** — 서버가 막는다. */
+  replaceRoles: (id: number, roles: string[]) =>
+    request<string[]>(`/api/v1/admin/users/${id}/roles`, { method: "PUT", body: { roles }, auth: true }),
+
+  /** 강제 탈퇴 (#140). 되돌릴 수 없다 — 이메일·닉네임이 그 자리에서 지워진다. */
+  forceWithdraw: (id: number) =>
+    request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", auth: true }),
+
   updateSettings: (body: Partial<UserSettings>) =>
     request<UserSettings>("/api/v1/users/me/settings", { method: "PATCH", body, auth: true }),
 };

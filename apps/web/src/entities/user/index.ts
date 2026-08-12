@@ -1,5 +1,7 @@
 export { userApi } from "./api";
 export type {
+  AdminUserDetail,
+  AdminUserSummary,
   SolvedByTag,
   SolvedByTier,
   TokenResponse,
