@@ -11,7 +11,14 @@ export { ToastViewport } from "./toast/ToastViewport";
 export { Pagination } from "./Pagination";
 export { Table } from "./Table";
 export type { Column } from "./Table";
-export { Alert, Badge, Button, Card, EmptyState, Field, Input, Textarea } from "./primitives";
+export { Button, Card, EmptyState, Field } from "./primitives";
+// shadcn 기반으로 옮긴 잎 프리미티브 (#291 1단계).
+export { Alert } from "./alert";
+export { Badge } from "./badge";
+export type { BadgeTone } from "./badge";
+export { Input } from "./input";
+export { Label } from "./label";
+export { Textarea } from "./textarea";
 // 네이티브 `<select>` 자리를 그대로 이어받는 층 (#287). 새 화면은 아래 조각을 쓴다.
 export { SelectField as Select } from "./SelectField";
 export {
