@@ -42,6 +42,9 @@ interface SubmissionRepository : JpaRepository<Submission, Long> {
     /** 재채점 대상 (#107). 정답 검증 제출은 대상이 아니라 kind 로 거른다. */
     fun findByProblemIdAndKindAndDeletedAtIsNull(problemId: Long, kind: SubmissionKind): List<Submission>
 
+    /** 재채점 대상 수 (#219). 누르기 전에 몇 건인지 보여주려고 센다 — 목록까지 읽을 이유가 없다. */
+    fun countByProblemIdAndKindAndDeletedAtIsNull(problemId: Long, kind: SubmissionKind): Long
+
     /** 스위퍼가 오래 방치된 제출을 찾을 때 쓴다. */
     fun findByStatusInAndCreatedAtBefore(
         statuses: Collection<SubmissionStatus>,

@@ -10,6 +10,7 @@ import codekr.api.queue.JudgeJobFactory
 import codekr.api.queue.QueuePublisher
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.rejudge.dto.RejudgeResponse
+import codekr.api.rejudge.dto.RejudgeStatusResponse
 import codekr.api.rejudge.entity.RejudgeBatch
 import codekr.api.rejudge.entity.RejudgeSubmissionResult
 import codekr.api.rejudge.entity.UserRejudgeSummary
@@ -155,4 +156,24 @@ class RejudgeService(
     @Transactional(readOnly = true)
     fun findLatest(problemId: Long): RejudgeResponse? =
         batchRepository.findFirstByProblemIdOrderByIdDesc(problemId)?.let(RejudgeResponse::from)
+
+    /**
+     * 누르기 전에 보여줄 것 (#219).
+     *
+     * 대상 수를 **실행할 때와 같은 조건으로** 센다. 다른 조건으로 세면 화면이 보여준 수와
+     * 실제로 알림을 받는 사람 수가 달라진다.
+     */
+    @Transactional(readOnly = true)
+    fun status(problemId: Long): RejudgeStatusResponse {
+        if (!problemRepository.existsByIdAndDeletedAtIsNull(problemId)) {
+            throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
+        }
+        return RejudgeStatusResponse(
+            problemId = problemId,
+            targetCount = submissionRepository
+                .countByProblemIdAndKindAndDeletedAtIsNull(problemId, SubmissionKind.USER)
+                .toInt(),
+            latest = findLatest(problemId),
+        )
+    }
 }

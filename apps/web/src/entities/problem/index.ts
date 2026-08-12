@@ -32,6 +32,7 @@ export type {
   Testcase,
   TestcaseVisibility,
 } from "./model/types";
+export { ProblemPicker } from "./ui/ProblemPicker";
 export { ProblemStatsSummary, acceptanceLabel, solverLabel } from "./ui/ProblemStatsView";
 export { RuntimeLimitNotice } from "./ui/RuntimeLimitNotice";
 export { TierBadge } from "./ui/TierBadge";
