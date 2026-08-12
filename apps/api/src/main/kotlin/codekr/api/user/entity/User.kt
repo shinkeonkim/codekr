@@ -41,13 +41,6 @@ class User(
     @Column(name = "default_submission_visibility", nullable = false, length = 20)
     var defaultSubmissionVisibility: SubmissionVisibility = SubmissionVisibility.PRIVATE,
 
-    /**
-     * 랭킹 목록에서 빠진다 (#58).
-     *
-     * 점수는 그대로 쌓인다 — 껐다 켤 때 기록이 사라지면 끄기가 되돌릴 수 없는 선택이 된다.
-     */
-    @Column(name = "ranking_opt_out", nullable = false)
-    var rankingOptOut: Boolean = false,
 
     /**
      * 도달했던 최고 점수 (#58). 실력 티어는 이 값으로 정한다 — **강등이 없기 때문이다.**
@@ -123,8 +116,6 @@ class User(
         // 로그인을 막는 것과 별개로, 남은 비밀번호 해시도 쓸모가 없어야 한다.
         passwordHash = ""
         avatarKey = null
-        // 없는 사람이 순위에 있으면 눌렀을 때 갈 곳이 없다.
-        rankingOptOut = true
         viewNotificationEnabled = false
     }
 

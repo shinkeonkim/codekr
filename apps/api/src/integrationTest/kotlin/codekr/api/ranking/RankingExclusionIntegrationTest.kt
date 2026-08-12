@@ -19,10 +19,13 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 /**
- * 랭킹에서 빠지는 사람 (#188).
+ * 랭킹에서 빠지는 사람 (#207).
  *
- * **출제자는 정답을 이미 알고 있다.** 문제 검증 과정에서 정답 제출이 저절로 쌓이므로,
- * 같은 표에 놓으면 랭킹의 뜻이 흐려진다.
+ * **탈퇴한 사람만 빠진다.** 없는 사람이 순위에 있으면 눌렀을 때 갈 곳이 없다.
+ *
+ * 전에는 어드민(#188)과 비참여 설정(#41)도 걸렀는데 둘 다 걷어냈다 — 빠진 사람이 있는
+ * 순위에서 "3위" 는 무엇의 3위인지 알 수 없기 때문이다. 그래서 이 시험은 **어드민이
+ * 랭킹에 나오는지**를 확인한다. 전과 정반대다.
  */
 class RankingExclusionIntegrationTest : IntegrationTestBase() {
 
@@ -41,8 +44,8 @@ class RankingExclusionIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `관리 권한을 가진 계정은 랭킹에 오르지 않는다`() {
-        // ADMIN_AREA 의 역할이면 무엇이든 빠진다 — 어드민 화면을 볼 수 있는 사람과 같은 기준이다.
+    fun `관리 권한을 가진 계정도 랭킹에 오른다`() {
+        // ADMIN_AREA 의 역할이면 무엇이든 나온다 — 모든 사용자가 노출된다는 것이 #207 이다.
         UserRole.ADMIN_AREA.forEachIndexed { index, role ->
             val id = userRepository.save(User("staff$index@codekr.dev", "x", "운영자$index", setOf(role))).id
             solve(id)
@@ -50,20 +53,32 @@ class RankingExclusionIntegrationTest : IntegrationTestBase() {
         solve(solverId)
 
         mockMvc.perform(get("/api/v1/rankings"))
+            .andExpect(jsonPath("$.totalElements").value(UserRole.ADMIN_AREA.size + 1))
+    }
+
+    @Test
+    fun `탈퇴한 사람은 랭킹에서 빠진다`() {
+        val leaverId = userRepository.save(User("leaver@codekr.dev", "x", "떠난이", setOf(UserRole.USER))).id
+        solve(leaverId)
+        solve(solverId)
+        // 탈퇴는 서비스가 여러 값을 함께 지우지만, 랭킹이 보는 것은 이 한 컬럼이다.
+        jdbcClient.sql("UPDATE users SET withdrawn_at = now() WHERE id = :id").param("id", leaverId).update()
+
+        mockMvc.perform(get("/api/v1/rankings"))
             .andExpect(jsonPath("$.totalElements").value(1))
             .andExpect(jsonPath("$.content[0].nickname").value("풀이왕"))
     }
 
     @Test
-    fun `제외된 사람은 내 순위 조회에서도 없다`() {
+    fun `빠지는 사람은 내 순위 조회에서도 없다`() {
         // 목록에는 없는데 프로필의 '랭킹' 에는 있으면 두 화면이 서로 다른 말을 한다.
         // 세 질의가 같은 조건을 쓰는지 확인하는 자리다.
-        val adminId = userRepository.save(User("admin@codekr.dev", "x", "관리자", setOf(UserRole.ADMIN))).id
-        solve(adminId)
-
+        val leaverId = userRepository.save(User("leaver@codekr.dev", "x", "떠난이", setOf(UserRole.USER))).id
+        solve(leaverId)
         solve(solverId)
+        jdbcClient.sql("UPDATE users SET withdrawn_at = now() WHERE id = :id").param("id", leaverId).update()
 
-        assertNull(rankingService.rankOf("관리자", RankingMetric.SCORE, RankingPeriod.ALL_TIME))
+        assertNull(rankingService.rankOf("떠난이", RankingMetric.SCORE, RankingPeriod.ALL_TIME))
         assertNotNull(rankingService.rankOf("풀이왕", RankingMetric.SCORE, RankingPeriod.ALL_TIME))
     }
 
