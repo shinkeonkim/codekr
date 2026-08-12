@@ -1,5 +1,6 @@
 package codekr.api.ranking.repository
 
+import codekr.api.ranking.entity.ProblemScore
 import codekr.api.ranking.entity.SCORE_PROBLEM_LIMIT
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
@@ -25,9 +26,10 @@ class UserProblemScoreRepository(private val jdbcClient: JdbcClient) {
             """
             INSERT INTO user_problem_scores (user_id, problem_id, score, solved_at)
             SELECT s.user_id, s.problem_id,
-                   -- round(10 * 1.25^(레벨-1)). 맞힌 시점이 아니라 '지금'의 난이도를 쓴다 —
-                   -- 난이도가 조정되면 모두의 점수가 같은 기준으로 움직여야 공평하다.
-                   round(10 * power(1.25, p.difficulty_level - 1))::int,
+                   -- 맞힌 시점이 아니라 '지금'의 난이도를 쓴다 — 난이도가 조정되면 모두의
+                   -- 점수가 같은 기준으로 움직여야 공평하다. 조정된 순간 이 식을 다시
+                   -- 돌리는 것은 ProblemScoreResyncRepository 가 맡는다 (#194).
+                   ${ProblemScore.SQL},
                    min(s.created_at)
             FROM submissions s
             JOIN problems p ON p.id = s.problem_id
@@ -61,9 +63,7 @@ class UserProblemScoreRepository(private val jdbcClient: JdbcClient) {
         jdbcClient.sql(
             """
             INSERT INTO user_problem_scores (user_id, problem_id, score, solved_at)
-            SELECT s.user_id, s.problem_id,
-                   round(10 * power(1.25, p.difficulty_level - 1))::int,
-                   min(s.created_at)
+            SELECT s.user_id, s.problem_id, ${ProblemScore.SQL}, min(s.created_at)
             FROM submissions s
             JOIN problems p ON p.id = s.problem_id
             WHERE s.user_id = :userId

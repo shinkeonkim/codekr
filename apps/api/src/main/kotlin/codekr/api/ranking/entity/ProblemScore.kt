@@ -18,4 +18,15 @@ object ProblemScore {
     private const val GROWTH = 1.25
 
     fun of(difficultyLevel: Int): Int = (BASE * GROWTH.pow(difficultyLevel - 1)).roundToInt()
+
+    /**
+     * 같은 식의 SQL 판. 점수 행을 집합 단위로 다시 셀 때 쓴다.
+     *
+     * **식을 문자열로 세 곳에 적어 두고 있었다** (#194). 난이도가 바뀌어도 점수가 따라오지
+     * 않는다는 것을 늦게 안 이유 중 하나가 그것이다 — 주석은 "지금의 난이도를 쓴다" 라고
+     * 적혀 있는데, 그 식을 다시 돌리는 경로만 없었다.
+     *
+     * `p` 는 problems 를 가리키는 별칭이어야 한다.
+     */
+    const val SQL = "round($BASE * power($GROWTH, p.difficulty_level - 1))::int"
 }
