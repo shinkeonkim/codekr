@@ -2,6 +2,7 @@ package codekr.api.problem.admin.dto
 
 import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.DifficultyTier
+import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.ProblemCategory
@@ -27,6 +28,9 @@ data class AdminProblemDetailResponse(
     val outputDescription: String?,
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
+    /** 출력 비교 방식과 허용 오차 (#279). 편집 화면이 그대로 되돌려 보낸다. */
+    val outputComparison: OutputComparison,
+    val floatEpsilon: Double,
     val published: Boolean,
     val testcases: List<TestcaseResponse>,
     val templates: List<TemplateResponse>,
@@ -59,6 +63,8 @@ data class AdminProblemDetailResponse(
             outputDescription = problem.outputDescription,
             timeLimitMs = problem.timeLimitMs,
             memoryLimitMb = problem.memoryLimitMb,
+            outputComparison = problem.outputComparison,
+            floatEpsilon = problem.floatEpsilon,
             published = problem.published,
             testcases = problem.testcases.map(TestcaseResponse::from),
             templates = problem.templates.map(TemplateResponse::from),

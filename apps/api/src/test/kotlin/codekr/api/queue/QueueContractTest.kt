@@ -1,6 +1,7 @@
 package codekr.api.queue
 
 import codekr.api.problem.entity.ExecutionLimits
+import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.queue.message.ExecJobMessage
 import codekr.api.queue.message.ExecResultMessage
@@ -47,6 +48,24 @@ class QueueContractTest {
         assertEquals(ProblemKind.JUDGE_STDIO, job.kind)
         // stdin/stdout 작업에는 SQL 블록이 없다 (#60).
         assertNull(job.sql)
+    }
+
+    @Test
+    fun `실수 오차 비교 작업 고정 JSON 을 그대로 읽는다`() {
+        val job = mapper.readValue(fixture("judge-job-float.json"), JudgeJobMessage::class.java)
+
+        assertEquals(OutputComparison.FLOAT, job.comparison)
+        assertEquals(0.000001, job.epsilon)
+    }
+
+    @Test
+    fun `비교 방식이 없는 옛 작업은 정확 일치로 읽는다`() {
+        // 이 필드가 없던 시절에 큐에 들어간 작업이 남아 있을 수 있다 (#279).
+        // 채점기(Go)도 같게 읽는다 — 빈 값이면 EXACT 다.
+        val job = mapper.readValue(fixture("judge-job.json"), JudgeJobMessage::class.java)
+
+        assertEquals(OutputComparison.EXACT, job.comparison)
+        assertEquals(0.0, job.epsilon)
     }
 
     @Test

@@ -4,8 +4,11 @@ import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.ExecutionLimits
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemJudgePriority
+import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
 import jakarta.validation.Valid
+import jakarta.validation.constraints.DecimalMax
+import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
@@ -48,6 +51,22 @@ data class ProblemUpsertRequest(
     @field:Min(ExecutionLimits.MIN_MEMORY_LIMIT_MB.toLong())
     @field:Max(ExecutionLimits.MAX_MEMORY_LIMIT_MB.toLong())
     val memoryLimitMb: Int = ExecutionLimits.DEFAULT_MEMORY_LIMIT_MB,
+
+    /**
+     * 출력 비교 방식 (#279). **기본은 정확 일치** — 적지 않으면 지금까지의 동작이다.
+     */
+    val outputComparison: OutputComparison = OutputComparison.EXACT,
+
+    /**
+     * 허용 오차. `FLOAT` 일 때만 쓰인다.
+     *
+     * 위쪽을 막아 두는 이유: 오차를 크게 잡으면 **틀린 답이 통과한다.** 1 이면
+     * `3.5` 문제에서 `4.4` 가 맞은 답이 된다 — 그것은 실수를 허용하는 것이 아니라
+     * 채점을 끄는 것이다.
+     */
+    @field:DecimalMin("0.0")
+    @field:DecimalMax("0.1")
+    val floatEpsilon: Double = 0.0,
 
     val published: Boolean = false,
 

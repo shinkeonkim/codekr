@@ -1,6 +1,7 @@
 package codekr.api.queue.message
 
 import codekr.api.problem.entity.Problem
+import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.submission.entity.Submission
@@ -20,6 +21,13 @@ data class JudgeJobMessage(
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
     val testcases: List<JudgeTestcaseMessage>,
+    /**
+     * 출력 비교 방식 (#279). **없으면 EXACT 다** — 이 필드가 없던 시절에 큐에 들어간
+     * 작업이 남아 있을 수 있고, 그것들은 전부 정확 일치였다. 채점기(Go)도 같게 읽는다.
+     */
+    val comparison: OutputComparison = OutputComparison.EXACT,
+    /** 허용 오차. `FLOAT` 일 때만 쓰인다. */
+    val epsilon: Double = 0.0,
     /**
      * SQL 유형일 때만 실린다 (#60).
      *
@@ -50,6 +58,8 @@ data class JudgeJobMessage(
                 timeLimitMs = limits.timeLimitMs,
                 memoryLimitMb = limits.memoryLimitMb,
                 testcases = problem.testcases.map(JudgeTestcaseMessage::from),
+                comparison = problem.outputComparison,
+                epsilon = problem.floatEpsilon,
                 sql = sqlSpec?.let(JudgeSqlSpecMessage::from),
             )
         }

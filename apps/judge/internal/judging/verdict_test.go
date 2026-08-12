@@ -25,7 +25,7 @@ func TestVerdictOfComparesOutputOnlyWhenExecutionSucceeded(t *testing.T) {
 
 	for _, c := range cases {
 		result := contract.ExecResult{Status: c.status, Stdout: c.stdout}
-		if got := VerdictOf(result, "3\n"); got != c.expected {
+		if got := VerdictOf(result, "3\n", contract.CompareExact, 0); got != c.expected {
 			t.Errorf("%s: VerdictOf = %s, 기대값 %s", c.name, got, c.expected)
 		}
 	}

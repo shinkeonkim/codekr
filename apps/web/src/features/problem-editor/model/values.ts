@@ -1,4 +1,5 @@
 import type {
+  OutputComparison,
   AdminProblemDetail,
   Difficulty,
   ProblemRuntimeLimit,
@@ -28,6 +29,10 @@ export interface ProblemFormValues {
   outputDescription: string;
   timeLimitMs: number;
   memoryLimitMb: number;
+  /** 출력 비교 방식 (#279). 기본은 정확 일치다. */
+  outputComparison: OutputComparison;
+  /** 허용 오차. `FLOAT` 일 때만 쓰인다. */
+  floatEpsilon: number;
   published: boolean;
   testcases: Testcase[];
   templates: ProblemTemplate[];
@@ -54,6 +59,8 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     outputDescription: problem.outputDescription ?? "",
     timeLimitMs: problem.timeLimitMs,
     memoryLimitMb: problem.memoryLimitMb,
+    outputComparison: problem.outputComparison ?? "EXACT",
+    floatEpsilon: problem.floatEpsilon ?? 0,
     published: problem.published,
     testcases: problem.testcases,
     templates: problem.templates,
@@ -74,6 +81,8 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   outputDescription: "",
   timeLimitMs: 2000,
   memoryLimitMb: 256,
+  outputComparison: "EXACT",
+  floatEpsilon: 0,
   published: false,
   testcases: [EMPTY_TESTCASE],
   templates: [],

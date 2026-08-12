@@ -1,7 +1,13 @@
 "use client";
 
-import { ALL_DIFFICULTIES, CATEGORY_LABELS, SELECTABLE_KINDS, difficultyLabel } from "@/entities/problem";
-import type { Difficulty } from "@/entities/problem";
+import {
+  ALL_DIFFICULTIES,
+  CATEGORY_LABELS,
+  OUTPUT_COMPARISON_LABELS,
+  SELECTABLE_KINDS,
+  difficultyLabel,
+} from "@/entities/problem";
+import type { Difficulty, OutputComparison } from "@/entities/problem";
 import { Card, Field, Input, Select } from "@/shared/ui";
 import type { ProblemFormValues } from "../model/values";
 
@@ -87,6 +93,39 @@ export function ProblemMetaFields({
             onChange={(event) => update("memoryLimitMb", Number(event.target.value))}
           />
         </Field>
+        <Field label="출력 비교">
+          <Select
+            value={values.outputComparison}
+            onChange={(event) => update("outputComparison", event.target.value as OutputComparison)}
+          >
+            {Object.entries(OUTPUT_COMPARISON_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {/*
+          오차 칸은 **실수 비교를 골랐을 때만** 보인다 (#279). 늘 보이면 정확 일치
+          문제에도 값을 채우게 되고, 그 값은 아무 일도 하지 않으면서 "이 문제는 오차를
+          허용한다" 고 읽힌다.
+        */}
+        {values.outputComparison === "FLOAT" ? (
+          <Field label="허용 오차">
+            <Input
+              type="number"
+              step="0.000001"
+              min={0}
+              max={0.1}
+              value={values.floatEpsilon}
+              onChange={(event) => update("floatEpsilon", Number(event.target.value))}
+            />
+            {/* 오차를 크게 잡으면 틀린 답이 통과한다 — 채점을 끄는 것과 같다. */}
+            <p className="text-xs text-ink-muted">
+              절대·상대 오차 중 하나만 만족해도 맞은 답으로 봅니다. 보통 0.000001 을 씁니다.
+            </p>
+          </Field>
+        ) : null}
       </Card>
   );
 }
