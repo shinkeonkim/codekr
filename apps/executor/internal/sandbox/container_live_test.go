@@ -75,7 +75,11 @@ func TestLiveReportsRuntimeAndMemory(t *testing.T) {
 		t.Fatalf("실행 실패: %v", err)
 	}
 	if outcome.MemoryKb <= 0 {
-		t.Errorf("메모리 사용량이 기록되지 않았습니다: %dKB (컨테이너가 자기 cgroup 을 보는지 확인)", outcome.MemoryKb)
+		// **0 이면 왜 0 인지까지 남긴다.** 계측이 실패하는 이유는 "안 썼다" 가 아니라
+		// "읽을 파일이 없다" 이고, 그것은 컨테이너가 보는 cgroup 이 무엇이냐에 달렸다.
+		// 그 사실을 함께 찍지 않으면 CI 로그만 보고 다음 수를 정할 수 없다.
+		t.Errorf("메모리 사용량이 기록되지 않았습니다: %dKB\n컨테이너가 본 것:\n%s",
+			outcome.MemoryKb, cgroupView(t, box))
 	}
 	if outcome.RuntimeMs <= 0 {
 		t.Errorf("실행 시간이 기록되지 않았습니다: %dms", outcome.RuntimeMs)
@@ -162,4 +166,26 @@ func TestLiveBlocksNetworkAccess(t *testing.T) {
 	if strings.Contains(outcome.Stdout, "connected") {
 		t.Fatalf("샌드박스에서 네트워크가 차단되지 않았습니다: %+v", outcome)
 	}
+}
+
+// cgroupView 는 컨테이너 안에서 cgroup 이 어떻게 보이는지 그대로 찍어 온다 (#259).
+func cgroupView(t *testing.T, box Sandbox) string {
+	t.Helper()
+	probe := pythonSpec(`
+import os
+print("cgroup:", open("/proc/self/cgroup").read().strip())
+try:
+    names = sorted(os.listdir("/sys/fs/cgroup"))
+    print("entries:", len(names), names[:12])
+    for name in ("memory.peak", "memory.current", "memory.max"):
+        path = "/sys/fs/cgroup/" + name
+        print(name, os.path.exists(path), os.access(path, os.R_OK))
+except OSError as error:
+    print("listdir 실패:", error)
+`)
+	outcome, err := box.Run(context.Background(), probe)
+	if err != nil {
+		return "진단 실행 실패: " + err.Error()
+	}
+	return outcome.Stdout + outcome.Stderr
 }
