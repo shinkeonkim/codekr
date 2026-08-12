@@ -38,6 +38,8 @@ spec:
             - { name: http, containerPort: 8081 }
           env:
             - { name: EXECUTOR_CONCURRENCY, value: "{{ .Values.executor.concurrency }}" }
+            # 기동 전에 방어를 확인한다 (#246). 통과하지 못하면 파드가 뜨지 않는다.
+            - { name: EXECUTOR_SELF_TEST_ON_START, value: "{{ .Values.executor.selfTestOnStart }}" }
             - { name: CODEKR_RUNTIMES_PATH, value: /etc/codekr/runtimes.yaml }
             # 엔진 API 클라이언트가 읽는 표준 변수명이다 (제품명이 아니라 규약).
             - { name: DOCKER_HOST, value: "unix://{{ .Values.executor.runtimeSocket }}" }

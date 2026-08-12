@@ -26,6 +26,13 @@ type Config struct {
 	// RuntimeRegistry 는 런타임 이미지를 받아올 레지스트리다 (#96).
 	// 비면 정의 파일의 주소 그대로 — 로컬 개발은 원본에서 받는다.
 	RuntimeRegistry string
+
+	// SelfTestOnStart 는 서비스를 시작하기 전에 샌드박스 방어를 확인할지다 (#246).
+	//
+	// **배포된 노드에서 통과하는 것이 실제로 중요한 쪽이다** (docs/07). 자동 배포가
+	// 붙으면 사람이 `--self-test` 를 돌려 보는 단계가 사라지므로, 그 확인을 기동에
+	// 붙여 통과하지 못한 실행기가 채점을 받지 않게 한다.
+	SelfTestOnStart bool
 }
 
 // Load 는 환경 변수를 읽어 설정을 만든다. 값이 없으면 로컬 개발에 맞는 기본값을 쓴다.
@@ -46,6 +53,7 @@ func Load() Config {
 		SandboxRuntime:       env("CODEKR_SANDBOX_RUNTIME", "engine-api"),
 		SeccompProfilePath:   env("CODEKR_SECCOMP_PROFILE", ""),
 		RuntimeRegistry:      env("CODEKR_RUNTIME_REGISTRY", ""),
+		SelfTestOnStart:      env("EXECUTOR_SELF_TEST_ON_START", "false") == "true",
 	}
 }
 

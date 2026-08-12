@@ -73,6 +73,17 @@ func run() int {
 		return runVerifyRuntimes(box, registry, cfg.RuntimeRegistry, log)
 	}
 
+	// 서비스를 시작하기 전에 방어를 확인한다 (#246).
+	//
+	// 자동 배포에서는 사람이 `--self-test` 를 돌려 보는 단계가 없다. 그것을 기동에
+	// 붙여, **통과하지 못한 실행기는 채점을 받지 않게** 한다 — 뚫린 채로 도는 것보다
+	// 파드가 뜨지 않는 편이 낫다. 배포는 눈에 띄게 실패하고 앞 버전이 계속 돈다.
+	if cfg.SelfTestOnStart {
+		if code := runSelfTest(box, registry, cfg.RuntimeRegistry, log); code != 0 {
+			return code
+		}
+	}
+
 	redisClient := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
 	defer func() { _ = redisClient.Close() }()
 
