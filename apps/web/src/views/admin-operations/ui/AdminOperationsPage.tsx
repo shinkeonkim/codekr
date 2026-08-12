@@ -1,6 +1,7 @@
 "use client";
 
 import { activityApi } from "@/entities/activity";
+import { DATA_RESET_CONFIRMATION, adminDataApi } from "@/entities/admin-data";
 import { rankingApi } from "@/entities/ranking";
 import { RejudgePanel } from "@/features/rejudge";
 import { TagAdminPanel } from "@/features/tag-admin";
@@ -32,6 +33,21 @@ export function AdminOperationsPage() {
       run: async () => {
         const result = await rankingApi.recomputeAll();
         return `${result.users.toLocaleString("ko-KR")}명을 다시 계산했습니다.`;
+      },
+    },
+    {
+      key: "data-reset",
+      label: "데이터 초기화",
+      description:
+        "문제·제출·랭킹·활동·뱃지·대회·문제집을 모두 지우고 문제 번호를 1번부터 다시 시작합니다. " +
+        "회원 계정과 게시판 글, 알고리즘 분류는 남습니다. 되돌릴 수 없습니다.",
+      confirm:
+        "지웁니다: 문제, 제출, 랭킹 점수, 활동 기록, 뱃지, 대회, 문제집, 알림. " +
+        "남깁니다: 회원 계정, 게시판 글과 댓글, 알고리즘 분류. 되돌릴 수 없습니다.",
+      confirmPhrase: DATA_RESET_CONFIRMATION,
+      run: async () => {
+        const result = await adminDataApi.reset(DATA_RESET_CONFIRMATION);
+        return `${result.clearedTables.length}개 표에서 ${result.clearedRows.toLocaleString("ko-KR")}행을 지웠습니다.`;
       },
     },
     {
