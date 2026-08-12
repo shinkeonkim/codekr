@@ -34,7 +34,40 @@
   --color-danger: light-dark(#c62f2f, #f87171);
   --color-info: light-dark(#2f5bea, #7c9bff);
 
+  /*
+   * shadcn 이 기대하는 이름을 우리 토큰으로 잇는다 (#287).
+   *
+   * **이름을 갈아엎지 않는다.** 모든 화면이 `text-ink`·`bg-surface` 로 적혀 있어서,
+   * 바꾸면 이관(#291)이 색 이름 치환 작업으로 부풀어 오른다. 대신 shadcn 컴포넌트가
+   * 부르는 이름을 여기에 **별명으로** 둔다 — 두 이름이 같은 값을 가리키므로 팔레트는
+   * 여전히 한 벌이다.
+   *
+   * `light-dark()` 도 그대로다. shadcn 관례는 `:root` 와 `.dark` 에 팔레트를 두 벌
+   * 적는 것인데, 컴포넌트가 실제로 요구하는 것은 **이 이름의 변수가 있는 것**뿐이다.
+   * 값을 어떻게 고르는지는 상관하지 않는다 (#206 의 결정을 지킨다).
+   */
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-brand);
+  --color-primary-foreground: var(--color-brand-ink);
+  --color-secondary: var(--color-surface-muted);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-surface-muted);
+  --color-muted-foreground: var(--color-ink-muted);
+  --color-accent: var(--color-surface-muted);
+  --color-accent-foreground: var(--color-ink);
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: light-dark(#ffffff, #0b0e13);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-brand);
+
   --radius-card: 0.75rem;
+  /* shadcn 컴포넌트가 `rounded-md` 계열로 쓰는 기준값. 카드와 같은 리듬으로 둔다. */
+  --radius: 0.5rem;
 
   /*
    * 화면에 고정되는 것들의 층 (#134).

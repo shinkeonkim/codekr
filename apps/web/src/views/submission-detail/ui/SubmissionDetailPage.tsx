@@ -8,7 +8,7 @@ import { RequireAuth, useAuth } from "@/features/auth";
 import { JudgeProgressPanel, useJudgeStream } from "@/features/judge-stream";
 import { formatDateTime, formatMemory } from "@/shared/lib";
 import { ApiError } from "@/shared/api";
-import { Badge, Card, EmptyState, useToast } from "@/shared/ui";
+import { Badge, Card, EmptyState, Select, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
@@ -150,8 +150,10 @@ function SubmissionView({ id }: { id: number }) {
           <h2 className="text-sm font-semibold text-ink">제출한 코드</h2>
           {/* 공개 범위는 작성자만 바꿀 수 있다. */}
           {user?.nickname === submission.nickname ? (
-            <select
-              className="ml-auto rounded-lg border border-border bg-surface px-2 py-1 text-xs text-ink"
+            <Select
+              // 공통 것을 쓴다 (#287). 날 `<select>` 로 두면 여기만 운영체제 모양이 된다.
+              className="ml-auto w-auto px-2 py-1 text-xs"
+              aria-label="공개 범위"
               value={submission.visibility}
               onChange={(event) => changeVisibility(event.target.value as SubmissionVisibility)}
             >
@@ -160,7 +162,7 @@ function SubmissionView({ id }: { id: number }) {
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
           ) : (
             <Badge>{VISIBILITY_LABELS[submission.visibility]}</Badge>
           )}
