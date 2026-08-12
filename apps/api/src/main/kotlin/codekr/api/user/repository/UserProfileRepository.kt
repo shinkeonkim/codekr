@@ -66,8 +66,14 @@ class UserProfileRepository(private val jdbcClient: JdbcClient) {
             """,
         )
             .param("userId", userId)
-            .query { rs, _ -> Difficulty.ofLevel(rs.getInt("level")).tier to rs.getInt("solved") }
+            .query { rs, _ ->
+                // 난이도가 없는 문제는 `null` 이다 (#195). 전에는 여기서 예외가 났다.
+                Difficulty.ofLevelOrNull(rs.getObject("level") as Int?)?.tier to rs.getInt("solved")
+            }
             .list()
+            // 분포는 티어별이다. 난이도가 없는 문제는 **어느 막대에도 넣지 않는다** —
+            // 합계가 푼 문제 수와 다를 수 있는데, 그것이 사실이다 (태그 분포와 같은 규칙).
+            .mapNotNull { (tier, solved) -> tier?.let { it to solved } }
             .groupBy({ it.first }, { it.second })
             .map { (tier, counts) -> SolvedByTier(tier, counts.sum()) }
             .sortedBy { it.tier.ordinal }

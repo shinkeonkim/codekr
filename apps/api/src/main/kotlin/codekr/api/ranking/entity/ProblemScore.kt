@@ -27,6 +27,11 @@ object ProblemScore {
      * 적혀 있는데, 그 식을 다시 돌리는 경로만 없었다.
      *
      * `p` 는 problems 를 가리키는 별칭이어야 한다.
+     *
+     * **난이도가 없으면 0 이다** (#195). 행은 남는다 — 푼 문제 수에는 세고 점수만
+     * 안 준다. 점수는 난이도에서 나오는데 그 근거가 없을 뿐이다.
      */
-    const val SQL = "round($BASE * power($GROWTH, p.difficulty_level - 1))::int"
+    const val SQL =
+        "CASE WHEN p.difficulty_level IS NULL THEN 0 " +
+            "ELSE round($BASE * power($GROWTH, p.difficulty_level - 1))::int END"
 }

@@ -34,6 +34,13 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
             condition.tier?.let {
                 and(problem.difficultyLevel.between(it.levelRange.first, it.levelRange.last))
             }
+            /*
+                난이도 상태로도 고른다 (#195).
+
+                티어 필터의 `BETWEEN` 은 **레벨이 없는 문제를 어느 구간에도 넣지 않는다** —
+                고를 방법이 따로 있어야 미평가 문제가 목록에서 사라지지 않는다.
+            */
+            condition.difficultyState?.let { and(problem.difficultyState.eq(it)) }
             condition.keyword?.takeIf { it.isNotBlank() }?.let {
                 val keyword = it.trim()
                 /*
@@ -156,8 +163,17 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
             ProblemSort.LATEST -> arrayOf(problem.createdAt.desc())
             ProblemSort.OLDEST -> arrayOf(problem.createdAt.asc())
             ProblemSort.TITLE -> arrayOf(problem.title.asc())
-            ProblemSort.DIFFICULTY -> arrayOf(problem.difficultyLevel.asc(), problem.title.asc())
-            ProblemSort.DIFFICULTY_DESC -> arrayOf(problem.difficultyLevel.desc(), problem.title.asc())
+            /*
+                난이도가 없는 문제는 **양쪽 모두 뒤로 간다** (#195).
+
+                `nullsLast` 하나로 끝나지 않는다 — 내림차순에서 SQL 의 기본은
+                `NULLS FIRST` 라, 그냥 두면 "어려운순" 맨 앞이 미평가 문제로 찬다.
+                순서 없는 값을 정수 정렬에 우연히 섞이게 두지 않는다.
+            */
+            ProblemSort.DIFFICULTY ->
+                arrayOf(problem.difficultyLevel.asc().nullsLast(), problem.title.asc())
+            ProblemSort.DIFFICULTY_DESC ->
+                arrayOf(problem.difficultyLevel.desc().nullsLast(), problem.title.asc())
             ProblemSort.SOLVERS_DESC -> arrayOf(stat.solvers.desc().nullsLast(), problem.id.asc())
             ProblemSort.SOLVERS_ASC -> arrayOf(stat.solvers.asc().nullsLast(), problem.id.asc())
             ProblemSort.ACCEPTANCE_DESC -> arrayOf(stat.acceptance.desc().nullsLast(), problem.id.asc())

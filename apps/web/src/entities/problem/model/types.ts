@@ -22,6 +22,14 @@ export type DifficultyStep = 1 | 2 | 3 | 4 | 5;
 
 export type Difficulty = `${DifficultyTier}_${DifficultyStep}`;
 
+/**
+ * 난이도가 매겨진 상태인가 (#195).
+ *
+ * `UNRATED` 는 "아직 모른다"(곧 값이 붙는다), `NO_RATE` 는 "해당 없다"(영영 없다).
+ * **둘 다 문제 수에는 세고 점수에는 넣지 않는다.**
+ */
+export type DifficultyState = "RATED" | "UNRATED" | "NO_RATE";
+
 export interface Runtime {
   id: string;
   label: string;
@@ -47,10 +55,12 @@ export interface ProblemSummary {
   slug: string;
   title: string;
   category: ProblemCategory;
-  difficulty: Difficulty;
+  /** 미평가·평가안함이면 `null` 이다 (#195). */
+  difficulty: Difficulty | null;
+  difficultyState: DifficultyState;
   /** 1(브론즈 5) ~ 30(루비 1). 숫자가 클수록 어렵다. */
-  difficultyLevel: number;
-  tier: DifficultyTier;
+  difficultyLevel: number | null;
+  tier: DifficultyTier | null;
   difficultyLabel: string;
   timeLimitMs: number;
   memoryLimitMb: number;

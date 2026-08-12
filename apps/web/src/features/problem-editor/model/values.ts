@@ -1,4 +1,5 @@
 import type {
+  DifficultyState,
   OutputComparison,
   AdminProblemDetail,
   Difficulty,
@@ -23,7 +24,9 @@ export interface ProblemFormValues {
   problemKind: string;
   /** SQL 유형일 때만 보낸다 (#60). */
   sqlSpec: SqlSpec | null;
-  difficulty: Difficulty;
+  /** 비워 둘 수 있다 (#195) — 그때 `difficultyState` 가 뜻을 갖는다. */
+  difficulty: Difficulty | null;
+  difficultyState: DifficultyState;
   description: string;
   inputDescription: string;
   outputDescription: string;
@@ -54,6 +57,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     problemKind: problem.problemKind,
     sqlSpec: problem.sqlSpec,
     difficulty: problem.difficulty,
+    difficultyState: problem.difficultyState ?? "UNRATED",
     description: problem.description,
     inputDescription: problem.inputDescription ?? "",
     outputDescription: problem.outputDescription ?? "",
@@ -75,7 +79,10 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   category: "ALGORITHM",
   problemKind: "JUDGE_STDIO",
   sqlSpec: null,
-  difficulty: "BRONZE_5",
+  // 새 문제의 기본은 **미평가**다 (#195). 브론즈로 두면 "아직 안 정했다" 와
+  // "쉽다" 가 구분되지 않는다 — 등록은 쉬워지지만 거짓 정보가 섞인다.
+  difficulty: null,
+  difficultyState: "UNRATED",
   description: "",
   inputDescription: "",
   outputDescription: "",

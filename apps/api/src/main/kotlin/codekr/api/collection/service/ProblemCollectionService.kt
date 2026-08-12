@@ -133,7 +133,7 @@ class ProblemCollectionService(
                     slug = it.slug,
                     title = it.title,
                     difficulty = it.difficulty,
-                    difficultyLabel = it.difficulty.label,
+                    difficultyLabel = it.difficulty?.label ?: it.difficultyState.label,
                     solved = it.id in solved,
                 )
             },

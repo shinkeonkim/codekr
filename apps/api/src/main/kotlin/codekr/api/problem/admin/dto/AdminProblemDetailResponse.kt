@@ -1,6 +1,7 @@
 package codekr.api.problem.admin.dto
 
 import codekr.api.problem.entity.Difficulty
+import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.Problem
@@ -19,9 +20,11 @@ data class AdminProblemDetailResponse(
     val problemKind: ProblemKind,
     /** SQL 유형이 아니면 null (#60). */
     val sqlSpec: SqlSpecResponse? = null,
-    val difficulty: Difficulty,
-    val difficultyLevel: Int,
-    val tier: DifficultyTier,
+    /** 미평가·평가안함이면 `null` 이다 (#195). */
+    val difficulty: Difficulty?,
+    val difficultyState: DifficultyState,
+    val difficultyLevel: Int?,
+    val tier: DifficultyTier?,
     val difficultyLabel: String,
     val description: String,
     val inputDescription: String?,
@@ -55,9 +58,11 @@ data class AdminProblemDetailResponse(
             problemKind = problem.problemKind,
             sqlSpec = sqlSpec?.let(SqlSpecResponse::from),
             difficulty = problem.difficulty,
+            difficultyState = problem.difficultyState,
             difficultyLevel = problem.difficultyLevel,
-            tier = problem.difficulty.tier,
-            difficultyLabel = problem.difficulty.label,
+            tier = problem.difficulty?.tier,
+            // 표기는 늘 준다 — 화면이 상태별 문구를 다시 만들지 않게 (#195).
+            difficultyLabel = problem.difficulty?.label ?: problem.difficultyState.label,
             description = problem.description,
             inputDescription = problem.inputDescription,
             outputDescription = problem.outputDescription,

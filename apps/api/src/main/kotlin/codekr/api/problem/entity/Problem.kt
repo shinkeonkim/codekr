@@ -43,8 +43,17 @@ class Problem(
      * 난이도를 정수로 저장하는 이유: 티어 범위 검색과 정렬을 인덱스로 처리하기 위함이다.
      * 애플리케이션에서는 [difficulty] 로만 다루고 이 값을 직접 쓰지 않는다.
      */
-    @Column(name = "difficulty_level", nullable = false)
-    var difficultyLevel: Int,
+    @Column(name = "difficulty_level")
+    var difficultyLevel: Int? = null,
+
+    /**
+     * 난이도가 매겨졌는가 (#195).
+     *
+     * 레벨과 어긋나지 않게 DB 가 못 박는다 — `RATED` 이면 레벨이 있고, 아니면 없다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty_state", nullable = false, length = 16)
+    var difficultyState: DifficultyState = DifficultyState.RATED,
 
     @Column(nullable = false, columnDefinition = "text")
     var description: String,
@@ -115,11 +124,17 @@ class Problem(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0
 
-    /** 저장 컬럼이 아니라 [difficultyLevel] 을 읽고 쓰는 창구다 (뒷받침 필드가 없어 JPA 가 매핑하지 않는다). */
-    var difficulty: Difficulty
-        get() = Difficulty.ofLevel(difficultyLevel)
+    /**
+     * 저장 컬럼이 아니라 [difficultyLevel] 을 읽고 쓰는 창구다 (뒷받침 필드가 없어 JPA 가 매핑하지 않는다).
+     *
+     * **난이도가 없을 수 있다** (#195). 미평가·평가안함이면 `null` 이고, 그때 점수는 0 이다.
+     */
+    var difficulty: Difficulty?
+        get() = Difficulty.ofLevelOrNull(difficultyLevel)
         set(value) {
-            difficultyLevel = value.level
+            difficultyLevel = value?.level
+            difficultyState = if (value == null) difficultyState.takeIf { !it.scored } ?: DifficultyState.UNRATED
+            else DifficultyState.RATED
         }
 
     // 소프트 삭제된 자식까지 담고 있는 원본 컬렉션. 밖으로는 살아 있는 것만 노출한다.
