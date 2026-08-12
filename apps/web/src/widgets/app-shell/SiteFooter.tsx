@@ -1,3 +1,4 @@
+import { PUBLIC_ROUTES } from "@/shared/config/routes";
 import { BrandCharacter, BrandWordmark } from "@/shared/ui";
 import Link from "next/link";
 
@@ -13,7 +14,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-border bg-surface-muted/30">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_auto]">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,1fr)_auto]">
         <div>
           <BrandWordmark height={30} />
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
@@ -22,20 +23,17 @@ export function SiteFooter() {
           </p>
         </div>
 
+        {/* 목록을 여기 적지 않는다 — sitemap.xml 과 같은 것을 본다 (#234). */}
+        {Object.entries(PUBLIC_ROUTES).map(([title, links]) => (
+          <FooterColumn key={title} title={title} links={links} />
+        ))}
+
         <FooterColumn
-          title="풀기"
+          title="만든 곳"
           links={[
-            { href: "/problems", label: "문제" },
-            { href: "/collections", label: "문제집" },
-            { href: "/contests", label: "대회" },
-          ]}
-        />
-        <FooterColumn
-          title="둘러보기"
-          links={[
-            { href: "/submissions/explore", label: "전체 제출" },
-            { href: "/ranking", label: "랭킹" },
-            { href: "/posts", label: "게시판" },
+            { href: REPOSITORY_URL, label: "GitHub 저장소" },
+            { href: `${REPOSITORY_URL}/blob/main/LICENSE`, label: "MIT 라이선스" },
+            { href: `${REPOSITORY_URL}/issues`, label: "문제 신고·제안" },
           ]}
         />
 
@@ -50,7 +48,15 @@ export function SiteFooter() {
   );
 }
 
-function FooterColumn({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+const REPOSITORY_URL = "https://github.com/shinkeonkim/codekr";
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: readonly { readonly href: string; readonly label: string }[];
+}) {
   return (
     <div>
       <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{title}</h2>
