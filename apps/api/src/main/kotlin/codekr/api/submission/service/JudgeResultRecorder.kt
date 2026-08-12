@@ -3,6 +3,7 @@ package codekr.api.submission.service
 import codekr.api.activity.service.ActivityRecorder
 import codekr.api.queue.message.JudgeEventMessage
 import codekr.api.ranking.badge.BadgeAwarder
+import codekr.api.problem.repository.ProblemStatsSyncRepository
 import codekr.api.ranking.service.ScoreRecorder
 import codekr.api.rejudge.service.RejudgeCompletion
 import codekr.api.submission.entity.SubmissionKind
@@ -26,6 +27,7 @@ class JudgeResultRecorder(
     private val rejudgeCompletion: RejudgeCompletion,
     private val activityRecorder: ActivityRecorder,
     private val scoreRecorder: ScoreRecorder,
+    private val problemStatsSync: ProblemStatsSyncRepository,
     private val badgeAwarder: BadgeAwarder,
 ) {
 
@@ -52,6 +54,9 @@ class JudgeResultRecorder(
                 // 활동·점수 집계는 제출 테이블과 분리돼 있다 (#105, #57).
                 // 결과가 확정되는 여기서 반영한다.
                 if (submission.kind == SubmissionKind.USER) {
+                    // 저장된 문제 통계를 따라오게 한다 (#205). 재채점으로 판정이 뒤집히면
+                    // **정답자 수가 내려가야** 하므로, 증분이 아니라 다시 센다.
+                    problemStatsSync.refresh(submission.problemId)
                     activityRecorder.recordCompletion(submission.userId, submission.createdAt)
                     scoreDelta = scoreRecorder.record(submission.userId, submission.problemId)
                     // 뱃지는 점수를 기록한 뒤에 확인한다 — '최초 해결자'가 점수 표를 본다 (#58).

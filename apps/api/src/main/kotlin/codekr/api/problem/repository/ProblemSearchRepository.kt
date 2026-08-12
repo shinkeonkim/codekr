@@ -1,6 +1,7 @@
 package codekr.api.problem.repository
 
 import codekr.api.problem.entity.QProblem
+import codekr.api.problem.entity.QProblemStat
 import codekr.api.tag.entity.QProblemTag
 import codekr.api.tag.entity.QTag
 import com.querydsl.core.BooleanBuilder
@@ -48,8 +49,12 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
             }
         }
 
-        val content = queryFactory
-            .selectFrom(problem)
+        val stat = QProblemStat.problemStat
+        val query = queryFactory.selectFrom(problem)
+        // 통계로 정렬할 때만 조인한다. 늘 붙이면 다른 정렬까지 조인 비용을 낸다.
+        if (needsStats(condition.sort)) query.leftJoin(stat).on(stat.problemId.eq(problem.id))
+
+        val content = query
             .where(predicate)
             .orderBy(*orderBy(condition.sort))
             .offset(pageable.offset)
@@ -72,12 +77,36 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
         .where(QProblemTag.problemTag.id.problemId.eq(problem.id), QTag.tag.slug.eq(slug))
         .exists()
 
+    /**
+     * 정렬 기준 (#132, #205).
+     *
+     * **두 번째 기준을 늘 둔다.** 정답률이 같은 문제가 여럿일 때 차례가 매번 달라지면
+     * 쪽을 넘길 때 같은 문제가 두 번 나오거나 아예 빠진다.
+     *
+     * 통계가 없는 문제(제출자 0)는 `nullsLast` 로 **뒤로 보낸다** — 정답률이 없는 것을
+     * 0% 로 보면 목록 맨 앞이 새 문제로만 찬다.
+     */
     private fun orderBy(sort: ProblemSort): Array<OrderSpecifier<*>> {
         val problem = QProblem.problem
+        val stat = QProblemStat.problemStat
         return when (sort) {
             ProblemSort.LATEST -> arrayOf(problem.createdAt.desc())
+            ProblemSort.OLDEST -> arrayOf(problem.createdAt.asc())
             ProblemSort.TITLE -> arrayOf(problem.title.asc())
             ProblemSort.DIFFICULTY -> arrayOf(problem.difficultyLevel.asc(), problem.title.asc())
+            ProblemSort.DIFFICULTY_DESC -> arrayOf(problem.difficultyLevel.desc(), problem.title.asc())
+            ProblemSort.SOLVERS_DESC -> arrayOf(stat.solvers.desc().nullsLast(), problem.id.asc())
+            ProblemSort.SOLVERS_ASC -> arrayOf(stat.solvers.asc().nullsLast(), problem.id.asc())
+            ProblemSort.ACCEPTANCE_DESC -> arrayOf(stat.acceptance.desc().nullsLast(), problem.id.asc())
+            ProblemSort.ACCEPTANCE_ASC -> arrayOf(stat.acceptance.asc().nullsLast(), problem.id.asc())
         }
     }
+
+    /** 통계를 봐야 하는 정렬인가. 아니면 조인을 붙이지 않는다. */
+    private fun needsStats(sort: ProblemSort) = sort in setOf(
+        ProblemSort.SOLVERS_DESC,
+        ProblemSort.SOLVERS_ASC,
+        ProblemSort.ACCEPTANCE_DESC,
+        ProblemSort.ACCEPTANCE_ASC,
+    )
 }
