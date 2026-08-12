@@ -4,6 +4,7 @@ import type {
   AdminAuditLog,
   AdminUserDetail,
   AdminUserSummary,
+  Suspension,
   TokenResponse,
   User,
   UserProfile,
@@ -88,6 +89,21 @@ export const userApi = {
    */
   forceWithdraw: (id: number, reason: string) =>
     request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", auth: true, query: { reason } }),
+
+  /**
+   * 회원 정지 (#224). **`ADMIN` 이 건다** — 되돌릴 수 있는 조치라, 실제로 게시판을
+   * 지키는 사람이 쓸 수 있어야 한다.
+   */
+  suspend: (id: number, body: { scope: string; reason: string; days: number | null }) =>
+    request<Suspension>(`/api/v1/admin/users/${id}/suspensions`, { method: "POST", auth: true, body }),
+
+  /** 지금 걸려 있는 정지들. 기한이 지난 것은 서버가 이미 뺀다. */
+  activeSuspensions: (id: number) =>
+    request<Suspension[]>(`/api/v1/admin/users/${id}/suspensions`, { auth: true }),
+
+  /** 기한 전에 푼다. 기한이 지난 것은 저절로 풀리므로 여기에 오지 않는다. */
+  liftSuspension: (id: number, suspensionId: number) =>
+    request<void>(`/api/v1/admin/users/${id}/suspensions/${suspensionId}`, { method: "DELETE", auth: true }),
 
   /** 관리 기록 (#225). **최고 관리자만** — 어드민끼리 서로를 보는 것이다. */
   auditLogs: (query: { targetUserId?: number; actorId?: number; page?: number; size?: number }) =>

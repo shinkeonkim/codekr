@@ -72,6 +72,15 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      */
     FORCE_WITHDRAW("강제 탈퇴", requiresReason = true),
 
+    /**
+     * 회원 정지 (#224). **남에게 보이는 조치라 사유가 필수다** — 정지된 사람이 막힌
+     * 행동을 하면 이 사유를 그대로 읽는다.
+     */
+    SUSPEND("정지", requiresReason = true),
+
+    /** 정지 해제 (#224). 되돌리는 쪽이라 사유를 요구하지 않는다. */
+    LIFT_SUSPENSION("정지 해제", requiresReason = false),
+
     /** 랭킹·활동 재계산 (#177, #105). 되돌릴 수 있어 사유를 요구하지 않는다. */
     RECOMPUTE("재계산", requiresReason = false),
 }

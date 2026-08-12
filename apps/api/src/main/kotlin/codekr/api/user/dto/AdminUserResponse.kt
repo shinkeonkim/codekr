@@ -2,6 +2,7 @@ package codekr.api.user.dto
 
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
+import codekr.api.user.suspension.SuspensionResponse
 import java.time.Instant
 
 /**
@@ -18,15 +19,23 @@ data class AdminUserSummaryResponse(
     val createdAt: Instant,
     /** 탈퇴한 회원이면 그 시각. 목록에서 기본으로 빠지지만 켜면 보인다. */
     val withdrawnAt: Instant?,
+    /**
+     * 지금 걸려 있는 정지의 범위 (#224). 없으면 비어 있다.
+     *
+     * **목록에서 보여야 한다** — 상세를 하나씩 열어 봐야 안다면, 어드민은 이미 정지된
+     * 사람을 또 정지시킨다.
+     */
+    val suspendedScopes: List<String> = emptyList(),
 ) {
     companion object {
-        fun from(user: User) = AdminUserSummaryResponse(
+        fun from(user: User, suspendedScopes: List<String> = emptyList()) = AdminUserSummaryResponse(
             id = user.id,
             email = user.email,
             nickname = user.nickname,
             roles = user.roles,
             createdAt = user.createdAt,
             withdrawnAt = user.withdrawnAt,
+            suspendedScopes = suspendedScopes,
         )
     }
 }
@@ -49,4 +58,6 @@ data class AdminUserDetailResponse(
     val submissionCount: Int,
     /** 마지막 제출 시각. 활동이 멈춘 계정을 가려낼 때 쓴다. */
     val lastSubmittedAt: Instant?,
+    /** 지금 걸려 있는 정지들 (#224). 여기서 바로 풀 수 있어야 한다. */
+    val suspensions: List<SuspensionResponse> = emptyList(),
 )

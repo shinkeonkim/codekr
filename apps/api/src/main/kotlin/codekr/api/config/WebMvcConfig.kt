@@ -3,6 +3,7 @@ package codekr.api.config
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.user.suspension.SuspensionGuard
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.MethodParameter
 import org.springframework.security.core.context.SecurityContextHolder
@@ -10,6 +11,7 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 /**
@@ -21,7 +23,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  * 널 허용이 아닌데 인증이 없으면(설정 실수 등) 401 로 끊는다.
  */
 @Configuration
-class WebMvcConfig : HandlerMethodArgumentResolver, WebMvcConfigurer {
+class WebMvcConfig(private val suspensionGuard: SuspensionGuard) :
+    HandlerMethodArgumentResolver, WebMvcConfigurer {
 
     override fun supportsParameter(parameter: MethodParameter): Boolean =
         parameter.parameterType == AuthPrincipal::class.java
@@ -41,5 +44,16 @@ class WebMvcConfig : HandlerMethodArgumentResolver, WebMvcConfigurer {
 
     override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
         resolvers.add(this)
+    }
+
+    /**
+     * 정지된 회원의 쓰기·제출을 막는다 (#224).
+     *
+     * **모든 경로에 건다.** 붙일 경로를 고르면 새 컨트롤러가 생길 때마다 빠뜨릴 수
+     * 있고, 빠뜨린 곳이 곧 정지가 통하지 않는 구멍이 된다 — 무엇을 막을지는
+     * `SuspendedAction` 한 곳에서 정한다.
+     */
+    override fun addInterceptors(registry: InterceptorRegistry) {
+        registry.addInterceptor(suspensionGuard)
     }
 }

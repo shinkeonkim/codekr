@@ -151,8 +151,16 @@ export function AdminUserListPage() {
                 key: "state",
                 header: "상태",
                 align: "right",
+                // 정지는 목록에서 보여야 한다 (#224) — 상세를 하나씩 열어 봐야 안다면
+                // 이미 정지된 사람을 또 정지시킨다.
                 render: (row) =>
-                  row.withdrawnAt ? <Badge tone="danger">탈퇴</Badge> : <Badge tone="ok">활동</Badge>,
+                  row.withdrawnAt ? (
+                    <Badge tone="danger">탈퇴</Badge>
+                  ) : row.suspendedScopes.length > 0 ? (
+                    <Badge tone="danger">{row.suspendedScopes.join("·")} 제한</Badge>
+                  ) : (
+                    <Badge tone="ok">활동</Badge>
+                  ),
               },
               {
                 key: "actions",
