@@ -60,6 +60,23 @@ class UserProfileIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `비공개로 돌린 문제는 난이도 분포에서 빠진다`() {
+        // 점수는 published 를 보는데 분포는 보지 않아, 어드민이 문제를 내리면 같은
+        // 화면의 두 숫자가 다른 집합을 말했다 (#269).
+        insertProblem(3, "hidden", level = 9, published = false)
+        insertSubmission(problemId = 1, verdict = "ACCEPTED")
+        insertSubmission(problemId = 3, verdict = "ACCEPTED")
+
+        mockMvc.perform(get("/api/v1/users/풀이왕").header("Authorization", "Bearer $token"))
+            .andExpect(status().isOk)
+            // 실버(레벨 9)가 통째로 사라져야 한다 — 브론즈 하나만 남는다.
+            .andExpect(jsonPath("$.solvedByTier.length()").value(1))
+            .andExpect(jsonPath("$.solvedByTier[0].tier").value("BRONZE"))
+            // 푼 문제 수도 같은 기준이어야 한다.
+            .andExpect(jsonPath("$.solvedCount").value(1))
+    }
+
+    @Test
     fun `이메일은 프로필에 담기지 않는다`() {
         mockMvc.perform(get("/api/v1/users/풀이왕").header("Authorization", "Bearer $token"))
             .andExpect(status().isOk)
@@ -82,13 +99,18 @@ class UserProfileIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.submissionCount").value(0))
     }
 
-    private fun insertProblem(id: Long, slug: String, level: Int) {
+    private fun insertProblem(id: Long, slug: String, level: Int, published: Boolean = true) {
         jdbcClient.sql(
             """
             INSERT INTO problems (id, slug, title, category, difficulty_level, description, published)
-            VALUES (:id, :slug, :slug, 'ALGORITHM', :level, '설명', true)
+            VALUES (:id, :slug, :slug, 'ALGORITHM', :level, '설명', :published)
             """,
-        ).param("id", id).param("slug", slug).param("level", level).update()
+        )
+            .param("id", id)
+            .param("slug", slug)
+            .param("level", level)
+            .param("published", published)
+            .update()
     }
 
     private fun insertSubmission(problemId: Long, verdict: String, kind: String = "USER") {
