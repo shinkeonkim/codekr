@@ -19,6 +19,14 @@ spec:
           image: {{ include "codekr.image" (dict "root" . "name" "web") }}
           ports:
             - { name: http, containerPort: 3000 }
+          env:
+            # sitemap 이 문제 목록을 받아 올 주소 (#271).
+            #
+            # **NEXT_PUBLIC_ 이 아니다** — 브라우저는 이 값을 알 필요가 없고, 번들에
+            # 들어가면 클러스터 내부 주소가 밖으로 샌다. sitemap 은 요청 시점에
+            # 만들어지므로(#234) 이 환경 변수가 실제로 먹는다.
+            - name: API_INTERNAL_BASE_URL
+              value: http://codekr-api:8080
           readinessProbe:
             httpGet: { path: /, port: http }
             periodSeconds: 10
