@@ -1,0 +1,19 @@
+{
+  "slug": "sql-frequent-borrowers",
+  "title": "세 번 이상 빌린 회원",
+  "category": "SQL",
+  "difficulty": "BRONZE_1",
+  "problemKind": "JUDGE_SQL",
+  "description": "대출 기록에서 세 번 이상 빌린 회원을 찾으세요.\n묶은 뒤에 거르는 일이라 WHERE 로는 되지 않습니다.\n\n[표 구조]\n  members(id, name, city, joined_on)\n  books(id, title, genre, price)\n  loans(id, member_id, book_id, loaned_on, returned_on)\n\nloans.returned_on 이 비어 있으면(NULL) 아직 반납하지 않은 것입니다.\n",
+  "inputDescription": "주어지는 것은 위의 세 표입니다. 표준 입력은 없습니다.",
+  "outputDescription": "회원 name 과 그 회원의 대출 횟수를 출력합니다. 순서는 상관없습니다.\n\n채점은 열 이름을 보지 않고 값만 비교합니다. 다만 열 순서는 지켜야 합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 256,
+  "published": true,
+  "testcases": [],
+  "sqlSchemaFile": "sql/library.sql",
+  "sqlSpec": {
+    "answerSql": "SELECT m.name, count(*)\nFROM loans l\nJOIN members m ON m.id = l.member_id\nGROUP BY m.name\nHAVING count(*) >= 3;",
+    "ignoreRowOrder": true
+  }
+}

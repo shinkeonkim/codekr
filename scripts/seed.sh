@@ -49,14 +49,37 @@ promote_admin() {
         ON CONFLICT DO NOTHING;" > /dev/null
 }
 
+# SQL 문제는 스키마를 **별도 파일**에서 끼워 넣는다 (#313).
+#
+# 다섯 문제가 같은 스키마를 쓰는데 `schema_sql` 은 문제마다 저장된다. 시드 JSON 안에
+# SQL 을 통째로 박으면 한 글자를 고칠 때 다섯 파일을 고쳐야 하고, JSON 문자열 안의
+# 여러 줄 SQL 은 읽을 수가 없다.
+#
+# **조립은 보내기 전에 끝난다** — `sqlSpec` 은 어드민 API 의 규격이라 필드 이름을 바꿀
+# 수 없다. `sqlSchemaFile` 은 시드에서만 쓰는 키이고 여기서 사라진다.
+assemble_problem() {
+  SEED_DIR="$(dirname "$1")" python3 - "$1" <<'PYTHON'
+import json
+import os
+import sys
+
+body = json.load(open(sys.argv[1], encoding="utf-8"))
+schema_file = body.pop("sqlSchemaFile", None)
+if schema_file:
+    path = os.path.join(os.environ["SEED_DIR"], schema_file)
+    body.setdefault("sqlSpec", {})["schemaSql"] = open(path, encoding="utf-8").read()
+json.dump(body, sys.stdout, ensure_ascii=False)
+PYTHON
+}
+
 create_problem() {
   local token="$1" file="$2"
   local status
-  status=$(curl -s -o /tmp/codekr-seed-response.json -w '%{http_code}' \
+  status=$(assemble_problem "${file}" | curl -s -o /tmp/codekr-seed-response.json -w '%{http_code}' \
     -X POST "${API}/api/v1/admin/problems" \
     -H "Authorization: Bearer ${token}" \
     -H 'Content-Type: application/json' \
-    --data-binary "@${file}")
+    --data-binary @-)
 
   case "${status}" in
     201) echo "  생성됨: $(basename "${file}")" ;;
