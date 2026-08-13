@@ -1,30 +1,10 @@
 import { BrandCharacter } from "./brand/BrandCharacter";
 import type { BrandCharacterName } from "./brand/BrandCharacter";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div className={`rounded-card border border-border bg-surface ${className}`}>{children}</div>
-  );
-}
-
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
-};
-
-const BUTTON_VARIANTS: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-brand text-brand-ink hover:opacity-90",
-  secondary: "border border-border bg-surface text-ink hover:bg-surface-muted",
-  ghost: "text-ink-muted hover:text-ink hover:bg-surface-muted",
-  danger: "border border-danger/40 text-danger hover:bg-danger/10",
-};
-
-export function Button({ variant = "primary", className = "", ...props }: ButtonProps) {
-  return (
-    <button
-      {...props}
-      className={`inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${className}`}
-    />
   );
 }
 
