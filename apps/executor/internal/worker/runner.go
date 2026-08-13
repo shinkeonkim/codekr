@@ -50,13 +50,34 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 		return systemError(job, err.Error())
 	}
 
+	/*
+		함수형 문제 (#421). 하네스가 오면 **하네스를 돌리고 사용자 코드는 그 옆에 둔다.**
+
+		런타임이 그 방법을 모르면 여기서 끊는다 — 조용히 사용자 코드만 돌리면
+		"함수만 구현했는데 아무 출력이 없다" 가 되고, 그 이유를 아무도 모른다.
+	*/
+	run := definition.Run
+	sourceFile := definition.SourceFile
+	harnessFile := ""
+	if job.HarnessSource != "" {
+		if !definition.SupportsFunctionHarness() {
+			return systemError(job, fmt.Sprintf("이 런타임은 함수형 문제를 지원하지 않습니다: %s", job.RuntimeID))
+		}
+		run = definition.FunctionHarness.Run
+		harnessFile = definition.FunctionHarness.File
+		// 하네스가 진입점 자리를 가져가므로 사용자 코드는 다른 이름으로 간다.
+		sourceFile = definition.FunctionHarness.SourceFile
+	}
+
 	outcome, err := r.box.Run(ctx, sandbox.Spec{
 		Image:                definition.ImageRef(r.runtimeRegistry),
-		SourceFile:           definition.SourceFile,
+		SourceFile:           sourceFile,
 		SourceCode:           job.SourceCode,
+		HarnessFile:          harnessFile,
+		HarnessSource:        job.HarnessSource,
 		Stdin:                job.Stdin,
 		Compile:              definition.Compile,
-		Run:                  definition.Run,
+		Run:                  run,
 		Harness:              definition.Harness,
 		User:                 definition.User,
 		ExtraFiles:           job.ExtraFiles,
@@ -75,7 +96,7 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 		Status:    statusOf(outcome),
 		ExitCode:  outcome.ExitCode,
 		Stdout:    outcome.Stdout,
-		Stderr:    outcome.Stderr,
+		Stderr:    scrub(outcome.Stderr, harnessFile),
 		RuntimeMs: outcome.RuntimeMs,
 		MemoryKb:  outcome.MemoryKb,
 		Truncated: outcome.Truncated,

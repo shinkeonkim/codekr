@@ -22,6 +22,13 @@ type Spec struct {
 	// 문제의 메모리 제한과 별개로 둔다 (docs/06_실행_제약_계약.md).
 	CompileMemoryLimitMb int
 	MaxOutputBytes       int
+	// HarnessFile 과 HarnessSource 는 **문제가 제공한 하네스**다 (#421).
+	//
+	// 둘 다 있으면 사용자 코드는 `SourceFile` 로, 하네스는 `HarnessFile` 로 저장되고
+	// `Run` 은 하네스를 돌리는 명령이 된다.
+	HarnessFile   string
+	HarnessSource string
+
 	// Harness 는 이 런타임이 필요로 하는 실행 스크립트다 (#60). 비어 있으면 없다.
 	//
 	// SQL 런타임은 PostgreSQL 을 띄우고 읽기 전용 롤을 만드는 스크립트가 필요하다.

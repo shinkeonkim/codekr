@@ -46,7 +46,20 @@ runtimes:
           print(sum(map(int, data)))
 
       main()
-
+    # 함수형 문제 (#421, #445). 하네스와 사용자 코드를 **파일로 나눠** 놓고 하네스를 돈다.
+    #
+    # 로더가 하네스를 읽자마자 **지운다.** 그러지 않으면 사용자 코드가 같은 디렉터리에서
+    # `open("main.py")` 로 그대로 읽을 수 있다 — 하네스에는 정답의 일부나 테스트 방식이
+    # 들어간다. 지운 뒤에도 `compile(src, "main.py", ...)` 이라 **트레이스백의 줄 번호는
+    # 그대로**이고, 파일이 없으므로 파이썬이 하네스의 소스를 함께 찍지도 못한다.
+    functionHarness:
+      file: "main.py"
+      # 사용자 코드는 import 되는 쪽으로 간다 — 진입점은 하네스가 가져간다.
+      sourceFile: "solution.py"
+      run:
+        - "python"
+        - "-c"
+        - 'import os,sys;p="main.py";src=open(p).read();os.remove(p);sys.argv=[p];exec(compile(src,p,"exec"),{"__name__":"__main__","__file__":p})'
   - id: "python:3.12"
     label: "Python 3.12"
     monacoLanguage: "python"

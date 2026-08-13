@@ -1,6 +1,10 @@
 package sandbox
 
 import (
+	"archive/tar"
+	"bytes"
+	"encoding/base64"
+	"io"
 	"strings"
 	"testing"
 )
@@ -169,4 +173,84 @@ func TestBuildInputArchiveRejectsUnknownHarness(t *testing.T) {
 	if _, err := buildInputArchive(spec, stageScripts{}); err == nil {
 		t.Fatal("알 수 없는 하네스는 거부해야 합니다")
 	}
+}
+
+/*
+함수형 문제의 하네스는 **사용자 코드와 다른 파일로** 들어간다 (#445, #421).
+
+문자열로 이어 붙이면 사용자 코드의 줄 번호가 하네스 길이만큼 밀리고, **틀린 곳을
+못 찾는 오류 메시지는 없는 것만 못하다.**
+*/
+func TestBuildInputArchivePlacesHarnessAsItsOwnFile(t *testing.T) {
+	spec := Spec{
+		SourceFile:    "solution.py",
+		SourceCode:    "def solve(a, b):\n    return a + b\n",
+		HarnessFile:   "main.py",
+		HarnessSource: "from solution import solve\nprint(solve(1, 2))\n",
+	}
+
+	archive, err := buildInputArchive(spec, stageScripts{})
+	if err != nil {
+		t.Fatalf("아카이브를 만들지 못했습니다: %v", err)
+	}
+	files := readArchive(t, archive)
+
+	if got := files["solution.py"]; got != spec.SourceCode {
+		t.Errorf("사용자 코드가 그대로 들어가야 합니다: %q", got)
+	}
+	if got := files["main.py"]; got != spec.HarnessSource {
+		t.Errorf("하네스가 그대로 들어가야 합니다: %q", got)
+	}
+}
+
+// **문제 자료가 하네스를 덮어쓰면 하네스가 하는 일을 출제자가 아닌 쪽이 정하게 된다.**
+func TestBuildInputArchiveRejectsFilesThatOverwriteTheHarness(t *testing.T) {
+	spec := Spec{
+		SourceFile:    "solution.py",
+		SourceCode:    "x = 1",
+		HarnessFile:   "main.py",
+		HarnessSource: "print(1)",
+		ExtraFiles:    map[string]string{"main.py": "print('pwned')"},
+	}
+
+	if _, err := buildInputArchive(spec, stageScripts{}); err == nil {
+		t.Fatal("하네스를 덮어쓰는 자료는 거부해야 합니다")
+	}
+}
+
+// 하네스와 사용자 코드가 같은 이름이면 한쪽이 사라진다 — 조용히 덮어쓰지 않고 끊는다.
+func TestBuildInputArchiveRejectsHarnessNameEqualToSource(t *testing.T) {
+	spec := Spec{
+		SourceFile:    "main.py",
+		SourceCode:    "x = 1",
+		HarnessFile:   "main.py",
+		HarnessSource: "print(1)",
+	}
+
+	if _, err := buildInputArchive(spec, stageScripts{}); err == nil {
+		t.Fatal("같은 이름은 거부해야 합니다")
+	}
+}
+
+// readArchive 는 base64 tar 를 풀어 이름 → 내용으로 돌려준다.
+func readArchive(t *testing.T, reader io.Reader) map[string]string {
+	t.Helper()
+	decoded, err := io.ReadAll(base64.NewDecoder(base64.StdEncoding, reader))
+	if err != nil {
+		t.Fatalf("base64 를 풀지 못했습니다: %v", err)
+	}
+	files := map[string]string{}
+	tarReader := tar.NewReader(bytes.NewReader(decoded))
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			break
+		}
+		body, err := io.ReadAll(tarReader)
+		if err != nil {
+			t.Fatalf("%s 를 읽지 못했습니다: %v", header.Name, err)
+		}
+		files[header.Name] = string(body)
+	}
+	return files
 }
