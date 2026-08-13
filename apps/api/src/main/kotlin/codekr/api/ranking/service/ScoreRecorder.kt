@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 class ScoreRecorder(
     private val scoreRepository: UserProblemScoreRepository,
     private val userRepository: UserRepository,
+    private val historyRecorder: ScoreHistoryRecorder,
 ) {
 
     /**
@@ -23,11 +24,16 @@ class ScoreRecorder(
     @Transactional
     fun record(userId: Long, problemId: Long): Int {
         val delta = scoreRepository.refresh(userId, problemId)
+        if (delta == 0) return delta
+
+        val score = scoreRepository.totalsOf(userId).first
+        // **오늘의 점수를 남긴다** (#476). 지금이 얼마인지만 있고 어떻게 왔는지가 없었다.
+        // 점수가 실제로 움직였을 때만 부른다 — 제출 경로의 쓰기를 늘리지 않으려는 것이다.
+        historyRecorder.record(userId, score)
 
         // 도달했던 최고 점수를 남긴다. 실력 티어는 이 값으로 정한다 — **강등이 없기 때문이다** (#58).
         if (delta > 0) {
             val user = userRepository.findById(userId).orElse(null) ?: return delta
-            val score = scoreRepository.totalsOf(userId).first
             if (score > user.peakScore) user.peakScore = score
         }
         return delta

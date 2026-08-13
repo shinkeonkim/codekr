@@ -3,15 +3,37 @@ package codekr.api.user.controller
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.config.security.PublicApi
 import codekr.api.user.dto.UserProfileResponse
+import codekr.api.ranking.service.ScoreHistoryService
+import codekr.api.ranking.service.ScorePoint
 import codekr.api.user.service.UserProfileService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/users")
-class UserProfileController(private val userProfileService: UserProfileService) {
+class UserProfileController(
+    private val userProfileService: UserProfileService,
+    private val scoreHistoryService: ScoreHistoryService,
+) {
+
+    /**
+     * 점수가 어떻게 변해 왔는가 (#476).
+     *
+     * **활동 그래프(#117)와 같은 자리에 있다.** 그쪽은 "얼마나 자주 했는가" 이고
+     * 이것은 "얼마나 늘었는가" 다 — 배우는 사람에게는 오르는 것이 보이는 것이
+     * 계속하는 이유가 된다.
+     *
+     * 로그인 없이 열린다. 점수·티어·순위는 랭킹(#57)이 이미 공개한다.
+     */
+    @PublicApi
+    @GetMapping("/{handle}/score-history")
+    fun scoreHistory(
+        @PathVariable handle: String,
+        @RequestParam(defaultValue = "365") days: Int,
+    ): List<ScorePoint> = scoreHistoryService.of(handle, days)
 
     /**
      * 회원 프로필 (#83, #333).

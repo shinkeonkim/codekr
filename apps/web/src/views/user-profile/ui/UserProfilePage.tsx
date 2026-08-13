@@ -8,6 +8,7 @@ import { Avatar, userApi } from "@/entities/user";
 import type { UserProfile } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { BadgeSnippet } from "@/features/profile-badge";
+import { ScoreHistoryChart } from "@/features/score-history";
 import { SubmissionExplorer } from "@/features/submission-explorer";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
