@@ -25,6 +25,8 @@ data class CommentUpsertRequest(
  */
 data class CommentResponse(
     val id: Long,
+    /** 어느 댓글에 달린 답인지 (#213). 화면이 이어받은 것을 제자리에 끼워 넣을 때 쓴다. */
+    val parentId: Long?,
     val authorNickname: String?,
     val authorAvatarUrl: String?,
     /** 삭제된 댓글은 본문을 내리지 않는다. 자리만 남는다. */
@@ -43,4 +45,25 @@ data class CommentResponse(
     val editable: Boolean,
     val deletable: Boolean,
     val children: List<CommentResponse>,
+    /**
+     * 아직 안 내려온 답글 수 (#213).
+     *
+     * **없으면 화면이 "더 있는지" 를 알 수 없다.** 접힌 자리에 개수가 안 보이면
+     * 펼칠 이유도 모른다.
+     */
+    val remainingChildren: Int,
+)
+
+/**
+ * 잘라서 내리는 댓글 트리 (#213).
+ *
+ * 전체 수를 **서버가 센다** — 화면이 받은 트리를 세던 방식은 잘라 내리기 시작하면
+ * 곧바로 틀린 수가 된다.
+ */
+data class CommentTreeResponse(
+    val comments: List<CommentResponse>,
+    /** 삭제 규칙까지 반영한 이 글의 댓글 수. */
+    val totalCount: Int,
+    /** 최상위에 아직 안 내려온 수. */
+    val remainingTop: Int,
 )

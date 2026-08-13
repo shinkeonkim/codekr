@@ -2,9 +2,10 @@
 
 import { postApi } from "@/entities/post";
 import type { Comment } from "@/entities/post";
+import { lastId, mergeComments } from "../model/merge";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { Alert, useToast } from "@/shared/ui";
+import { Alert, Button, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CommentForm } from "./CommentForm";
@@ -22,12 +23,26 @@ export function CommentTree({ postId }: { postId: number }) {
   const toast = useToast();
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [replyTo, setReplyTo] = useState<number | null>(null);
+  // 서버가 세는 값이다 (#213). 받은 트리를 세면 잘라 내리기 시작한 순간 틀린다.
+  const [total, setTotal] = useState(0);
+  const [remainingTop, setRemainingTop] = useState(0);
+
+  /** 새로 받은 트리를 이미 그린 것 위에 겹치지 않게 얹는다. */
+  const apply = (tree: { comments: Comment[]; totalCount: number; remainingTop: number }) => {
+    setComments((current) => mergeComments(current ?? [], tree.comments));
+    setTotal(tree.totalCount);
+    setRemainingTop(tree.remainingTop);
+  };
 
   useEffect(() => {
+    // 알림·링크로 들어왔으면 그 자리가 보이도록 조상을 펴서 받는다 (#212).
+    const anchorId = Number(window.location.hash.replace("#comment-", ""));
     postApi
-      .comments(postId)
+      .comments(postId, Number.isFinite(anchorId) && anchorId > 0 ? { around: anchorId } : undefined)
       .then((loaded) => {
-        setComments(loaded);
+        setComments(loaded.comments);
+        setTotal(loaded.totalCount);
+        setRemainingTop(loaded.remainingTop);
         /*
           알림이 준 자리로 옮긴다 (#212).
 
@@ -45,7 +60,7 @@ export function CommentTree({ postId }: { postId: number }) {
 
   const submit = async (body: string, parentId?: number) => {
     try {
-      setComments(await postApi.addComment(postId, { parentId, body }));
+      apply(await postApi.addComment(postId, { parentId, body }));
       setReplyTo(null);
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "댓글을 남기지 못했습니다.");
@@ -59,7 +74,7 @@ export function CommentTree({ postId }: { postId: number }) {
    */
   const edit = async (id: number, body: string): Promise<boolean> => {
     try {
-      setComments(await postApi.updateComment(id, body));
+      apply(await postApi.updateComment(id, body));
       return true;
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "수정하지 못했습니다.");
@@ -70,13 +85,29 @@ export function CommentTree({ postId }: { postId: number }) {
   const remove = async (id: number) => {
     if (!confirm("이 댓글을 삭제할까요?")) return;
     try {
-      setComments(await postApi.removeComment(id));
+      apply(await postApi.removeComment(id));
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "삭제하지 못했습니다.");
     }
   };
 
-  const total = comments ? count(comments) : 0;
+  /** 한 부모의 답글을 조금씩 편다 — 한 번에 다 펴면 접은 이유가 사라진다. */
+  const loadChildren = async (commentId: number, after?: number) => {
+    try {
+      const tree = await postApi.commentChildren(commentId, after);
+      setComments((current) => graft(current ?? [], commentId, tree.comments, tree.remainingTop));
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "답글을 더 불러오지 못했습니다.");
+    }
+  };
+
+  const loadMoreTop = async () => {
+    try {
+      apply(await postApi.comments(postId, { after: lastId(comments ?? []) }));
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "댓글을 더 불러오지 못했습니다.");
+    }
+  };
 
   return (
     <section className="space-y-3">
@@ -103,16 +134,35 @@ export function CommentTree({ postId }: { postId: number }) {
             onSubmit={submit}
             onRemove={remove}
             onEdit={edit}
+            onLoadChildren={loadChildren}
           />
         ))}
+
+        {remainingTop > 0 ? (
+          <Button variant="secondary" className="w-full text-xs" onClick={loadMoreTop}>
+            댓글 {remainingTop}개 더 보기
+          </Button>
+        ) : null}
       </div>
     </section>
   );
 }
 
-function count(comments: Comment[]): number {
-  return comments.reduce(
-    (sum, comment) => sum + (comment.deleted ? 0 : 1) + count(comment.children),
-    0,
-  );
+/** 이어받은 답글을 그 부모 자리에 끼워 넣는다. 트리의 다른 곳은 건드리지 않는다. */
+function graft(
+  comments: Comment[],
+  parentId: number,
+  children: Comment[],
+  remaining: number,
+): Comment[] {
+  return comments.map((comment) => {
+    if (comment.id === parentId) {
+      return {
+        ...comment,
+        children: mergeComments(comment.children, children),
+        remainingChildren: remaining,
+      };
+    }
+    return { ...comment, children: graft(comment.children, parentId, children, remaining) };
+  });
 }
