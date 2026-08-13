@@ -9,6 +9,8 @@ data class TestcaseRequest(
     val input: String,
     val expectedOutput: String,
     val visibility: TestcaseVisibility = TestcaseVisibility.HIDDEN,
+    /** 부분 점수 묶음 (#473). 비면 묶음이 없는 문제다. */
+    val groupNo: Int? = null,
 ) {
-    fun toEntity() = ProblemTestcase(seq, input, expectedOutput, visibility)
+    fun toEntity() = ProblemTestcase(seq, input, expectedOutput, visibility, groupNo)
 }
