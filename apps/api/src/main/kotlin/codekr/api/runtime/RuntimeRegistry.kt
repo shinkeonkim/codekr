@@ -26,8 +26,18 @@ class RuntimeRegistry(
 
     fun findAll(): List<RuntimeDefinition> = runtimes
 
-    /** 그 유형으로 풀 수 있는 런타임만 (#60). */
-    fun findFor(kind: ProblemKind): List<RuntimeDefinition> = runtimes.filter { it.problemKind == kind }
+    /**
+     * 그 유형으로 풀 수 있는 런타임만 (#60, #446).
+     *
+     * **함수형은 자기 런타임을 따로 갖지 않는다.** 파이썬 문제를 파이썬으로 푸는 것은
+     * 같고, 다른 것은 하네스가 진입점을 가져간다는 것뿐이다 — 그래서 stdio 런타임 중
+     * **실행기가 하네스 방식을 아는 것**만 고른다.
+     */
+    fun findFor(kind: ProblemKind): List<RuntimeDefinition> = when (kind) {
+        ProblemKind.JUDGE_FUNCTION ->
+            runtimes.filter { it.problemKind == ProblemKind.JUDGE_STDIO && it.supportsFunctionHarness }
+        else -> runtimes.filter { it.problemKind == kind }
+    }
 
     fun require(id: String): RuntimeDefinition = byId[id] ?: throw ApiException(ErrorCode.RUNTIME_NOT_FOUND)
 
@@ -53,6 +63,8 @@ class RuntimeRegistry(
                 // 적지 않으면 stdin/stdout 이다 — 지금까지의 모든 런타임이 그것이다.
                 problemKind = (it["problemKind"] as? String)
                     ?.let(ProblemKind::valueOf) ?: ProblemKind.JUDGE_STDIO,
+                // 실행기가 이 런타임의 하네스 방식을 아는가 (#445). 적어 두지 않으면 모른다.
+                supportsFunctionHarness = it["functionHarness"] != null,
             )
         }
     }

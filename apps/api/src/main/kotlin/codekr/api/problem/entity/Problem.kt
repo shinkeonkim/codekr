@@ -162,6 +162,9 @@ class Problem(
     @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL], orphanRemoval = true)
     private val allowedRuntimes: MutableList<ProblemAllowedRuntime> = mutableListOf()
 
+    @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL], orphanRemoval = true)
+    private val harnesses: MutableList<ProblemHarness> = mutableListOf()
+
     @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL])
     private val allRuntimeLimits: MutableList<ProblemRuntimeLimit> = mutableListOf()
 
@@ -181,11 +184,42 @@ class Problem(
      * 고르지 않는 것이 곧 "전부 허용" 이고, 그 문구를 화면이 적는다. 하나라도 고르면
      * 그 목록만 허용된다.
      */
-    val allowedRuntimeIds: List<String> get() = allowedRuntimes.map { it.runtimeId }.sorted()
+    val allowedRuntimeIds: List<String>
+        get() = when (problemKind) {
+            // 함수형은 하네스가 곧 허용 목록이다 (#446).
+            ProblemKind.JUDGE_FUNCTION -> harnessRuntimeIds
+            else -> allowedRuntimes.map { it.runtimeId }.sorted()
+        }
 
-    /** 이 런타임으로 풀 수 있는가 (#419). 허용 목록이 비어 있으면 무엇이든 좋다. */
-    fun allowsRuntime(runtimeId: String): Boolean =
-        allowedRuntimes.isEmpty() || allowedRuntimes.any { it.runtimeId == runtimeId }
+    /**
+     * 함수형 문제의 하네스 (#446). **하네스를 쓴 언어가 곧 풀 수 있는 언어다.**
+     *
+     * 허용 목록(#419)을 손으로 또 고르게 하지 않는다 — 두 곳이 같은 것을 정하면 어긋난다.
+     */
+    val harnessRuntimeIds: List<String> get() = harnesses.map { it.runtimeId }.sorted()
+
+    fun harnessFor(runtimeId: String): String? =
+        harnesses.firstOrNull { it.runtimeId == runtimeId }?.source
+
+    fun replaceHarnesses(sources: Map<String, String>) {
+        harnesses.clear()
+        sources.filterValues { it.isNotBlank() }.toSortedMap().forEach { (runtimeId, source) ->
+            harnesses.add(ProblemHarness(runtimeId, source).also { it.assignTo(this) })
+        }
+    }
+
+    /** 이 런타임으로 풀 수 있는가 (#419, #446). 허용 목록이 비어 있으면 무엇이든 좋다. */
+    fun allowsRuntime(runtimeId: String): Boolean = when {
+        /*
+            **함수형 문제는 하네스가 있는 언어로만 풀린다** (#446).
+
+            허용 목록을 따로 두지 않는다 — 하네스를 쓴 것이 곧 "이 언어로 낼 수 있다"
+            는 뜻이고, 두 곳이 같은 것을 정하면 어긋난다.
+        */
+        problemKind == ProblemKind.JUDGE_FUNCTION -> harnesses.any { it.runtimeId == runtimeId }
+        allowedRuntimes.isEmpty() -> true
+        else -> allowedRuntimes.any { it.runtimeId == runtimeId }
+    }
 
     fun replaceAllowedRuntimes(runtimeIds: List<String>) {
         allowedRuntimes.clear()

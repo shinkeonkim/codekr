@@ -17,6 +17,43 @@ import org.springframework.stereotype.Component
 @Component
 class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
 
+    /**
+     * 함수형 문제의 하네스 (#446).
+     *
+     * **하네스가 없으면 아무도 풀 수 없는 문제가 된다** — 허용 언어가 하네스로 정해지기
+     * 때문이다(#419 와 같은 자리). 그래서 공개하려면 하나는 있어야 한다.
+     */
+    private fun validateHarnesses(request: ProblemUpsertRequest) {
+        if (request.problemKind != ProblemKind.JUDGE_FUNCTION) {
+            if (request.harnesses.isNotEmpty()) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "함수 구현 문제가 아닌데 하네스가 실려 있습니다.")
+            }
+            return
+        }
+        if (request.published && request.harnesses.isEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "함수 구현 문제는 하네스를 최소 하나 써야 합니다. 하네스가 있는 언어로만 풀 수 있습니다.",
+            )
+        }
+        request.harnesses.keys.forEach { runtimeId ->
+            val runtime = runtimeRegistry.require(runtimeId)
+            if (!runtime.supportsFunctionHarness) {
+                throw ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "이 언어로는 함수 구현 문제를 낼 수 없습니다: ${runtime.label}",
+                )
+            }
+        }
+        // 허용 목록은 하네스가 정한다 — 두 곳이 같은 것을 정하면 어긋난다.
+        if (request.allowedRuntimeIds.isNotEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "함수 구현 문제는 허용 언어를 따로 고르지 않습니다. 하네스를 쓴 언어가 곧 허용 언어입니다.",
+            )
+        }
+    }
+
     fun validate(request: ProblemUpsertRequest) {
 
         // 채점기 구현도 스펙 테이블도 없는 유형으로는 문제를 만들 수 없다 (#59).
@@ -34,6 +71,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         if (request.problemKind != ProblemKind.JUDGE_SQL && request.sqlSpec != null) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "SQL 문제가 아닌데 SQL 스펙이 실려 있습니다.")
         }
+        validateHarnesses(request)
         // 채점할 대상이 없는 문제는 공개해도 아무 의미가 없다.
         // SQL 문제의 채점 대상은 테스트케이스가 아니라 정답 쿼리다 (#60).
         if (request.published && request.problemKind != ProblemKind.JUDGE_SQL && request.testcases.isEmpty()) {

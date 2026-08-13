@@ -59,6 +59,14 @@ data class ProblemUpsertRequest(
      */
     val allowedRuntimeIds: List<String> = emptyList(),
 
+    /**
+     * 함수형 문제의 언어별 하네스 (#446). `런타임 id → 하네스 소스`.
+     *
+     * **하네스를 쓴 언어가 곧 풀 수 있는 언어다** — `allowedRuntimeIds` 를 따로
+     * 고르게 하지 않는다. 함수형이 아닌 문제에 실려 오면 서비스가 거부한다.
+     */
+    val harnesses: Map<String, String> = emptyMap(),
+
     /** SQL 유형일 때만 쓴다 (#60). 다른 유형에 실려 오면 서비스가 거부한다. */
     @field:Valid
     val sqlSpec: SqlSpecRequest? = null,
