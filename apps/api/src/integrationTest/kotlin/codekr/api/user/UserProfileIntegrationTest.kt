@@ -99,6 +99,46 @@ class UserProfileIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.submissionCount").value(0))
     }
 
+    @Test
+    fun `로그인 없이 프로필이 열린다`() {
+        /*
+          게시판·랭킹·문제집이 이름을 공개로 보여 주고 링크를 건다 (#333).
+          **누르면 튕기는 링크는 고장으로 보인다.**
+        */
+        insertSubmission(problemId = 1, verdict = "ACCEPTED")
+
+        mockMvc.perform(get("/api/v1/users/풀이왕"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.nickname").value("풀이왕"))
+            .andExpect(jsonPath("$.solvedCount").value(1))
+    }
+
+    @Test
+    fun `활동 그래프도 함께 열린다`() {
+        // 프로필만 열고 이것을 막으면 페이지의 절반이 비는데, 비로그인은 그것이
+        // 원래 비어 있는 것인지 고장인지 알 수 없다.
+        mockMvc.perform(get("/api/v1/users/풀이왕/activity")).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `제출 목록까지 열리지는 않는다`() {
+        /*
+          **선은 "센 숫자냐 한 줄 한 줄이냐" 로 긋는다.**
+
+          프로필이 주는 것은 개수이고, 어떤 문제를 어떤 결과로 냈는지는 여기서
+          나오지 않는다. 그 목록(#34)이 열려 있지 않다는 것이 이 결정의 전제다 —
+          이 시험이 깨지면 프로필 공개의 근거가 함께 무너진다.
+        */
+        mockMvc.perform(get("/api/v1/submissions")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `이메일은 비로그인에게도 로그인에게도 나가지 않는다`() {
+        val body = mockMvc.perform(get("/api/v1/users/풀이왕")).andReturn().response.contentAsString
+
+        kotlin.test.assertTrue(!body.contains("solver@codekr.dev"), "이메일이 새면 안 됩니다: $body")
+    }
+
     private fun insertProblem(id: Long, slug: String, level: Int, published: Boolean = true) {
         jdbcClient.sql(
             """

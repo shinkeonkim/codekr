@@ -1,6 +1,7 @@
 package codekr.api.activity.controller
 
 import codekr.api.config.security.AuthenticatedApi
+import codekr.api.config.security.PublicApi
 import codekr.api.activity.dto.ActivityResponse
 import codekr.api.activity.service.ActivityService
 import codekr.api.auth.security.AuthPrincipal
@@ -33,12 +34,16 @@ class ActivityController(
     ): ActivityResponse = activityService.findActivity(principal.userId, from, to, year)
 
     /**
-     * 남의 활동 (#117).
+     * 남의 활동 (#117, #333).
      *
-     * 프로필(#83)과 같은 선을 따른다 — 로그인이 필요하고, 전체 제출 목록에 이미 담긴
-     * 정보를 날짜별로 묶은 것이다. 프로필만 열고 활동을 막으면 그게 우회로가 된다.
+     * **프로필(#83)과 같은 선을 따른다** — 그쪽이 열렸으므로 여기도 열린다. 프로필만
+     * 열고 이것을 막으면 페이지의 절반이 비는데, 비로그인은 그것이 원래 비어 있는 것인지
+     * 고장인지 알 수 없다.
+     *
+     * 선은 **"센 숫자냐 한 줄 한 줄이냐"** 로 긋는다. 이것은 날짜별 **개수**라 어떤
+     * 문제를 어떤 결과로 냈는지가 없다 — 그 목록(#34)은 지금도 로그인이 필요하다.
      */
-    @AuthenticatedApi
+    @PublicApi
     @GetMapping("/{nickname}/activity")
     fun findUserActivity(
         @PathVariable nickname: String,
