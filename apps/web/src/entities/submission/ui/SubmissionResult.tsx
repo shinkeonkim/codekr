@@ -1,5 +1,5 @@
 import { Badge } from "@/shared/ui";
-import { STATUS_LABELS, VERDICT_LABELS, verdictTone } from "../model/labels";
+import { SOURCE_HIDDEN, STATUS_LABELS, VERDICT_LABELS, verdictTone } from "../model/labels";
 import type { SubmissionSummary } from "../model/types";
 
 /**
@@ -29,7 +29,7 @@ export function SubmissionResult({ submission }: { submission: SubmissionSummary
       {submission.sourceVisible ? null : (
         <span
           className="whitespace-nowrap text-xs text-ink-muted"
-          title="작성자가 코드를 공개하지 않았습니다"
+          title={SOURCE_HIDDEN}
         >
           비공개
         </span>
