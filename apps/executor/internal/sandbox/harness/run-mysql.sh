@@ -43,17 +43,23 @@ die() {
 
 # --initialize-insecure: root 에 비밀번호가 없다. 네트워크가 없고 컨테이너와 함께
 # 사라지는 인스턴스라 비밀번호는 지킬 것이 아니라 기동을 늦추는 것이다.
-# **`--user` 를 주지 않는다.** 그 옵션은 root 로 뜬 mysqld 가 권한을 내려놓기 위한
-# 것인데, 우리는 처음부터 그 계정으로 돈다. 주면 mysqld 가 `initgroups`·`setgid` 를
-# 부르고, 능력을 모두 뗀 샌드박스(특히 user namespace 재매핑 아래)에서는 그것이
-# 실패해 디렉터리조차 만들지 못한다.
-mysqld --initialize-insecure --datadir="$DATADIR" >/work/.my.log 2>&1 || die "초기화 실패"
+# **`--no-defaults` 로 이미지의 `/etc/my.cnf` 를 통째로 무시한다.**
+#
+# 그 파일에 `user=mysql` 이 들어 있다. 그러면 mysqld 는 우리가 `--user` 를 주지 않아도
+# 권한을 내려놓는 절차(`initgroups`·`setgid`)를 밟는데, **능력을 모두 뗀 샌드박스**
+# (특히 user namespace 재매핑 아래)에서는 그것이 실패해 데이터 디렉터리조차 만들지
+# 못한다. 우리는 처음부터 그 계정으로 돌므로 내려놓을 권한이 없다.
+#
+# 이미지의 기본값을 안 쓰는 편이 낫기도 하다 — 그 파일이 바뀌면 채점 환경이 조용히
+# 달라진다. 필요한 값은 전부 아래에 적혀 있다.
+mysqld --no-defaults --initialize-insecure --datadir="$DATADIR" >/work/.my.log 2>&1 \
+    || die "초기화 실패"
 
 # --skip-networking : 유닉스 소켓만. 네트워크는 이미 꺼져 있지만 한 겹만 믿지 않는다
 # --secure-file-priv=NULL : `INTO OUTFILE`·`LOAD DATA INFILE` 자체를 끈다
 # --local-infile=0 : 클라이언트 쪽 파일 읽기를 끈다
 # --max-execution-time : 쿼리 하나가 서버를 붙잡지 못하게 (SELECT 에 걸린다)
-mysqld --datadir="$DATADIR" --socket="$SOCK" --pid-file=/work/my.pid \
+mysqld --no-defaults --datadir="$DATADIR" --socket="$SOCK" --pid-file=/work/my.pid \
     --skip-networking --secure-file-priv=NULL --local-infile=0 \
     --max-execution-time="${CODEKR_SQL_TIMEOUT_MS:-5000}" >>/work/.my.log 2>&1 &
 
