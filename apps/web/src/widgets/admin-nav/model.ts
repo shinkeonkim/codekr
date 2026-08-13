@@ -61,6 +61,14 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["BOARD_MANAGER"],
   },
   {
+    href: "/admin/collections",
+    label: "문제집 관리",
+    description: "남에게 보여지는 문제집 훑어보기와 내리기",
+    // 게시판과 같은 결의 일이다 (#393). 새 역할을 만들지 않았다 — 지금 여섯인데
+    // 쓸 화면이 없는 것이 이미 있었다 (#103).
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/badges",
     label: "뱃지",
     description: "문구·노출과 달성 규칙",
