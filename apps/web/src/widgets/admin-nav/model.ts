@@ -76,6 +76,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/groups",
+    label: "그룹 관리",
+    description: "누구나 만드는 그룹 훑어보기와 내리기",
+    // 문제집(#393)과 같은 결이다 — 새 역할을 만들지 않았다 (#438).
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/badges",
     label: "뱃지",
     description: "문구·노출과 달성 규칙",
