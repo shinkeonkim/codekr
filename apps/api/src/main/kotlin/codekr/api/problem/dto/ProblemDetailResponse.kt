@@ -4,6 +4,7 @@ import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.Problem
+import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.runtime.RuntimeDefinition
 import codekr.api.tag.dto.ProblemTagResponse
@@ -65,6 +66,8 @@ data class ProblemDetailResponse(
             stats: ProblemStats,
             tags: List<ProblemTagResponse>,
             credits: List<ProblemCreditResponse> = emptyList(),
+            /** 런타임 → 그 언어로 풀 때 채울 파일들 (#457). */
+            files: Map<String, List<ProblemFile>> = emptyMap(),
         ) = ProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
@@ -89,7 +92,12 @@ data class ProblemDetailResponse(
             examples = problem.examples.map(ProblemExampleResponse::from),
             runtimeRestricted = problem.allowedRuntimeIds.isNotEmpty(),
             runtimes = runtimes.map {
-                ProblemRuntimeResponse.of(it, problem.templateOf(it.id), problem.limitsFor(it.id))
+                ProblemRuntimeResponse.of(
+                    it,
+                    problem.templateOf(it.id),
+                    problem.limitsFor(it.id),
+                    files[it.id].orEmpty(),
+                )
             },
             tags = tags,
         )

@@ -50,6 +50,7 @@ abstract class IntegrationTestBase {
             TRUNCATE comments, posts, submission_views, problem_collection_items, problem_collections,
                      contest_registrations, contest_problems, contests,
                      submission_testcase_results, submissions, problem_runtime_limits,
+                     problem_files,
                      problem_sql_specs,
                      problem_nosql_specs,
                      problem_templates, problem_testcases, problems,

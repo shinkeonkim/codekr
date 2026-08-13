@@ -2,6 +2,7 @@ package codekr.api.submission.entity
 
 import codekr.api.common.entity.SoftDeletableEntity
 import jakarta.persistence.Column
+import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -25,6 +26,17 @@ class Submission(
 
     @Column(name = "source_code", nullable = false, columnDefinition = "text")
     val sourceCode: String,
+
+    /**
+     * 여러 파일로 낸 제출 (#457). null 이면 파일 하나짜리다.
+     *
+     * **차 있으면 이쪽이 진실**이고, `sourceCode` 에는 진입점 파일의 내용이 함께
+     * 들어간다 — 제출 목록·상세·통계처럼 소스를 하나로 보는 기존 경로가 그대로 돌게
+     * 하기 위함이다.
+     */
+    @Convert(converter = SourceFilesConverter::class)
+    @Column(name = "source_files", columnDefinition = "text")
+    val sourceFiles: Map<String, String>? = null,
 
     @Column(name = "total_count", nullable = false)
     var totalCount: Int = 0,

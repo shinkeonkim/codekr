@@ -19,6 +19,12 @@ data class JudgeJobMessage(
     val kind: ProblemKind = ProblemKind.JUDGE_STDIO,
     val runtimeId: String,
     val sourceCode: String,
+    /**
+     * 여러 파일로 낸 제출 (#457). 비면 `sourceCode` 하나다.
+     *
+     * **채점기는 DB 를 읽지 않는다** (ADR-0004) — 파일도 전부 실려 간다.
+     */
+    val sourceFiles: Map<String, String>? = null,
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
     val testcases: List<JudgeTestcaseMessage>,
@@ -65,6 +71,7 @@ data class JudgeJobMessage(
                 kind = problem.problemKind,
                 runtimeId = submission.runtimeId,
                 sourceCode = submission.sourceCode,
+                sourceFiles = submission.sourceFiles,
                 timeLimitMs = limits.timeLimitMs,
                 memoryLimitMb = limits.memoryLimitMb,
                 testcases = problem.testcases.map(JudgeTestcaseMessage::from),

@@ -7,6 +7,7 @@ import codekr.api.common.error.ErrorCode
 import codekr.api.config.properties.SubmissionProperties
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.service.ProblemService
 import codekr.api.queue.JudgeJobFactory
@@ -51,11 +52,14 @@ class SubmissionService(
     private val userRepository: UserRepository,
     private val properties: SubmissionProperties,
     private val viewRecorder: SubmissionViewRecorder,
+    private val problemFileRepository: ProblemFileRepository,
 ) {
 
     /** 임의 입력으로 1회 실행한다. 채점하지 않으므로 제출 이력을 남기지 않는다. */
     fun run(slug: String, request: RunRequest): RunResponse {
         val problem = problemService.requirePublished(slug)
+        // **실행(#/run)은 아직 파일 하나다** (#457). 여러 파일을 시험 삼아 돌리는 것은
+        // 화면(#498)이 파일 탭을 갖춘 뒤에 열어야 뜻이 있다.
         validate(problem, request.runtimeId, request.sourceCode)
         // 실행도 제출과 같은 제한을 써야 한다. 실행에서 통과한 코드가 제출에서 TLE 나면
         // 사용자는 왜 그런지 알 수 없다.
@@ -76,7 +80,13 @@ class SubmissionService(
     @Transactional
     fun submit(slug: String, userId: Long, request: SubmitRequest): SubmitResponse {
         val problem = problemService.requirePublished(slug)
-        validate(problem, request.runtimeId, request.sourceCode)
+        // 파일이 여럿인 문제인지는 **문제와 런타임**이 함께 정한다 (#457) —
+        // 같은 문제라도 자바는 Main.java·Helper.java, 파이썬은 main.py·helper.py 다.
+        val declared = problemFileRepository
+            .findByProblemIdAndRuntimeIdOrderBySeq(problem.id, request.runtimeId)
+        val files = SubmissionFiles.resolve(declared, request)
+        val sourceCode = files?.let { SubmissionFiles.entrySource(declared, it) } ?: request.sourceCode
+        validate(problem, request.runtimeId, sourceCode)
         // 유형마다 채점 대상이 다르다 — SQL 은 정답 쿼리, NoSQL 은 끝난 뒤의 상태다 (#60, #455).
         if (problem.problemKind.needsTestcases && problem.testcases.isEmpty()) {
             throw ApiException(ErrorCode.TESTCASE_REQUIRED)
@@ -98,7 +108,8 @@ class SubmissionService(
                 userId = userId,
                 problemId = problem.id,
                 runtimeId = request.runtimeId,
-                sourceCode = request.sourceCode,
+                sourceCode = sourceCode,
+                sourceFiles = files,
                 totalCount = problem.judgeUnitCount,
                 // 요청에 없으면 사용자 기본값을 쓴다 (#104).
                 // **서버에서 채운다** — 화면이 기본값을 알고 보내는 방식이면 화면마다 어긋난다.
@@ -222,6 +233,11 @@ class SubmissionService(
     }
 
     private fun validate(problem: Problem, runtimeId: String, sourceCode: String) {
+        // 파일 하나짜리 제출이 비어 있으면 채점할 것이 없다. 파일 문제에서는 위에서
+        // 진입점 파일의 내용이 들어오므로 같은 규칙으로 걸린다 (#457).
+        if (sourceCode.isBlank()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "소스 코드는 비어 있을 수 없습니다.")
+        }
         val runtime = runtimeRegistry.require(runtimeId)
         // 유형이 맞지 않는 런타임은 고를 수 있어도 채점되지 않는다 (#60).
         // 화면이 목록을 걸러 주지만, 화면을 거치지 않는 경로가 생겨도 막히게 여기서도 본다.
