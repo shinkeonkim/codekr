@@ -2,8 +2,8 @@ package codekr.api.auth.email
 
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
-import codekr.api.user.email.UserEmail
-import codekr.api.user.email.UserEmailRepository
+import codekr.api.user.email.entity.UserEmail
+import codekr.api.user.email.repository.UserEmailRepository
 import codekr.api.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

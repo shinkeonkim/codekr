@@ -55,7 +55,8 @@ abstract class IntegrationTestBase {
                      notifications, admin_audit_logs, rejudge_batches, user_daily_activity,
                      problem_tags, problem_credits, tags,
                      user_problem_scores, user_badges, user_roles, user_suspensions,
-                     email_verifications, password_resets, term_agreements, users
+                     email_verifications, password_resets, term_agreements,
+                     affiliation_domains, affiliations, user_emails, post_attachments, users
             RESTART IDENTITY CASCADE
             """,
         ).update()

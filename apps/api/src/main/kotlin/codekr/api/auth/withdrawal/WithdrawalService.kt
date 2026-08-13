@@ -5,7 +5,7 @@ import codekr.api.auth.security.RevokedTokenRegistry
 import codekr.api.audit.service.AdminAuditService
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
-import codekr.api.user.email.UserEmailRepository
+import codekr.api.user.email.repository.UserEmailRepository
 import codekr.api.user.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

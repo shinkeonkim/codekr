@@ -1,4 +1,4 @@
-package codekr.api.user.email
+package codekr.api.user.email.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import org.springframework.data.jpa.repository.JpaRepository
 import java.time.Instant
 
 /**
@@ -36,10 +35,4 @@ class UserEmail(
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now()
-}
-
-interface UserEmailRepository : JpaRepository<UserEmail, Long> {
-    fun findByUserIdOrderByIdAsc(userId: Long): List<UserEmail>
-    fun existsByEmail(email: String): Boolean
-    fun deleteByUserId(userId: Long)
 }
