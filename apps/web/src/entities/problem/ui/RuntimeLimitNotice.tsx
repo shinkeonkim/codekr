@@ -12,7 +12,15 @@ export function RuntimeLimitNotice({ problem }: { problem: ProblemDetail }) {
   if (overridden.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-warn/30 bg-warn/8 px-4 py-3 text-sm">
+    /*
+      **바깥 여백을 스스로 든다** (#460). 놓이는 자리가 `space-y-*` 로 간격을 주는
+      구조가 아니라 **형제들이 각자 `mt-*` 를 붙이는** 구조인데, 이것만 안 붙어서
+      위 요소에 딱 붙어 나왔다.
+
+      경고색 테두리와 배경이 있는 상자라 경계가 분명하고, 그것이 붙어 있으면 앞
+      요소와 한 덩어리로 보인다 — **어디서부터가 경고인지 읽는 사람이 알기 어렵다.**
+    */
+    <div className="mt-3 rounded-lg border border-warn/30 bg-warn/8 px-4 py-3 text-sm">
       <p className="font-medium text-ink">언어별 제한이 다릅니다</p>
       <ul className="mt-1.5 space-y-0.5 text-xs text-ink-muted">
         {overridden.map((runtime) => (
