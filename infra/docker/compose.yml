@@ -82,8 +82,10 @@ services:
       # 로컬에서 실제 발송까지 보려면 메일 싱크(mailpit 등)를 띄우고 이 값을 준다.
       CODEKR_MAIL_HOST: ${CODEKR_MAIL_HOST:-}
       CODEKR_MAIL_PORT: ${CODEKR_MAIL_PORT:-587}
+      CODEKR_MAIL_SSL: ${CODEKR_MAIL_SSL:-false}
       CODEKR_MAIL_USERNAME: ${CODEKR_MAIL_USERNAME:-}
       CODEKR_MAIL_PASSWORD: ${CODEKR_MAIL_PASSWORD:-}
+      CODEKR_MAIL_FROM: ${CODEKR_MAIL_FROM:-no-reply@xn--hy1by51c.kr}
       CODEKR_SITE_URL: ${CODEKR_SITE_URL:-http://localhost:13000}
       # 오브젝트 스토리지 (#115). 운영은 S3 호환, 로컬은 MinIO — **같은 코드 경로**다.
       CODEKR_STORAGE_ENDPOINT: http://storage:9000

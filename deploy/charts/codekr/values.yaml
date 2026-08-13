@@ -162,6 +162,24 @@ redis:
     requests: { cpu: 50m, memory: 128Mi }
     limits: { memory: 256Mi }
 
+# 메일 발송 (#233, #355).
+#
+# ⚠️ **이 저장소는 public 이다.** 여기에는 **시크릿 이름만** 적는다 —
+# 사용자 이름과 앱 비밀번호는 SOPS 로 암호화한 `codekr-secrets` 에 넣는다
+# (`CODEKR_MAIL_USERNAME`, `CODEKR_MAIL_PASSWORD`). `storage`·`postgres` 가
+# 이미 같은 패턴이다.
+#
+# **host 가 비면 이메일 인증이 통째로 꺼진 채 뜬다** — 보낼 수 없으면 요구하지도
+# 않는 것이 규칙이라(#115), 사고가 아니라 설계다. 켜려면 host 를 준다.
+mail:
+  host: ""
+  # Daum 스마트워크는 465/SSL 이다. 587 을 쓰면 ssl 을 끈다.
+  port: 465
+  ssl: true
+  # **인증 계정과 같은 주소여야 한다.** 다르면 제공자가 거부하거나 스팸함으로 간다.
+  from: ""
+  secretName: codekr-secrets
+
 postgres:
   # CNPG 오퍼레이터가 만든 클러스터를 쓴다 (홈랩 인프라 쪽에서 정의).
   host: codekr-db-rw
