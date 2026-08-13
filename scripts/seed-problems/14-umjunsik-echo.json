@@ -1,0 +1,53 @@
+{
+  "slug": "umjunsik-echo",
+  "title": "엄랭으로 정수 하나 출력하기",
+  "category": "ALGORITHM",
+  "difficulty": "BRONZE_5",
+  "allowedRuntimeIds": [
+    "umjunsik:1.0"
+  ],
+  "description": "**엄랭으로만 푸는 문제입니다.**\n\n정수 하나를 읽어 그대로 출력하세요.\n\n엄랭은 문법이 아주 좁습니다. 변수는 `어` 의 개수로 세고, 숫자는 `.` 와 `,` 의 개수로 만듭니다. **이 문제의 어려움도 알고리즘이 아니라 언어**입니다.\n\n| 줄 | 무엇 |\n|---|---|\n| `어떻게` | 프로그램은 이 줄로 시작해야 한다 |\n| `엄식?` | 정수 하나를 읽어 첫 번째 변수에 넣는다 |\n| `식어!` | 첫 번째 변수를 출력한다 |\n| `이 사람이름이냐ㅋㅋ` | 프로그램은 이 줄로 끝나야 한다 |\n\n**입력이 여럿이면 줄을 나눠 받습니다** — 한 줄에 둘을 두면 읽지 못합니다.",
+  "inputDescription": "정수 N이 한 줄에 주어집니다. (-1000 ≤ N ≤ 1000)",
+  "outputDescription": "N을 그대로 출력합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 256,
+  "outputComparison": "EXACT",
+  "floatEpsilon": 0.0,
+  "published": true,
+  "testcases": [
+    {
+      "seq": 1,
+      "input": "5\n",
+      "expectedOutput": "5\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 2,
+      "input": "-3\n",
+      "expectedOutput": "-3\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 3,
+      "input": "0\n",
+      "expectedOutput": "0\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 4,
+      "input": "1000\n",
+      "expectedOutput": "1000\n",
+      "visibility": "HIDDEN"
+    }
+  ],
+  "templates": [
+    {
+      "runtimeId": "umjunsik:1.0",
+      "sourceCode": "어떻게\n\n\n이 사람이름이냐ㅋㅋ\n"
+    }
+  ],
+  "solution": {
+    "runtimeId": "umjunsik:1.0",
+    "sourceCode": "어떻게\n엄식?\n식어!\n이 사람이름이냐ㅋㅋ\n"
+  }
+}
