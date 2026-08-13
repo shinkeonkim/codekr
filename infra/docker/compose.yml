@@ -151,9 +151,14 @@ services:
       context: *build-context
       dockerfile: apps/web/Dockerfile
       args:
-        # 브라우저에서 쓰는 주소이므로 컨테이너 이름이 아니라 호스트 주소여야 한다.
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:18080}
+        # **비워 둔다** — 운영과 같이 같은 출처로 부른다 (#314). web 의 rewrite 가
+        # `/api` 를 api 컨테이너로 넘긴다. 여기에 주소를 박으면 `<img src>` 처럼
+        # 접두사가 닿지 않는 자리에서 다시 어긋난다.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+        # 웹소켓은 rewrite 로 넘어가지 않으므로 그대로 호스트 주소를 준다.
         NEXT_PUBLIC_WS_BASE_URL: ${NEXT_PUBLIC_WS_BASE_URL:-ws://localhost:18080}
+        # rewrite 가 넘길 곳. **build args 다** — Next 가 빌드 때 굳힌다.
+        API_INTERNAL_BASE_URL: http://api:8080
     container_name: codekr-web
     environment:
       # sitemap 이 서버에서 문제 목록을 받아 올 주소 (#271).
