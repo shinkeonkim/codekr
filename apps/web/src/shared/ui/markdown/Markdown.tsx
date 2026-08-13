@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CodeBlock } from "./CodeBlock";
 
 /**
  * 최소 마크다운 렌더러 (#137).
@@ -10,7 +11,8 @@ import type { ReactNode } from "react";
  * 설정 하나가 어긋나면 구멍이 난다. 사용자가 쓴 것을 그리는 첫 기능이라 **구멍이 날 수
  * 없는 방식**을 골랐다. 여기서 새는 구멍은 나중에 붙는 댓글·질문에 그대로 이어진다.
  *
- * 지원: 문단, 코드 블록(```), 인라인 코드, **굵게**, 링크, 불릿 목록, 제목(#).
+ * 지원: 문단, 코드 블록(```, 언어에 맞게 칠한다 #384), 인라인 코드, **굵게**, 링크,
+ * 불릿 목록, 제목(#).
  *
  * **기울임(`*x*`·`_x_`)은 넣지 않았다** (#338). 문제 지문에는 `loans.member_id` 처럼
  * 밑줄이 든 식별자가 흔하다 — 기울임을 켜면 그 이름들이 조용히 기울어진다.
@@ -57,14 +59,8 @@ function renderBlocks(source: string, hideCode: boolean, labels: Map<number, str
         index += 1;
       }
       index += 1; // 닫는 ```
-      const code = (
-        <pre
-          className="overflow-x-auto rounded-lg bg-surface-muted p-3 text-xs"
-          data-language={language || undefined}
-        >
-          <code>{body.join("\n")}</code>
-        </pre>
-      );
+      // 언어에 맞게 칠한다 (#384). **모르는 언어는 그대로 둔다** — `CodeBlock` 이 정한다.
+      const code = <CodeBlock code={body.join("\n")} language={language || undefined} />;
       blocks.push(
         hideCode ? (
           // 문제 질문에는 정답 코드가 그대로 올라온다 (#139). 기본으로 접고 펼칠 수 있게 한다.
