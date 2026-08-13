@@ -25,6 +25,14 @@ type Check struct {
 	Assert func(sandbox.Outcome) error
 	// Spec 은 기본 스펙을 조정한다. 필요 없으면 nil.
 	Spec func(*sandbox.Spec)
+	/*
+		RuntimeID 는 이 검사를 실어 나를 런타임이다. 비면 파이썬(ProbeRuntimeID)이다.
+
+		**셸은 다른 언어와 위험이 같지 않다** (#456). 파이썬으로도 프로세스를 만들 수
+		있지만 셸은 **그것이 언어의 본체**다 — `|` 하나가 프로세스 둘이고, 한 줄이
+		fork 폭탄이 된다. 막히는 것은 같아도 **막히는 것을 확인할 필요**가 더 크다.
+	*/
+	RuntimeID string
 }
 
 // Checks 는 모든 검사를 순서대로 돌려준다.
@@ -37,6 +45,8 @@ func Checks() []Check {
 		processCountLimited(),
 		executorEnvironmentHidden(),
 		runawayOutputTruncated(),
+		shellStaysInTheSameBox(),
+		shellProcessCountLimited(),
 	}
 }
 
@@ -168,6 +178,72 @@ for _ in range(50000):
 			return nil
 		},
 		Spec: func(s *sandbox.Spec) { s.TimeLimitMs = 10000 },
+	}
+}
+
+/*
+셸도 같은 상자 안이다 (#456).
+
+전에는 검사가 전부 파이썬이었다. 파이썬이 막힌다고 셸이 막힌다는 보장은 없다 — 상자는
+이미지와 무관하게 걸리지만, **그 사실을 확인한 적이 없으면 믿을 근거가 없다.**
+*/
+func shellStaysInTheSameBox() Check {
+	return Check{
+		Name:      "셸도 같은 상자 안이다",
+		RuntimeID: ShellRuntimeID,
+		Code: `
+echo "uid $(id -u)"
+echo "write $(echo x > /etc/codekr-probe 2>/dev/null && echo WRITABLE || echo denied)"
+for path in /var/run/docker.sock /run/containerd/containerd.sock; do
+  [ -e "$path" ] && echo "EXPOSED $path" || echo "absent $path"
+done
+# 셸에서 가장 먼저 해 보는 것들. 없거나 막혀야 한다.
+for tool in sudo su curl wget nc; do
+  command -v "$tool" >/dev/null 2>&1 && echo "TOOL $tool" || echo "no-tool $tool"
+done
+`,
+		Assert: func(o sandbox.Outcome) error {
+			return allOf(
+				mustContain(o, "uid 10001", "셸이 non-root 로 실행되지 않았습니다"),
+				mustContain(o, "write denied", "셸에서 루트 파일 시스템에 쓸 수 있습니다"),
+				mustNotContain(o, "EXPOSED", "런타임 소켓이 셸에 노출되었습니다"),
+				mustNotContain(o, "TOOL sudo", "이미지에 sudo 가 들어 있습니다"),
+				mustNotContain(o, "TOOL curl", "이미지에 curl 이 들어 있습니다"),
+			)
+		},
+	}
+}
+
+/*
+셸에서 프로세스를 여럿 띄워도 제한이 걸린다 (#456).
+
+셸은 프로세스를 **쉽게** 여럿 만든다. 파이썬 판(processCountLimited)은 `os.fork` 를
+부르지만, 셸에서는 파이프 한 줄이나 `&` 하나가 같은 일을 한다.
+*/
+func shellProcessCountLimited() Check {
+	return Check{
+		Name:      "셸의 프로세스 수 제한",
+		RuntimeID: ShellRuntimeID,
+		Code: `
+spawned=0
+for i in $(seq 1 500); do
+  sleep 5 &
+  spawned=$((spawned + 1))
+  [ $((spawned % 32)) -eq 0 ] && echo "spawned $spawned"
+done
+echo "spawned-all $spawned"
+`,
+		Assert: func(o sandbox.Outcome) error {
+			return allOf(
+				// **먼저 정말 띄웠는지 본다.** 첫 줄에서 죽어도 "500 이 없다" 는 참이 되므로,
+				// 그것만 보면 아무것도 확인하지 않고 통과할 수 있다.
+				mustContain(o, "spawned 32", "셸이 프로세스를 만들지도 못했습니다"),
+				// 제한이 걸리면 여기까지 오지 못한다. 실측: 128 제한에서 96 까지 찍히고 멈춘다.
+				mustNotContain(o, "spawned-all", "셸에서 프로세스 수 제한이 걸리지 않았습니다"),
+			)
+		},
+		// 500번 도는 동안 기본 5초를 넘길 수 있다. 제한을 확인하는 것이 목적이다.
+		Spec: func(s *sandbox.Spec) { s.TimeLimitMs = 15000 },
 	}
 }
 
