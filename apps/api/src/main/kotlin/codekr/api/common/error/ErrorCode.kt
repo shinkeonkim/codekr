@@ -23,6 +23,17 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     SLUG_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 slug 입니다."),
 
+    /**
+     * 없는 경로·못 쓰는 메서드·읽을 수 없는 본문 (#324).
+     *
+     * 전부 **요청 잘못**인데 500 으로 나가고 있었다. 500 은 "우리 잘못" 이라, 오타 하나가
+     * 서버 오류로 잡히면 경보가 울리고 **진짜 장애가 그 사이에 묻힌다** (#132 와 같은 결).
+     */
+    RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 경로를 찾을 수 없습니다."),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "이 경로에서 쓸 수 없는 메서드입니다."),
+    MALFORMED_REQUEST(HttpStatus.BAD_REQUEST, "요청 본문을 읽을 수 없습니다."),
+    UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "지원하지 않는 형식입니다."),
+
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     PROBLEM_NOT_FOUND(HttpStatus.NOT_FOUND, "문제를 찾을 수 없습니다."),
     CONTEST_NOT_FOUND(HttpStatus.NOT_FOUND, "대회를 찾을 수 없습니다."),
