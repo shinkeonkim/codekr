@@ -1,0 +1,47 @@
+{
+  "slug": "bash-log-levels",
+  "title": "로그에서 레벨별 건수 세기",
+  "category": "ALGORITHM",
+  "difficulty": "BRONZE_2",
+  "allowedRuntimeIds": [
+    "bash:5"
+  ],
+  "description": "**셸로만 푸는 문제입니다.**\n\n로그를 받아 레벨별로 몇 줄인지 세세요.\n\n로그를 다듬는 일은 개발자가 매일 하는 것이고, 그때 손이 먼저 가는 것은 파이썬이 아니라 `awk`·`sort` 입니다. 이 문제는 그것을 묻습니다.\n\n각 줄은 공백으로 나뉜 세 부분입니다.\n\n```\n2026-08-14T09:00:01 INFO 서버 시작\n```\n\n| 자리 | 뜻 |\n|---|---|\n| 첫째 | 시각 |\n| 둘째 | 레벨 (`INFO`, `WARN`, `ERROR`, `DEBUG`, `TRACE`) |\n| 셋째부터 | 메시지. **공백이 들어 있을 수 있습니다** |\n\n실행 환경에 들어 있는 것은 **bash 5.2, GNU coreutils, GNU sed, GNU grep, mawk** 입니다. `awk` 는 mawk 이므로 `gensub` 같은 gawk 전용 함수는 쓸 수 없고, `jq`·`curl`·`python` 은 없습니다.",
+  "inputDescription": "로그가 여러 줄 주어집니다. (1 ≤ 줄 수 ≤ 10000)\n\n각 줄은 `시각 레벨 메시지` 이고 공백으로 구분됩니다. 메시지에는 공백이 들어 있을 수 있습니다.",
+  "outputDescription": "레벨마다 한 줄씩 `레벨 건수` 를 출력합니다.\n\n**건수가 많은 것부터**, 건수가 같으면 **레벨 이름의 사전순**으로 출력합니다.",
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256,
+  "outputComparison": "EXACT",
+  "floatEpsilon": 0.0,
+  "published": true,
+  "testcases": [
+    {
+      "seq": 1,
+      "input": "2026-08-14T09:00:01 INFO 서버 시작\n2026-08-14T09:00:02 ERROR 연결 실패\n2026-08-14T09:00:03 INFO 재시도\n2026-08-14T09:00:04 ERROR 연결 실패\n2026-08-14T09:00:05 WARN 느린 응답\n2026-08-14T09:00:06 ERROR 포기\n",
+      "expectedOutput": "ERROR 3\nINFO 2\nWARN 1\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 2,
+      "input": "2026-08-14T10:00:00 DEBUG 캐시 적중\n",
+      "expectedOutput": "DEBUG 1\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 3,
+      "input": "2026-08-14T11:00:00 WARN 디스크 85%\n2026-08-14T11:00:01 INFO 정리 시작\n2026-08-14T11:00:02 WARN 디스크 90%\n2026-08-14T11:00:03 INFO 정리 끝\n2026-08-14T11:00:04 ERROR 디스크 가득\n2026-08-14T11:00:05 TRACE 상세\n",
+      "expectedOutput": "INFO 2\nWARN 2\nERROR 1\nTRACE 1\n",
+      "visibility": "HIDDEN"
+    }
+  ],
+  "templates": [
+    {
+      "runtimeId": "bash:5",
+      "sourceCode": "#!/usr/bin/env bash\n# 표준 입력으로 로그가 들어옵니다.\n# awk 로 세고, sort 로 줄을 세우는 것이 짧습니다.\n"
+    }
+  ],
+  "solution": {
+    "runtimeId": "bash:5",
+    "sourceCode": "#!/usr/bin/env bash\nawk '{ count[$2]++ } END { for (level in count) print count[level], level }' |\n  sort -k1,1nr -k2,2 |\n  awk '{ print $2, $1 }'\n"
+  }
+}

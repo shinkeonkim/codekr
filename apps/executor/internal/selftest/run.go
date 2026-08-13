@@ -19,9 +19,17 @@ func (r Result) Passed() bool { return r.Err == nil }
 
 // Run 은 모든 검사를 순서대로 돌린다. 하나가 실패해도 나머지를 계속한다 —
 // 무엇이 뚫려 있는지 한 번에 다 알아야 판단할 수 있기 때문이다.
-func Run(ctx context.Context, box sandbox.Sandbox, probe Probe) []Result {
+func Run(ctx context.Context, box sandbox.Sandbox, probes map[string]Probe) []Result {
 	results := make([]Result, 0, len(Checks()))
 	for _, check := range Checks() {
+		probe, ok := probes[check.runtimeID()]
+		if !ok {
+			results = append(results, Result{
+				Name: check.Name,
+				Err:  fmt.Errorf("검사용 런타임 %s 를 풀지 못했습니다", check.runtimeID()),
+			})
+			continue
+		}
 		results = append(results, Result{Name: check.Name, Err: run(ctx, box, check, probe)})
 	}
 	return results

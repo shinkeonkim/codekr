@@ -269,6 +269,35 @@ runtimes:
           }
       }
 
+  # ── Shell ─────────────────────────────────────────────────────────────────
+  # 셸 문제 (#456). **stdin/stdout 만 한다.**
+  #
+  # 셸 문제의 절반은 "이 디렉터리의 .log 중 가장 큰 것" 처럼 **파일 시스템이 입력**이지만,
+  # 그것은 채점 모델이 바뀌는 일이다(끝난 뒤의 상태를 봐야 한다). #453 이 SQL 에서 그 길을
+  # 냈고, 파일 시스템 판은 그 위에 얹는다. 지금 되는 것은 텍스트 처리 —
+  # `awk`·`sed`·`sort` 로 로그를 다듬는 일이고, 그것만으로도 물을 것이 많다.
+  #
+  # **왜 debian-slim 인가 (도구를 고르고 고정한다).**
+  # 공식 `bash:5` 는 26MB 로 가볍지만 alpine 이라 `awk`·`sed`·`grep`·`sort` 가 전부
+  # **busybox** 다. busybox 는 GNU 와 동작이 다르다 — `sed -i`, `\+` 같은 정규식 확장,
+  # `sort -h`, `grep -P` 가 없거나 다르게 군다. **문제 지문이 도구의 동작을 전제하게 되므로**
+  # 실무에서 쓰는 쪽(GNU)으로 고정한다. 값은 139MB 이고, 노드마다 한 번 받는 비용이다.
+  # #394 가 아희 구현을 고르고 고정한 것과 같은 판단이다.
+  #
+  # 들어 있는 것: bash 5.2, GNU coreutils, GNU sed 4.9, GNU grep, mawk(=`awk`), findutils.
+  # **없는 것: gawk·jq·curl·python.** `gensub` 같은 gawk 전용 함수는 쓸 수 없다.
+  - id: "bash:5"
+    label: "Bash 5"
+    monacoLanguage: "shell"
+    image: "debian:13-slim"
+    digest: "sha256:3a39a0592364683e6bab97937b72cad5a8fa6dcbbee90edb3bb48c7f8e94f258"
+    sourceFile: "main.sh"
+    run: ["bash", "main.sh"]
+    template: |
+      #!/usr/bin/env bash
+      read -r a b
+      echo $((a + b))
+
   # ── SQL ───────────────────────────────────────────────────────────────────
   # 문제마다 새 PostgreSQL 을 컨테이너 안에서 띄운다 (#60).
   #
