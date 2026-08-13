@@ -1,0 +1,21 @@
+{
+  "slug": "sql-return-loans",
+  "title": "밀린 반납을 한 번에 처리하기",
+  "category": "SQL",
+  "difficulty": "SILVER_5",
+  "problemKind": "JUDGE_SQL",
+  "description": "박도윤(회원 id 3)이 빌린 책을 오늘 모두 반납했습니다.\n아직 반납하지 않은 그의 대출을 모두 2025-07-25 로 반납 처리하세요.\n\n[표 구조]\n  members(id, name, city, joined_on)\n  books(id, title, genre, price)\n  loans(id, member_id, book_id, loaned_on, returned_on)\n\nloans.returned_on 이 비어 있으면(NULL) 아직 반납하지 않은 것입니다.\n\n이 문제는 **결과 집합이 아니라 끝난 뒤의 상태**를 봅니다. 다른 회원의 대출까지\n건드리면 틀립니다.\n",
+  "inputDescription": "주어지는 것은 위의 세 표입니다. 표준 입력은 없습니다.",
+  "outputDescription": "출력할 것은 없습니다. 표를 바꾸면 됩니다.\n\n채점은 여러분의 쿼리가 끝난 뒤 loans 를 읽어 정답 쿼리를 돌린 결과와 견줍니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 256,
+  "published": true,
+  "testcases": [],
+  "sqlSchemaFile": "sql/library.sql",
+  "sqlSpec": {
+    "answerSql": "UPDATE loans\nSET returned_on = DATE '2025-07-25'\nWHERE member_id = 3 AND returned_on IS NULL;",
+    "verifySql": "SELECT id, member_id, returned_on FROM loans ORDER BY id;",
+    "allowWrite": true,
+    "ignoreRowOrder": false
+  }
+}
