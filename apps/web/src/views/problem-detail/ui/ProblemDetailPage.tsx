@@ -3,7 +3,7 @@
 import { ProblemStatsSummary, RuntimeLimitNotice, useProblem } from "@/entities/problem";
 import type { ProblemDetail } from "@/entities/problem";
 import { TagChips } from "@/entities/tag";
-import { Button, Card, EmptyState } from "@/shared/ui";
+import { Button, Card, EmptyState, Markdown } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
 import { use } from "react";
@@ -63,11 +63,23 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
   );
 }
 
+/**
+ * 지문 한 덩어리 (#338).
+ *
+ * **게시글·댓글과 같은 렌더러를 쓴다.** 전에는 값 그대로 그려서 `**굵게**` 는 별표가,
+ * 코드 블록은 백틱이 그대로 보였다 — 같은 사이트에서 글을 쓰는 자리마다 규칙이 다르면
+ * 출제자는 어느 쪽인지 알 방법이 없다.
+ *
+ * `hideCode` 를 쓰지 않는다. 질문 글의 코드는 답이 될 수 있어 접지만(#139),
+ * **지문의 코드 블록은 지문의 일부**다 — 접으면 문제를 읽을 수 없다.
+ */
 function Section({ title, children }: { title: string; children: string }) {
   return (
     <div>
       <h2 className="mb-1.5 text-sm font-semibold text-ink">{title}</h2>
-      <div className="prose-kr text-sm text-ink-muted">{children}</div>
+      <div className="prose-kr text-sm text-ink-muted">
+        <Markdown source={children} />
+      </div>
     </div>
   );
 }
