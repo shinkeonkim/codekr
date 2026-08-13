@@ -2,12 +2,14 @@ package codekr.api.ranking.controller
 
 import codekr.api.config.security.PublicApi
 import codekr.api.common.dto.PageResponse
+import codekr.api.ranking.dto.AffiliationRankingEntry
 import codekr.api.ranking.dto.RankingEntry
 import codekr.api.ranking.dto.RankingMetricResponse
 import codekr.api.ranking.dto.RankingOption
 import codekr.api.ranking.dto.RankingOptionsResponse
 import codekr.api.ranking.entity.RankingMetric
 import codekr.api.ranking.entity.RankingPeriod
+import codekr.api.ranking.service.AffiliationRankingService
 import codekr.api.ranking.service.RankingService
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -21,7 +23,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/rankings")
 @Validated
-class RankingController(private val rankingService: RankingService) {
+class RankingController(
+    private val rankingService: RankingService,
+    private val affiliationRankingService: AffiliationRankingService,
+) {
 
     @PublicApi
     @GetMapping
@@ -38,6 +43,20 @@ class RankingController(private val rankingService: RankingService) {
          */
         @RequestParam(required = false) affiliationId: Long?,
     ): PageResponse<RankingEntry> = rankingService.page(metric, period, page, size, affiliationId)
+
+    /**
+     * 소속끼리 겨루는 랭킹 (#400, #240 5단계).
+     *
+     * **지표를 고르지 않는다.** 소속 점수는 "상위 N명의 점수 합" 이라는 정의 자체가
+     * 실력 점수 기반이다. 사람 랭킹처럼 공개다.
+     */
+    @PublicApi
+    @GetMapping("/affiliations")
+    fun affiliations(
+        @RequestParam(defaultValue = "ALL_TIME") period: RankingPeriod,
+        @RequestParam(defaultValue = "0") @Min(0) page: Int,
+        @RequestParam(defaultValue = "50") @Min(1) @Max(100) size: Int,
+    ): PageResponse<AffiliationRankingEntry> = affiliationRankingService.page(period, page, size)
 
     /**
      * 지표 목록. **화면이 지표를 하드코딩하지 않게 서버가 알려준다** —

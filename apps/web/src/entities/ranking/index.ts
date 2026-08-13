@@ -1,5 +1,6 @@
 export { rankingApi } from "./api";
 export type {
+  AffiliationRankingEntry,
   AwardedBadge,
   RankingEntry,
   RankingOption,

@@ -1,6 +1,6 @@
 import { request } from "@/shared/api";
 import type { Page } from "@/shared/api";
-import type { RankingEntry, RankingOptions } from "../model/types";
+import type { AffiliationRankingEntry, RankingEntry, RankingOptions } from "../model/types";
 
 export const rankingApi = {
   /**
@@ -22,6 +22,12 @@ export const rankingApi = {
     ),
 
   options: () => request<RankingOptions>("/api/v1/rankings/metrics"),
+
+  /**
+   * 소속끼리 겨루는 랭킹 (#400). 지표를 고르지 않는다 — 값이 실력 점수 합으로 정해져 있다.
+   */
+  affiliations: (params: { period: string; page: number; size: number }) =>
+    request<Page<AffiliationRankingEntry>>("/api/v1/rankings/affiliations", { query: params }),
 
   /** 맞힌 제출이 있는 **모든** 회원을 다시 계산한다 (#177, #180). */
   recomputeAll: () =>

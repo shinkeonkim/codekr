@@ -17,6 +17,21 @@ export interface RankingOptions {
   periods: RankingOption[];
 }
 
+/**
+ * 소속 랭킹 한 줄 (#400).
+ *
+ * `score` 는 **상위 N명의 점수 합**이다. `memberCount` 를 함께 보여야 그 숫자가
+ * 무슨 뜻인지 읽힌다 — 인원이 순위를 가르지는 않는다.
+ */
+export interface AffiliationRankingEntry {
+  rank: number;
+  affiliationId: number;
+  name: string;
+  kindLabel: string;
+  score: number;
+  memberCount: number;
+}
+
 export interface RankingEntry {
   rank: number;
   nickname: string;
