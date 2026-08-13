@@ -3,7 +3,7 @@ package codekr.api.user
 import codekr.api.auth.email.EmailVerificationRepository
 import codekr.api.auth.security.JwtTokenProvider
 import codekr.api.support.IntegrationTestBase
-import codekr.api.user.email.UserEmailRepository
+import codekr.api.user.email.repository.UserEmailRepository
 import codekr.api.user.entity.User
 import codekr.api.user.entity.UserRole
 import codekr.api.user.repository.UserRepository
