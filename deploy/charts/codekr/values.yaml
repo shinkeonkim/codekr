@@ -227,6 +227,22 @@ backup:
   # **이보다 작으면 백업으로 보지 않는다.** pg_dump 는 붙기만 하면 0 으로 끝나므로,
   # 크기를 보지 않으면 0바이트 파일이 매일 쌓이고 아무도 모른다.
   minBytes: 4096
+  # **두 번째 사본** (#281). NFS 한 대가 죽으면 백업도 같이 죽는다.
+  #
+  # MinIO(#115)가 이미 있어 S3 프로토콜을 그대로 쓴다. **다만 그것도 같은 집 안에 있다** —
+  # "클러스터가 무너져도" 까지 지키려면 집 밖에 하나 더 두어야 하고, 그것은 비용과
+  # 사용자 데이터를 밖으로 내보내는 판단이 함께 온다 (docs/09 §5.2).
+  #
+  # 자격증명이 없으면 켜 봐야 매일 실패한다. **기본은 꺼짐**이고, 켜는 것이 명시적인
+  # 선택이어야 한다.
+  objectStore:
+    enabled: false
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    endpoint: ""
+    bucket: codekr-db-dumps
+    secretName: codekr-storage
+    accessKeyKey: CODEKR_STORAGE_ACCESS_KEY
+    secretKeyKey: CODEKR_STORAGE_SECRET_KEY
 
 # 배포 후 검증 (#246).
 #
