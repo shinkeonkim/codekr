@@ -9,6 +9,7 @@ import codekr.api.auth.security.JwtTokenProvider
 import codekr.api.auth.security.TokenType
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.user.entity.Handles
 import codekr.api.user.entity.User
 import codekr.api.user.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -35,7 +36,7 @@ class AuthService(
                 email = request.email,
                 passwordHash = hashPassword(request.password),
                 nickname = request.nickname,
-            ),
+            ).apply { assignHandle(resolveHandle(request)) },
         )
         // 동의 기록이 남지 않으면 동의를 받은 것이 아니다 (#235).
         termsService.agreeOnSignup(user.id, request.agreedTermIds)
@@ -44,6 +45,36 @@ class AuthService(
         // 삼켜지고, 여기서는 토큰 발급까지만 한다 (#233).
         emailVerificationService.send(user.id, user.email)
         return issueTokens(user)
+    }
+
+    /**
+     * 주소가 될 이름을 정한다 (#307).
+     *
+     * 적어 냈으면 그대로 쓰되 **이미 쓰는 것이면 그렇게 알린다** — 500 이 아니다.
+     * 안 적었으면 닉네임에서 만들고, 만들 수 없으면(한글뿐인 이름 등) 임의로 준다.
+     */
+    private fun resolveHandle(request: SignupRequest): String {
+        request.handle?.trim()?.takeIf { it.isNotBlank() }?.let { asked ->
+            if (!Handles.isValid(asked)) {
+                throw ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "주소는 소문자·숫자·하이픈으로 ${Handles.MIN_LENGTH}~${Handles.MAX_LENGTH}자여야 합니다.",
+                )
+            }
+            if (userRepository.existsByHandle(asked)) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "이미 쓰고 있는 주소입니다: $asked")
+            }
+            return asked
+        }
+
+        val base = Handles.from(request.nickname) ?: "user"
+        if (!userRepository.existsByHandle(base)) return base
+        // 충돌하면 뒤에 숫자를 붙인다. 몇 번이고 도는 대신 상한을 둔다.
+        for (suffix in 2..50) {
+            val candidate = "$base-$suffix".take(Handles.MAX_LENGTH)
+            if (!userRepository.existsByHandle(candidate)) return candidate
+        }
+        throw ApiException(ErrorCode.VALIDATION_ERROR, "주소를 만들지 못했습니다. 직접 정해 주세요.")
     }
 
     fun login(request: LoginRequest): TokenResponse {

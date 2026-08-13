@@ -7,7 +7,7 @@ import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
 import { EmailVerificationCard } from "@/features/email-verification";
 import { TermAgreementsCard } from "@/features/terms";
-import { BioEditor } from "@/features/profile-bio";
+import { BioEditor, DisplayNameEditor } from "@/features/profile-bio";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
 import { ThemePicker, applyAccountTheme, fromServer } from "@/features/theme";
@@ -87,6 +87,12 @@ function SettingsView() {
             소개도 아바타와 같은 성격이다 (#310) — 본인이 쓰고, 남에게 보인다.
             같은 카드에 두어 "남에게 보이는 것" 이 한자리에 모이게 한다.
           */}
+          {/* 이름은 바꿀 수 있고 주소는 그대로다 (#307). */}
+          <DisplayNameEditor
+            displayName={user.nickname}
+            handle={user.handle}
+            onChange={() => refresh()}
+          />
           <BioEditor bio={user.bio} onChange={() => refresh()} />
           </>
         ) : null}

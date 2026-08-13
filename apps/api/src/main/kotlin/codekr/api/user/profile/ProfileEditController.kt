@@ -44,9 +44,15 @@ data class ProfileEditRequest(
      */
     @field:Size(max = BIO_MAX_LENGTH, message = "소개는 ${BIO_MAX_LENGTH}자를 넘을 수 없습니다.")
     val bio: String? = null,
+
+    /**
+     * 표시 이름 (#307). **주소는 바뀌지 않는다** — 그래서 이름을 바꿀 수 있게 됐다.
+     */
+    @field:Size(min = 2, max = 30, message = "이름은 2자 이상 30자 이하여야 합니다.")
+    val displayName: String? = null,
 )
 
-data class ProfileEditResponse(val bio: String?)
+data class ProfileEditResponse(val bio: String?, val displayName: String, val handle: String)
 
 @Service
 class ProfileEditService(private val userRepository: UserRepository) {
@@ -67,6 +73,14 @@ class ProfileEditService(private val userRepository: UserRepository) {
             user.bio = cleaned.takeIf { it.isNotBlank() }
         }
 
-        return ProfileEditResponse(user.bio)
+        request.displayName?.trim()?.takeIf { it.isNotBlank() }?.let { name ->
+            if (name != user.nickname && userRepository.existsByNickname(name)) {
+                // **이미 쓰는 이름이면 그렇게 알린다** — 유니크 제약 위반이 500 이 되면 안 된다.
+                throw ApiException(ErrorCode.NICKNAME_ALREADY_EXISTS)
+            }
+            user.nickname = name
+        }
+
+        return ProfileEditResponse(user.bio, user.nickname, user.handle)
     }
 }

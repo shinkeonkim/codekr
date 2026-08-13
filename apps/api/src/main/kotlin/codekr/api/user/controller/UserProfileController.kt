@@ -21,10 +21,10 @@ class UserProfileController(private val userProfileService: UserProfileService) 
      * 두 곳을 함께 바꿔야 한다 — 한쪽만 열면 우회로가 된다.
      */
     @AuthenticatedApi
-    @GetMapping("/{nickname}")
+    @GetMapping("/{handle}")
     fun findProfile(
-        @PathVariable nickname: String,
+        @PathVariable handle: String,
         // 보는 사람이 있으면 문제집 진행률이 채워진다 (#209). 없어도 목록은 그대로다.
         principal: AuthPrincipal?,
-    ): UserProfileResponse = userProfileService.findByNickname(nickname, principal?.userId)
+    ): UserProfileResponse = userProfileService.findByHandle(handle, principal?.userId)
 }

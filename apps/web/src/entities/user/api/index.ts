@@ -20,7 +20,12 @@ function authHeader(): Record<string, string> {
 
 /** 인증 관련 서버 호출. 토큰 저장은 features/auth 가 한다. */
 export const userApi = {
-  signup: (body: { email: string; password: string; nickname: string; agreedTermIds: number[] }) =>
+  signup: (body: {
+    email: string;
+    password: string;
+    nickname: string;
+    agreedTermIds: number[];
+  }) =>
     request<TokenResponse>("/api/v1/auth/signup", { method: "POST", body }),
 
   login: (body: { email: string; password: string }) =>
@@ -134,8 +139,8 @@ export const userApi = {
     request<void>("/api/v1/auth/email/verification", { method: "POST", auth: true }),
 
   /** 내 프로필에서 남에게 보이는 값 (#310). 설정(내가 보는 값)과 나눈다. */
-  updateProfile: (body: { bio?: string }) =>
-    request<{ bio: string | null }>("/api/v1/users/me/profile", { method: "PATCH", auth: true, body }),
+  updateProfile: (body: { bio?: string; displayName?: string }) =>
+    request<{ bio: string | null; displayName: string; handle: string }>("/api/v1/users/me/profile", { method: "PATCH", auth: true, body }),
 
   /** 어드민이 소개를 지운다 (#310). 신고 기능이 없어도 지울 길은 있어야 한다. */
   clearBio: (id: number, reason: string) =>

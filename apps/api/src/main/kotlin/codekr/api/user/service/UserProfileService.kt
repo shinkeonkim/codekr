@@ -35,8 +35,17 @@ class UserProfileService(
     private val badgeRepository: BadgeRepository,
 ) {
 
-    fun findByNickname(nickname: String, viewerId: Long? = null): UserProfileResponse {
-        val user = userRepository.findByNickname(nickname) ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
+    /**
+     * 프로필 (#83). **주소는 `handle` 이다** (#307) — 이름을 바꿔도 링크가 살아 있다.
+     *
+     * 옛 주소(닉네임)로 들어온 사람을 위해 **닉네임으로도 한 번 더 찾는다.** 링크를
+     * 이미 주고받은 사람에게 404 를 보이는 것보다 낫다 — 다만 닉네임은 바뀌므로
+     * 그 길은 언젠가 끊긴다.
+     */
+    fun findByHandle(handle: String, viewerId: Long? = null): UserProfileResponse {
+        val user = userRepository.findByHandle(handle)
+            ?: userRepository.findByNickname(handle)
+            ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
         // 탈퇴한 계정의 프로필은 열리지 않는다. 남은 글에서도 링크가 걸리지 않는다 (#140).
         if (user.isWithdrawn) throw ApiException(ErrorCode.USER_NOT_FOUND)
         // 스트릭은 활동 서비스 한 곳에서 받는다 (#117). 여기서 다시 계산하면 언젠가 어긋난다.
@@ -46,6 +55,7 @@ class UserProfileService(
 
         return UserProfileResponse(
             nickname = user.nickname,
+            handle = user.handle,
             avatarUrl = AvatarService.urlOf(user.avatarKey),
             bio = user.bio,
             collections = collectionService.findPublicOf(user.id, viewerId),
@@ -59,7 +69,8 @@ class UserProfileService(
             score = score,
             // 티어는 **도달했던 최고 점수**로 정한다. 강등이 없으므로 현재 점수와 갈라질 수 있다.
             skillTier = SkillTier.of(user.peakScore)?.let(SkillTierResponse::from),
-            rank = rankingService.rankOf(nickname, RankingMetric.SCORE, RankingPeriod.ALL_TIME)?.rank,
+            // 랭킹은 아직 표시 이름으로 찾는다 — 그 표의 key 를 함께 옮기는 것은 별개다.
+            rank = rankingService.rankOf(user.nickname, RankingMetric.SCORE, RankingPeriod.ALL_TIME)?.rank,
             badges = badgeRepository.findAll(user.id),
         )
     }

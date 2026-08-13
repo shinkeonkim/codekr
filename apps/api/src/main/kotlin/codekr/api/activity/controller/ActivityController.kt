@@ -44,7 +44,10 @@ class ActivityController(
         @PathVariable nickname: String,
         @RequestParam(required = false) year: Int?,
     ): ActivityResponse {
-        val user = userRepository.findByNickname(nickname) ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
+        // 프로필과 같은 규칙 (#307): handle 로 찾고, 옛 주소(닉네임)도 한 번 더 본다.
+        val user = userRepository.findByHandle(nickname)
+            ?: userRepository.findByNickname(nickname)
+            ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
         return activityService.findActivity(user.id, from = null, to = null, year = year)
     }
 }

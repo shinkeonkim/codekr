@@ -53,7 +53,7 @@ class ScoreboardRepository(private val jdbcClient: JdbcClient) {
     fun participants(contestId: Long): List<ScoreboardParticipant> =
         jdbcClient.sql(
             """
-            SELECT r.user_id, u.nickname, r.registered_at
+            SELECT r.user_id, u.nickname, u.handle, r.registered_at
             FROM contest_registrations r
             JOIN users u ON u.id = r.user_id
             WHERE r.contest_id = :contestId
@@ -64,6 +64,7 @@ class ScoreboardRepository(private val jdbcClient: JdbcClient) {
                 ScoreboardParticipant(
                     userId = rs.getLong("user_id"),
                     nickname = rs.getString("nickname"),
+                    handle = rs.getString("handle"),
                     registeredAt = rs.getTimestamp("registered_at").toInstant(),
                 )
             }
@@ -101,5 +102,6 @@ data class ScoreboardCell(
 data class ScoreboardParticipant(
     val userId: Long,
     val nickname: String,
+    val handle: String,
     val registeredAt: Instant,
 )
