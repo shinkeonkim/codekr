@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "./primitives";
+import { Button } from "./button";
 import { paginationView } from "./paginationRule";
 
 interface Props {
