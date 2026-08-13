@@ -2,7 +2,11 @@ import type { ProblemTag } from "@/entities/tag";
 
 // 검증 결과(ProblemVerification)는 "정답 코드를 제출해서 채점한 결과"라 제출 도메인의
 // 타입을 그대로 쓴다. 같은 개념을 문제 쪽에 복제하면 두 벌이 어긋난다.
-import type { SubmissionStatus, TestcaseResult, Verdict } from "@/entities/submission";
+import type {
+  SubmissionStatus,
+  TestcaseResult,
+  Verdict,
+} from "@/entities/submission";
 
 /** 문제와 그 부속(테스트케이스·초기 코드·정답 코드) 표현. */
 
@@ -16,7 +20,8 @@ export type ProblemCategory =
   | "SYSTEM_DESIGN";
 
 /** solved.ac 형식 티어. 각 티어는 5단계(가장 쉬움)에서 1단계(가장 어려움)로 나뉜다. */
-export type DifficultyTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND" | "RUBY";
+export type DifficultyTier =
+  "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND" | "RUBY";
 
 export type DifficultyStep = 1 | 2 | 3 | 4 | 5;
 
@@ -34,6 +39,8 @@ export interface Runtime {
   id: string;
   label: string;
   monacoLanguage: string;
+  /** 이 언어로 풀 때 채워야 하는 파일들 (#457). 비면 파일 하나짜리다. */
+  files?: ProblemFile[];
   template: string;
   /** 이 런타임으로 실행할 때 실제 적용되는 제한. 문제 기본값과 다를 수 있다 (#97). */
   timeLimitMs: number;
@@ -145,7 +152,8 @@ export interface ProblemVerification {
  * **분야(`ProblemCategory`)와는 다른 축이다** — 분야는 무엇에 대한 문제인지를,
  * 채점 방식은 어떻게 채점하는지를 말한다. 화면에서도 두 말을 구분해 쓴다.
  */
-export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "JUDGE_NOSQL" | "QUIZ" | "MANUAL";
+export type ProblemKind =
+  "JUDGE_STDIO" | "JUDGE_SQL" | "JUDGE_NOSQL" | "QUIZ" | "MANUAL";
 
 /**
  * 문제 목록 정렬 (#132). 서버의 `ProblemSort` 와 같은 값이다.
@@ -226,6 +234,20 @@ export interface NoSqlSpec {
   verifyCommands: string;
   /** 기본은 순서를 지킨다 — 정렬 집합·리스트에서 순서는 자료의 일부다. */
   ignoreOrder: boolean;
+}
+
+/**
+ * 여러 파일을 완성하는 문제의 파일 하나 (#457).
+ *
+ * **런타임마다 목록이 다르다** — 자바는 `Main.java`, 파이썬은 `main.py` 다. 그래서
+ * 문제가 아니라 런타임 안에 온다.
+ */
+export interface ProblemFile {
+  runtimeId: string;
+  name: string;
+  template: string;
+  /** 거짓이면 제출에 실리지 않는다. 서버가 문제의 시작 코드를 그대로 쓴다. */
+  editable: boolean;
 }
 
 /** 출력 비교 방식 (#279). */

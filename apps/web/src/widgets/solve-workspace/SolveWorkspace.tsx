@@ -1,15 +1,21 @@
 "use client";
 
 import type { ProblemDetail, Runtime } from "@/entities/problem";
-import { VISIBILITY_DESCRIPTIONS, VISIBILITY_LABELS, submissionApi } from "@/entities/submission";
+import {
+  VISIBILITY_DESCRIPTIONS,
+  VISIBILITY_LABELS,
+  submissionApi,
+} from "@/entities/submission";
 import type { RunResult, SubmissionVisibility } from "@/entities/submission";
 import { userApi } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CodeEditor } from "@/shared/ui";
 import { draftKey, initialSource, readDraft } from "./draft";
+import { FileTabs } from "./FileTabs";
+import { useFileSources } from "./useFileSources";
 import { Alert, Button, Card, Select, Textarea } from "@/shared/ui";
 
 interface Props {
@@ -20,6 +26,8 @@ interface Props {
 
 export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
   const router = useRouter();
+  // 컴파일 오류에서 돌아온 링크가 어느 파일인지 알려 준다 (#498).
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [runtimeId, setRuntimeId] = useState(problem.runtimes[0]?.id ?? "");
   /*
@@ -48,9 +56,16 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
   const [visibility, setVisibility] = useState<SubmissionVisibility>("PRIVATE");
 
   const runtime = useMemo(
-    () => problem.runtimes.find((it) => it.id === runtimeId) ?? problem.runtimes[0],
+    () =>
+      problem.runtimes.find((it) => it.id === runtimeId) ?? problem.runtimes[0],
     [problem.runtimes, runtimeId],
   );
+
+  // 파일이 여럿인 문제 (#457). 목록이 비어 있으면 지금까지처럼 소스 하나다.
+  const multi = useFileSources(problem.slug, runtime, searchParams.get("file"));
+  const hasFiles = multi.files.length > 0;
+  const activeFile = multi.files.find((file) => file.name === multi.active);
+  const editorValue = hasFiles ? (multi.sources[multi.active] ?? "") : source;
 
   useEffect(() => {
     if (runtime) onRuntimeChange?.(runtime);
@@ -73,7 +88,10 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
   const changeRuntime = (nextId: string) => {
     setRuntimeId(nextId);
     const next = problem.runtimes.find((it) => it.id === nextId);
-    if (next) setSource(initialSource(readDraft(problem.slug, next.id), next.template));
+    if (!next) return;
+    setSource(initialSource(readDraft(problem.slug, next.id), next.template));
+    // 언어를 바꾸면 파일 이름도 갈린다 (#457) — 그 언어의 파일로 갈아 끼운다.
+    multi.reset(next);
   };
 
   useEffect(() => {
@@ -91,13 +109,27 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
 
   const handleRun = async () => {
     if (!runtime || !guardLogin() || busy !== null) return;
+    if (hasFiles) {
+      // 서버의 `/run` 은 아직 파일 하나다 (#497). **조용히 한 파일만 돌리지 않는다** —
+      // 그러면 "실행은 되는데 제출은 다른 결과" 가 되어 무엇을 믿을지 알 수 없다.
+      setError("여러 파일 문제는 제출로 확인합니다.");
+      return;
+    }
     setBusy("run");
     setError(null);
     setRunResult(null);
     try {
-      setRunResult(await submissionApi.run(problem.slug, { runtimeId: runtime.id, sourceCode: source, stdin }));
+      setRunResult(
+        await submissionApi.run(problem.slug, {
+          runtimeId: runtime.id,
+          sourceCode: source,
+          stdin,
+        }),
+      );
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "실행에 실패했습니다.");
+      setError(
+        caught instanceof ApiError ? caught.message : "실행에 실패했습니다.",
+      );
     } finally {
       setBusy(null);
     }
@@ -118,12 +150,15 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
     try {
       const { submissionId } = await submissionApi.submit(problem.slug, {
         runtimeId: runtime.id,
-        sourceCode: source,
+        // 파일이 여럿이면 그쪽이 소스다 (#457). 고칠 수 없는 파일은 보내지 않는다.
+        ...(hasFiles ? { files: multi.payload } : { sourceCode: source }),
         visibility,
       });
       router.push(`/submissions/${submissionId}`);
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "제출에 실패했습니다.");
+      setError(
+        caught instanceof ApiError ? caught.message : "제출에 실패했습니다.",
+      );
       setBusy(null);
     }
   };
@@ -152,7 +187,11 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
             </option>
           ))}
         </Select>
-        <Button variant="secondary" onClick={handleRun} disabled={busy !== null}>
+        <Button
+          variant="secondary"
+          onClick={handleRun}
+          disabled={busy !== null}
+        >
           {busy === "run" ? "실행 중…" : "실행"}
         </Button>
         <Button onClick={handleSubmit} disabled={busy !== null}>
@@ -162,19 +201,45 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
 
       {error ? <Alert>{error}</Alert> : null}
 
-      <CodeEditor
-        language={runtime?.monacoLanguage ?? "plaintext"}
-        value={source}
-        onChange={setSource}
-      />
+      {hasFiles ? (
+        <div className="space-y-2">
+          <FileTabs
+            files={multi.files}
+            active={multi.active}
+            onSelect={multi.setActive}
+          />
+          {activeFile?.editable === false ? (
+            <p className="text-xs text-ink-muted">
+              {/* 감추지 않는 이유: 이것을 읽는 것이 문제의 절반이다. */}이
+              파일은 문제가 정한 것이라 고칠 수 없습니다. 읽고 그대로 쓰세요.
+            </p>
+          ) : null}
+          <CodeEditor
+            language={runtime?.monacoLanguage ?? "plaintext"}
+            value={editorValue}
+            onChange={(next) => multi.update(multi.active, next)}
+            readOnly={activeFile?.editable === false}
+          />
+        </div>
+      ) : (
+        <CodeEditor
+          language={runtime?.monacoLanguage ?? "plaintext"}
+          value={source}
+          onChange={setSource}
+        />
+      )}
 
       <Card className="space-y-2 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-semibold text-ink">소스 코드 공개 범위</h3>
+          <h3 className="text-sm font-semibold text-ink">
+            소스 코드 공개 범위
+          </h3>
           <Select
             className="ml-auto w-56"
             value={visibility}
-            onChange={(event) => setVisibility(event.target.value as SubmissionVisibility)}
+            onChange={(event) =>
+              setVisibility(event.target.value as SubmissionVisibility)
+            }
           >
             {Object.entries(VISIBILITY_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -183,12 +248,18 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
             ))}
           </Select>
         </div>
-        <p className="text-xs text-ink-muted">{VISIBILITY_DESCRIPTIONS[visibility]}</p>
+        <p className="text-xs text-ink-muted">
+          {VISIBILITY_DESCRIPTIONS[visibility]}
+        </p>
       </Card>
 
       <Card className="space-y-2 p-4">
         <h3 className="text-sm font-semibold text-ink">입력 (실행에만 사용)</h3>
-        <Textarea rows={3} value={stdin} onChange={(event) => setStdin(event.target.value)} />
+        <Textarea
+          rows={3}
+          value={stdin}
+          onChange={(event) => setStdin(event.target.value)}
+        />
         {runResult ? <RunResultView result={runResult} /> : null}
       </Card>
     </div>
@@ -201,15 +272,27 @@ function RunResultView({ result }: { result: RunResult }) {
       <div className="flex items-center gap-2 text-xs text-ink-muted">
         <span>상태 {result.status}</span>
         <span>· {result.runtimeMs}ms</span>
-        {result.truncated ? <span className="text-warn">· 출력이 잘렸습니다</span> : null}
+        {result.truncated ? (
+          <span className="text-warn">· 출력이 잘렸습니다</span>
+        ) : null}
       </div>
       <OutputBlock title="표준 출력" body={result.stdout} />
-      {result.stderr ? <OutputBlock title="표준 에러" body={result.stderr} tone="danger" /> : null}
+      {result.stderr ? (
+        <OutputBlock title="표준 에러" body={result.stderr} tone="danger" />
+      ) : null}
     </div>
   );
 }
 
-function OutputBlock({ title, body, tone }: { title: string; body: string; tone?: "danger" }) {
+function OutputBlock({
+  title,
+  body,
+  tone,
+}: {
+  title: string;
+  body: string;
+  tone?: "danger";
+}) {
   return (
     <div>
       <p className="mb-1 text-xs font-medium text-ink-muted">{title}</p>

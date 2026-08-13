@@ -27,7 +27,11 @@ describe("초안과 템플릿", () => {
 
   test("문제와 언어마다 따로 남는다", () => {
     // 같은 문제를 두 언어로 풀 때 서로 덮어쓰면 안 된다.
-    expect(draftKey("two-sum", "python:3.12")).not.toBe(draftKey("two-sum", "kotlin:2.0"));
-    expect(draftKey("two-sum", "python:3.12")).not.toBe(draftKey("a-plus-b", "python:3.12"));
+    expect(draftKey("two-sum", "python:3.12")).not.toBe(
+      draftKey("two-sum", "kotlin:2.0"),
+    );
+    expect(draftKey("two-sum", "python:3.12")).not.toBe(
+      draftKey("a-plus-b", "python:3.12"),
+    );
   });
 });
