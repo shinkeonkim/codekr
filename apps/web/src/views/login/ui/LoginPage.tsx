@@ -1,26 +1,17 @@
 "use client";
 
 import { userApi } from "@/entities/user";
-import { AuthForm, useAuth } from "@/features/auth";
-import { readNextParam } from "@/shared/lib";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { AuthForm, RequireGuest } from "@/features/auth";
 
+/**
+ * 이미 로그인한 사람에게 로그인 화면을 보여주지 않는다 (#113, #73 과 같은 결).
+ *
+ * 가드는 [RequireGuest] 가 한다 (#311) — 손으로 쓴 `useEffect` 는 한 번 그려진
+ * 뒤에 돌아서 폼이 번쩍였다. next 로 돌려보내는 동작은 그대로다.
+ */
 export function LoginPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  /*
-   * 이미 로그인한 사람에게 로그인 화면을 보여주지 않는다 (#113, #73 과 같은 결).
-   *
-   * 특히 next 가 있으면 그리로 보낸다 — 다른 탭에서 로그인한 뒤 이 링크를 열었을 때
-   * 다시 로그인하라고 하면 막힌 것처럼 보인다.
-   */
-  useEffect(() => {
-    if (!loading && user) router.replace(readNextParam());
-  }, [loading, user, router]);
-
   return (
+    <RequireGuest>
     <AuthForm
       title="로그인"
       description="코드.kr 계정으로 문제를 풀고 채점 결과를 확인하세요."
@@ -32,5 +23,6 @@ export function LoginPage() {
       footer={{ text: "아직 계정이 없으신가요?", href: "/signup", linkLabel: "회원가입" }}
       onSubmit={(values) => userApi.login({ email: values.email, password: values.password })}
     />
+    </RequireGuest>
   );
 }

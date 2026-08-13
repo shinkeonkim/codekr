@@ -15,27 +15,27 @@ describe("safeNextPath", () => {
   });
 
   test("값이 없으면 기본 경로", () => {
-    expect(safeNextPath(null)).toBe("/problems");
-    expect(safeNextPath(undefined)).toBe("/problems");
-    expect(safeNextPath("")).toBe("/problems");
+    expect(safeNextPath(null)).toBe("/");
+    expect(safeNextPath(undefined)).toBe("/");
+    expect(safeNextPath("")).toBe("/");
   });
 
   test("외부 주소는 거부한다", () => {
-    expect(safeNextPath("https://evil.example")).toBe("/problems");
-    expect(safeNextPath("http://evil.example/path")).toBe("/problems");
-    expect(safeNextPath("javascript:alert(1)")).toBe("/problems");
+    expect(safeNextPath("https://evil.example")).toBe("/");
+    expect(safeNextPath("http://evil.example/path")).toBe("/");
+    expect(safeNextPath("javascript:alert(1)")).toBe("/");
   });
 
   test("프로토콜 상대 주소도 거부한다", () => {
     // //evil.example 은 현재 스킴을 그대로 써서 외부로 나간다. 슬래시로 시작해 통과하기 쉽다.
-    expect(safeNextPath("//evil.example")).toBe("/problems");
-    expect(safeNextPath("//evil.example/path")).toBe("/problems");
+    expect(safeNextPath("//evil.example")).toBe("/");
+    expect(safeNextPath("//evil.example/path")).toBe("/");
   });
 
   test("역슬래시가 섞인 주소도 거부한다", () => {
     // 일부 브라우저가 \ 를 / 로 해석해 /\evil.example 이 //evil.example 처럼 동작한다.
-    expect(safeNextPath("/\\evil.example")).toBe("/problems");
-    expect(safeNextPath("\\\\evil.example")).toBe("/problems");
+    expect(safeNextPath("/\\evil.example")).toBe("/");
+    expect(safeNextPath("\\\\evil.example")).toBe("/");
   });
 });
 

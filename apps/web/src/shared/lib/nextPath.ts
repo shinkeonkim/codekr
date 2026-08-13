@@ -4,7 +4,13 @@
  * **같은 출처의 경로만 받는다.** 외부 URL 을 그대로 쓰면 오픈 리다이렉트가 된다 —
  * 공격자가 `?next=https://evil.example` 링크를 뿌려 로그인 직후 남의 사이트로 보낼 수 있다.
  */
-const FALLBACK = "/problems";
+/**
+ * next 가 없을 때 갈 곳은 **첫 화면**이다 (#311).
+ *
+ * 문제 목록으로 보내던 것을 바꿨다 — 첫 화면에 문제 목록과 공지가 함께 있어(#231),
+ * 로그인 직후 무엇을 할지 고르는 자리로는 그쪽이 넓다.
+ */
+const FALLBACK = "/";
 
 export function safeNextPath(raw: string | null | undefined): string {
   if (!raw) return FALLBACK;
