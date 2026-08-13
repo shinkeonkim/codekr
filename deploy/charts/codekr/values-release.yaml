@@ -14,4 +14,4 @@
 # 네 앱이 같은 태그를 쓴다. api·judge·executor 는 큐 메시지 계약(libs/gocontract)을
 # 공유하므로 섞이면 계약이 어긋난 조합이 돈다.
 global:
-  imageTag: 2158fd97ace3d3b27d8f3a97d82389e1e1d14908
+  imageTag: 029dbf4f8c54d78f2b8c4dbc9d0195290b275ece
