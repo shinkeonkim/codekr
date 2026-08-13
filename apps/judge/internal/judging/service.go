@@ -100,6 +100,8 @@ func (s *Service) complete(ctx context.Context, job contract.JudgeJob, summary S
 		MaxRuntimeMs: summary.MaxRuntimeMs,
 		MaxMemoryKb:  summary.MaxMemoryKb,
 		CompileError: compileError,
+		Score:        summary.Score,
+		MaxScore:     summary.MaxScore,
 	})
 	s.log.Info("채점 완료",
 		"submissionId", job.SubmissionID, "verdict", summary.Verdict,

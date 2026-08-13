@@ -139,6 +139,13 @@ type ExecJob struct {
 	SourceFiles map[string]string `json:"sourceFiles,omitempty"`
 }
 
+// JudgeTestcaseGroup 은 부분 점수 묶음 하나다 (#473).
+type JudgeTestcaseGroup struct {
+	GroupNo int `json:"groupNo"`
+	// Score 는 이 묶음을 **다 맞혔을 때** 받는 점수다.
+	Score int `json:"score"`
+}
+
 // ExecResult 는 실행기가 응답 스트림으로 돌려주는 결과다.
 type ExecResult struct {
 	JobID     string     `json:"jobId"`
@@ -154,6 +161,13 @@ type ExecResult struct {
 // JudgeTestcase 는 채점 작업에 실려 오는 테스트케이스다.
 // judge 가 DB 를 읽지 않도록 필요한 값을 모두 담아 보낸다 (ADR-0004).
 type JudgeTestcase struct {
+	/*
+		GroupNo 는 이 케이스가 속한 묶음이다 (#473). 0 이면 묶음이 없다.
+
+		묶음은 대개 제약 조건이다 — "N ≤ 1,000", "N ≤ 100,000". **묶음 안을 다 맞혀야
+		그 점수를 받는다** (IOI 관례) — 케이스마다 점수를 주면 묶음의 뜻이 없어진다.
+	*/
+	GroupNo        int    `json:"groupNo,omitempty"`
 	ID             int64  `json:"id"`
 	Seq            int    `json:"seq"`
 	Input          string `json:"input"`
@@ -185,6 +199,14 @@ type JudgeJob struct {
 	TimeLimitMs   int               `json:"timeLimitMs"`
 	MemoryLimitMb int               `json:"memoryLimitMb"`
 	Testcases     []JudgeTestcase   `json:"testcases"`
+	/*
+		Groups 는 부분 점수 묶음이다 (#473). 비어 있으면 지금까지처럼 전부 아니면 전무다.
+
+		**랭킹에는 반영되지 않는다** — 만점만 "풀었다" 로 본다. 부분 점수의 교육적 값은
+		화면에 보이는 것으로 대부분 얻어지고, 랭킹까지 열면 #57·#58·#84·#105 가 전부
+		흔들린다. 값은 남겨 두므로 나중에 열 수 있다.
+	*/
+	Groups []JudgeTestcaseGroup `json:"groups,omitempty"`
 	// Comparison 은 출력 비교 방식 (#279). 빈 값이면 CompareExact 다 —
 	// 이 필드가 없던 시절에 큐에 들어간 작업이 남아 있을 수 있고, 전부 정확 일치였다.
 	Comparison string `json:"comparison,omitempty"`
@@ -314,4 +336,12 @@ type Event struct {
 	MaxMemoryKb   int     `json:"maxMemoryKb,omitempty"`
 	CompileError  string  `json:"compileError,omitempty"`
 	StderrExcerpt string  `json:"stderrExcerpt,omitempty"`
+	/*
+		Score·MaxScore 는 부분 점수다 (#473). 묶음이 없는 문제에서는 둘 다 0 이다.
+
+		**랭킹에는 반영되지 않는다** — 만점만 "풀었다" 로 본다. 이 값이 하는 일은
+		화면에 "어디까지 왔는지" 를 보여 주는 것이고, 그것이 부분 점수의 값 대부분이다.
+	*/
+	Score    int `json:"score,omitempty"`
+	MaxScore int `json:"maxScore,omitempty"`
 }

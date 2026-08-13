@@ -30,6 +30,15 @@ class ProblemTestcase(
     @Column(nullable = false, length = 10)
     var visibility: TestcaseVisibility = TestcaseVisibility.HIDDEN,
 
+    /**
+     * 부분 점수 묶음 (#473). null 이면 묶음이 없는 문제다.
+     *
+     * **묶음 안을 다 맞혀야 그 점수를 받는다** (IOI 관례) — 케이스마다 점수를 주면
+     * 묶음의 뜻이 없어진다.
+     */
+    @Column(name = "group_no")
+    var groupNo: Int? = null,
+
 ) : SoftDeletableEntity() {
 
     @Id

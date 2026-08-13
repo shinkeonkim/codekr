@@ -8,6 +8,7 @@ import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.ProblemTestcaseGroup
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMax
 import jakarta.validation.constraints.DecimalMin
@@ -144,6 +145,14 @@ data class ProblemUpsertRequest(
     @field:Valid
     val files: List<ProblemFileRequest> = emptyList(),
 
+    /**
+     * 부분 점수 묶음 (#473). 비면 지금까지처럼 전부 아니면 전무다.
+     *
+     * **묶음 안을 다 맞혀야 그 점수를 받는다** (IOI 관례).
+     */
+    @field:Valid
+    val testcaseGroups: List<TestcaseGroupRequest> = emptyList(),
+
     /** 런타임별 실행 제한 오버라이드 (#97). 적지 않은 런타임은 위 기본 제한을 쓴다. */
     @field:Valid
     val runtimeLimits: List<RuntimeLimitRequest> = emptyList(),
@@ -180,4 +189,14 @@ data class ProblemFileRequest(
         template = template,
         editable = editable,
     )
+}
+
+/** 부분 점수 묶음 (#473). */
+data class TestcaseGroupRequest(
+    @field:Min(1) val groupNo: Int,
+    @field:Min(0) val score: Int,
+    /** "N ≤ 1,000" 처럼 제약을 그대로 적으면 그것이 힌트가 된다. */
+    @field:Size(max = 60) val label: String = "",
+) {
+    fun toEntity(problemId: Long) = ProblemTestcaseGroup(problemId, groupNo, score, label)
 }

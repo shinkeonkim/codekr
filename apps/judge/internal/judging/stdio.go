@@ -30,11 +30,28 @@ func (j *StdioJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emit
 	total := len(job.Testcases)
 	emit(contract.Event{Type: contract.EventJudging, SubmissionID: job.SubmissionID, TotalCount: total})
 
-	accumulator := NewAccumulator(total)
+	accumulator := NewAccumulator(total).WithGroups(job.Groups)
 	for _, testcase := range job.Testcases {
+		/*
+			**틀린 묶음의 남은 케이스는 건너뛴다** (#473).
+
+			묶음은 하나만 틀려도 0점이므로 더 돌려도 결과가 바뀌지 않는다. 전부 돌리면
+			채점 시간이 몇 배가 되고, 그것은 큐를 쓰는 다른 사람에게도 간다.
+			**다른 묶음은 그대로 돈다** — 그것이 "어디까지 왔는지" 를 만든다.
+		*/
+		if accumulator.GroupFailed(testcase.GroupNo) {
+			emit(contract.Event{
+				Type:         contract.EventTestcase,
+				SubmissionID: job.SubmissionID,
+				Seq:          testcase.Seq,
+				Verdict:      contract.VerdictWrongAnswer,
+			})
+			accumulator.AddInGroup(testcase.GroupNo, contract.VerdictWrongAnswer, 0, 0)
+			continue
+		}
 		result := j.runTestcase(ctx, job, testcase)
 		verdict := j.verdictFor(ctx, job, testcase, result)
-		accumulator.Add(verdict, result.RuntimeMs, result.MemoryKb)
+		accumulator.AddInGroup(testcase.GroupNo, verdict, result.RuntimeMs, result.MemoryKb)
 
 		emit(contract.Event{
 			Type:          contract.EventTestcase,

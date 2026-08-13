@@ -10,6 +10,7 @@ import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.dto.ProblemFileResponse
 import codekr.api.problem.entity.ProblemFile
+import codekr.api.problem.entity.ProblemTestcaseGroup
 import codekr.api.problem.entity.ProblemNoSqlSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.tag.dto.ProblemTagResponse
@@ -33,6 +34,8 @@ data class AdminProblemDetailResponse(
     val canVerifySolution: Boolean = true,
     /** 여러 파일을 완성하는 문제의 파일 목록 (#457). 비면 파일 하나짜리다. */
     val files: List<ProblemFileResponse> = emptyList(),
+    /** 부분 점수 묶음 (#473). 비면 묶음이 없는 문제다. */
+    val testcaseGroups: List<TestcaseGroupResponse> = emptyList(),
     /** 편집 화면이 지금 붙어 있는 사람을 그대로 보여야 한다 (#236). */
     val setters: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
     val reviewers: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
@@ -77,6 +80,7 @@ data class AdminProblemDetailResponse(
             sqlSpec: ProblemSqlSpec? = null,
             noSqlSpec: ProblemNoSqlSpec? = null,
             files: List<ProblemFile> = emptyList(),
+            testcaseGroups: List<ProblemTestcaseGroup> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
             credits: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
         ) = AdminProblemDetailResponse(
@@ -89,6 +93,7 @@ data class AdminProblemDetailResponse(
             nosqlSpec = noSqlSpec?.let(NoSqlSpecResponse::from),
             canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
+            testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),
             setters = credits.filter { it.role == codekr.api.problem.credit.CreditRole.SETTER },
             reviewers = credits.filter { it.role == codekr.api.problem.credit.CreditRole.REVIEWER },
             sourceLabel = problem.sourceLabel,
@@ -117,5 +122,13 @@ data class AdminProblemDetailResponse(
             verification = verification,
             tags = tags,
         )
+    }
+}
+
+/** 부분 점수 묶음 (#473). */
+data class TestcaseGroupResponse(val groupNo: Int, val score: Int, val label: String) {
+    companion object {
+        fun from(group: ProblemTestcaseGroup) =
+            TestcaseGroupResponse(group.groupNo, group.score, group.label)
     }
 }
