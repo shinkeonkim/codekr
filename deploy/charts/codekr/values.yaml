@@ -47,6 +47,7 @@ storage:
   secretName: codekr-storage
 
 judge:
+  # 실행기와 같다 — 처음 만들 때의 값이다 (#418, ADR-0011).
   replicas: 1
   concurrency: 4
   # 대회 제출 전용 워커 (#62). 일반 워커와 나누는 것이 격리의 전부다 —
@@ -63,6 +64,9 @@ judge:
     limits: { memory: 256Mi }
 
 executor:
+  # **처음 만들 때의 값이다** (#418, ADR-0011). 그 뒤로는 어드민 화면이 파드 수의 주인이고
+  # ArgoCD 는 `spec.replicas` 를 보지 않는다 — 배포 저장소의 `ignoreDifferences` 가 그것을
+  # 정한다. 여기를 고쳐도 이미 돌고 있는 클러스터의 파드 수는 바뀌지 않는다.
   replicas: 2
   concurrency: 4
   # 실행기는 컨테이너 런타임 소켓을 쓴다. 이 권한은 노드 root 와 동등하므로
