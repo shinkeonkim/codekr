@@ -46,6 +46,7 @@ class UserProfileService(
         return UserProfileResponse(
             nickname = user.nickname,
             avatarUrl = AvatarService.urlOf(user.avatarKey),
+            bio = user.bio,
             joinedAt = user.createdAt,
             solvedCount = profileRepository.countSolvedProblems(user.id),
             submissionCount = profileRepository.countSubmissions(user.id),

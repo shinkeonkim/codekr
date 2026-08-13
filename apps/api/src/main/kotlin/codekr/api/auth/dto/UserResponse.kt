@@ -14,6 +14,13 @@ data class UserResponse(
     val isAdmin: Boolean,
     /** 아바타 주소 (#116). 올리지 않았으면 null — 화면이 기본 표현을 그린다. */
     val avatarUrl: String?,
+    /**
+     * 소개 문구 (#310). 안 썼으면 null.
+     *
+     * 설정 화면이 **지금 쓴 것을 보여주고 고치게** 하려면 필요하다 — 프로필 조회로
+     * 대신할 수는 있지만, 그러려면 자기 닉네임으로 자기를 다시 조회해야 한다.
+     */
+    val bio: String?,
 ) {
     companion object {
         fun from(user: User) = UserResponse(
@@ -23,6 +30,7 @@ data class UserResponse(
             user.roles,
             user.isAdmin,
             AvatarService.urlOf(user.avatarKey),
+            user.bio,
         )
     }
 }

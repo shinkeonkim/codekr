@@ -58,6 +58,16 @@ function ProfileView({ nickname }: { nickname: string }) {
           <SkillTierBadge tier={profile.skillTier} />
         </div>
         <p className="mt-1 text-xs text-ink-muted">{formatDateTime(profile.joinedAt)} 가입</p>
+        {/*
+          소개 문구 (#310). **안 썼으면 자리 자체가 없다** — 빈 칸이 남으면 "안 쓴
+          사람" 이 아니라 "고장 난 화면" 으로 보인다.
+
+          `whitespace-pre-line` 인 이유: 마크다운이 아니라 줄바꿈만 살리기로 했다.
+          제목·목록·이미지가 들어오면 프로필 상단의 모양이 사람마다 달라진다.
+        */}
+        {profile.bio ? (
+          <p className="mt-3 max-w-prose whitespace-pre-line text-sm text-ink">{profile.bio}</p>
+        ) : null}
       </header>
 
       <Card className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">

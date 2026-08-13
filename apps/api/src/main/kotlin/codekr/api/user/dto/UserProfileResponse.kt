@@ -16,6 +16,13 @@ data class UserProfileResponse(
     val nickname: String,
     /** 아바타 주소 (#116). 올리지 않았으면 null. */
     val avatarUrl: String?,
+    /**
+     * 소개 문구 (#310). 안 썼으면 null.
+     *
+     * **빈 문자열로 내리지 않는다** — 화면이 빈 자리를 그리면 "안 쓴 사람" 이 아니라
+     * "고장 난 화면" 으로 보인다. null 이면 그 자리를 통째로 없앤다.
+     */
+    val bio: String?,
     val joinedAt: Instant,
     /** 푼 문제 수. 제출 수가 아니라 문제 수다. */
     val solvedCount: Int,

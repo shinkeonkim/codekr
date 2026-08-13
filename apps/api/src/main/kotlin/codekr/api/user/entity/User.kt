@@ -68,6 +68,14 @@ class User(
     @Column(name = "avatar_key", length = 120)
     var avatarKey: String? = null,
 
+    /**
+     * 소개 문구 (#310). 본인이 쓰고 프로필을 여는 누구에게나 보인다.
+     *
+     * **마크다운이 아니다.** 소개는 한두 줄이고, 마크다운을 열면 제목·목록·이미지가
+     * 들어와 프로필 상단의 모양이 사람마다 달라진다. 줄바꿈만 살린다.
+     */
+    var bio: String? = null,
+
 
 ) : BaseTimeEntity() {
 
@@ -117,6 +125,8 @@ class User(
         // 로그인을 막는 것과 별개로, 남은 비밀번호 해시도 쓸모가 없어야 한다.
         passwordHash = ""
         avatarKey = null
+        // **가장 개인적인 내용이 들어갈 곳**이다. 탈퇴가 지울 것에 반드시 들어간다.
+        bio = null
     }
 
     fun has(role: UserRole): Boolean = role in roleSet
