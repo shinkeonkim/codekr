@@ -1,6 +1,7 @@
 package codekr.api.auth.withdrawal
 
 import codekr.api.audit.entity.AdminAction
+import codekr.api.auth.security.RevokedTokenRegistry
 import codekr.api.audit.service.AdminAuditService
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
@@ -23,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional
 class WithdrawalService(
     private val auditService: AdminAuditService,
     private val userRepository: UserRepository,
-    private val withdrawnTokens: WithdrawnTokenRegistry,
+    private val revokedTokens: RevokedTokenRegistry,
 ) {
 
     fun withdraw(userId: Long) = withdraw(userId, actorId = null, reason = null)
@@ -53,7 +54,7 @@ class WithdrawalService(
 
         user.withdraw()
         // 발급된 토큰도 더 이상 통하지 않아야 한다. 만료를 기다리지 않는다.
-        withdrawnTokens.revoke(userId)
+        revokedTokens.revoke(userId)
         log.info("회원 탈퇴: userId={}", userId)
     }
 

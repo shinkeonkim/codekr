@@ -7,6 +7,13 @@ data class AuthPrincipal(
     val userId: Long,
     val email: String,
     val roles: Set<UserRole>,
+    /**
+     * 토큰이 발급된 시각 (#315).
+     *
+     * **비밀번호를 바꾸기 전에 발급된 갱신 토큰을 거르는 데 쓴다.** 널 허용인 이유는
+     * 이 값을 담지 않던 시절의 토큰이 아직 살아 있을 수 있어서다 — 없으면 거르지 않는다.
+     */
+    val issuedAt: java.time.Instant? = null,
 ) {
     /**
      * 어드민 영역에 들어올 수 있는가 (#103).

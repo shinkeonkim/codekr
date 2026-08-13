@@ -6,6 +6,7 @@ import { ApiError } from "@/shared/api";
 import { readNextParam } from "@/shared/lib";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
@@ -33,11 +34,22 @@ interface Props {
   fields: AuthFormField[];
   submitLabel: string;
   footer: { text: string; href: string; linkLabel: string };
+  /** 폼 아래에 덧붙일 것. 로그인 화면의 "비밀번호를 잊으셨나요" 가 그것이다 (#315). */
+  aside?: ReactNode;
   onSubmit: (values: Record<string, string>) => Promise<TokenResponse>;
 }
 
 /** 로그인과 회원가입이 공유하는 폼. 다른 것은 필드 목록과 제출 동작뿐이다. */
-export function AuthForm({ mascot, title, description, fields, submitLabel, footer, onSubmit }: Props) {
+export function AuthForm({
+  mascot,
+  title,
+  description,
+  fields,
+  submitLabel,
+  footer,
+  aside,
+  onSubmit,
+}: Props) {
   const router = useRouter();
   const { signIn } = useAuth();
   const [values, setValues] = useState<Record<string, string>>({});
@@ -99,6 +111,8 @@ export function AuthForm({ mascot, title, description, fields, submitLabel, foot
             {submitting ? "처리 중…" : submitLabel}
           </Button>
         </form>
+
+        {aside ? <div className="mt-3 text-center text-xs">{aside}</div> : null}
 
         <p className="mt-6 text-center text-sm text-ink-muted">
           {footer.text}{" "}

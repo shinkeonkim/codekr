@@ -90,6 +90,19 @@ export const userApi = {
   forceWithdraw: (id: number, reason: string) =>
     request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", auth: true, query: { reason } }),
 
+  /**
+   * 재설정 메일 요청 (#315).
+   *
+   * **가입 여부와 무관하게 성공으로 온다.** 다르게 답하면 어느 주소가 가입되어 있는지
+   * 확인하는 도구가 된다 — 화면 문구도 그에 맞춰야 거짓말이 되지 않는다.
+   */
+  requestPasswordReset: (email: string) =>
+    request<void>("/api/v1/auth/password/reset-requests", { method: "POST", body: { email } }),
+
+  /** 새 비밀번호 정하기 (#315). */
+  resetPassword: (token: string, newPassword: string) =>
+    request<void>("/api/v1/auth/password/reset", { method: "POST", body: { token, newPassword } }),
+
   /** 인증 링크를 확인한다 (#233). **로그인이 필요 없다** — 토큰 자체가 본인 확인이다. */
   verifyEmail: (token: string) =>
     request<void>("/api/v1/auth/email/verify", { method: "POST", body: { token } }),

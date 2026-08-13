@@ -2,6 +2,7 @@
 
 import { userApi } from "@/entities/user";
 import { AuthForm, RequireGuest } from "@/features/auth";
+import Link from "next/link";
 
 /**
  * 이미 로그인한 사람에게 로그인 화면을 보여주지 않는다 (#113, #73 과 같은 결).
@@ -21,6 +22,12 @@ export function LoginPage() {
         { name: "password", label: "비밀번호", type: "password", autoComplete: "current-password" },
       ]}
       footer={{ text: "아직 계정이 없으신가요?", href: "/signup", linkLabel: "회원가입" }}
+      // **그 자리가 없었다** (#315) — 잊으면 계정을 잃는 것과 같았다.
+      aside={
+        <Link href="/forgot-password" className="text-ink-muted hover:text-ink hover:underline">
+          비밀번호를 잊으셨나요?
+        </Link>
+      }
       onSubmit={(values) => userApi.login({ email: values.email, password: values.password })}
     />
     </RequireGuest>

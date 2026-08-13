@@ -32,6 +32,7 @@ class JwtTokenProvider(private val properties: JwtProperties) {
                 // 역할은 여러 개다 (#103). 알 수 없는 값은 버린다 —
                 // 역할을 지운 뒤에도 예전 토큰이 살아 있을 수 있다.
                 roles = readRoles(claims["roles"]),
+                issuedAt = claims.issuedAt?.toInstant(),
             )
         }
     } catch (e: JwtException) {

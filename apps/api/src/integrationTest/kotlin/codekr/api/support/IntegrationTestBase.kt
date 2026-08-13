@@ -37,9 +37,9 @@ abstract class IntegrationTestBase {
     fun truncateAll() {
         // 순위표 캐시는 애플리케이션 전체가 공유한다. 비우지 않으면 앞 시험의 결과가 남는다.
         scoreboardCache.clear()
-        // 탈퇴 표시는 Redis 에 남는다 (#140). 시험마다 사용자 id 가 1 부터 다시 시작하므로,
+        // 토큰 무효화 표시는 Redis 에 남는다 (#140, #315). 시험마다 사용자 id 가 1 부터 다시 시작하므로,
         // 비우지 않으면 앞 시험에서 탈퇴한 id 가 뒤 시험의 사용자를 막는다.
-        redisTemplate.keys("codekr:withdrawn:*").forEach(redisTemplate::delete)
+        redisTemplate.keys("codekr:revoked:*").forEach(redisTemplate::delete)
         jdbcClient.sql(
             """
             TRUNCATE comments, posts, submission_views, problem_collection_items, problem_collections,
@@ -50,7 +50,7 @@ abstract class IntegrationTestBase {
                      notifications, admin_audit_logs, rejudge_batches, user_daily_activity,
                      problem_tags, tags,
                      user_problem_scores, user_badges, user_roles, user_suspensions,
-                     email_verifications, users
+                     email_verifications, password_resets, users
             RESTART IDENTITY CASCADE
             """,
         ).update()
