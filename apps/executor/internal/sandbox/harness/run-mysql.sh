@@ -26,8 +26,9 @@ DATADIR=/work/data
 SOCK=/work/mysql.sock
 export MYSQL_HOME=/work
 
-mkdir -p "$DATADIR"
-
+# **디렉터리를 미리 만들지 않는다.** mysqld 는 데이터 디렉터리를 자기가 만들어야
+# 쓸 수 있다고 본다 — 미리 만들어 두면 `The designated data directory is unusable` 로
+# 거절한다. 로컬(Docker)에서는 통과했지만 CI(containerd)에서 그 차이가 드러났다.
 # 기동에 실패하면 **왜 실패했는지 보여준다.** 로그를 컨테이너 안에만 두면 화면에는
 # 빈 출력만 남고, 그것은 "쿼리가 아무 결과도 내지 않았다" 와 구분되지 않는다.
 die() {
