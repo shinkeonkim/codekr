@@ -156,6 +156,30 @@ executor:
     requests: { cpu: 200m, memory: 256Mi }
     limits: { memory: 512Mi }
 
+# 어드민이 조정할 수 있는 워크로드 (#40, #390, #431).
+#
+# **차트와 앱이 같은 목록을 봐야 한다.** 전에는 앱의 `application.yml` 이 셋을 들고
+# 차트는 실행기 하나만 알아서, RBAC 이 빠진 채 배포되고 채점기가 403 을 냈다.
+# 이 목록이 Role·RoleBinding 과 ConfigMap 을 함께 만든다.
+#
+# `namespace` 를 비우면 릴리스 네임스페이스다. 실행기만 예외로 `executor.namespace`
+# 를 따른다 — **예외가 기본을 정하지 않게** 그 예외를 여기 한 줄로 못 박는다.
+scaling:
+  targets:
+    - name: executor
+      deployment: codekr-executor
+      namespace: ""
+    - name: judge
+      deployment: codekr-judge
+      namespace: ""
+      minReplicas: 1
+      maxReplicas: 10
+    - name: judge-contest
+      deployment: codekr-judge-contest
+      namespace: ""
+      minReplicas: 1
+      maxReplicas: 10
+
 redis:
   storage: 2Gi
   # 비우면 클러스터 기본 StorageClass 를 쓴다.

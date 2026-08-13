@@ -28,11 +28,16 @@ class KubernetesScaleClient(
     private val log = LoggerFactory.getLogger(javaClass)
 
     /*
-        기본 네임스페이스는 **실행기 설정에서 온다** — 그것만 별도 네임스페이스에 놓일 수
-        있기 때문이다 (#390). 대상마다 다르면 호출할 때 넘긴다.
+        기본 네임스페이스는 **api 자신의 것**이다 — 파드에 마운트된 `namespace` 파일이
+        그것을 말한다.
+
+        전에는 실행기 설정에서 가져왔다 (#390). **예외가 기본을 정하고 있었다** —
+        별도 네임스페이스에 놓이는 것은 실행기뿐인데, 그것이 기본이 되는 바람에
+        `namespace` 를 비워 둔 채점기 둘이 전부 실행기 네임스페이스에서 조회되어
+        403 이 났다 (#431). 실행기는 자기 네임스페이스를 **명시적으로** 들고,
+        나머지는 여기를 쓴다.
     */
-    private val credentials: ServiceAccountCredentials? =
-        ServiceAccountCredentials.load(properties.target("executor")?.namespace ?: "")
+    private val credentials: ServiceAccountCredentials? = ServiceAccountCredentials.load("")
 
     override val available: Boolean = credentials != null
 
@@ -65,7 +70,7 @@ class KubernetesScaleClient(
 
     override fun read(deployment: String, namespaceOverride: String?): Pair<Int, Int> {
         val ns = namespaceOverride?.takeIf { it.isNotBlank() } ?: namespace
-        val body = call("읽기", deployment) {
+        val body = call("읽기", deployment, ns) {
             restClient.get()
                 .uri("/apis/apps/v1/namespaces/{ns}/deployments/{name}", ns, deployment)
                 .retrieve()
@@ -81,7 +86,7 @@ class KubernetesScaleClient(
 
     override fun scale(deployment: String, replicas: Int, namespaceOverride: String?) {
         val ns = namespaceOverride?.takeIf { it.isNotBlank() } ?: namespace
-        call("조정", deployment) {
+        call("조정", deployment, ns) {
             restClient.patch()
                 .uri("/apis/apps/v1/namespaces/{ns}/deployments/{name}/scale", ns, deployment)
                 .contentType(MediaType.valueOf("application/merge-patch+json"))
@@ -99,7 +104,7 @@ class KubernetesScaleClient(
      * 상태 코드와 응답 본문은 여기서 로그에 남긴다. 부르는 쪽까지 올라가면 화면에 닿을
      * 위험이 생기고, 여기가 유일하게 그것을 아는 자리다.
      */
-    private fun <T> call(action: String, deployment: String, request: () -> T): T = try {
+    private fun <T> call(action: String, deployment: String, ns: String?, request: () -> T): T = try {
         request()
     } catch (error: RestClientResponseException) {
         val failure = when (error.statusCode.value()) {
@@ -108,11 +113,11 @@ class KubernetesScaleClient(
             else -> ScaleAccessFailure.UNKNOWN
         }
         val detail = "HTTP ${error.statusCode.value()} ${error.responseBodyAsString.take(BODY_LOG_LIMIT)}"
-        log.error("실행기 배포 {} 실패: {}/{} — {}", action, namespace, deployment, detail)
+        log.error("배포 {} 실패: {}/{} — {}", action, ns, deployment, detail)
         throw ScaleAccessException(failure, detail, error)
     } catch (error: ResourceAccessException) {
         // 연결 자체가 되지 않았다. TLS 신뢰 실패도 여기로 온다 — 원인 사슬까지 남긴다.
-        log.error("실행기 배포 {} 실패 (연결): {}/{}", action, namespace, deployment, error)
+        log.error("배포 {} 실패 (연결): {}/{}", action, ns, deployment, error)
         throw ScaleAccessException(ScaleAccessFailure.UNREACHABLE, error.message ?: "연결 실패", error)
     }
 
