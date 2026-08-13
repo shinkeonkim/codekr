@@ -9,16 +9,8 @@ import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CodeEditor } from "@/shared/ui";
+import { draftKey, initialSource, readDraft } from "./draft";
 import { Alert, Button, Card, Select, Textarea } from "@/shared/ui";
-
-/** 작성 중인 코드를 문제·언어별로 브라우저에 남겨, 새로고침해도 잃지 않게 한다. */
-const draftKey = (slug: string, runtimeId: string) => `codekr.draft.${slug}.${runtimeId}`;
-
-/** 서버 렌더링 중에는 저장소가 없으므로 초안이 없는 것으로 본다. */
-function readDraft(slug: string, runtimeId: string): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(draftKey(slug, runtimeId));
-}
 
 interface Props {
   problem: ProblemDetail;
@@ -30,7 +22,23 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const [runtimeId, setRuntimeId] = useState(problem.runtimes[0]?.id ?? "");
-  const [source, setSource] = useState("");
+  /*
+    **처음 한 번만 정한다** (#383).
+
+    전에는 렌더 중에 `loadedRuntimeId !== runtime.id` 를 보고 `setSource(템플릿)` 을
+    했다. `runtime` 은 `problem.runtimes` 에서 다시 계산되는 값이라, 그 계산이 한 번
+    더 돌면서 id 가 흔들리면 **이미 친 코드가 템플릿으로 덮인다.** 그리고 그 덮인 것이
+    그대로 제출돼 채점되고, 정답률·랭킹·스트릭이 그 위에 쌓인다.
+
+    지금은 **사용자가 언어를 바꿀 때만** 코드가 바뀐다. 그 외에 `source` 를 건드리는
+    길이 없으므로, 무엇이 몇 번 다시 계산되든 친 코드는 그대로 있다.
+  */
+  const [source, setSource] = useState(() =>
+    initialSource(
+      readDraft(problem.slug, problem.runtimes[0]?.id ?? ""),
+      problem.runtimes[0]?.template ?? "",
+    ),
+  );
   const [stdin, setStdin] = useState(problem.examples[0]?.input ?? "");
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,16 +64,22 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
       .catch(() => undefined);
   }, [user]);
 
-  // 언어가 바뀌면 저장해 둔 초안을 불러오고, 없으면 템플릿에서 시작한다.
-  // 렌더 중 상태를 맞추는 방식이라 이펙트로 인한 추가 렌더가 생기지 않는다.
-  const [loadedRuntimeId, setLoadedRuntimeId] = useState<string | null>(null);
-  if (runtime && loadedRuntimeId !== runtime.id) {
-    setLoadedRuntimeId(runtime.id);
-    setSource(readDraft(problem.slug, runtime.id) ?? runtime.template);
-  }
+  /**
+   * 언어를 바꾼다 (#383).
+   *
+   * **코드가 바뀌는 유일한 자리다.** 사용자가 고른 것이므로 덮어써도 되고, 그 언어의
+   * 초안이 있으면 그것을, 없으면 템플릿을 준다.
+   */
+  const changeRuntime = (nextId: string) => {
+    setRuntimeId(nextId);
+    const next = problem.runtimes.find((it) => it.id === nextId);
+    if (next) setSource(initialSource(readDraft(problem.slug, next.id), next.template));
+  };
 
   useEffect(() => {
-    if (!runtime || !source) return;
+    if (!runtime) return;
+    // **빈 값도 저장한다.** 전에는 건너뛰어서, 코드를 전부 지우고 나가면 다시 들어왔을
+    // 때 옛 초안이 되살아났다 — 지운 것도 사용자가 한 일이다.
     localStorage.setItem(draftKey(problem.slug, runtime.id), source);
   }, [problem.slug, runtime, source]);
 
@@ -120,7 +134,7 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
         <Select
           className="min-w-0 flex-1"
           value={runtime?.id ?? ""}
-          onChange={(event) => setRuntimeId(event.target.value)}
+          onChange={(event) => changeRuntime(event.target.value)}
         >
           {problem.runtimes.map((item) => (
             <option key={item.id} value={item.id}>
