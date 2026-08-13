@@ -17,7 +17,9 @@ import codekr.api.tag.service.TagService
 import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.ProblemNoSqlSpec
 import codekr.api.problem.entity.ProblemSqlSpec
+import codekr.api.problem.repository.ProblemNoSqlSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.repository.ProblemSearchCondition
@@ -36,6 +38,7 @@ class AdminProblemService(
     private val statsRepository: ProblemStatsRepository,
     private val tagService: TagService,
     private val sqlSpecRepository: ProblemSqlSpecRepository,
+    private val noSqlSpecRepository: ProblemNoSqlSpecRepository,
     private val scoreResyncService: ProblemScoreResyncService,
     private val validator: ProblemUpsertValidator,
 ) {
@@ -52,6 +55,7 @@ class AdminProblemService(
             problem,
             verificationService.findLatest(problem),
             sqlSpecRepository.findById(id).orElse(null),
+            noSqlSpecRepository.findById(id).orElse(null),
             tagService.tagsOf(id),
         )
     }
@@ -75,6 +79,22 @@ class AdminProblemService(
         existing.ignoreRowOrder = spec.ignoreRowOrder
         existing.verifySql = spec.verifySql?.ifBlank { null }
         existing.allowWrite = spec.allowWrite
+        return existing
+    }
+
+    /** NoSQL 스펙을 넣거나 지운다 (#455). SQL 과 같은 이유로 유형을 바꾸면 지운다. */
+    private fun upsertNoSqlSpec(problemId: Long, request: ProblemUpsertRequest): ProblemNoSqlSpec? {
+        val spec = request.nosqlSpec ?: run {
+            noSqlSpecRepository.deleteById(problemId)
+            return null
+        }
+        val existing = noSqlSpecRepository.findById(problemId).orElse(null)
+            ?: return noSqlSpecRepository.save(spec.toEntity(problemId))
+
+        existing.seedCommands = spec.seedCommands?.ifBlank { null }
+        existing.answerCommands = spec.answerCommands
+        existing.verifyCommands = spec.verifyCommands
+        existing.ignoreOrder = spec.ignoreOrder
         return existing
     }
 
@@ -116,6 +136,7 @@ class AdminProblemService(
 
         val saved = problemRepository.save(problem)
         request.sqlSpec?.let { sqlSpecRepository.save(it.toEntity(saved.id)) }
+        request.nosqlSpec?.let { noSqlSpecRepository.save(it.toEntity(saved.id)) }
         creditService.replace(saved.id, request.setterIds, request.reviewerIds)
         return ProblemCreatedResponse(saved.id, saved.slug)
     }
@@ -180,6 +201,7 @@ class AdminProblemService(
             problem,
             verificationService.findLatest(problem),
             upsertSqlSpec(problem.id, request),
+            upsertNoSqlSpec(problem.id, request),
             tagService.tagsOf(problem.id),
             creditService.creditsOf(problem.id),
         )

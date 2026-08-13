@@ -153,7 +153,13 @@ export interface ProblemVerification {
  * 채점 방식은 어떻게 채점하는지를 말한다. 화면에서도 두 말을 구분해 쓴다.
  */
 // JUDGE_FUNCTION 은 하네스가 입출력을 맡는 유형이다 (#421).
-export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "JUDGE_FUNCTION" | "QUIZ" | "MANUAL";
+export type ProblemKind =
+  | "JUDGE_STDIO"
+  | "JUDGE_SQL"
+  | "JUDGE_NOSQL"
+  | "JUDGE_FUNCTION"
+  | "QUIZ"
+  | "MANUAL";
 
 /**
  * 문제 목록 정렬 (#132). 서버의 `ProblemSort` 와 같은 값이다.
@@ -197,6 +203,7 @@ export const PROBLEM_SORTS: { value: ProblemSort; label: string }[] = [
 export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_STDIO: "코드 실행 (stdin/stdout)",
   JUDGE_SQL: "SQL",
+  JUDGE_NOSQL: "NoSQL",
   // 하네스가 입출력을 맡고 사용자는 함수만 쓴다 (#421).
   JUDGE_FUNCTION: "함수 구현",
 };
@@ -219,6 +226,22 @@ export interface SqlSpec {
   verifySql: string | null;
   /** 제출이 쓸 수 있는지 (#453). **권한으로 연다.** */
   allowWrite: boolean;
+}
+
+/**
+ * NoSQL 문제의 스펙 (#455).
+ *
+ * **정답은 결과가 아니라 상태다.** 제출이 명령의 연속이라 마지막 명령의 출력은 문제가
+ * 묻는 것의 일부일 뿐이다 — 그래서 끝난 뒤의 상태를 읽는 명령으로 견준다.
+ */
+export interface NoSqlSpec {
+  /** 시작 상태를 만드는 명령. 없어도 된다. */
+  seedCommands: string | null;
+  answerCommands: string;
+  /** 끝난 뒤의 상태를 읽는 명령. **SQL 과 달리 선택이 아니다.** */
+  verifyCommands: string;
+  /** 기본은 순서를 지킨다 — 정렬 집합·리스트에서 순서는 자료의 일부다. */
+  ignoreOrder: boolean;
 }
 
 /** 출력 비교 방식 (#279). */
@@ -247,6 +270,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   problemKind: ProblemKind;
   /** SQL 유형이 아니면 null (#60). */
   sqlSpec: SqlSpec | null;
+  /** NoSQL 유형이 아니면 null (#455). */
+  nosqlSpec: NoSqlSpec | null;
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;

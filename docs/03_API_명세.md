@@ -666,6 +666,20 @@ fun detail(...)
 - **엄랭은 한 줄에 두 수를 읽지 못한다.** 그래서 엄랭 문제는 입력이 하나다 —
   언어가 못 하는 것을 문제가 요구하지 않는다
 
+### NoSQL 문제 (#455)
+
+`problemKind: JUDGE_NOSQL` 과 `nosql:redis7` 런타임이 있다. 시드에 전용 문제가 하나
+있다 (`17-redis-stock-restock`).
+
+- **스펙이 다르다**: `nosqlSpec` 은 `seedCommands`(선택) · `answerCommands` ·
+  `verifyCommands` · `ignoreOrder` 다
+- **`verifyCommands` 는 비워 둘 수 없다.** 명령의 연속에는 견줄 결과 집합이 없다 —
+  이것이 없으면 무엇을 정답으로 볼지가 없다
+- **순서는 기본으로 지킨다.** SQL 의 행 순서와 반대다 — 정렬 집합·리스트에서 순서는
+  자료의 일부다
+- **어느 제품인지 적어야 한다** (#454 와 같은 규칙). 시드와 정답이 그 제품의 명령이다
+- 테스트케이스는 없어도 된다 — 채점 대상이 끝난 뒤의 상태다
+
 ### SQL 문제의 데이터베이스 (#454)
 
 `sql:postgres16` 과 `sql:mariadb11` 이 있다. **SQL 문제는 어느 것으로 푸는지 반드시

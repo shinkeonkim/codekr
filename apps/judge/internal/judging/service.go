@@ -54,6 +54,7 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 			// 맡는다는 것뿐이라, 채점 방식을 새로 만들지 않는다.
 			contract.KindJudgeFunction: NewStdioJudge(executor, log),
 			contract.KindJudgeSQL:      NewSqlJudge(executor, log),
+			contract.KindJudgeNoSQL:    NewNoSqlJudge(executor, log),
 		},
 		events: events,
 		log:    log,

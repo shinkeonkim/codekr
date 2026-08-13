@@ -22,10 +22,17 @@ const SQL = "sql"
 // 그래서 채점기는 어느 DB 였는지 모른 채 결과를 견줄 수 있다.
 const MariaDB = "mariadb"
 
+// Redis 는 NoSQL(Redis) 문제의 하네스다 (#455).
+//
+// **채점 모델이 SQL 과 다르다** — 제출이 명령의 연속이라 남는 것은 상태다. 그래도
+// 출력 형식은 같게 낸다: 채점기가 무엇이 돌았는지 몰라도 되게 하기 위함이다.
+const Redis = "redis"
+
 // scripts 는 하네스 이름 → 작업 디렉터리에 쓸 파일 이름이다.
 var scripts = map[string]string{
 	SQL:     "run-sql.sh",
 	MariaDB: "run-mariadb.sh",
+	Redis:   "run-redis.sh",
 }
 
 // Files 는 그 하네스가 작업 디렉터리에 풀어야 할 파일들이다.
