@@ -46,7 +46,18 @@ spec:
             runAsUser: 26
             runAsGroup: 26
             fsGroup: 26
+          {{/*
+            **두 곳에 둔다** (#281). NFS 한 대가 죽으면 백업도 같이 죽는다.
+
+            보낼 곳이 있으면 덤프를 먼저 뜨고(initContainer) 그다음 올린다 — 순서가
+            필요해서 두 단계로 나눈다 (같은 Job 의 `containers` 는 동시에 돈다).
+            보낼 곳이 없으면 덤프 하나가 그대로 그 Job 의 일이다.
+          */}}
+          {{- if .Values.backup.objectStore.enabled }}
+          initContainers:
+          {{- else }}
           containers:
+          {{- end }}
             - name: dump
               # 서버와 같은 이미지. pg_dump 는 자기보다 새 서버를 덤프하지 못한다.
               image: {{ .Values.predeployDump.image }}
@@ -106,6 +117,49 @@ spec:
               resources:
                 requests: { cpu: 100m, memory: 128Mi }
                 limits: { memory: 512Mi }
+          {{- if .Values.backup.objectStore.enabled }}
+          containers:
+            - name: upload
+              image: {{ .Values.backup.objectStore.image }}
+              command: [/bin/sh, -c]
+              args:
+                - |
+                  set -eu
+                  target=$(cut -d' ' -f2 /dumps/LATEST)
+                  echo "두 번째 사본을 보냅니다: $target"
+                  mc alias set store "$S3_ENDPOINT" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+                  mc cp "$target" "store/${S3_BUCKET}/$(basename "$target")"
+                  # **보낸 것이 실제로 있는지 본다.** 올린 뒤 확인하지 않으면 조용히
+                  # 비어 있는 버킷이 "두 번째 사본" 행세를 한다.
+                  mc stat "store/${S3_BUCKET}/$(basename "$target")"
+                  # 오래된 것은 여기서도 지운다. 보존 규칙은 한 곳(values)에서 온다.
+                  mc ls "store/${S3_BUCKET}" | awk '{print $NF}' | grep '^daily-' | sort -r \
+                    | tail -n +$((KEEP + 1)) | while read -r old; do
+                      mc rm "store/${S3_BUCKET}/$old"
+                    done
+              env:
+                - name: KEEP
+                  value: {{ .Values.backup.keep | quote }}
+                - name: S3_ENDPOINT
+                  value: {{ .Values.backup.objectStore.endpoint | quote }}
+                - name: S3_BUCKET
+                  value: {{ .Values.backup.objectStore.bucket | quote }}
+                - name: S3_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.objectStore.secretName }}
+                      key: {{ .Values.backup.objectStore.accessKeyKey }}
+                - name: S3_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.objectStore.secretName }}
+                      key: {{ .Values.backup.objectStore.secretKeyKey }}
+              volumeMounts:
+                - { name: dumps, mountPath: /dumps, readOnly: true }
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { memory: 256Mi }
+          {{- end }}
           volumes:
             - name: dumps
               persistentVolumeClaim: { claimName: codekr-db-dumps }
