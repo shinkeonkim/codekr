@@ -33,6 +33,14 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/users",
+    label: "회원 관리",
+    description: "회원 찾기·역할 변경·강제 탈퇴",
+    // 찾는 것은 ADMIN 까지 열린다 (#223). 역할 변경·강제 탈퇴는 서버가 SUPERUSER 로
+    // 막고, 화면도 그 버튼만 감춘다 — 목록 자체를 감추면 어드민이 회원을 못 찾는다.
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/operations",
     label: "운영 작업",
     description: "랭킹·활동 집계 재계산",
