@@ -7,8 +7,11 @@ import (
 	contract "github.com/shinkeonkim/codekr/libs/gocontract"
 )
 
-// SQL 실행 환경. 문제마다 새 PostgreSQL 을 샌드박스 안에서 띄운다 (#60).
-const sqlRuntimeID = "sql:postgres16"
+// SQL 실행 환경. 문제마다 새 DB 를 샌드박스 안에서 띄운다 (#60).
+//
+// **이 값은 기본값일 뿐이다** (#454). 어느 DB 로 풀지는 제출이 고른다 — SQL 런타임이
+// 둘 이상이기 때문이다. 이 필드가 없던 시절의 작업만 여기로 온다.
+const defaultSQLRuntimeID = "sql:postgres16"
 
 /*
 sqlFiles 는 하네스가 읽을 파일을 만든다 (#60, #453).
@@ -29,6 +32,20 @@ func sqlFiles(spec *contract.JudgeSQLSpec) map[string]string {
 		files["allow-write"] = "1"
 	}
 	return files
+}
+
+/*
+sqlRuntimeOf 는 이 제출을 어느 DB 로 돌릴지 정한다 (#454).
+
+**채점기는 DB 종류를 모른다.** 하네스가 어느 것이든 같은 형식으로 결과를 내므로,
+여기서 하는 일은 제출이 고른 런타임을 그대로 넘기는 것뿐이다. 비어 있는 것은 이 값이
+없던 시절의 작업이고, 그때는 PostgreSQL 하나뿐이었다.
+*/
+func sqlRuntimeOf(job contract.JudgeJob) string {
+	if job.RuntimeID == "" {
+		return defaultSQLRuntimeID
+	}
+	return job.RuntimeID
 }
 
 // SqlJudge 는 SQL 문제를 채점한다 (#60).
@@ -58,7 +75,7 @@ func (j *SqlJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emitte
 	}
 
 	result, err := j.executor.Run(ctx, contract.ExecJob{
-		RuntimeID:     sqlRuntimeID,
+		RuntimeID:     sqlRuntimeOf(job),
 		SourceCode:    job.SourceCode,
 		TimeLimitMs:   job.TimeLimitMs,
 		MemoryLimitMb: job.MemoryLimitMb,

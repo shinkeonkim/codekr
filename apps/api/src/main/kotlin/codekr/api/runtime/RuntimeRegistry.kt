@@ -61,6 +61,8 @@ class RuntimeRegistry(
                     ?.let(ProblemKind::valueOf) ?: ProblemKind.JUDGE_STDIO,
                 // 실행기가 이 런타임의 하네스 방식을 아는가 (#445). 적어 두지 않으면 모른다.
                 supportsFunctionHarness = it["functionHarness"] != null,
+                // 적지 않으면 0 이다 — 대부분의 런타임은 기동이랄 것이 없다 (#454).
+                startupMs = (it["startupMs"] as? Int) ?: 0,
             )
         }
     }

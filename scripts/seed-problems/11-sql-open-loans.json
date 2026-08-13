@@ -3,6 +3,9 @@
   "title": "아직 반납하지 않은 책",
   "category": "SQL",
   "difficulty": "BRONZE_2",
+  "allowedRuntimeIds": [
+    "sql:postgres16"
+  ],
   "problemKind": "JUDGE_SQL",
   "description": "아직 반납하지 않은 대출의 회원 이름과 책 제목을 찾으세요.\n회원과 책은 서로 다른 표에 있으므로 loans 를 통해 이어야 합니다.\n\n[표 구조]\n  members(id, name, city, joined_on)\n  books(id, title, genre, price)\n  loans(id, member_id, book_id, loaned_on, returned_on)\n\nloans.returned_on 이 비어 있으면(NULL) 아직 반납하지 않은 것입니다.\n",
   "inputDescription": "주어지는 것은 위의 세 표입니다. 표준 입력은 없습니다.",

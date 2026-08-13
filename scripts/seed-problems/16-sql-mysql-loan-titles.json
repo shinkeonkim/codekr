@@ -1,0 +1,28 @@
+{
+  "slug": "mysql-loan-titles",
+  "title": "회원이 빌린 책 제목 모으기 (MySQL)",
+  "category": "SQL",
+  "difficulty": "SILVER_5",
+  "problemKind": "JUDGE_SQL",
+  "allowedRuntimeIds": [
+    "sql:mysql8"
+  ],
+  "description": "**MySQL 로 푸는 문제입니다.**\n\n회원마다 빌린 책의 제목을 **한 줄에 모아** 출력하세요.\n\n여러 행을 한 값으로 모으는 함수는 DB 마다 이름이 다릅니다 — MySQL 은 `GROUP_CONCAT`, PostgreSQL 은 `string_agg` 입니다. **같은 질문인데 문법이 다른 것**, 그것이 이 문제가 MySQL 전용인 이유입니다.\n\n표는 `members`, `books`, `loans` 세 개입니다 (다른 SQL 문제와 같은 구조이지만 **MySQL 타입**으로 만들어져 있습니다).\n\n| 표 | 열 |\n|---|---|\n| `members` | `id`, `name`, `city`, `joined_on` |\n| `books` | `id`, `title`, `genre`, `price` |\n| `loans` | `id`, `member_id`, `book_id`, `loaned_on`, `returned_on` |\n",
+  "inputDescription": "주어지는 것은 위의 세 표입니다. 표준 입력은 없습니다.",
+  "outputDescription": "회원 이름과, 그 회원이 빌린 책 제목을 제목순으로 이어 붙인 값을 출력합니다.\n\n제목 사이는 쉼표와 공백(`, `)으로 잇습니다. 한 번도 빌리지 않은 회원은 나오지 않습니다.\n\n행 순서는 상관없습니다.",
+  "timeLimitMs": 15000,
+  "memoryLimitMb": 1024,
+  "published": true,
+  "sqlSchemaFile": "sql/library-mysql.sql",
+  "sqlSpec": {
+    "answerSql": "SELECT m.name, GROUP_CONCAT(b.title ORDER BY b.title SEPARATOR ', ') AS titles\nFROM members m\nJOIN loans l ON l.member_id = m.id\nJOIN books b ON b.id = l.book_id\nGROUP BY m.id, m.name\nORDER BY m.name;",
+    "ignoreRowOrder": true
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "sql:mysql8",
+      "sourceCode": "-- 여기에 SELECT 문을 작성하세요.\n"
+    }
+  ]
+}

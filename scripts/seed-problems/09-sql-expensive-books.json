@@ -3,6 +3,9 @@
   "title": "비싼 책 세 권",
   "category": "SQL",
   "difficulty": "BRONZE_4",
+  "allowedRuntimeIds": [
+    "sql:postgres16"
+  ],
   "problemKind": "JUDGE_SQL",
   "description": "장서 중 가장 비싼 책 세 권을 값이 큰 것부터 보여 주세요.\n\n[표 구조]\n  members(id, name, city, joined_on)\n  books(id, title, genre, price)\n  loans(id, member_id, book_id, loaned_on, returned_on)\n\nloans.returned_on 이 비어 있으면(NULL) 아직 반납하지 않은 것입니다.\n\n이 문제는 순서가 채점에 반영됩니다. 가격이 높은 것이 먼저 와야 합니다.\n",
   "inputDescription": "주어지는 것은 위의 세 표입니다. 표준 입력은 없습니다.",
