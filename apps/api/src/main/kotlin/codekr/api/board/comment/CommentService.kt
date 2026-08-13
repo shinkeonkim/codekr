@@ -24,33 +24,71 @@ class CommentService(
 ) {
 
     /**
-     * 한 글의 댓글 트리.
+     * 한 글의 댓글 트리 (#213).
      *
-     * **한 번의 조회로 만든다.** 부모마다 질의하면 댓글 수만큼 쿼리가 나간다.
+     * **한 번의 조회로 만든다** (#138). 잘라서 내릴 뿐, 부모마다 질의하는 구조로
+     * 돌아가지 않는다 — 자르는 판단은 [CommentTreeAssembler] 가 메모리에서 한다.
+     *
+     * @param after 최상위를 이어받을 때 **마지막으로 받은 댓글 id**
+     * @param around 이 댓글이 보이도록 그 조상들을 끝까지 편다 (알림·링크, #212)
      */
-    fun findTree(postId: Long, principal: AuthPrincipal?): List<CommentResponse> {
+    fun findTree(
+        postId: Long,
+        principal: AuthPrincipal?,
+        after: Long? = null,
+        around: Long? = null,
+    ): CommentTreeResponse {
         requirePost(postId)
         val comments = commentRepository.findByPostIdOrderByIdAsc(postId)
-        if (comments.isEmpty()) return emptyList()
+        if (comments.isEmpty()) return CommentTreeResponse(emptyList(), 0, 0)
 
         val authors = userRepository.findAllById(comments.map { it.authorId }).associateBy { it.id }
-        val byParent = comments.groupBy { it.parentId }
+        val assembler = CommentTreeAssembler(comments, authors, principal, ancestorsOf(comments, around))
 
-        // 자식이 하나도 남지 않은 삭제된 댓글은 아예 내리지 않는다 — 자리만 차지한다.
-        fun build(parentId: Long?): List<CommentResponse> =
-            byParent[parentId].orEmpty().mapNotNull { comment ->
-                val children = build(comment.id)
-                if (comment.isDeleted && children.isEmpty()) return@mapNotNull null
-                responseOf(comment, authors, principal, children)
-            }
+        val top = assembler.build(null, depth = 0, limit = CommentTreeAssembler.TOP_PAGE, after = after)
+        return CommentTreeResponse(
+            comments = top,
+            totalCount = assembler.visibleCount(),
+            remainingTop = assembler.remaining(null, top.size, after),
+        )
+    }
 
-        return build(null)
+    /**
+     * 한 부모의 답글을 이어받는다 (#213).
+     *
+     * 커서는 **그 부모 아래에서 마지막으로 받은 id** 다. 부모마다 따로 두는 것이
+     * 트리에서 가장 단순하다 — "다음 N개" 가 트리에서는 자명하지 않다 (#138).
+     */
+    fun findChildren(commentId: Long, principal: AuthPrincipal?, after: Long?): CommentTreeResponse {
+        val parent = require(commentId)
+        val comments = commentRepository.findByPostIdOrderByIdAsc(parent.postId)
+        val authors = userRepository.findAllById(comments.map { it.authorId }).associateBy { it.id }
+        val assembler = CommentTreeAssembler(comments, authors, principal)
+
+        val children = assembler.build(commentId, depth = 0, limit = CommentTreeAssembler.CHILD_PAGE, after = after)
+        return CommentTreeResponse(
+            comments = children,
+            totalCount = assembler.visibleCount(),
+            remainingTop = assembler.remaining(commentId, children.size, after),
+        )
+    }
+
+    /** [around] 로 지목된 댓글이 보이도록, 그 조상들을 접지 않는 목록으로 만든다. */
+    private fun ancestorsOf(comments: List<Comment>, around: Long?): Set<Long> {
+        if (around == null) return emptySet()
+        val byId = comments.associateBy { it.id }
+        val chain = mutableSetOf<Long>()
+        var cursor = byId[around]
+        while (cursor != null && chain.add(cursor.id)) {
+            cursor = cursor.parentId?.let { byId[it] }
+        }
+        return chain
     }
 
     private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun create(postId: Long, principal: AuthPrincipal, request: CommentUpsertRequest): List<CommentResponse> {
+    fun create(postId: Long, principal: AuthPrincipal, request: CommentUpsertRequest): CommentTreeResponse {
         requirePost(postId)
         request.parentId?.let { parentId ->
             val parent = commentRepository.findById(parentId).orElseThrow {
@@ -64,58 +102,31 @@ class CommentService(
 
         val saved = commentRepository.save(Comment(postId, request.parentId, principal.userId, request.body))
         notifyTarget(saved, principal.userId)
-        return findTree(postId, principal)
+        // 방금 쓴 댓글이 접힌 자리에 들어가면 쓴 사람이 자기 글을 못 본다.
+        return findTree(postId, principal, around = saved.id)
     }
 
     @Transactional
-    fun update(id: Long, principal: AuthPrincipal, request: CommentUpsertRequest): List<CommentResponse> {
+    fun update(id: Long, principal: AuthPrincipal, request: CommentUpsertRequest): CommentTreeResponse {
         val comment = require(id)
         // 어드민도 남의 댓글을 고칠 수는 없다 (#137 과 같은 이유).
         if (comment.authorId != principal.userId) throw ApiException(ErrorCode.FORBIDDEN)
         comment.edit(request.body)
-        return findTree(comment.postId, principal)
+        return findTree(comment.postId, principal, around = comment.id)
     }
 
     @Transactional
-    fun delete(id: Long, principal: AuthPrincipal): List<CommentResponse> {
+    fun delete(id: Long, principal: AuthPrincipal): CommentTreeResponse {
         val comment = require(id)
         if (comment.authorId != principal.userId && !canModerate(principal)) {
             throw ApiException(ErrorCode.FORBIDDEN)
         }
         // **자식까지 지우지 않는다.** 지우면 남의 글이 함께 사라진다.
         comment.delete()
-        return findTree(comment.postId, principal)
+        return findTree(comment.postId, principal, around = comment.id)
     }
 
     fun countOf(postId: Long): Long = commentRepository.countByPostIdAndDeletedAtIsNull(postId)
-
-    private fun responseOf(
-        comment: Comment,
-        authors: Map<Long, User>,
-        principal: AuthPrincipal?,
-        children: List<CommentResponse>,
-    ): CommentResponse {
-        val author = authors[comment.authorId]
-        val deleted = comment.isDeleted
-        val edited = !deleted && comment.updatedAt.isAfter(comment.createdAt.plusSeconds(EDIT_GRACE_SECONDS))
-
-        return CommentResponse(
-            id = comment.id,
-            // 삭제된 댓글은 작성자도 내리지 않는다. 지운 사람이 누구인지 남길 이유가 없다.
-            authorNickname = if (deleted) null else WithdrawnUser.nicknameOf(author),
-            authorAvatarUrl = if (deleted) null else AvatarService.urlOf(WithdrawnUser.avatarKeyOf(author)),
-            body = if (deleted) null else comment.body,
-            deleted = deleted,
-            createdAt = comment.createdAt,
-            edited = edited,
-            // 고친 적이 있을 때만 시각을 준다 — 없는 값을 화면이 걸러 내지 않게.
-            editedAt = comment.updatedAt.takeIf { edited },
-            editable = !deleted && principal != null && comment.authorId == principal.userId,
-            deletable = !deleted && principal != null &&
-                (comment.authorId == principal.userId || canModerate(principal)),
-            children = children,
-        )
-    }
 
     private fun canModerate(principal: AuthPrincipal): Boolean =
         principal.has(UserRole.BOARD_MANAGER) ||
@@ -164,8 +175,4 @@ class CommentService(
         }.onFailure { log.error("댓글 알림 실패 commentId={}", comment.id, it) }
     }
 
-    private companion object {
-        /** 저장 직후의 미세한 시각 차이로 모든 댓글에 (수정됨)이 붙지 않게. */
-        const val EDIT_GRACE_SECONDS = 5L
-    }
 }

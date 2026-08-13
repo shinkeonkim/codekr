@@ -25,6 +25,7 @@ export function CommentNode({
   onSubmit,
   onRemove,
   onEdit,
+  onLoadChildren,
 }: {
   comment: Comment;
   depth: number;
@@ -34,6 +35,7 @@ export function CommentNode({
   onSubmit: (body: string, parentId?: number) => void;
   onRemove: (id: number) => void;
   onEdit: (id: number, body: string) => Promise<boolean>;
+  onLoadChildren: (commentId: number, after?: number) => void;
 }) {
   // 이 깊이를 넘으면 더 들여쓰지 않는다. 화면이 밀려나면 글을 읽을 수 없다.
   const indent = Math.min(depth, MAX_VISUAL_DEPTH);
@@ -136,6 +138,29 @@ export function CommentNode({
         </div>
       ) : null}
 
+      {/*
+        접힌 자리에 **몇 개가 접혔는지** 보인다 (#213). 개수가 없으면 펼칠 이유를 모른다.
+        한 번에 다 펴지 않고 조금씩 편다 — 한 번에 다 펴면 접은 이유가 사라진다.
+      */}
+      {comment.remainingChildren > 0 ? (
+        <div style={{ marginLeft: 16 }}>
+          <Button
+            variant="ghost"
+            className="px-2 py-0.5 text-xs"
+            onClick={() =>
+              onLoadChildren(
+                comment.id,
+                comment.children.length > 0
+                  ? comment.children[comment.children.length - 1].id
+                  : undefined,
+              )
+            }
+          >
+            답글 {comment.remainingChildren}개 더 보기
+          </Button>
+        </div>
+      ) : null}
+
       {comment.children.map((child) => (
         <CommentNode
           key={child.id}
@@ -147,6 +172,7 @@ export function CommentNode({
           onSubmit={onSubmit}
           onRemove={onRemove}
           onEdit={onEdit}
+          onLoadChildren={onLoadChildren}
         />
       ))}
     </div>

@@ -59,8 +59,8 @@ class WithdrawalIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.summary.authorNickname").value(WithdrawnUser.LABEL))
 
         mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
-            .andExpect(jsonPath("$[0].body").value("남을 댓글"))
-            .andExpect(jsonPath("$[0].authorNickname").value(WithdrawnUser.LABEL))
+            .andExpect(jsonPath("$.comments[0].body").value("남을 댓글"))
+            .andExpect(jsonPath("$.comments[0].authorNickname").value(WithdrawnUser.LABEL))
     }
 
     @Test

@@ -1,7 +1,21 @@
 /** 댓글 (#138). */
 
+/**
+ * 잘라서 오는 댓글 트리 (#213).
+ *
+ * 전체 수를 **서버가 센다** — 받은 트리를 화면이 세던 방식은 잘라 내리기 시작하면
+ * 곧바로 틀린 수가 된다.
+ */
+export interface CommentTree {
+  comments: Comment[];
+  totalCount: number;
+  remainingTop: number;
+}
+
 export interface Comment {
   id: number;
+  /** 어느 댓글에 달린 답인지 (#213). 이어받은 것을 제자리에 끼워 넣을 때 쓴다. */
+  parentId: number | null;
   authorNickname: string | null;
   authorAvatarUrl: string | null;
   /** 삭제된 댓글은 본문이 오지 않는다. 자리만 남는다. */
@@ -19,6 +33,8 @@ export interface Comment {
   editable: boolean;
   deletable: boolean;
   children: Comment[];
+  /** 아직 안 내려온 답글 수 (#213). 0 이면 다 왔다. */
+  remainingChildren: number;
 }
 
 /**

@@ -66,12 +66,21 @@ class CommentIntegrationTest : IntegrationTestBase() {
         val first = comment(authorToken, null, "질문입니다")
         val second = comment(otherToken, first, "이렇게 해보세요")
         val third = comment(authorToken, second, "그래도 안 됩니다")
-        comment(otherToken, third, "그럼 이건요?")
+        val fourth = comment(otherToken, third, "그럼 이건요?")
 
+        // **저장에는 깊이 제한이 없다** (#138). 다만 내려보낼 때는 자른다 (#213) —
+        // 기본 응답에서는 깊은 자리가 접히고, 남은 개수만 보인다.
         mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.length()").value(1))
-            .andExpect(jsonPath("$[0].children[0].children[0].children[0].body").value("그럼 이건요?"))
+            .andExpect(jsonPath("$.comments.length()").value(1))
+            .andExpect(jsonPath("$.comments[0].children[0].children[0].children.length()").value(0))
+            .andExpect(jsonPath("$.comments[0].children[0].children[0].remainingChildren").value(1))
+            // 전체 수는 잘라 내려도 정확하다 — 서버가 센다.
+            .andExpect(jsonPath("$.totalCount").value(4))
+
+        // 알림·링크로 들어오면 그 자리가 보이도록 조상을 편다 (#212).
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments").param("around", fourth.toString()))
+            .andExpect(jsonPath("$.comments[0].children[0].children[0].children[0].body").value("그럼 이건요?"))
     }
 
     @Test
@@ -84,10 +93,10 @@ class CommentIntegrationTest : IntegrationTestBase() {
 
         // 자식까지 지우면 남의 글이 함께 사라진다.
         mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
-            .andExpect(jsonPath("$[0].deleted").value(true))
-            .andExpect(jsonPath("$[0].body").doesNotExist())
-            .andExpect(jsonPath("$[0].authorNickname").doesNotExist())
-            .andExpect(jsonPath("$[0].children[0].body").value("남아야 할 답"))
+            .andExpect(jsonPath("$.comments[0].deleted").value(true))
+            .andExpect(jsonPath("$.comments[0].body").doesNotExist())
+            .andExpect(jsonPath("$.comments[0].authorNickname").doesNotExist())
+            .andExpect(jsonPath("$.comments[0].children[0].body").value("남아야 할 답"))
     }
 
     @Test
@@ -99,7 +108,7 @@ class CommentIntegrationTest : IntegrationTestBase() {
 
         // 자리만 차지할 이유가 없다.
         mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
-            .andExpect(jsonPath("$.length()").value(0))
+            .andExpect(jsonPath("$.comments.length()").value(0))
     }
 
     @Test
@@ -197,8 +206,8 @@ class CommentIntegrationTest : IntegrationTestBase() {
         val id = comment(authorToken, null, "처음 쓴 내용")
 
         mockMvc.perform(get("/api/v1/posts/" + postId + "/comments").header("Authorization", "Bearer " + authorToken))
-            .andExpect(jsonPath("$.[0].edited").value(false))
-            .andExpect(jsonPath("$.[0].editedAt").doesNotExist())
+            .andExpect(jsonPath("$.comments[0].edited").value(false))
+            .andExpect(jsonPath("$.comments[0].editedAt").doesNotExist())
 
         // 5초 유예를 넘겨야 수정으로 친다 — 저장 직후의 시각 차이를 거르는 값이다.
         jdbcClient.sql("UPDATE comments SET created_at = created_at - interval '1 hour' WHERE id = :id")
@@ -211,9 +220,9 @@ class CommentIntegrationTest : IntegrationTestBase() {
         ).andExpect(status().isOk)
 
         mockMvc.perform(get("/api/v1/posts/" + postId + "/comments").header("Authorization", "Bearer " + authorToken))
-            .andExpect(jsonPath("$.[0].body").value("고친 내용"))
-            .andExpect(jsonPath("$.[0].edited").value(true))
-            .andExpect(jsonPath("$.[0].editedAt").exists())
+            .andExpect(jsonPath("$.comments[0].body").value("고친 내용"))
+            .andExpect(jsonPath("$.comments[0].edited").value(true))
+            .andExpect(jsonPath("$.comments[0].editedAt").exists())
     }
 
     @Test
@@ -252,6 +261,82 @@ class CommentIntegrationTest : IntegrationTestBase() {
         val count = jdbcClient.sql("SELECT count(*) FROM notifications WHERE user_id = :id")
             .param("id", authorId).query(Int::class.java).single()
         kotlin.test.assertEquals(0, count)
+    }
+
+    @Test
+    fun `최상위가 많으면 잘라서 내리고 커서로 이어받는다`() {
+        // 긴 스레드 하나가 다른 사람들의 댓글을 화면 밖으로 밀어내면 안 된다 (#213).
+        repeat(25) { comment(authorToken, null, "댓글 " + it) }
+
+        val body = mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andExpect(jsonPath("$.comments.length()").value(20))
+            .andExpect(jsonPath("$.totalCount").value(25))
+            .andExpect(jsonPath("$.remainingTop").value(5))
+            .andReturn().response.contentAsString
+
+        // **커서는 마지막으로 받은 id 다.** 오프셋이면 읽는 사이에 새 댓글이 달릴 때
+        // 이미 본 것을 다시 받거나 건너뛴다.
+        val last = Regex("\"id\":(\\d+)").findAll(body).last().groupValues[1]
+
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments").param("after", last))
+            .andExpect(jsonPath("$.comments.length()").value(5))
+            .andExpect(jsonPath("$.remainingTop").value(0))
+    }
+
+    @Test
+    fun `이어받는 사이에 새 댓글이 달려도 겹치지 않는다`() {
+        repeat(21) { comment(authorToken, null, "댓글 " + it) }
+
+        val first = mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andReturn().response.contentAsString
+        val firstIds = Regex("\"id\":(\\d+)").findAll(first).map { it.groupValues[1] }.toList()
+
+        // 읽는 사이에 새 댓글이 달린다.
+        comment(otherToken, null, "그사이에 달린 댓글")
+
+        val next = mockMvc.perform(
+            get("/api/v1/posts/" + postId + "/comments").param("after", firstIds.last()),
+        ).andReturn().response.contentAsString
+        val nextIds = Regex("\"id\":(\\d+)").findAll(next).map { it.groupValues[1] }.toList()
+
+        kotlin.test.assertTrue(firstIds.intersect(nextIds.toSet()).isEmpty(), "같은 댓글이 두 번 나왔다")
+        kotlin.test.assertEquals(2, nextIds.size)
+    }
+
+    @Test
+    fun `한 부모의 답글도 잘라서 내리고 이어받는다`() {
+        val parent = comment(authorToken, null, "부모")
+        repeat(5) { comment(otherToken, parent, "답 " + it) }
+
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andExpect(jsonPath("$.comments[0].children.length()").value(3))
+            // 접힌 자리에 몇 개가 남았는지 — 없으면 펼칠 이유를 모른다.
+            .andExpect(jsonPath("$.comments[0].remainingChildren").value(2))
+
+        val body = mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andReturn().response.contentAsString
+        val thirdChild = Regex("\"id\":(\\d+)").findAll(body).map { it.groupValues[1] }.toList()[3]
+
+        mockMvc.perform(get("/api/v1/comments/" + parent + "/children").param("after", thirdChild))
+            .andExpect(jsonPath("$.comments.length()").value(2))
+            .andExpect(jsonPath("$.remainingTop").value(0))
+    }
+
+    @Test
+    fun `방금 쓴 댓글은 접힌 자리에 있어도 보인다`() {
+        val a = comment(authorToken, null, "1단")
+        val b = comment(authorToken, a, "2단")
+        val c = comment(authorToken, b, "3단")
+
+        // 4단은 기본 응답에서 접히는 깊이인데, 쓴 사람에게는 보여야 한다.
+        mockMvc.perform(
+            post("/api/v1/posts/" + postId + "/comments")
+                .header("Authorization", "Bearer " + authorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"parentId\":" + c + ",\"body\":\"4단\"}"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.comments[0].children[0].children[0].children[0].body").value("4단"))
     }
 
 }
