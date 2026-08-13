@@ -32,6 +32,12 @@ vendor/
 .vscode/
 *.swp
 
+# --- 문제 초안 (#480) ---
+# **이 저장소는 public 이다.** 문제 초안에는 테스트케이스와 정답이 들어가고, 그것이
+# 커밋되면 문제가 무너진다 — 한 번 public 에 들어가면 되돌릴 수 없다 (#424).
+# 스킬은 이 폴더 밖에 문제 파일을 쓰지 않는다.
+.problem-drafts/
+
 # --- Local runtime data ---
 infra/docker/data/
 coverage/
