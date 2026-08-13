@@ -1,6 +1,8 @@
 "use client";
 
+import { useAuth } from "@/features/auth";
 import { THEME_LABELS, useTheme } from "@/shared/theme";
+import { saveAccountTheme } from "../model/accountTheme";
 import type { Theme } from "@/shared/theme";
 
 const OPTIONS: Theme[] = ["system", "light", "dark"];
@@ -13,9 +15,13 @@ const OPTIONS: Theme[] = ["system", "light", "dark"];
  *
  * 저장 버튼이 없다. 테마는 누르는 순간 눈으로 결과가 보이므로, 저장을 한 번 더
  * 누르게 하면 **이미 일어난 일을 확인시키는** 절차가 된다.
+ *
+ * 로그인했으면 계정에도 올린다 (#274). 올리는 데 실패해도 이 기기에서는 이미 바뀌어
+ * 있다 — 되돌리면 방금 고른 것이 눈앞에서 사라진다.
  */
 export function ThemePicker() {
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <div>
@@ -28,7 +34,11 @@ export function ThemePicker() {
               type="button"
               role="radio"
               aria-checked={selected}
-              onClick={() => setTheme(option)}
+              onClick={() => {
+                setTheme(option);
+                // 로그인했으면 계정에도 올린다 (#274) — 기기를 옮겨도 따라오게.
+                if (user) void saveAccountTheme(option);
+              }}
               className={`flex-1 rounded-card border px-3 py-2 text-sm transition ${
                 selected
                   ? "border-brand bg-brand text-brand-ink"

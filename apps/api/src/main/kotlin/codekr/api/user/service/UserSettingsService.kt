@@ -19,6 +19,7 @@ class UserSettingsService(private val userRepository: UserRepository) {
         val user = require(userId)
         // null 은 "바꾸지 않는다" 다. 항목이 늘어도 옛 화면이 새 항목을 지우지 않는다.
         request.defaultSubmissionVisibility?.let { user.defaultSubmissionVisibility = it }
+        request.theme?.let { user.theme = it }
 
         return UserSettingsResponse.of(user)
     }

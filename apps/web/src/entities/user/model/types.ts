@@ -82,6 +82,8 @@ export interface UserProfile {
  */
 export interface UserSettings {
   defaultSubmissionVisibility: SubmissionVisibility;
+  /** 계정에 저장된 화면 테마 (#274). `null` 이면 고른 적이 없다 — 이 기기의 선택을 쓴다. */
+  theme: "LIGHT" | "DARK" | "SYSTEM" | null;
   /** 전체 카테고리와 라벨. 화면이 목록을 하드코딩하지 않게 서버가 알려준다. */
   notificationCategories: NotificationCategoryOption[];
 }
