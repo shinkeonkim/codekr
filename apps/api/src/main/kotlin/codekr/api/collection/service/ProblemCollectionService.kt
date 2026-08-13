@@ -61,6 +61,30 @@ class ProblemCollectionService(
         )
     }
 
+    /**
+     * 한 사람이 만든 공개 문제집 (#209).
+     *
+     * 프로필은 **사람으로부터 문제집에 닿는 유일한 길**이다 — 목록에서 좋은 문제집을
+     * 봤을 때 "이 사람이 만든 다른 것" 을 찾을 방법이 그것뿐이다.
+     */
+    fun findPublicOf(ownerId: Long, viewerId: Long?): List<CollectionSummaryResponse> {
+        val nickname = nicknameOf(ownerId)
+        return collectionRepository
+            .findByOwnerIdAndVisibilityAndDeletedAtIsNullOrderByIdDesc(ownerId, CollectionVisibility.PUBLIC)
+            .map { collection ->
+                val problems = livingProblems(collection.id)
+                val solved = viewerId?.let { progressRepository.solvedProblemIds(it, problems.map(Problem::id)) }
+                    ?: emptySet()
+                CollectionSummaryResponse.of(
+                    collection,
+                    nickname,
+                    problems.size,
+                    solved.size,
+                    forOwner = collection.ownerId == viewerId,
+                )
+            }
+    }
+
     fun findMine(userId: Long): List<CollectionSummaryResponse> {
         val nickname = nicknameOf(userId)
         return collectionRepository.findByOwnerIdAndDeletedAtIsNullOrderByIdDesc(userId)
