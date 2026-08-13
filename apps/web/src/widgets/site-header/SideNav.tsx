@@ -1,5 +1,6 @@
 "use client";
 
+import { UserLink } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/shared/ui";
 import Link from "next/link";
@@ -102,10 +103,23 @@ export function SideNav({ open, onClose }: { open: boolean; onClose: () => void 
         <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
           {loading ? null : user ? (
             <>
-              <p className="px-3 text-sm text-ink-muted">
-                {user.nickname}
-                {isAdmin ? " (관리자)" : ""}
-              </p>
+              {/*
+                **이름은 링크다** (#309). #289 가 이 자리로 이름을 옮겨 오면서 링크였다는
+                사실이 같이 오지 않아, 좁은 화면에서 자기 프로필로 갈 길이 사라졌다 —
+                랭킹에서 자기를 찾아 누르는 것은 길이 아니다(순위가 없으면 목록에 없다).
+
+                주소는 `UserLink` 가 정한다. 규칙이 바뀌면(#307) 그쪽만 고친다.
+                `(관리자)` 는 링크 밖에 둔다 — 안에 넣으면 링크 글자가 된다.
+              */}
+              <div className="flex items-center gap-1.5 px-3 py-1">
+                <UserLink
+                  nickname={user.nickname}
+                  avatarUrl={user.avatarUrl}
+                  showAvatar
+                  className="min-w-0 text-sm text-ink"
+                />
+                {isAdmin ? <span className="text-xs text-ink-muted">(관리자)</span> : null}
+              </div>
               <Link href="/settings">
                 <Button variant="secondary" className="w-full">
                   설정
