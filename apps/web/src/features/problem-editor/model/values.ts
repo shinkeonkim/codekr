@@ -48,6 +48,8 @@ export interface ProblemFormValues {
   testcases: Testcase[];
   templates: ProblemTemplate[];
   runtimeLimits: ProblemRuntimeLimit[];
+  /** 풀 수 있는 언어 (#419). **비우면 이 유형의 전부**를 허용한다. */
+  allowedRuntimeIds: string[];
   solution: ProblemSolution | null;
 }
 
@@ -81,6 +83,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     testcases: problem.testcases,
     templates: problem.templates,
     runtimeLimits: problem.runtimeLimits ?? [],
+    allowedRuntimeIds: problem.allowedRuntimeIds ?? [],
     solution: problem.solution,
   };
 }
@@ -110,6 +113,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   testcases: [EMPTY_TESTCASE],
   templates: [],
   runtimeLimits: [],
+  allowedRuntimeIds: [],
   solution: null,
 };
 

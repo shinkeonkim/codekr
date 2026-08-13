@@ -50,6 +50,15 @@ data class ProblemUpsertRequest(
     @field:Size(max = 500)
     val sourceUrl: String? = null,
 
+    /**
+     * 이 문제를 풀 수 있는 런타임 (#419).
+     *
+     * **비우면 그 종류의 전부를 허용한다.** 언어를 새로 들일 때 기존 문제를 전부
+     * 손보게 하지 않으려는 것이고, 지금 문제들이 그대로 돌아야 하기 때문이다.
+     * 하나라도 고르면 그 목록만 허용된다.
+     */
+    val allowedRuntimeIds: List<String> = emptyList(),
+
     /** SQL 유형일 때만 쓴다 (#60). 다른 유형에 실려 오면 서비스가 거부한다. */
     @field:Valid
     val sqlSpec: SqlSpecRequest? = null,

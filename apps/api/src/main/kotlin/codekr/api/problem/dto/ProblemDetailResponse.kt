@@ -42,6 +42,13 @@ data class ProblemDetailResponse(
     val examples: List<ProblemExampleResponse>,
     val runtimes: List<ProblemRuntimeResponse>,
     /**
+     * 출제자가 언어를 좁혀 두었는가 (#419).
+     *
+     * **목록이 짧은 것을 화면이 고장으로 읽지 않게** 한다. 좁힌 것이면 화면이 그렇게
+     * 말하고, 아니면 아무 말도 하지 않는다.
+     */
+    val runtimeRestricted: Boolean,
+    /**
      * 알고리즘 분류 (#232).
      *
      * **답의 일부다.** "이 문제는 DP" 를 알고 푸는 것과 모르고 푸는 것은 다른 문제라,
@@ -80,6 +87,7 @@ data class ProblemDetailResponse(
             memoryLimitMb = problem.memoryLimitMb,
             stats = stats,
             examples = problem.examples.map(ProblemExampleResponse::from),
+            runtimeRestricted = problem.allowedRuntimeIds.isNotEmpty(),
             runtimes = runtimes.map {
                 ProblemRuntimeResponse.of(it, problem.templateOf(it.id), problem.limitsFor(it.id))
             },

@@ -159,6 +159,9 @@ class Problem(
     @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL])
     private val allTemplates: MutableList<ProblemTemplate> = mutableListOf()
 
+    @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL], orphanRemoval = true)
+    private val allowedRuntimes: MutableList<ProblemAllowedRuntime> = mutableListOf()
+
     @OneToMany(mappedBy = "problem", cascade = [CascadeType.ALL])
     private val allRuntimeLimits: MutableList<ProblemRuntimeLimit> = mutableListOf()
 
@@ -170,6 +173,24 @@ class Problem(
     val templates: List<ProblemTemplate> get() = allTemplates.filter { !it.isDeleted }
 
     val runtimeLimits: List<ProblemRuntimeLimit> get() = allRuntimeLimits.filter { !it.isDeleted }
+
+    /**
+     * 풀 수 있는 런타임 (#419). **비어 있으면 전부 허용**이다.
+     *
+     * 빈 목록과 "전부 허용" 을 구분하지 않는 것이 아니다 — 어드민 화면에서 하나도
+     * 고르지 않는 것이 곧 "전부 허용" 이고, 그 문구를 화면이 적는다. 하나라도 고르면
+     * 그 목록만 허용된다.
+     */
+    val allowedRuntimeIds: List<String> get() = allowedRuntimes.map { it.runtimeId }.sorted()
+
+    /** 이 런타임으로 풀 수 있는가 (#419). 허용 목록이 비어 있으면 무엇이든 좋다. */
+    fun allowsRuntime(runtimeId: String): Boolean =
+        allowedRuntimes.isEmpty() || allowedRuntimes.any { it.runtimeId == runtimeId }
+
+    fun replaceAllowedRuntimes(runtimeIds: List<String>) {
+        allowedRuntimes.clear()
+        runtimeIds.distinct().forEach { allowedRuntimes.add(ProblemAllowedRuntime(it).also { r -> r.assignTo(this) }) }
+    }
 
     /** 런타임별 초기 코드. 문제에 지정된 값이 없으면 호출자가 런타임 기본 템플릿을 쓴다. */
     fun templateOf(runtimeId: String): String? =

@@ -87,6 +87,12 @@ export interface ProblemDetail extends Omit<ProblemSummary, "published"> {
   examples: ProblemExample[];
   /** template 은 문제가 지정한 초기 코드이며, 없으면 런타임 기본값이 들어온다. */
   runtimes: Runtime[];
+  /**
+   * 출제자가 언어를 좁혀 두었는가 (#419).
+   *
+   * **목록이 짧은 것을 고장으로 읽지 않게** 화면이 그 사실을 말한다.
+   */
+  runtimeRestricted: boolean;
   /** 알고리즘 분류 (#232). 화면에서 기본으로 접어 둔다 — 풀이 힌트가 된다. */
   tags: ProblemTag[];
 }
@@ -229,6 +235,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   testcases: Testcase[];
   templates: ProblemTemplate[];
   runtimeLimits: ProblemRuntimeLimit[];
+  /** 풀 수 있는 언어 (#419). 비어 있으면 이 유형의 전부다. */
+  allowedRuntimeIds: string[];
   solution: ProblemSolution | null;
   verification: ProblemVerification | null;
   /** 지금 붙어 있는 알고리즘 분류 (#232). */
