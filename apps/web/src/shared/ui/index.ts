@@ -12,6 +12,8 @@ export { Pagination } from "./Pagination";
 export { Table } from "./Table";
 export type { Column } from "./Table";
 export { Button, Card, EmptyState } from "./primitives";
+export { Checkbox } from "./checkbox";
+export { CheckboxField } from "./CheckboxField";
 export { Field } from "./Field";
 // shadcn 기반으로 옮긴 잎 프리미티브 (#291 1단계).
 export { Alert } from "./alert";

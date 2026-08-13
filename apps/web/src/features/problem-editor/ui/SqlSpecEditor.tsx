@@ -1,7 +1,7 @@
 "use client";
 
 import type { SqlSpec } from "@/entities/problem";
-import { Card, Field, Textarea } from "@/shared/ui";
+import { Card, CheckboxField, Field, Textarea } from "@/shared/ui";
 
 /**
  * SQL 문제의 스키마와 정답 쿼리 (#60).
@@ -53,22 +53,21 @@ export function SqlSpecEditor({
         채점할 때 이 쿼리를 먼저 돌려 기대 결과를 만듭니다. 시드를 고치면 기대 결과도 따라갑니다.
       </p>
 
-      <label className="flex items-start gap-2 text-xs text-ink">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={value.ignoreRowOrder}
-          onChange={(event) => update("ignoreRowOrder", event.target.checked)}
-        />
-        <span>
-          행 순서를 무시하고 비교합니다.
-          {/* 정렬이 문제의 일부인 경우에만 끈다. 켜 두는 것이 기본이다. */}
-          <span className="block text-ink-muted">
-            정렬이 문제의 일부라면 끄세요. 켠 채로 두는 것이 기본입니다 — 문제가 정렬을
-            요구하지 않는데 순서를 비교하면 맞는 답이 틀린 것으로 나옵니다.
-          </span>
-        </span>
-      </label>
+      <CheckboxField
+        className="text-xs"
+        checked={value.ignoreRowOrder}
+        onCheckedChange={(next) => update("ignoreRowOrder", next)}
+        label={
+          <>
+            행 순서를 무시하고 비교합니다.
+            {/* 정렬이 문제의 일부인 경우에만 끈다. 켜 두는 것이 기본이다. */}
+            <span className="block font-normal text-ink-muted">
+              정렬이 문제의 일부라면 끄세요. 켠 채로 두는 것이 기본입니다 — 문제가 정렬을
+              요구하지 않는데 순서를 비교하면 맞는 답이 틀린 것으로 나옵니다.
+            </span>
+          </>
+        }
+      />
     </Card>
   );
 }
