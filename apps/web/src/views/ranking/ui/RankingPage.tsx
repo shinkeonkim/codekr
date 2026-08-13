@@ -7,6 +7,8 @@ import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
 import { Alert, Card, EmptyState, Pagination } from "@/shared/ui";
 import { useEffect, useState } from "react";
+import { AffiliationFilter } from "./AffiliationFilter";
+import { Choices } from "./Choices";
 
 const PAGE_SIZE = 50;
 
@@ -24,6 +26,7 @@ export function RankingPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [page, setPage] = useState(0);
+  const [affiliationId, setAffiliationId] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export function RankingPage() {
 
   useEffect(() => {
     rankingApi
-      .list({ metric, period, page, size: PAGE_SIZE })
+      .list({ metric, period, page, size: PAGE_SIZE, affiliationId })
       .then((result) => {
         setEntries(result.content);
         setTotalPages(result.totalPages);
@@ -42,7 +45,7 @@ export function RankingPage() {
       .catch((caught) =>
         setError(caught instanceof ApiError ? caught.message : "랭킹을 불러오지 못했습니다."),
       );
-  }, [metric, period, page]);
+  }, [metric, period, page, affiliationId]);
 
   const metricInfo = options?.metrics.find((it) => it.value === metric);
 
@@ -68,6 +71,14 @@ export function RankingPage() {
           value={metric}
           onChange={(next) => {
             setMetric(next);
+            setPage(0);
+          }}
+        />
+        {/* 소속을 고르면 **모집단만 좁는다.** 등수는 그 안에서 1위부터 다시 매겨진다. */}
+        <AffiliationFilter
+          value={affiliationId}
+          onChange={(next) => {
+            setAffiliationId(next);
             setPage(0);
           }}
         />
@@ -122,38 +133,6 @@ function RankingRow({ entry, metric }: { entry: RankingEntry; metric: string }) 
       <span className="hidden w-32 text-right text-xs text-ink-muted lg:inline">
         {entry.lastSolvedAt ? formatDateTime(entry.lastSolvedAt) : "—"}
       </span>
-    </div>
-  );
-}
-
-function Choices({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (next: string) => void;
-}) {
-  if (options.length === 0) return null;
-
-  return (
-    <div className="inline-flex rounded-lg border border-border p-0.5">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          aria-pressed={option.value === value}
-          className={`rounded-md px-3 py-1 text-xs font-medium transition ${
-            option.value === value
-              ? "bg-brand text-brand-ink"
-              : "text-ink-muted hover:text-ink"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
     </div>
   );
 }
