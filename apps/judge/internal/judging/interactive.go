@@ -91,7 +91,7 @@ func (j *InteractiveJudge) Judge(ctx context.Context, job contract.JudgeJob, emi
 	return Outcome{Summary: accumulator.Summarize()}
 }
 
-func (j *InteractiveJudge) verdictOf(result contract.ExecResult) (contract.Verdict, string) {
+func (j *InteractiveJudge) verdictOf(result contract.ExecResult) (verdict contract.Verdict, detail string) {
 	// 시간·메모리·인프라 실패의 뜻은 유형과 무관하다. 그대로 읽는다.
 	if result.Status != contract.StatusOK && result.Status != contract.StatusRuntimeError {
 		return VerdictOf(result, "", contract.CompareExact, 0), result.Stderr
