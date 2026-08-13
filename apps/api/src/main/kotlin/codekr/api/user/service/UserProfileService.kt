@@ -33,6 +33,8 @@ class UserProfileService(
     private val scoreRepository: UserProblemScoreRepository,
     private val rankingService: RankingService,
     private val badgeRepository: BadgeRepository,
+    private val affiliations: codekr.api.affiliation.repository.AffiliationRepository,
+    private val userAffiliations: codekr.api.affiliation.repository.UserAffiliationRepository,
 ) {
 
     /**
@@ -72,6 +74,11 @@ class UserProfileService(
             // 랭킹은 아직 표시 이름으로 찾는다 — 그 표의 key 를 함께 옮기는 것은 별개다.
             rank = rankingService.rankOf(user.nickname, RankingMetric.SCORE, RankingPeriod.ALL_TIME)?.rank,
             badges = badgeRepository.findAll(user.id),
+            // **주소는 담지 않는다** — 남에게 보일 것이 아니다 (#398).
+            affiliations = userAffiliations.findByUserIdOrderByIdAsc(user.id).mapNotNull { link ->
+                affiliations.findById(link.affiliationId).orElse(null)
+                    ?.let { codekr.api.user.dto.ProfileAffiliation(it.name, it.kind.label) }
+            },
         )
     }
 }
