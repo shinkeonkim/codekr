@@ -41,12 +41,6 @@ interface Props<T> {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string | number;
-  /**
-   * 행 전체(첫 칸)를 링크로 만들 때의 목적지.
-   *
-   * 목적지가 하나뿐인 목록에만 쓴다. 열마다 다른 곳으로 가야 하면 `Column.href` 를 쓴다.
-   */
-  href?: (row: T) => string;
 }
 
 /**
@@ -57,7 +51,7 @@ interface Props<T> {
  * 좁은 화면 대응은 **열을 감추는 방식**으로 한다. 가로 스크롤은 존재를 눈치채기 어렵고,
  * 카드로 전환하면 테이블을 쓴 이유(조밀함)가 사라진다.
  */
-export function Table<T>({ columns, rows, rowKey, href }: Props<T>) {
+export function Table<T>({ columns, rows, rowKey }: Props<T>) {
   return (
     <div className="overflow-hidden rounded-card border border-border">
       <table className="w-full text-sm">
@@ -80,13 +74,20 @@ export function Table<T>({ columns, rows, rowKey, href }: Props<T>) {
               key={rowKey(row)}
               className="border-b border-border/60 transition last:border-0 hover:bg-surface-muted/40"
             >
-              {columns.map((column, index) => (
+              {columns.map((column) => (
                 <td
                   key={column.key}
                   className={`px-4 py-3 ${cellClass(column)}`}
                 >
-                  {/* 행 전체를 <a> 로 감싸면 HTML 이 깨지므로 칸 단위로 링크를 만든다. */}
-                  <CellContent column={column} row={row} rowHref={index === 0 ? href : undefined} />
+                  {/*
+                    행 전체를 `<a>` 로 감싸면 HTML 이 깨지므로 칸 단위로 링크를 만든다.
+
+                    **어느 칸이 링크인지는 열이 스스로 말한다** (`Column.href`, #379).
+                    전에는 "첫 칸" 이라는 규칙이 따로 있었는데, #204 가 번호 열을 맨 앞에
+                    넣으면서 **링크가 제목에서 번호로 조용히 옮겨 갔다.** 열 순서를 바꾸는
+                    사람이 링크가 함께 움직인다는 것을 알 방법이 없었다.
+                  */}
+                  <CellContent column={column} row={row} />
                 </td>
               ))}
             </tr>
@@ -97,16 +98,8 @@ export function Table<T>({ columns, rows, rowKey, href }: Props<T>) {
   );
 }
 
-function CellContent<T>({
-  column,
-  row,
-  rowHref,
-}: {
-  column: Column<T>;
-  row: T;
-  rowHref?: (row: T) => string;
-}) {
-  const target = cellTarget(column, row, rowHref);
+function CellContent<T>({ column, row }: { column: Column<T>; row: T }) {
+  const target = cellTarget(column, row);
   if (!target) return <>{column.render(row)}</>;
 
   return (

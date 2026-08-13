@@ -33,7 +33,18 @@ export const PROBLEM_COLUMNS: Column<ProblemSummary>[] = [
     width: "w-20",
     render: (problem) => <span className="tabular-nums text-ink-muted">{problem.id}</span>,
   },
-  { key: "title", header: "문제", render: (problem) => problem.title },
+  {
+    key: "title",
+    header: "문제",
+    /*
+      **고르는 동작은 제목에 건다** (#379). 목록의 목적은 훑어보고 고르는 것이고(#79),
+      사람이 문제를 고를 때 보는 것은 제목이다.
+
+      번호(#204)는 부르는 이름이지 누르는 곳이 아니다.
+    */
+    href: (problem) => `/problems/${problem.id}`,
+    render: (problem) => problem.title,
+  },
   {
     key: "category",
     header: "유형",

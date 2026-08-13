@@ -1,14 +1,15 @@
 /**
- * 칸 하나가 어디로 가는지 정한다 (#197).
+ * 칸 하나가 어디로 가는지 정한다 (#197, #379).
  *
- * **열이 자기 목적지를 가지면 그것이 이긴다** — 행 전체 링크보다 구체적이다.
- * 이 규칙이 없으면 목록의 모든 칸이 같은 곳으로 가고, 열 이름과 목적지가 어긋난다.
+ * **열이 자기 목적지를 가진다.** 전에는 "열이 없으면 행 전체 링크(첫 칸)" 라는 규칙이
+ * 하나 더 있었는데, #204 가 번호 열을 맨 앞에 넣으면서 **링크가 제목에서 번호로 조용히
+ * 옮겨 갔다** — 열 순서를 바꾸는 사람이 알 방법이 없는 규칙이었다.
+ *
+ * 지금은 목적지가 열 선언에만 있다. 열을 옮겨도 링크는 그 열을 따라간다.
  */
 export function cellTarget<T>(
   column: { href?: (row: T) => string | null },
   row: T,
-  rowHref: ((row: T) => string) | undefined,
 ): string | null {
-  if (column.href) return column.href(row);
-  return rowHref?.(row) ?? null;
+  return column.href?.(row) ?? null;
 }

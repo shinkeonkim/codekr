@@ -265,7 +265,6 @@ export function ProblemListPage() {
           <Table
             rows={result.content}
             rowKey={(problem) => problem.id}
-            href={(problem) => `/problems/${problem.id}`}
             columns={PROBLEM_COLUMNS}
           />
           <Pagination
