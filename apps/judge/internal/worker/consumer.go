@@ -169,15 +169,16 @@ func (c *Consumer) desiredConcurrency(ctx context.Context) int {
 // **0 을 허용하지 않는다.** 0 이면 그 차선의 채점이 통째로 멈추는데, 화면에서 그것은
 // "적체" 로 보인다 — 원인이 조정이라는 것을 아무도 모른다.
 func clampConcurrency(value, base int) int {
-	max := base * maxConcurrencyFactor
-	if max < minConcurrency {
-		max = minConcurrency
+	// `max` 라고 부르지 않는다 — Go 1.21 의 내장 함수를 가린다 (gocritic builtinShadow).
+	upper := base * maxConcurrencyFactor
+	if upper < minConcurrency {
+		upper = minConcurrency
 	}
 	if value < minConcurrency {
 		return minConcurrency
 	}
-	if value > max {
-		return max
+	if value > upper {
+		return upper
 	}
 	return value
 }
