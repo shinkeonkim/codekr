@@ -167,8 +167,10 @@ type JudgeTestcase struct {
 const (
 	KindJudgeStdio = "JUDGE_STDIO"
 	KindJudgeSQL   = "JUDGE_SQL"
-	KindQuiz       = "QUIZ"
-	KindManual     = "MANUAL"
+	// KindJudgeFunction 은 **함수만 구현하는 문제**다 (#421). 하네스가 입출력을 맡는다.
+	KindJudgeFunction = "JUDGE_FUNCTION"
+	KindQuiz          = "QUIZ"
+	KindManual        = "MANUAL"
 )
 
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.
@@ -192,6 +194,16 @@ type JudgeJob struct {
 	// 유형별 자료를 공통 필드에 섞지 않고 블록으로 나눈 이유: 유형이 늘어날 때
 	// 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
 	SQL *JudgeSQLSpec `json:"sql,omitempty"`
+	/*
+		Harness 는 KindJudgeFunction 일 때만 실린다 (#447, #421).
+
+		**그 언어의 하네스다.** 실행기가 사용자 코드와 나란히 놓고 하네스를 돌린다 —
+		문자열로 이어 붙이지 않으므로 사용자 코드의 줄 번호가 그대로 남는다.
+
+		비어 있으면 채점하지 않는다 — 하네스 없이 함수만 있는 코드를 돌리면 아무
+		출력이 없고, 그것은 "틀렸다" 가 아니라 **우리 잘못**이다.
+	*/
+	Harness string `json:"harness,omitempty"`
 }
 
 // 출력 비교 방식 (#279, ADR-0010).

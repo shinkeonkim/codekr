@@ -24,6 +24,7 @@ class FunctionProblemIntegrationTest : IntegrationTestBase() {
 
     @Autowired private lateinit var userRepository: UserRepository
     @Autowired private lateinit var tokenProvider: JwtTokenProvider
+    @Autowired private lateinit var redisTemplate: org.springframework.data.redis.core.StringRedisTemplate
 
     private var setterToken: String = ""
     private var userToken: String = ""
@@ -130,6 +131,29 @@ class FunctionProblemIntegrationTest : IntegrationTestBase() {
                         .replace("\"allowedRuntimeIds\": []", "\"allowedRuntimeIds\": [\"python:3.13\"]"),
                 ),
         ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `제출하면 그 언어의 하네스가 채점 작업에 실린다`() {
+        /*
+          **채점기가 DB 를 읽지 않는다** (ADR-0004). 그래서 하네스도 작업에 실려 가야
+          하고, 실리지 않으면 채점기는 하네스 없이 함수만 있는 코드를 돌리게 된다.
+        */
+        create(slug = "carried", harnesses = """{"python:3.13": "HARNESS FOR PYTHON"}""")
+
+        mockMvc.perform(
+            post("/api/v1/problems/carried/submissions")
+                .header("Authorization", "Bearer $userToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"runtimeId":"python:3.13","sourceCode":"def solve(a,b): return a+b","visibility":"PRIVATE"}"""),
+        ).andExpect(status().isAccepted)
+
+        val queued = redisTemplate.opsForStream<String, String>()
+            .range("codekr:judge:normal", org.springframework.data.domain.Range.unbounded())
+            .orEmpty()
+            .joinToString(" ") { it.value.values.joinToString(" ") }
+
+        assert(queued.contains("HARNESS FOR PYTHON")) { "하네스가 채점 작업에 없습니다: $queued" }
     }
 
     @Test
