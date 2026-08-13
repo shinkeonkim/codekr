@@ -189,3 +189,10 @@ export interface TermAgreement {
   version: string;
   agreedAt: string;
 }
+
+/** 확인을 마친 추가 메일 주소 (#396). 로그인 주소는 이 목록에 없다. */
+export interface UserEmail {
+  id: number;
+  email: string;
+  verifiedAt: string;
+}

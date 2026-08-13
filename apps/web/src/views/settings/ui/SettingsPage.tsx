@@ -5,7 +5,7 @@ import type { SubmissionVisibility } from "@/entities/submission";
 import { userApi } from "@/entities/user";
 import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
-import { EmailVerificationCard } from "@/features/email-verification";
+import { EmailAddressesCard, EmailVerificationCard } from "@/features/email-verification";
 import { TermAgreementsCard } from "@/features/terms";
 import { BioEditor, DisplayNameEditor } from "@/features/profile-bio";
 import { useAuth } from "@/features/auth";
@@ -137,6 +137,9 @@ function SettingsView() {
           이미 제출한 코드의 공개 범위는 바뀌지 않습니다. 제출 상세에서 하나씩 바꿀 수 있습니다.
         </p>
       </Card>
+
+      {/* 학교·회사 메일을 여기서 더한다 (#396). 소속(#398)이 이 주소에 붙는다. */}
+      <EmailAddressesCard />
 
       {/* 내가 무엇에 동의했는지 확인할 수 있어야 한다 (#235). */}
       <TermAgreementsCard />
