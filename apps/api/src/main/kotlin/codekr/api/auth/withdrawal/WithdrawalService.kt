@@ -5,6 +5,7 @@ import codekr.api.auth.security.RevokedTokenRegistry
 import codekr.api.audit.service.AdminAuditService
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.affiliation.repository.UserAffiliationRepository
 import codekr.api.user.email.repository.UserEmailRepository
 import codekr.api.user.repository.UserRepository
 import org.slf4j.LoggerFactory
@@ -27,6 +28,7 @@ class WithdrawalService(
     private val userRepository: UserRepository,
     private val revokedTokens: RevokedTokenRegistry,
     private val userEmails: UserEmailRepository,
+    private val userAffiliations: UserAffiliationRepository,
 ) {
 
     fun withdraw(userId: Long) = withdraw(userId, actorId = null, reason = null)
@@ -60,6 +62,8 @@ class WithdrawalService(
             학교·회사 메일이라 실명이 들어 있는 경우가 많다 — 로그인 주소를 지우면서
             이것을 남기면 "식별 정보를 남기지 않는다" 가 반만 지켜진다.
         */
+        // 소속을 먼저 뗀다 — 주소를 가리키므로 순서가 뒤바뀌면 참조가 끊긴다 (#398).
+        userAffiliations.deleteByUserId(user.id)
         userEmails.deleteByUserId(user.id)
 
         user.withdraw()
