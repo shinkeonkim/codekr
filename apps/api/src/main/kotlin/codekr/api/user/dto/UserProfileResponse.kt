@@ -14,6 +14,8 @@ import java.time.Instant
  */
 data class UserProfileResponse(
     val nickname: String,
+    /** 주소가 되는 이름 (#307). 화면은 이것으로 링크를 만든다. */
+    val handle: String,
     /** 아바타 주소 (#116). 올리지 않았으면 null. */
     val avatarUrl: String?,
     /**

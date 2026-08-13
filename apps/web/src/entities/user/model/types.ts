@@ -19,6 +19,8 @@ export interface User {
   id: number;
   email: string;
   nickname: string;
+  /** 주소가 되는 이름 (#307). **바뀌지 않는다** — 링크가 끊기지 않는다. */
+  handle: string;
   roles: UserRole[];
   /** 어드민 영역 진입 가능 여부. 역할 목록을 화면이 매번 해석하지 않게 서버가 함께 내린다. */
   isAdmin: boolean;
@@ -60,6 +62,8 @@ export interface SolvedByTag {
  * 받았는지 이미 보여주므로, 이 화면은 그것을 사람 기준으로 묶은 것이다.
  */
 export interface UserProfile {
+  /** 주소가 되는 이름 (#307). */
+  handle: string;
   /**
    * 이 사람이 만든 **공개** 문제집 (#209).
    *

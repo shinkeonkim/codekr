@@ -114,6 +114,7 @@ class ScoreboardService(
         return Ranked(
             userId = participant.userId,
             nickname = participant.nickname,
+            handle = participant.handle,
             registeredAt = participant.registeredAt,
             totalScore = scored.sumOf { it.score },
             solvedCount = scored.size,
@@ -126,12 +127,13 @@ class ScoreboardService(
         val userId: Long,
         val nickname: String,
         val registeredAt: Instant,
+        val handle: String,
         val totalScore: Int,
         val solvedCount: Int,
         val lastSolvedAt: Instant?,
         val cells: List<ScoreboardCellResponse>,
     ) {
         fun toResponse(rank: Int) =
-            ScoreboardRow(rank, nickname, totalScore, solvedCount, lastSolvedAt, cells)
+            ScoreboardRow(rank, nickname, handle, totalScore, solvedCount, lastSolvedAt, cells)
     }
 }

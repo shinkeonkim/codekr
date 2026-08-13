@@ -38,6 +38,13 @@ data class ScoreboardProblem(
 data class ScoreboardRow(
     val rank: Int,
     val nickname: String,
+    /**
+     * 주소가 되는 이름 (#307).
+     *
+     * **"내 줄" 은 이것으로 찾는다** — 표시 이름은 바뀔 수 있어서, 대회 중에 이름을
+     * 바꾸면 자기 줄을 잃는다.
+     */
+    val handle: String,
     val totalScore: Int,
     val solvedCount: Int,
     /** 마지막 득점 시각. 동점 처리의 두 번째 키다. */

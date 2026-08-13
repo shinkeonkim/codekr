@@ -29,10 +29,18 @@ export function Avatar({
   nickname,
   avatarUrl,
   size = "md",
+  /**
+   * 색을 뽑을 값 (#307). 없으면 이름에서 뽑는다.
+   *
+   * **이름을 바꿔도 색이 그대로여야 한다** — 색은 목록에서 사람을 구분하는 단서인데,
+   * 이름이 바뀔 때마다 색이 바뀌면 그 단서가 사라진다. 주소(`handle`)는 안 바뀐다.
+   */
+  colorKey,
 }: {
   nickname: string;
   avatarUrl?: string | null;
   size?: keyof typeof SIZES;
+  colorKey?: string;
 }) {
   const shape = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${SIZES[size]}`;
 
@@ -64,7 +72,7 @@ export function Avatar({
   }
 
   return (
-    <span className={`${shape} font-bold ${colorOf(nickname)}`} aria-hidden>
+    <span className={`${shape} font-bold ${colorOf(colorKey ?? nickname)}`} aria-hidden>
       {initialOf(nickname)}
     </span>
   );

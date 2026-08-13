@@ -8,6 +8,8 @@ data class UserResponse(
     val id: Long,
     val email: String,
     val nickname: String,
+    /** 주소가 되는 이름 (#307). 헤더의 프로필 링크가 이것을 쓴다. */
+    val handle: String,
     /** 가진 역할 전부 (#103). 화면이 무엇을 보여줄지 이것으로 정한다. */
     val roles: Set<UserRole>,
     /** 어드민 영역 진입 가능 여부. 역할 목록을 화면이 매번 해석하지 않게 함께 내린다. */
@@ -34,6 +36,7 @@ data class UserResponse(
             user.id,
             user.email,
             user.nickname,
+            user.handle,
             user.roles,
             user.isAdmin,
             AvatarService.urlOf(user.avatarKey),
