@@ -2,7 +2,7 @@
 
 import type { Scoreboard as ScoreboardData, ScoreboardCell } from "@/entities/contest";
 import { useAuth } from "@/features/auth";
-import { Alert, Card } from "@/shared/ui";
+import { Alert, Card, CheckboxField } from "@/shared/ui";
 
 /**
  * 대회 순위표 (#63).
@@ -28,10 +28,7 @@ export function Scoreboard({
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-sm font-semibold text-ink">순위표</h2>
         {canSeeActual ? (
-          <label className="flex items-center gap-1.5 text-xs text-ink-muted">
-            <input type="checkbox" checked={actual} onChange={(e) => onToggleActual(e.target.checked)} />
-            실제 순위 보기
-          </label>
+          <CheckboxField label="실제 순위 보기" checked={actual} onCheckedChange={onToggleActual} />
         ) : null}
       </div>
 

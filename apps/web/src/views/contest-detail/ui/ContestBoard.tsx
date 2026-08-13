@@ -5,7 +5,7 @@ import type { ContestNotice, ContestQuestion } from "@/entities/contest";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Alert, Button, Card, Markdown, Textarea, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CheckboxField, Markdown, Textarea, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 /**
@@ -142,10 +142,12 @@ function AnswerForm({
         onChange={(event) => setAnswer(event.target.value)}
         placeholder="답변"
       />
-      <label className="flex items-center gap-2 text-xs text-ink">
-        <input type="checkbox" checked={isPublic} onChange={(event) => setPublic(event.target.checked)} />
-        전원에게 공개합니다 (되돌릴 수 없습니다)
-      </label>
+      <CheckboxField
+        label="전원에게 공개합니다 (되돌릴 수 없습니다)"
+        checked={isPublic}
+        onCheckedChange={setPublic}
+        className="text-xs"
+      />
       <Button className="px-3 py-1 text-xs" disabled={!answer.trim()} onClick={submit}>
         답변하기
       </Button>

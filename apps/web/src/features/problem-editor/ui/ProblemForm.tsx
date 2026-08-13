@@ -14,7 +14,7 @@ import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
-import { Alert, Button, Card, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CheckboxField, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
 
 interface Props {
   initial: ProblemFormValues;
@@ -179,14 +179,11 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
       />
 
       <div className="flex items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-ink">
-          <input
-            type="checkbox"
-            checked={values.published}
-            onChange={(event) => update("published", event.target.checked)}
-          />
-          공개하기
-        </label>
+        <CheckboxField
+          label="공개하기"
+          checked={values.published}
+          onCheckedChange={(next) => update("published", next)}
+        />
         <Button type="submit" className="ml-auto" disabled={submitting}>
           {submitting ? "저장 중…" : submitLabel}
         </Button>
