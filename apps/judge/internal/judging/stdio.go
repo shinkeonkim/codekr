@@ -87,6 +87,8 @@ func (j *StdioJudge) runTestcase(
 		// 함수형이면 하네스가 함께 간다 (#447). 비교는 그대로 stdout 이다 —
 		// 하네스가 입력을 읽고 결과를 찍기 때문이다.
 		HarnessSource: job.Harness,
+		// 여러 파일로 낸 제출 (#457). 비면 SourceCode 하나로 돈다.
+		SourceFiles:   job.SourceFiles,
 		Stdin:         testcase.Input,
 		TimeLimitMs:   job.TimeLimitMs,
 		MemoryLimitMb: job.MemoryLimitMb,

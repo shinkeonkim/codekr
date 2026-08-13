@@ -70,11 +70,13 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 	}
 
 	outcome, err := r.box.Run(ctx, sandbox.Spec{
-		Image:                definition.ImageRef(r.runtimeRegistry),
-		SourceFile:           sourceFile,
-		SourceCode:           job.SourceCode,
-		HarnessFile:          harnessFile,
-		HarnessSource:        job.HarnessSource,
+		Image:         definition.ImageRef(r.runtimeRegistry),
+		SourceFile:    sourceFile,
+		SourceCode:    job.SourceCode,
+		HarnessFile:   harnessFile,
+		HarnessSource: job.HarnessSource,
+		// 여러 파일로 낸 제출 (#457). 비면 SourceCode 하나로 돈다.
+		SourceFiles:          job.SourceFiles,
 		Stdin:                job.Stdin,
 		Compile:              definition.Compile,
 		Run:                  run,
