@@ -27,12 +27,23 @@ export function ActivityCell({
   solved,
   /** 그래프 왼쪽·오른쪽 끝이면 툴팁이 화면 밖으로 나가지 않게 붙이는 쪽을 바꾼다. */
   align = "center",
+  /**
+   * 위로 띄울지 아래로 띄울지 (#312).
+   *
+   * 격자를 감싼 상자가 `overflow-x-auto` 인데, **한 축이 `visible` 이 아니면 다른
+   * 축의 `visible` 도 `auto` 로 계산된다** — 그래서 위로 나간 툴팁이 잘렸다.
+   * 층(`z-tooltip`)의 문제가 아니라 잘림의 문제라 쌓기 순서로는 풀리지 않는다.
+   *
+   * `align` 과 같은 결로 둔다 — 붙일 쪽을 부모가 정한다.
+   */
+  side = "top",
 }: {
   label: string;
   levelClassName: string;
   submissions: number;
   solved: number;
   align?: "start" | "center" | "end";
+  side?: "top" | "bottom";
 }) {
   const [open, setOpen] = useState(false);
   const description = describe(label, submissions, solved);
@@ -67,7 +78,7 @@ export function ActivityCell({
       {open ? (
         <span
           role="tooltip"
-          className={`pointer-events-none absolute bottom-5 z-tooltip w-max max-w-[14rem] rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-ink shadow-lg ${ALIGN[align]}`}
+          className={`pointer-events-none absolute z-tooltip w-max max-w-[14rem] rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-ink shadow-lg ${SIDE[side]} ${ALIGN[align]}`}
         >
           {description}
         </span>
@@ -75,6 +86,11 @@ export function ActivityCell({
     </span>
   );
 }
+
+const SIDE = {
+  top: "bottom-5",
+  bottom: "top-5",
+} as const;
 
 const ALIGN = {
   start: "left-0",
