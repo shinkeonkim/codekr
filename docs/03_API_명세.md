@@ -959,6 +959,11 @@ JWT 는 상태가 없어서 그냥 두면 만료까지 통한다. 액세스 토�
 알림 자체가 시끄러워지면 그때는 **끄는 스위치가 아니라 덜 보내는 쪽**으로 고친다 —
 열람 알림을 하루치로 묶는 것처럼.
 
+스키마도 **한 배포 뒤에 지웠다** (#266) — `notification_mutes` 표와
+`users.view_notification_enabled`·`users.ranking_opt_out`. 코드와 함께 지우지 않은
+이유는 되돌릴 수 있어야 하기 때문이다(#246): 그 배포를 되돌리면 옛 이미지의 엔티티가
+없는 컬럼을 매핑해 기동에서 실패한다.
+
 ### 프로필 아바타 (#116)
 
 `PUT /api/v1/users/me/avatar` (multipart) · `DELETE /api/v1/users/me/avatar`
