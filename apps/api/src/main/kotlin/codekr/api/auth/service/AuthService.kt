@@ -61,6 +61,16 @@ class AuthService(
             .orElseThrow { ApiException(ErrorCode.USER_NOT_FOUND) }
         // 탈퇴한 계정은 갱신 토큰으로도 되살아나지 않는다 (#140).
         if (user.isWithdrawn) throw ApiException(ErrorCode.INVALID_TOKEN)
+        /*
+            **비밀번호를 바꾸기 전에 발급된 갱신 토큰은 통하지 않는다** (#315).
+
+            액세스 토큰은 Redis 표시로 즉시 끊기지만 그 표시는 액세스 수명만큼만 산다.
+            갱신 토큰까지 막지 않으면, 남이 들어와 있어서 비밀번호를 바꾼 사람에게
+            **그 사람이 계속 새 토큰을 받아 가는** 결과가 된다.
+        */
+        user.passwordChangedAt?.let { changed ->
+            if (principal.issuedAt?.isBefore(changed) == true) throw ApiException(ErrorCode.INVALID_TOKEN)
+        }
         return issueTokens(user)
     }
 

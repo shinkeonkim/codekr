@@ -1,6 +1,6 @@
 package codekr.api.auth.security
 
-import codekr.api.auth.withdrawal.WithdrawnTokenRegistry
+import codekr.api.auth.security.RevokedTokenRegistry
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -20,7 +20,7 @@ private const val BEARER_PREFIX = "Bearer "
 @Component
 class JwtAuthenticationFilter(
     private val tokenProvider: JwtTokenProvider,
-    private val withdrawnTokens: WithdrawnTokenRegistry,
+    private val revokedTokens: RevokedTokenRegistry,
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -31,7 +31,7 @@ class JwtAuthenticationFilter(
         resolveToken(request)
             ?.let { tokenProvider.parse(it, TokenType.ACCESS) }
             // 탈퇴한 계정의 토큰은 만료 전이라도 통하지 않는다 (#140).
-            ?.takeUnless { withdrawnTokens.isRevoked(it.userId) }
+            ?.takeUnless { revokedTokens.isRevoked(it.userId) }
             ?.let { principal ->
                 SecurityContextHolder.getContext().authentication = toAuthentication(principal)
             }

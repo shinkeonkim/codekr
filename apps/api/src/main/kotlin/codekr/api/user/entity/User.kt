@@ -85,6 +85,16 @@ class User(
     @Column(name = "email_verified_at")
     var emailVerifiedAt: Instant? = null,
 
+    /**
+     * 비밀번호를 마지막으로 바꾼 시각 (#315).
+     *
+     * **이 값보다 먼저 발급된 갱신 토큰은 통하지 않는다.** 액세스 토큰은 Redis 표시로
+     * 즉시 끊지만 그것은 수명이 짧고, 갱신 토큰까지 끊지 않으면 남이 계속 새 토큰을
+     * 받아 간다.
+     */
+    @Column(name = "password_changed_at")
+    var passwordChangedAt: Instant? = null,
+
 
 ) : BaseTimeEntity() {
 
@@ -136,6 +146,11 @@ class User(
         avatarKey = null
         // **가장 개인적인 내용이 들어갈 곳**이다. 탈퇴가 지울 것에 반드시 들어간다.
         bio = null
+    }
+
+    fun changePassword(encoded: String, now: Instant) {
+        passwordHash = encoded
+        passwordChangedAt = now
     }
 
     fun verifyEmail(now: Instant) {
