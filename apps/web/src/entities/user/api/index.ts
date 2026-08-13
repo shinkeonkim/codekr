@@ -5,6 +5,8 @@ import type {
   AdminUserDetail,
   AdminUserSummary,
   Suspension,
+  TermAgreement,
+  TermSummary,
   TokenResponse,
   User,
   UserProfile,
@@ -18,7 +20,7 @@ function authHeader(): Record<string, string> {
 
 /** 인증 관련 서버 호출. 토큰 저장은 features/auth 가 한다. */
 export const userApi = {
-  signup: (body: { email: string; password: string; nickname: string }) =>
+  signup: (body: { email: string; password: string; nickname: string; agreedTermIds: number[] }) =>
     request<TokenResponse>("/api/v1/auth/signup", { method: "POST", body }),
 
   login: (body: { email: string; password: string }) =>
@@ -102,6 +104,19 @@ export const userApi = {
   /** 새 비밀번호 정하기 (#315). */
   resetPassword: (token: string, newPassword: string) =>
     request<void>("/api/v1/auth/password/reset", { method: "POST", body: { token, newPassword } }),
+
+  /** 시행 중인 약관 (#235). 가입 화면이 이것으로 동의 항목을 만든다. */
+  terms: () => request<TermSummary[]>("/api/v1/terms"),
+
+  /** 지금 다시 받아야 하는 약관 (#235). 없으면 빈 목록이다. */
+  pendingTerms: () => request<TermSummary[]>("/api/v1/terms/pending", { auth: true }),
+
+  /** 내가 동의한 내역 (#235). */
+  termAgreements: () => request<TermAgreement[]>("/api/v1/terms/agreements", { auth: true }),
+
+  /** 개정 뒤에 다시 동의한다. */
+  agreeTerms: (documentIds: number[]) =>
+    request<void>("/api/v1/terms/agreements", { method: "POST", auth: true, body: { documentIds } }),
 
   /** 멘션 자동완성 (#214). 로그인해야 부른다 — 두 글자부터 찾는다. */
   mentionCandidates: (q: string) =>

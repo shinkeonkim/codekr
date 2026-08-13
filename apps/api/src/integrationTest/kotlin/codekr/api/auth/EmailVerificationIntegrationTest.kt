@@ -52,7 +52,7 @@ class EmailVerificationIntegrationTest : IntegrationTestBase() {
     fun `가입하면 토큰이 발급된다`() {
         mockMvc.perform(
             post("/api/v1/auth/signup").contentType(MediaType.APPLICATION_JSON)
-                .content("""{"email":"new@codekr.dev","password":"password1234","nickname":"새사람"}"""),
+                .content(signupBody("new@codekr.dev", "password1234", "새사람")),
         ).andExpect(status().isCreated)
 
         val created = userRepository.findByEmail("new@codekr.dev")!!

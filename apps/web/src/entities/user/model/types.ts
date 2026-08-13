@@ -153,3 +153,28 @@ export interface AdminAuditLog {
   detail: string | null;
   createdAt: string;
 }
+
+/**
+ * 시행 중인 약관 한 판 (#235).
+ *
+ * **버전이 붙어 있다** — 동의는 종류가 아니라 판에 붙는다. 그러지 않으면 개정 뒤에
+ * "무엇에 동의했는지" 가 사라진다.
+ */
+export interface TermSummary {
+  id: number;
+  kind: "SERVICE" | "PRIVACY";
+  kindLabel: string;
+  title: string;
+  version: string;
+  required: boolean;
+  effectiveAt: string;
+}
+
+/** 내가 동의한 기록 (#235). */
+export interface TermAgreement {
+  documentId: number;
+  kind: "SERVICE" | "PRIVACY";
+  title: string;
+  version: string;
+  agreedAt: string;
+}

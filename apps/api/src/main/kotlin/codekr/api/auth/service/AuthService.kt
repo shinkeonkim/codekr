@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AuthService(
+    private val termsService: codekr.api.terms.TermsService,
     private val emailVerificationService: codekr.api.auth.email.EmailVerificationService,
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
@@ -36,6 +37,9 @@ class AuthService(
                 nickname = request.nickname,
             ),
         )
+        // 동의 기록이 남지 않으면 동의를 받은 것이 아니다 (#235).
+        termsService.agreeOnSignup(user.id, request.agreedTermIds)
+
         // **가입이 메일 때문에 실패하면 안 된다.** 발송 실패는 MailSender 안에서
         // 삼켜지고, 여기서는 토큰 발급까지만 한다 (#233).
         emailVerificationService.send(user.id, user.email)

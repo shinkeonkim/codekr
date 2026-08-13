@@ -3,6 +3,7 @@
 import { SiteHeader } from "@/widgets/site-header";
 import { SiteFooter } from "./SiteFooter";
 import { usePathname } from "next/navigation";
+import { PendingTermsBanner } from "@/features/terms";
 import type { ReactNode } from "react";
 
 /**
@@ -18,7 +19,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-8">
+        {/* 개정된 약관이 있으면 여기서 알린다 (#235). 없으면 아무것도 그리지 않는다. */}
+        <PendingTermsBanner />
+        {children}
+      </main>
       <SiteFooter />
     </>
   );

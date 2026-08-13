@@ -4,6 +4,8 @@ export type {
   AdminUserDetail,
   AdminUserSummary,
   Suspension,
+  TermAgreement,
+  TermSummary,
   SolvedByTag,
   SolvedByTier,
   TokenResponse,

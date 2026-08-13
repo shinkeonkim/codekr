@@ -29,7 +29,7 @@ class AuthIntegrationTest : IntegrationTestBase() {
         mockMvc.perform(
             post("/api/v1/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"email":"dup@codekr.dev","password":"password123","nickname":"다른닉"}"""),
+                .content(signupBody("dup@codekr.dev", "password123", "다른닉")),
         ).andExpect(status().isConflict)
             .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_EXISTS"))
     }
@@ -43,7 +43,7 @@ class AuthIntegrationTest : IntegrationTestBase() {
         mockMvc.perform(
             post("/api/v1/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"email":"$email","password":"password123","nickname":"$nickname"}"""),
+                .content(signupBody(email, "password123", nickname)),
         ).andExpect(status().isCreated).andReturn()
 
     private fun readToken(result: MvcResult): String =

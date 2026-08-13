@@ -32,6 +32,7 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "태그를 찾을 수 없습니다."),
     SUSPENSION_NOT_FOUND(HttpStatus.NOT_FOUND, "정지 기록을 찾을 수 없습니다."),
+    TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "약관을 찾을 수 없습니다."),
 
     /**
      * 꺼져 있는 기능 (#285).
