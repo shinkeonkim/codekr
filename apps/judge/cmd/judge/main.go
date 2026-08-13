@@ -37,7 +37,7 @@ func main() {
 
 	log.Info("코드 채점기 시작",
 		"redis", cfg.RedisAddr, "http", cfg.HTTPAddr,
-		"concurrency", cfg.Concurrency, "execTimeout", cfg.ExecTimeout)
+		"concurrency", cfg.Concurrency, "execTimeout", cfg.ExecTimeout, "drain", cfg.Drain)
 
 	service := judging.NewService(
 		dispatch.NewExecutor(redisClient, cfg.ExecTimeout),
@@ -45,7 +45,7 @@ func main() {
 		log,
 	)
 	consumer := worker.NewConsumer(redisClient, service, cfg.ConsumerName, cfg.Concurrency, cfg.Lane, log)
-	if err := consumer.Start(ctx); err != nil {
+	if err := consumer.Start(ctx, cfg.Drain); err != nil {
 		log.Error("채점 큐 소비 실패", "error", err)
 	}
 

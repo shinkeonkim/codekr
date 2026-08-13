@@ -74,3 +74,16 @@ imagePullSecrets:
 {{- define "codekr.hosts" -}}
 {{- list .Values.ingress.publicHost .Values.ingress.internalHost | compact | uniq | toJson }}
 {{- end }}
+
+{{/*
+종료 유예 (#415).
+
+**하던 채점·실행을 마칠 시간을 준다.** 프로세스는 SIGTERM 을 받으면 새 작업을 그만 받고
+하던 것을 끝내는데, 그 시간(`CODEKR_DRAIN_SECONDS`)보다 파드가 기다리는 시간이 짧으면
+어차피 SIGKILL 로 끊긴다 — 그래서 항상 드레인보다 크게 잡는다.
+
+기본 30초로는 채점 한 건도 못 끝낸다.
+*/}}
+{{- define "codekr.terminationGrace" -}}
+terminationGracePeriodSeconds: {{ add .Values.workers.drainSeconds 30 }}
+{{- end }}

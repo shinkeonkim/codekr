@@ -14,6 +14,7 @@ spec:
         app.kubernetes.io/name: codekr
         app.kubernetes.io/component: judge
     spec:
+      {{- include "codekr.terminationGrace" . | nindent 6 }}
       {{- include "codekr.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: judge
@@ -59,6 +60,7 @@ spec:
         app.kubernetes.io/name: codekr
         app.kubernetes.io/component: judge-contest
     spec:
+      {{- include "codekr.terminationGrace" . | nindent 6 }}
       {{- include "codekr.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: judge
