@@ -152,7 +152,11 @@ class EndpointAuthorizationIntegrationTest : IntegrationTestBase() {
             .flatMap { info ->
                 val patterns = info.pathPatternsCondition?.patternValues.orEmpty()
                 val methods = info.methodsCondition.methods.map { it.name }
-                patterns.filter { it.startsWith("/api/") }
+                // `/api/` 밖에도 **사람이 손으로 적어 붙이는 주소**가 있다 (#475).
+                // 프로필 배지는 남의 README 에 박히므로 우리가 옮길 수 없고, 그래서
+                // 버전이 붙는 `/api/v1` 아래에 두지 않았다. 인가 목록은 그것도 본다 —
+                // 목록 밖에 있으면 접근 수준이 정해지지 않은 채로 열려 있게 된다.
+                patterns.filter { it.startsWith("/api/") || it.startsWith("/badge/") }
                     .flatMap { pattern -> methods.map { method -> "$method $pattern" } }
             }
             .toSet()

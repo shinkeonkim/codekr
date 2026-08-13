@@ -30,4 +30,14 @@ export const PUBLIC_ROUTES = {
  * robots.txt 는 요청하는 쪽이 지킬 때만 지켜지는 약속이므로, 여기 적는 것만으로
  * 보호가 되었다고 여기면 안 된다.
  */
-export const NO_INDEX_PATHS = ["/admin", "/settings", "/notifications", "/login", "/signup"];
+// `/badge` 는 사람이 읽는 문서가 아니라 그림이다 (#475). 검색에 뜰 이유가 없고,
+// 서버도 같은 뜻으로 `X-Robots-Tag: noindex` 를 함께 붙인다 — 크롤러가 robots.txt 를
+// 보지 않고 주소를 직접 물어도 같은 답이 되게.
+export const NO_INDEX_PATHS = [
+  "/admin",
+  "/settings",
+  "/notifications",
+  "/login",
+  "/signup",
+  "/badge",
+];

@@ -7,6 +7,7 @@ import { SkillTierBadge } from "@/entities/ranking";
 import { Avatar, userApi } from "@/entities/user";
 import type { UserProfile } from "@/entities/user";
 import { useAuth } from "@/features/auth";
+import { BadgeSnippet } from "@/features/profile-badge";
 import { SubmissionExplorer } from "@/features/submission-explorer";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
@@ -21,7 +22,11 @@ import { SolvedByTagView } from "./SolvedByTagView";
  * **로그인 없이 열린다.** 전에는 아니었고, 그래서 게시판·랭킹·문제집에 걸린 이름을
  * 비로그인이 누르면 로그인 화면으로 튕겼다 — 누르면 튕기는 링크는 고장으로 보인다.
  */
-export function UserProfilePage({ params }: { params: Promise<{ nickname: string }> }) {
+export function UserProfilePage({
+  params,
+}: {
+  params: Promise<{ nickname: string }>;
+}) {
   const { nickname } = use(params);
   return <ProfileView nickname={decodeURIComponent(nickname)} />;
 }
@@ -38,7 +43,11 @@ function ProfileView({ nickname }: { nickname: string }) {
       .profile(nickname)
       .then(setProfile)
       .catch((caught) =>
-        setError(caught instanceof ApiError ? caught.message : "프로필을 불러오지 못했습니다."),
+        setError(
+          caught instanceof ApiError
+            ? caught.message
+            : "프로필을 불러오지 못했습니다.",
+        ),
       );
   }, [nickname]);
 
@@ -50,7 +59,10 @@ function ProfileView({ nickname }: { nickname: string }) {
   }, [nickname, year]);
 
   if (error) return <EmptyState title={error} />;
-  if (!profile) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
+  if (!profile)
+    return (
+      <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>
+    );
 
   return (
     <div className="space-y-5">
@@ -66,7 +78,9 @@ function ProfileView({ nickname }: { nickname: string }) {
           {/* 실력 티어는 아래 '난이도 분포'의 문제 티어와 다른 개념이다. 뱃지가 그것을 명시한다. */}
           <SkillTierBadge tier={profile.skillTier} />
         </div>
-        <p className="mt-1 text-xs text-ink-muted">{formatDateTime(profile.joinedAt)} 가입</p>
+        <p className="mt-1 text-xs text-ink-muted">
+          {formatDateTime(profile.joinedAt)} 가입
+        </p>
         {/*
           소속 (#398, #429). **"인증" 이라고 쓰지 않는다** (기획서 3절) — 우리가 확인한
           것은 "그 도메인의 메일을 받을 수 있다" 까지다. 졸업생도 재학생으로 보이고
@@ -90,7 +104,9 @@ function ProfileView({ nickname }: { nickname: string }) {
           제목·목록·이미지가 들어오면 프로필 상단의 모양이 사람마다 달라진다.
         */}
         {profile.bio ? (
-          <p className="mt-3 max-w-prose whitespace-pre-line text-sm text-ink">{profile.bio}</p>
+          <p className="mt-3 max-w-prose whitespace-pre-line text-sm text-ink">
+            {profile.bio}
+          </p>
         ) : null}
       </header>
 
@@ -110,7 +126,9 @@ function ProfileView({ nickname }: { nickname: string }) {
         스트릭 숫자만으로는 꾸준한 사람인지 최근에 몰아친 사람인지 구분되지 않는다.
         그것을 보여주는 것이 캘린더의 역할이다 (#117).
       */}
-      {activity ? <ActivityGraph activity={activity} year={year} onYearChange={setYear} /> : null}
+      {activity ? (
+        <ActivityGraph activity={activity} year={year} onYearChange={setYear} />
+      ) : null}
 
       <SolvedByTierView profile={profile} />
       {/* 난이도 분포가 '얼마나 어려운 것' 이면, 이것은 '무엇을' 이다 (#232). */}
@@ -127,15 +145,31 @@ function ProfileView({ nickname }: { nickname: string }) {
           <CardTitle>만든 문제집</CardTitle>
           <ul className="space-y-1.5">
             {profile.collections.map((collection) => (
-              <li key={collection.id} className="flex flex-wrap items-center gap-2 text-sm">
-                <Link href={`/collections/${collection.id}`} className="text-brand hover:underline">
+              <li
+                key={collection.id}
+                className="flex flex-wrap items-center gap-2 text-sm"
+              >
+                <Link
+                  href={`/collections/${collection.id}`}
+                  className="text-brand hover:underline"
+                >
                   {collection.name}
                 </Link>
-                <span className="text-xs text-ink-muted">{collection.problemCount}문제</span>
+                <span className="text-xs text-ink-muted">
+                  {collection.problemCount}문제
+                </span>
               </li>
             ))}
           </ul>
         </Card>
+      ) : null}
+
+      {/*
+        배지는 **자기 프로필에서만** 권한다 (#475). 남의 프로필에서 복사를 권하면
+        남의 것을 내 README 에 붙이라는 말처럼 읽힌다.
+      */}
+      {user?.handle === profile.handle ? (
+        <BadgeSnippet handle={profile.handle} />
       ) : null}
 
       <section className="space-y-3">
@@ -183,12 +217,17 @@ function NextTier({ profile }: { profile: UserProfile }) {
   return (
     <Card className="p-5">
       <p className="text-xs text-ink-muted">
-        다음 실력 티어까지 <span className="font-semibold text-ink">{remaining.toLocaleString()}점</span>
+        다음 실력 티어까지{" "}
+        <span className="font-semibold text-ink">
+          {remaining.toLocaleString()}점
+        </span>
       </p>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
         <div
           className="h-full rounded-full bg-brand"
-          style={{ width: `${Math.min(100, (profile.score / tier.nextLevelScore) * 100)}%` }}
+          style={{
+            width: `${Math.min(100, (profile.score / tier.nextLevelScore) * 100)}%`,
+          }}
         />
       </div>
     </Card>
@@ -236,8 +275,13 @@ function SolvedByTierView({ profile }: { profile: UserProfile }) {
             >
               {TIER_LABELS[entry.tier]}
             </span>
-            <span className="h-2 rounded-full bg-brand/60" style={{ width: `${(entry.solvedCount / max) * 60}%` }} />
-            <span className="text-xs text-ink-muted">{entry.solvedCount}문제</span>
+            <span
+              className="h-2 rounded-full bg-brand/60"
+              style={{ width: `${(entry.solvedCount / max) * 60}%` }}
+            />
+            <span className="text-xs text-ink-muted">
+              {entry.solvedCount}문제
+            </span>
           </li>
         ))}
       </ul>
