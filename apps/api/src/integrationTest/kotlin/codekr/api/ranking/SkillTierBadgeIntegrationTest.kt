@@ -120,12 +120,24 @@ class SkillTierBadgeIntegrationTest : IntegrationTestBase() {
         accept(userId, 1, at = "2020-01-01T00:00:00Z")
         accept(rivalId, 2)
 
+        /*
+          **목록에는 둘 다 있고, 점수가 갈린다** (#391).
+
+          전에는 "이번 달에 푼 사람만 목록에 있다" 로 확인했는데, 그 방식은 월간에서도
+          0점인 사람을 감추는 것이었다 — 이번 달에 아직 못 푼 사람이야말로 자기가
+          어디쯤인지 봐야 하는 사람이다. **기간이 거르는 것은 점수지 사람이 아니다.**
+        */
         mockMvc.perform(get("/api/v1/rankings").param("period", "MONTHLY"))
-            .andExpect(jsonPath("$.content.length()").value(1))
+            .andExpect(jsonPath("$.content.length()").value(2))
             .andExpect(jsonPath("$.content[0].nickname").value("라이벌"))
+            .andExpect(jsonPath("$.content[0].score").value(93))
+            // 이번 달에 안 푼 사람은 **0점으로** 목록에 있다. 지난달 점수가 이월되지 않는다.
+            .andExpect(jsonPath("$.content[1].nickname").value("풀이왕"))
+            .andExpect(jsonPath("$.content[1].score").value(0))
 
         mockMvc.perform(get("/api/v1/rankings").param("period", "ALL_TIME"))
             .andExpect(jsonPath("$.content.length()").value(2))
+            .andExpect(jsonPath("$.content[1].score").value(93))
     }
 
     @Test
