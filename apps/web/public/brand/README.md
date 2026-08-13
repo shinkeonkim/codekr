@@ -7,10 +7,10 @@
 |---|---|---|
 | `hero.webp` | `hero/hero-image-only.png` | 첫 화면 Hero (비로그인) |
 | `character-laptop.webp` | `character/06-laptop.png` | 빈 목록 |
-| `character-thinking.webp` | `character/07-thinking.png` | (예약) 채점 중 |
+| `character-thinking.webp` | `character/07-thinking.png` | 문제 질문 빈 화면 |
 | `character-success.webp` | `character/09-success.png` | 정답 판정 |
 | `character-fail.webp` | `character/11-fail.png` | 오답 판정 |
-| `character-celebration.webp` | `character/08-celebration.png` | (예약) 축하 |
+| `character-celebration.webp` | `character/08-celebration.png` | **아직 쓰는 곳이 없다** (아래) |
 | `symbol-dark.webp` | `favicon/04-dark-circle.png` | 헤더 심벌 — **라이트 테마** |
 | `symbol-light.webp` | `favicon/05-white-circle.png` | 좁은 자리 심벌 — **다크 테마** |
 | `state-not-found.webp` | `404.png` | 404 화면 (**장면 전체** — 가짜 버튼이 없다) |
@@ -42,3 +42,35 @@
 
 앞·옆·뒤 3면(`01`~`04`)은 캐릭터 시트용이지 화면용이 아니다. 화면에는 **상황이 있는
 자세**만 쓴다 — 그래야 그림이 그 자리의 뜻을 거든다.
+
+## 자리 점검 (#264)
+
+#264 는 "지금 없어서 다른 그림을 대신 쓰고 있거나 비워 둔 자리" 여덟을 적고 그림을
+요청했다. **그 여덟은 전부 들어와 있고 화면에 붙어 있다.** 위 표가 그 자리다.
+
+요청할 때 지켜졌으면 한다고 적은 넷을 실제로 재 봤다.
+
+| 조건 | 결과 |
+|---|---|
+| 투명 배경 | 14종 전부 알파 채널이 있다 |
+| **선언한 크기와 실제 크기가 같은가** | 전부 일치. 어긋나면 그리는 순간 화면이 밀린다 |
+| 여백은 최소로 (원본은 40~70%) | **0~21%** — 잘라 낸 것이 반영되어 있다 |
+| 어두운 가장자리가 흰 배경에서 테두리처럼 보이는가 | **아니다** (아래) |
+
+### 가장자리는 재 봤을 때와 눈으로 봤을 때가 달랐다
+
+반투명 가장자리 픽셀의 평균 밝기를 재니 `character-*` 다섯과 `mascot-cat` 이 33~57
+(255 기준)로 나와, 흰 배경에서 테두리처럼 보일 것처럼 읽혔다.
+
+**흰 배경에 얹어 확대해 보니 아니었다.** 그 어두움은 글로우가 아니라 **캐릭터 자신의
+검은 후드와 머리카락이 안티에일리어싱된 것**이다. `state-*` 가 밝게 나온 이유도 같다 —
+그쪽 그림은 가장자리에 흰 고양이와 밝은 장식이 많다.
+
+**숫자가 문제를 가리켜도 눈으로 확인하기 전에는 고치지 않는다.**
+
+### `celebration` 만 쓰는 곳이 없다
+
+"처음 맞힌 순간처럼 크게 축하할 때만" 쓰려고 넣었는데, 그런 자리가 아직 없다.
+
+**억지로 넣지 않는다.** #264 가 그림을 요청할 때 세운 규칙 그대로다 — "쓸 곳 없이
+그려 두면 어딘가에 억지로 넣게 된다." 첫 해결 축하 같은 기능이 생기면 그때 붙인다.
