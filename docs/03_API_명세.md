@@ -20,12 +20,24 @@
 
 | HTTP | 상황 |
 |---|---|
-| 400 | 검증 실패 (`VALIDATION_ERROR`) |
+| 400 | 검증 실패 (`VALIDATION_ERROR`), 읽을 수 없는 본문 (`MALFORMED_REQUEST`) |
 | 401 | 미인증/토큰 만료 (`UNAUTHORIZED`) |
 | 403 | 권한 부족 (`FORBIDDEN`) |
-| 404 | 리소스 없음 (`*_NOT_FOUND`) |
+| 404 | 리소스 없음 (`*_NOT_FOUND`), 없는 경로 (`RESOURCE_NOT_FOUND`) |
+| 405 | 못 쓰는 메서드 (`METHOD_NOT_ALLOWED`) — 어떤 메서드가 되는지 문구와 `Allow` 에 |
 | 409 | 중복 (`EMAIL_ALREADY_EXISTS`, `SLUG_ALREADY_EXISTS`) |
+| 413 | 업로드 상한 초과 (`IMAGE_TOO_LARGE`) |
+| 415 | 모르는 형식 (`UNSUPPORTED_MEDIA_TYPE`) |
+| 429 | 너무 잦은 요청 (`TOO_MANY_REQUESTS`, `SUBMISSION_TOO_FREQUENT`) |
 | 500 | 서버 오류 (`INTERNAL_ERROR`) |
+
+**500 은 "우리 잘못" 이다** (#324). 없는 경로·못 쓰는 메서드·깨진 본문은 전부 요청
+잘못인데 500 으로 나갔다 — 오타 하나가 경보를 울리면 **진짜 장애가 그 사이에 묻힌다.**
+그래서 이 넷은 `log.error` 도 남기지 않는다: 우리가 고칠 것이 없는 일이 오류 로그에
+쌓이면 그 로그가 신호가 아니라 잡음이 된다.
+
+없는 경로를 404 로 알리는 것이 정보 노출인지 — **인증 필터가 먼저 걸린다.**
+비로그인에게는 401 이 먼저 가므로 그 경로가 있는지조차 알 수 없다.
 
 ### 페이지 응답
 
