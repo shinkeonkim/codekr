@@ -23,6 +23,16 @@ data class ProblemDetailResponse(
     val difficultyLevel: Int?,
     val tier: DifficultyTier?,
     val difficultyLabel: String,
+    /**
+     * 누가 만들고 검수했는가 (#236).
+     *
+     * 탈퇴한 사람은 다른 곳과 같은 규칙으로 "탈퇴한 사용자" 가 된다 (#140).
+     */
+    val setters: List<ProblemCreditResponse>,
+    val reviewers: List<ProblemCreditResponse>,
+    /** 어디서 온 문제인가 (#236). 자체 제작이면 비어 있다. */
+    val sourceLabel: String?,
+    val sourceUrl: String?,
     val description: String,
     val inputDescription: String?,
     val outputDescription: String?,
@@ -47,11 +57,16 @@ data class ProblemDetailResponse(
             runtimes: List<RuntimeDefinition>,
             stats: ProblemStats,
             tags: List<ProblemTagResponse>,
+            credits: List<ProblemCreditResponse> = emptyList(),
         ) = ProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
             title = problem.title,
             category = problem.category,
+            setters = credits.filter { it.role == codekr.api.problem.credit.CreditRole.SETTER },
+            reviewers = credits.filter { it.role == codekr.api.problem.credit.CreditRole.REVIEWER },
+            sourceLabel = problem.sourceLabel,
+            sourceUrl = problem.sourceUrl,
             difficulty = problem.difficulty,
             difficultyState = problem.difficultyState,
             difficultyLevel = problem.difficultyLevel,
@@ -72,3 +87,11 @@ data class ProblemDetailResponse(
         )
     }
 }
+
+/** 문제에 이름이 붙은 사람 하나 (#236). */
+data class ProblemCreditResponse(
+    val userId: Long,
+    val nickname: String,
+    val role: codekr.api.problem.credit.CreditRole,
+    val roleLabel: String,
+)
