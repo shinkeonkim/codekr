@@ -5,6 +5,7 @@ metadata:
   labels: {{- include "codekr.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.judge.replicas }}
+  {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}
   selector:
     matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: judge }
   template:
@@ -49,6 +50,7 @@ metadata:
   labels: {{- include "codekr.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.judge.contest.replicas }}
+  {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}
   selector:
     matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: judge-contest }
   template:

@@ -5,6 +5,7 @@ metadata:
   labels: {{- include "codekr.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.web.replicas }}
+  {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}
   selector:
     matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: web }
   template:

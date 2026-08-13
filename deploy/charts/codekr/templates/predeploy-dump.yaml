@@ -49,6 +49,9 @@ metadata:
 spec:
   # 덤프가 실패하면 배포도 멈춘다 — 되돌릴 지점 없이 스키마를 바꾸지 않는다.
   backoffLimit: 1
+  # 끝난 잡과 그 파드는 스스로 사라진다 (#320). 하루를 두는 이유는 **배포가 잘못됐을
+  # 때 덤프 로그를 보는 창**이 그만큼은 있어야 하기 때문이다 — 검증 잡과 같은 값이다.
+  ttlSecondsAfterFinished: 86400
   template:
     metadata:
       labels: { app.kubernetes.io/name: codekr-db-predeploy-dump }
