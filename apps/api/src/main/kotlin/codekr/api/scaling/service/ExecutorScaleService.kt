@@ -35,6 +35,9 @@ class ExecutorScaleService(
     /** 조정할 수 있는 것 전부. 화면이 무엇이 있는지 서버에게 묻는다. */
     fun statuses(): List<ExecutorScaleStatus> = properties.targets.keys.sorted().map { status(it) }
 
+    /** 화면에 보일 이름. 오류 문구도 이것으로 대상을 가린다 (#431). */
+    private fun label(key: String, target: ScalingTarget): String = target.label.ifBlank { key }
+
     private fun require(key: String): ScalingTarget =
         properties.target(key) ?: throw ApiException(ErrorCode.SCALING_UNAVAILABLE)
 
@@ -46,10 +49,15 @@ class ExecutorScaleService(
             client.read(target.deployment, target.namespace)
         } catch (error: ScaleAccessException) {
             // 자세한 내용은 클라이언트가 이미 남겼다. 여기서는 무엇으로 분류됐는지만.
-            return degraded(key, target, ExecutorScaleState.UNREADABLE, error.failure.message)
+            return degraded(key, target, ExecutorScaleState.UNREADABLE, error.failure.messageFor(label(key, target)))
         } catch (error: Exception) {
             log.error("배포 상태 조회가 예상 못 한 이유로 실패했습니다: {}", target.deployment, error)
-            return degraded(key, target, ExecutorScaleState.UNREADABLE, ScaleAccessFailure.UNKNOWN.message)
+            return degraded(
+                key,
+                target,
+                ExecutorScaleState.UNREADABLE,
+                ScaleAccessFailure.UNKNOWN.messageFor(label(key, target)),
+            )
         }
 
         return ExecutorScaleStatus(

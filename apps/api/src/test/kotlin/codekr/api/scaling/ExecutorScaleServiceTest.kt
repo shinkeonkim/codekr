@@ -142,8 +142,21 @@ class ExecutorScaleServiceTest {
             val status = service(readFailing(failure)).status(EXECUTOR)
 
             assertEquals(ExecutorScaleState.UNREADABLE, status.state)
-            assertEquals(failure.message, status.reason)
+            assertEquals(failure.messageFor("실행기"), status.reason)
         }
+    }
+
+    @Test
+    fun `오류 문구가 어느 대상인지 말한다`() {
+        /*
+          전에는 문구가 전부 "실행기 배포" 로 시작했다 (#431). 대상이 셋이 된 뒤로는
+          **채점기가 실패해도 "실행기" 라고 말했고**, 화면에 같은 문장이 두 번 떠서
+          읽는 사람이 실행기 문제라고 믿었다 — 진단을 늦추는 문구다.
+        */
+        val service = service(readFailing(ScaleAccessFailure.FORBIDDEN))
+
+        assertTrue(service.status(JUDGE).reason!!.startsWith("채점기 배포를"))
+        assertTrue(service.status(EXECUTOR).reason!!.startsWith("실행기 배포를"))
     }
 
     @Test

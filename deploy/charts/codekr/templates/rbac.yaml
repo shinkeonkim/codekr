@@ -1,39 +1,54 @@
-# api 가 실행기 Deployment 의 replicas 를 조정할 수 있게 한다 (#40).
-# 권한은 "그 Deployment 의 scale" 하나로 좁힌다 — 실행기가 다른 네임스페이스에
-# 있어도 그 네임스페이스 전체가 아니라 이 리소스 하나만 열린다.
+# api 가 조정 대상 Deployment 의 replicas 를 읽고 바꿀 수 있게 한다 (#40, #390, #431).
+#
+# **Role 을 대상 목록에서 만든다.** 전에는 실행기 하나를 손으로 적어 두었는데, #390 이
+# 대상을 셋으로 늘렸을 때 이 파일이 따라오지 않아 채점기 둘이 403 을 냈다 (#431).
+# 목록이 한 곳(`values.scaling.targets`)에 있으면 대상이 늘어도 빠지지 않는다.
+#
+# 권한은 **그 Deployment 의 scale 하나로** 좁힌다 — `resourceNames` 가 그것이다.
+# 네임스페이스가 다른 대상이 있으면 그 네임스페이스마다 Role 이 하나씩 생긴다.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: codekr-api
   labels: {{- include "codekr.labels" . | nindent 4 }}
+{{- $releaseNs := .Release.Namespace }}
+{{- $execNs := include "codekr.executorNamespace" . }}
+{{- $byNamespace := dict }}
+{{- range .Values.scaling.targets }}
+  {{- $ns := .namespace | default (ternary $execNs $releaseNs (eq .name "executor")) }}
+  {{- $names := index $byNamespace $ns | default (list) }}
+  {{- $_ := set $byNamespace $ns (append $names .deployment) }}
+{{- end }}
+{{- range $ns, $deployments := $byNamespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: codekr-executor-scaler
-  namespace: {{ include "codekr.executorNamespace" . }}
-  labels: {{- include "codekr.labels" . | nindent 4 }}
+  name: codekr-scaler
+  namespace: {{ $ns }}
+  labels: {{- include "codekr.labels" $ | nindent 4 }}
 rules:
   - apiGroups: ["apps"]
     resources: ["deployments"]
-    resourceNames: ["codekr-executor"]
+    resourceNames: {{ $deployments | uniq | sortAlpha | toJson }}
     verbs: ["get"]
   - apiGroups: ["apps"]
     resources: ["deployments/scale"]
-    resourceNames: ["codekr-executor"]
+    resourceNames: {{ $deployments | uniq | sortAlpha | toJson }}
     verbs: ["get", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: codekr-executor-scaler
-  namespace: {{ include "codekr.executorNamespace" . }}
-  labels: {{- include "codekr.labels" . | nindent 4 }}
+  name: codekr-scaler
+  namespace: {{ $ns }}
+  labels: {{- include "codekr.labels" $ | nindent 4 }}
 subjects:
   - kind: ServiceAccount
     name: codekr-api
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ $releaseNs }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: codekr-executor-scaler
+  name: codekr-scaler
+{{- end }}
