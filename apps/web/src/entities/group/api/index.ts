@@ -1,4 +1,6 @@
 import { request } from "@/shared/api";
+import type { Page } from "@/shared/api";
+import type { RankingEntry } from "@/entities/ranking";
 import type { GroupDetail, GroupInvitePreview, GroupSummary } from "../model/types";
 
 /** 그룹 API (#401). **전부 로그인이 필요하다** — 초대 미리보기도 그렇다. */
@@ -37,4 +39,13 @@ export const groupApi = {
 
   transferOwner: (id: number, userId: number) =>
     request<void>(`/api/v1/groups/${id}/owner/${userId}`, { method: "POST", auth: true }),
+
+  /**
+   * 그룹 안 랭킹 (#402). **멤버만 볼 수 있다** — 그룹의 명단이 곧 그 랭킹이다.
+   *
+   * 경로가 `/rankings?groupId=` 가 아닌 이유가 그것이다: 접근 규칙이 다른 것을 같은
+   * 경로의 질의 인자로 두면 그 규칙이 잊힌다.
+   */
+  ranking: (id: number, params: { metric: string; period: string; page: number; size: number }) =>
+    request<Page<RankingEntry>>(`/api/v1/groups/${id}/rankings`, { auth: true, query: params }),
 };
