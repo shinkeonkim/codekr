@@ -271,4 +271,55 @@ class ContestIntegrationTest : IntegrationTestBase() {
             }
         """.trimIndent()
     }
+    @Test
+    fun `진행 중인 대회는 고칠 수 없다`() {
+        // **대회 중에 시작 시각이나 문제가 바뀌면** 이미 제출한 사람과 아닌 사람이
+        // 다른 대회를 본 것이 된다 (#335). 화면이 아니라 **서버가** 막는다.
+        val id = jdbcClient.sql(
+            """
+            INSERT INTO contests (slug, title, description, starts_at, ends_at, status,
+                                  freeze_minutes, submission_cooldown_seconds)
+            VALUES ('running-now', '진행 중', '', now() - interval '1 hour', now() + interval '1 hour',
+                    'PUBLISHED', 0, 20)
+            RETURNING id
+            """,
+        ).query(Long::class.java).single()
+
+        mockMvc.perform(
+            put("/api/v1/admin/contests/" + id).header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"slug":"running-now","title":"몰래 바꾸기","description":"",
+                     "startsAt":"2030-01-01T00:00:00Z","endsAt":"2030-01-02T00:00:00Z"}
+                    """.trimIndent(),
+                ),
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `시작 전 대회는 고칠 수 있다`() {
+        // 막히는 것은 **진행 중**뿐이다 — 준비 중·시작 전은 그대로 고쳐진다.
+        val id = jdbcClient.sql(
+            """
+            INSERT INTO contests (slug, title, description, starts_at, ends_at, status,
+                                  freeze_minutes, submission_cooldown_seconds)
+            VALUES ('later', '나중 대회', '', now() + interval '1 day', now() + interval '2 days',
+                    'PUBLISHED', 0, 20)
+            RETURNING id
+            """,
+        ).query(Long::class.java).single()
+
+        mockMvc.perform(
+            put("/api/v1/admin/contests/" + id).header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"slug":"later","title":"고친 제목","description":"",
+                     "startsAt":"2030-01-01T00:00:00Z","endsAt":"2030-01-02T00:00:00Z"}
+                    """.trimIndent(),
+                ),
+        ).andExpect(status().isOk)
+    }
+
 }

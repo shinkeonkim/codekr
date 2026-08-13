@@ -48,6 +48,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["SUPERUSER"],
   },
   {
+    href: "/admin/contests",
+    label: "대회 관리",
+    description: "대회 등록·수정과 공개",
+    roles: ["CONTEST_MANAGER"],
+  },
+  {
     href: "/admin/board",
     label: "게시판 관리",
     description: "글·댓글 훑어보기와 내리기",

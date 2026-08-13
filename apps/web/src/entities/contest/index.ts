@@ -1,4 +1,4 @@
-export { contestApi } from "./api";
+export { adminContestApi, contestApi } from "./api";
 export { PhaseBadge } from "./ui/PhaseBadge";
 export type {
   ContestDetail,
@@ -12,3 +12,4 @@ export type {
   ScoreboardProblem,
   ScoreboardRow,
 } from "./model/types";
+export type { AdminContest, ContestUpsert } from "./api";
