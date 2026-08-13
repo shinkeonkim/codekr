@@ -93,6 +93,13 @@ export interface ProblemDetail extends Omit<ProblemSummary, "published"> {
    * **목록이 짧은 것을 고장으로 읽지 않게** 화면이 그 사실을 말한다.
    */
   runtimeRestricted: boolean;
+  /**
+   * 문제 유형 (#450). **화면이 무엇을 쓰라고 말할지 정한다.**
+   *
+   * 함수형이면 프로그램이 아니라 함수를 쓰는 것이고, 그 사실을 모르면 사용자는 입력을
+   * 읽는 코드부터 쓴다 — 그러면 하네스와 두 번 읽는다.
+   */
+  problemKind: ProblemKind;
   /** 알고리즘 분류 (#232). 화면에서 기본으로 접어 둔다 — 풀이 힌트가 된다. */
   tags: ProblemTag[];
 }
@@ -145,7 +152,8 @@ export interface ProblemVerification {
  * **분야(`ProblemCategory`)와는 다른 축이다** — 분야는 무엇에 대한 문제인지를,
  * 채점 방식은 어떻게 채점하는지를 말한다. 화면에서도 두 말을 구분해 쓴다.
  */
-export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "QUIZ" | "MANUAL";
+// JUDGE_FUNCTION 은 하네스가 입출력을 맡는 유형이다 (#421).
+export type ProblemKind = "JUDGE_STDIO" | "JUDGE_SQL" | "JUDGE_FUNCTION" | "QUIZ" | "MANUAL";
 
 /**
  * 문제 목록 정렬 (#132). 서버의 `ProblemSort` 와 같은 값이다.
@@ -189,6 +197,8 @@ export const PROBLEM_SORTS: { value: ProblemSort; label: string }[] = [
 export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_STDIO: "코드 실행 (stdin/stdout)",
   JUDGE_SQL: "SQL",
+  // 하네스가 입출력을 맡고 사용자는 함수만 쓴다 (#421).
+  JUDGE_FUNCTION: "함수 구현",
 };
 
 /**
@@ -237,6 +247,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   runtimeLimits: ProblemRuntimeLimit[];
   /** 풀 수 있는 언어 (#419). 비어 있으면 이 유형의 전부다. */
   allowedRuntimeIds: string[];
+  /** 언어별 하네스 (#446). **어드민에게만 온다** — 공개 상세에는 없다. */
+  harnesses: Record<string, string>;
   solution: ProblemSolution | null;
   verification: ProblemVerification | null;
   /** 지금 붙어 있는 알고리즘 분류 (#232). */
