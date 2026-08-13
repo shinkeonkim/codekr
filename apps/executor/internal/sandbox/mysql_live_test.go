@@ -46,7 +46,9 @@ func TestLiveMySQLSubmissionCannotEscapeReadOnly(t *testing.T) {
 
 	for _, testcase := range cases {
 		t.Run(testcase.name, func(t *testing.T) {
-			t.Parallel()
+			// **나란히 돌리지 않는다.** mysqld 는 뜨는 데만 3초를 쓰고 메모리도 넉넉히
+			// 잡는다 — 일곱 개를 동시에 띄우면 서로 밀려 기동이 30초를 넘긴다.
+			// 실제로 그랬다: 로컬에서 두 건이 시간 초과로 실패했고, CI 러너는 2코어다.
 			outcome := runMySQL(t, box, testcase.query)
 
 			if !strings.Contains(outcome.Stderr, testcase.expected) {
@@ -67,7 +69,6 @@ func TestLiveMySQLLeaksNothingThroughAllowedCalls(t *testing.T) {
 	box := newLiveSandbox(t)
 
 	t.Run("파일 읽기는 NULL 이다", func(t *testing.T) {
-		t.Parallel()
 		outcome := runMySQL(t, box, "SELECT LOAD_FILE('/etc/passwd');")
 
 		if strings.Contains(outcome.Stdout, "root:") {
@@ -76,7 +77,6 @@ func TestLiveMySQLLeaksNothingThroughAllowedCalls(t *testing.T) {
 	})
 
 	t.Run("보이는 세션은 자기 것뿐이다", func(t *testing.T) {
-		t.Parallel()
 		outcome := runMySQL(t, box, "SHOW PROCESSLIST;")
 
 		// PROCESS 권한이 없으면 root 의 세션은 보이지 않는다.
