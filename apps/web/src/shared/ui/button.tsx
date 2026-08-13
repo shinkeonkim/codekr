@@ -1,4 +1,5 @@
 import { cn } from "@/shared/lib";
+import { Slot } from "@radix-ui/react-slot";
 import { type VariantProps, cva } from "class-variance-authority";
 import type { ComponentProps } from "react";
 
@@ -37,9 +38,30 @@ export type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["var
 export function Button({
   className,
   variant,
+  /**
+   * 버튼 모양을 **자식에게 입힌다** (#376).
+   *
+   * 전에는 링크가 버튼을 감싸는 형태로 적어서 `<a><button>` 이 그려졌다.
+   * `<a>` 는 인터랙티브 요소를 담을 수 없다 — 브라우저가 알아서 처리해 주므로
+   * **눈으로는 멀쩡해 보이고**, 보조 기술에서만 두 겹으로 읽힌다.
+   *
+   * ```tsx
+   * <Button asChild>
+   *   <Link href="/problems">문제 풀러 가기</Link>
+   * </Button>
+   * ```
+   *
+   * 자식이 **정확히 하나**여야 한다. 둘이면 Radix 가 던진다.
+   */
+  asChild = false,
   ...props
-}: ComponentProps<"button"> & VariantProps<typeof buttonVariants>) {
+}: ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
+  const Component = asChild ? Slot : "button";
   return (
-    <button data-slot="button" className={cn(buttonVariants({ variant }), className)} {...props} />
+    <Component
+      data-slot="button"
+      className={cn(buttonVariants({ variant }), className)}
+      {...props}
+    />
   );
 }

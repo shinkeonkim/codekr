@@ -20,12 +20,8 @@ export default function NotFound() {
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-2">
-        <Link href="/">
-          <Button>첫 화면으로</Button>
-        </Link>
-        <Link href="/problems">
-          <Button variant="secondary">문제 보러 가기</Button>
-        </Link>
+        <Button asChild><Link href="/">첫 화면으로</Link></Button>
+        <Button asChild variant="secondary"><Link href="/problems">문제 보러 가기</Link></Button>
       </div>
     </div>
   );

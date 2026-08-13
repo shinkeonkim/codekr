@@ -27,9 +27,7 @@ export default function GlobalError({ error, reset }: { error: Error; reset: () 
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         <Button onClick={reset}>다시 시도</Button>
-        <Link href="/">
-          <Button variant="secondary">첫 화면으로</Button>
-        </Link>
+        <Button asChild variant="secondary"><Link href="/">첫 화면으로</Link></Button>
       </div>
     </div>
   );

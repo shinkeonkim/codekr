@@ -40,9 +40,9 @@ export function AdminProblemListPage() {
       {/* 구획 이동은 사이드바가 한다 (#179). 제목 옆에 또 두면 내비가 두 벌이 된다. */}
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold text-ink">문제 관리</h1>
-        <Link href="/admin/problems/new" className="ml-auto">
-          <Button>문제 등록</Button>
-        </Link>
+        <Button asChild>
+          <Link href="/admin/problems/new" className="ml-auto">문제 등록</Link>
+        </Button>
       </div>
 
       {error ? <Alert>{error}</Alert> : null}
@@ -64,9 +64,9 @@ export function AdminProblemListPage() {
             <Badge tone={problem.published ? "ok" : "muted"}>
               {problem.published ? "공개" : "미공개"}
             </Badge>
-            <Link href={`/admin/problems/${problem.id}/edit`}>
-              <Button variant="secondary">수정</Button>
-            </Link>
+            <Button asChild variant="secondary">
+              <Link href={`/admin/problems/${problem.id}/edit`}>수정</Link>
+            </Button>
             <Button variant="danger" onClick={() => remove(problem.id, problem.title)}>
               삭제
             </Button>

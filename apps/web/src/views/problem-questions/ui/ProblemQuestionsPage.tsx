@@ -41,9 +41,9 @@ export function ProblemQuestionsPage({ params }: { params: Promise<{ slug: strin
       <div className="flex items-center gap-3">
         <CardTitle>질문 {result?.totalElements ?? 0}개</CardTitle>
         {user ? (
-          <Link href={`/posts/new?problemId=${problem.id}`} className="ml-auto">
-            <Button>질문하기</Button>
-          </Link>
+          <Button asChild>
+            <Link href={`/posts/new?problemId=${problem.id}`} className="ml-auto">질문하기</Link>
+          </Button>
         ) : null}
       </div>
 

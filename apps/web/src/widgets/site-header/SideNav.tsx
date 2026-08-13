@@ -120,25 +120,19 @@ export function SideNav({ open, onClose }: { open: boolean; onClose: () => void 
                 />
                 {isAdmin ? <span className="text-xs text-ink-muted">(관리자)</span> : null}
               </div>
-              <Link href="/settings">
-                <Button variant="secondary" className="w-full">
+              <Button asChild variant="secondary" className="w-full"><Link href="/settings">
                   설정
-                </Button>
-              </Link>
+                </Link></Button>
               <Button variant="ghost" onClick={signOut} className="w-full">
                 로그아웃
               </Button>
             </>
           ) : (
             <>
-              <Link href="/login">
-                <Button variant="secondary" className="w-full">
+              <Button asChild variant="secondary" className="w-full"><Link href="/login">
                   로그인
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="w-full">회원가입</Button>
-              </Link>
+                </Link></Button>
+              <Button asChild className="w-full"><Link href="/signup">회원가입</Link></Button>
             </>
           )}
         </div>

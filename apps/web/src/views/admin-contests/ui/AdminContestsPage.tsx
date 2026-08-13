@@ -47,9 +47,9 @@ export function AdminContestsPage() {
             진행 중인 대회는 고칠 수 없습니다 — 공지와 질의 답변은 대회 화면에서 그대로 됩니다.
           </p>
         </div>
-        <Link href="/admin/contests/new" className="ml-auto">
-          <Button>새 대회</Button>
-        </Link>
+        <Button asChild>
+          <Link href="/admin/contests/new" className="ml-auto">새 대회</Link>
+        </Button>
       </header>
 
       {result && result.content.length === 0 ? (
@@ -92,11 +92,9 @@ export function AdminContestsPage() {
                     {row.phase === "RUNNING" ? (
                       <span className="text-xs text-ink-muted">진행 중이라 수정할 수 없습니다</span>
                     ) : (
-                      <Link href={`/admin/contests/${row.id}`}>
-                        <Button variant="ghost" className="px-2 py-0.5 text-xs">
-                          수정
-                        </Button>
-                      </Link>
+                      <Button asChild variant="ghost" className="px-2 py-0.5 text-xs">
+                        <Link href={`/admin/contests/${row.id}`}>수정</Link>
+                      </Button>
                     )}
                     {row.status === "DRAFT" ? (
                       <Button
@@ -108,11 +106,9 @@ export function AdminContestsPage() {
                       </Button>
                     ) : null}
                     {/* 대회 운영(공지·질의·순위표)은 대회 화면에서 한다 — 두 벌을 만들지 않는다. */}
-                    <Link href={`/contests/${row.slug}`}>
-                      <Button variant="ghost" className="px-2 py-0.5 text-xs">
-                        운영 화면
-                      </Button>
-                    </Link>
+                    <Button asChild variant="ghost" className="px-2 py-0.5 text-xs">
+                      <Link href={`/contests/${row.slug}`}>운영 화면</Link>
+                    </Button>
                   </span>
                 ),
               },

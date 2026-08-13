@@ -29,9 +29,7 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
             <TagChips tags={problem.tags} />
           </div>
         </div>
-        <Link href={`/problems/${slug}/solve`}>
-          <Button>코드 작성하기</Button>
-        </Link>
+        <Button asChild><Link href={`/problems/${slug}/solve`}>코드 작성하기</Link></Button>
       </div>
 
       <Card className="space-y-5 p-5">

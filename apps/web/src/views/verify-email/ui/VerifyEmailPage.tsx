@@ -60,20 +60,20 @@ export function VerifyEmailPage() {
         {state.kind === "done" ? (
           <>
             <p className="text-sm text-ink">주소를 확인했습니다.</p>
-            <Link href={user ? readNextParam() : "/login"}>
-              <Button className="w-full">{user ? "계속하기" : "로그인하러 가기"}</Button>
-            </Link>
+            <Button asChild className="w-full">
+              <Link href={user ? readNextParam() : "/login"}>
+                {user ? "계속하기" : "로그인하러 가기"}
+              </Link>
+            </Button>
           </>
         ) : null}
         {state.kind === "failed" ? (
           <>
             <Alert tone="danger">{state.message}</Alert>
             {/* 만료됐거나 이미 쓴 링크다. 다시 받는 곳은 설정이다. */}
-            <Link href="/settings">
-              <Button variant="secondary" className="w-full">
+            <Button asChild variant="secondary" className="w-full"><Link href="/settings">
                 설정에서 다시 받기
-              </Button>
-            </Link>
+              </Link></Button>
           </>
         ) : null}
       </Card>

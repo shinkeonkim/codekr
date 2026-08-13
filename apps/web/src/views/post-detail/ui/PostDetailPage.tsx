@@ -79,9 +79,9 @@ function Detail({ id }: { id: number }) {
 
       <div className="flex flex-wrap gap-2">
         {post.editable ? (
-          <Link href={`/posts/${id}/edit`}>
-            <Button variant="secondary">수정</Button>
-          </Link>
+          <Button asChild variant="secondary">
+            <Link href={`/posts/${id}/edit`}>수정</Link>
+          </Button>
         ) : null}
         {/* 운영자는 고칠 수 없지만 내릴 수는 있다 — 두 권한이 다르다. */}
         {post.deletable ? (

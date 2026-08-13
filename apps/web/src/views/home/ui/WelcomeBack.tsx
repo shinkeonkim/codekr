@@ -76,12 +76,8 @@ export function WelcomeBack() {
       ) : null}
 
       <div className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
-        <Link href="/problems">
-          <Button>문제 풀러 가기</Button>
-        </Link>
-        <Link href="/submissions">
-          <Button variant="secondary">내 제출 보기</Button>
-        </Link>
+        <Button asChild><Link href="/problems">문제 풀러 가기</Link></Button>
+        <Button asChild variant="secondary"><Link href="/submissions">내 제출 보기</Link></Button>
       </div>
     </HeroFrame>
   );
