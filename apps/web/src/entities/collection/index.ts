@@ -1,4 +1,10 @@
 export { collectionApi } from "./api";
+export { adminCollectionApi } from "./api/admin";
+export type {
+  AdminCollectionDetail,
+  AdminCollectionProblem,
+  AdminCollectionRow,
+} from "./api/admin";
 export type { CollectionUpsert } from "./api";
 export { MIN_SHARED_PROBLEMS, VISIBILITY_LABELS } from "./model/types";
 export type {
