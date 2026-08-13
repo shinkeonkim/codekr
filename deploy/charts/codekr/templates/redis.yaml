@@ -8,6 +8,7 @@ metadata:
 spec:
   serviceName: codekr-redis
   replicas: 1
+  {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}
   selector:
     matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: redis }
   template:
