@@ -82,8 +82,8 @@ export function CommentTree({ postId }: { postId: number }) {
     }
   };
 
+  /** 되묻는 것은 화면(`CommentNode`)이 한다 — 여기는 지우는 일만 한다 (#291 4단계). */
   const remove = async (id: number) => {
-    if (!confirm("이 댓글을 삭제할까요?")) return;
     try {
       apply(await postApi.removeComment(id));
     } catch (caught) {

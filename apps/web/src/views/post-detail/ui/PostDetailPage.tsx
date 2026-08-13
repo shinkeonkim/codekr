@@ -6,7 +6,7 @@ import { Avatar } from "@/entities/user";
 import { CommentTree } from "@/features/comments";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Badge, Button, Card, EmptyState, Markdown, useToast } from "@/shared/ui";
+import { Badge, Button, Card, ConfirmDialog, EmptyState, Markdown, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
@@ -34,8 +34,8 @@ function Detail({ id }: { id: number }) {
   if (error) return <EmptyState title={error} />;
   if (!post) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
 
+  /** 되묻는 것은 아래 `ConfirmDialog` 가 한다 (#291 4단계). */
   const remove = async () => {
-    if (!confirm("이 글을 삭제할까요?")) return;
     try {
       await postApi.remove(id);
       toast.success("글을 삭제했습니다.");
@@ -85,9 +85,13 @@ function Detail({ id }: { id: number }) {
         ) : null}
         {/* 운영자는 고칠 수 없지만 내릴 수는 있다 — 두 권한이 다르다. */}
         {post.deletable ? (
-          <Button variant="danger" onClick={remove}>
-            삭제
-          </Button>
+          <ConfirmDialog
+            title="이 글을 삭제할까요?"
+            description="지운 글은 되돌릴 수 없습니다. 달린 댓글도 함께 보이지 않게 됩니다."
+            confirmLabel="삭제"
+            onConfirm={remove}
+            trigger={<Button variant="danger">삭제</Button>}
+          />
         ) : null}
       </div>
 

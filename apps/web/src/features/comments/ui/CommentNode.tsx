@@ -4,7 +4,7 @@ import { MAX_VISUAL_DEPTH } from "@/entities/post";
 import type { Comment } from "@/entities/post";
 import { Avatar } from "@/entities/user";
 import { formatDateTime } from "@/shared/lib";
-import { Button, Card, Markdown } from "@/shared/ui";
+import { Button, Card, ConfirmDialog, Markdown } from "@/shared/ui";
 import { useState } from "react";
 import type { MentionLabel } from "../model/mentionText";
 import { toDisplay, toStored } from "../model/mentionText";
@@ -133,9 +133,17 @@ export function CommentNode({
                   </Button>
                 ) : null}
                 {comment.deletable ? (
-                  <Button variant="ghost" className="px-2 py-0.5 text-xs" onClick={() => onRemove(comment.id)}>
-                    삭제
-                  </Button>
+                  <ConfirmDialog
+                    title="이 댓글을 삭제할까요?"
+                    description="지운 댓글은 되돌릴 수 없습니다. 달린 답글은 그대로 남습니다."
+                    confirmLabel="삭제"
+                    onConfirm={() => onRemove(comment.id)}
+                    trigger={
+                      <Button variant="ghost" className="px-2 py-0.5 text-xs">
+                        삭제
+                      </Button>
+                    }
+                  />
                 ) : null}
               </div>
             )}

@@ -4,7 +4,7 @@ import { CATEGORY_LABELS, TierBadge, problemApi } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import type { Page } from "@/shared/api";
-import { Alert, Badge, Button, Card, EmptyState, Pagination } from "@/shared/ui";
+import { Alert, Badge, Button, Card, ConfirmDialog, EmptyState, Pagination } from "@/shared/ui";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -24,8 +24,8 @@ export function AdminProblemListPage() {
 
   useEffect(load, [load]);
 
-  const remove = async (id: number, title: string) => {
-    if (!confirm(`'${title}' 문제를 삭제할까요? (제출 이력은 그대로 남습니다)`)) return;
+  /** 되묻는 것은 표의 버튼(`ConfirmDialog`)이 한다 (#291 4단계). */
+  const remove = async (id: number) => {
     try {
       await problemApi.remove(id);
       setError(null);
@@ -67,9 +67,13 @@ export function AdminProblemListPage() {
             <Button asChild variant="secondary">
               <Link href={`/admin/problems/${problem.id}/edit`}>수정</Link>
             </Button>
-            <Button variant="danger" onClick={() => remove(problem.id, problem.title)}>
-              삭제
-            </Button>
+            <ConfirmDialog
+              title={`'${problem.title}' 문제를 삭제할까요?`}
+              description="제출 이력은 그대로 남습니다. 문제만 목록에서 사라집니다."
+              confirmLabel="삭제"
+              onConfirm={() => remove(problem.id)}
+              trigger={<Button variant="danger">삭제</Button>}
+            />
           </Card>
         ))}
       </div>
