@@ -9,19 +9,37 @@ on:
   # 나갔는지 추적할 수 있다.
   workflow_dispatch:
     inputs:
-      scope:
-        description: "무엇을 돌릴지"
-        type: choice
-        default: "변경된 것만"
-        options:
-          # 기본은 push·PR 과 같은 판정이다. 이 브랜치와 main 의 차이를 본다.
-          - "변경된 것만"
-          # paths-filter 가 건너뛴 것을 억지로 돌린다 — 정말 도는지 확인할 때.
-          - "전부"
-          - "api"
-          - "web"
-          - "go"
-          - "sandbox"
+      # **체크박스 여럿이다** (#343). `type: choice` 는 하나만 고를 수 있어서
+      # "api 와 web 만" 이 안 됐다. 쉼표 문자열도 방법이지만 자유 입력이라
+      # 오타(`wbe`)가 조용히 통과한다 — **아무것도 안 돌았는데 초록**이 이 저장소가
+      # 이미 두 번 겪은 사고다 (#248, #172).
+      changed_only:
+        description: "기본 브랜치와 달라진 영역 (아래 체크와 합집합)"
+        type: boolean
+        default: true
+      api:
+        description: "api"
+        type: boolean
+        default: false
+      web:
+        description: "web"
+        type: boolean
+        default: false
+      go:
+        description: "go (executor·judge)"
+        type: boolean
+        default: false
+      sandbox:
+        description: "샌드박스 라이브 (느리다)"
+        type: boolean
+        default: false
+      # **밀지 않고 빌드만 한다** (#343). 여기서 이미지를 만드는 이유는 브랜치에서
+      # Dockerfile 이 빌드되는지 보는 것뿐이다 — 배포는 #348 이 따로 한다.
+      # 밀지 않으므로 `:latest` 오염도, ghcr 에 쌓이는 브랜치 이미지도 없다.
+      build_images:
+        description: "컨테이너 이미지 빌드 (밀지는 않는다)"
+        type: boolean
+        default: false
   push:
     branches: [main]
     # 배포 태그 커밋(아래 release 잡)이 CI 를 다시 돌리지 않게 한다 (#246).
@@ -58,9 +76,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
-        # 무엇을 돌릴지 손으로 고른 경우에는 비교할 것이 없다 (#317). 그때 이 단계를
-        # 건너뛰면 base ref 를 무엇으로 볼지 고민할 일도 없어진다.
-        if: github.event_name != 'workflow_dispatch' || inputs.scope == '변경된 것만'
+        # "변경된 것만" 을 끈 수동 실행에는 비교할 것이 없다 (#317, #343).
+        if: github.event_name != 'workflow_dispatch' || inputs.changed_only
         with:
           # 수동 실행에는 비교 대상이 없다 — 이 브랜치와 기본 브랜치의 차이를 본다.
           base: ${{ github.event_name == 'workflow_dispatch' && github.event.repository.default_branch || '' }}
@@ -83,29 +100,24 @@ jobs:
       #
       # **판정을 한 곳에 모은다.** 잡마다 `inputs.scope` 를 다시 해석하게 하면
       # 조건이 여섯 군데로 흩어지고, 그중 하나만 어긋나도 "안 돌았는데 초록" 이 된다.
+      #
+      # **판정은 `.github/scripts/decide-scope.sh` 에 있다** (#343). 여기 인라인으로
+      # 두면 고치는 사람이 확인할 방법이 푸시뿐이다 — 이 워크플로가 겪은 사고가
+      # 전부 그 자리에서 났다.
       - id: decide
         env:
-          SCOPE: ${{ github.event_name == 'workflow_dispatch' && inputs.scope || '변경된 것만' }}
-          # 건너뛴 단계의 출력은 빈 문자열이다 — 아래에서 false 로 읽힌다.
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED_ONLY: ${{ github.event_name != 'workflow_dispatch' || inputs.changed_only }}
+          PICK_API: ${{ github.event_name == 'workflow_dispatch' && inputs.api }}
+          PICK_WEB: ${{ github.event_name == 'workflow_dispatch' && inputs.web }}
+          PICK_GO: ${{ github.event_name == 'workflow_dispatch' && inputs.go }}
+          PICK_SANDBOX: ${{ github.event_name == 'workflow_dispatch' && inputs.sandbox }}
+          # 건너뛴 단계의 출력은 빈 문자열이다 — 스크립트가 false 로 읽는다.
           CHANGED_API: ${{ steps.filter.outputs.api }}
           CHANGED_WEB: ${{ steps.filter.outputs.web }}
           CHANGED_GO: ${{ steps.filter.outputs.go }}
           CHANGED_SANDBOX: ${{ steps.filter.outputs.sandbox }}
-        run: |
-          set -eu
-          for area in api web go sandbox; do
-            if [ "$SCOPE" = "전부" ] || [ "$SCOPE" = "$area" ]; then
-              value=true
-            elif [ "$SCOPE" = "변경된 것만" ]; then
-              upper=$(echo "$area" | tr '[:lower:]' '[:upper:]')
-              eval "value=\${CHANGED_${upper}:-false}"
-              [ "$value" = "true" ] || value=false
-            else
-              value=false
-            fi
-            echo "$area=$value" >> "$GITHUB_OUTPUT"
-            echo "$area=$value"
-          done
+        run: .github/scripts/decide-scope.sh
 
   api-test:
     name: api 단위 테스트
@@ -264,12 +276,15 @@ jobs:
   images:
     name: 컨테이너 이미지 빌드·푸시
     needs: [api-test, go-check, web-check]
-    # main 에 머지된 변경만 이미지로 만든다. 앞선 잡이 건너뛰어도 진행한다.
-    # **수동 실행에서는 돌지 않는다** (#317). 배포하는 길은 "main 에 머지하면 나간다"
+    # main 에 머지된 변경만 이미지로 **민다**. 앞선 잡이 건너뛰어도 진행한다.
+    #
+    # **수동 실행은 빌드만 한다** (#343). 배포하는 길은 "main 에 머지하면 나간다"
     # (#246) 하나뿐이어야 한다 — 길이 둘이면 무엇이 어떻게 나갔는지 추적이 어려워지고,
-    # 손으로 CI 를 돌린 것이 배포가 되는 실수의 자리가 생긴다.
+    # 손으로 CI 를 돌린 것이 배포가 되는 실수의 자리가 생긴다. 그래서 여기서 여는 것은
+    # **"이 브랜치에서 Dockerfile 이 빌드되는가"** 하나뿐이고, 밀지 않는다.
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      (github.event_name == 'push' && github.ref == 'refs/heads/main'
+       || github.event_name == 'workflow_dispatch' && inputs.build_images)
       && !cancelled() && !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     permissions:
@@ -281,7 +296,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      # 밀 때만 로그인한다. 빌드만 하는 실행에 자격증명을 쥐여 줄 이유가 없다.
       - uses: docker/login-action@v3
+        if: github.event_name == 'push'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -291,10 +308,12 @@ jobs:
           # 빌드 컨텍스트는 저장소 루트다 — Go 앱이 libs/gocontract 를 공유한다.
           context: .
           file: apps/${{ matrix.app }}/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/codekr-${{ matrix.app }}:latest
-            ghcr.io/${{ github.repository_owner }}/codekr-${{ matrix.app }}:${{ github.sha }}
+          # 수동 실행은 밀지 않는다 (#343).
+          push: ${{ github.event_name == 'push' }}
+          # **수동 실행에서는 `:latest` 를 이름조차 짓지 않는다.** `push: false` 만으로도
+          # 안 밀리지만, 다음 사람이 push 조건을 건드릴 때 태그가 그대로 남아 있으면
+          # 그때 `:latest` 가 브랜치 이미지로 덮인다.
+          tags: ${{ github.event_name == 'push' && format('ghcr.io/{0}/codekr-{1}:latest,ghcr.io/{0}/codekr-{1}:{2}', github.repository_owner, matrix.app, github.sha) || format('ghcr.io/{0}/codekr-{1}:{2}', github.repository_owner, matrix.app, github.sha) }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -346,13 +365,14 @@ jobs:
     name: 이번 실행에서 무엇이 돌았나
     # **끝에 항상 남긴다** (#317). 옵션을 잘못 줘서 아무것도 안 돌았는데 초록인 상태가
     # 가장 나쁜 결과다 (#248 이 겪은 것). 그것이 요약에 그대로 보이게 한다.
-    needs: [changes, api-test, api-integration-test, go-check, sandbox-live, web-check]
+    needs: [changes, api-test, api-integration-test, go-check, sandbox-live, web-check, images]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: 요약 쓰기
         env:
-          SCOPE: ${{ github.event_name == 'workflow_dispatch' && inputs.scope || '(자동)' }}
+          SCOPE: ${{ github.event_name == 'workflow_dispatch' && format('변경된 것만={0} api={1} web={2} go={3} sandbox={4}', inputs.changed_only, inputs.api, inputs.web, inputs.go, inputs.sandbox) || '(자동)' }}
+          IMAGES: ${{ needs.images.result }}
           API: ${{ needs.api-test.result }}
           API_IT: ${{ needs.api-integration-test.result }}
           GO: ${{ needs.go-check.result }}
@@ -371,6 +391,7 @@ jobs:
             echo "| go | ${GO} |"
             echo "| 샌드박스 라이브 | ${SANDBOX} |"
             echo "| web | ${WEB} |"
+            echo "| 이미지 빌드 | ${IMAGES} |"
             echo
             if [ "${API}" = "skipped" ] && [ "${API_IT}" = "skipped" ] \
                && [ "${GO}" = "skipped" ] && [ "${SANDBOX}" = "skipped" ] \
@@ -378,6 +399,7 @@ jobs:
               echo "> **아무 잡도 돌지 않았습니다.** 범위를 확인하세요."
             fi
             if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-              echo "> 수동 실행에서는 이미지 푸시와 배포 태그 갱신이 돌지 않습니다 (#317)."
+              echo "> 수동 실행은 **밀지 않습니다** — 이미지 빌드를 켰어도 ghcr 에 올라가지 않고,"
+              echo "> 배포 태그도 갱신되지 않습니다 (#343). 배포는 배포 워크플로가 합니다 (#348)."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
