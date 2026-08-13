@@ -28,9 +28,7 @@ function MyCollections() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-ink">내 문제집</h1>
-        <Link href="/collections/new" className="ml-auto">
-          <Button>새 문제집</Button>
-        </Link>
+        <Button asChild><Link href="/collections/new" className="ml-auto">새 문제집</Link></Button>
       </header>
 
       {collections.length === 0 ? (

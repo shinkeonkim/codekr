@@ -38,9 +38,7 @@ export function ResetPasswordPage() {
             <Alert tone="ok">
               비밀번호를 바꿨습니다. 다른 기기에 열려 있던 로그인도 함께 끊겼습니다.
             </Alert>
-            <Link href="/login">
-              <Button className="w-full">로그인하러 가기</Button>
-            </Link>
+            <Button asChild className="w-full"><Link href="/login">로그인하러 가기</Link></Button>
           </>
         ) : (
           <>

@@ -39,9 +39,7 @@ export function PostListPage() {
         <h1 className="text-2xl font-bold text-ink">게시판</h1>
         {/* 쓸 수 있는 곳이 하나도 없으면(비로그인) 버튼을 보이지 않는다. */}
         {writable.length > 0 ? (
-          <Link href="/posts/new" className="ml-auto">
-            <Button>글쓰기</Button>
-          </Link>
+          <Button asChild><Link href="/posts/new" className="ml-auto">글쓰기</Link></Button>
         ) : null}
       </header>
 

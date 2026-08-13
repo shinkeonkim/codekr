@@ -45,9 +45,9 @@ export function CollectionDetailView({
 
       {detail.editable ? (
         <div className="flex flex-wrap gap-2">
-          <Link href={`/collections/${summary.id}/edit`}>
-            <Button variant="secondary">수정</Button>
-          </Link>
+          <Button asChild variant="secondary">
+            <Link href={`/collections/${summary.id}/edit`}>수정</Link>
+          </Button>
           {/* 공유 토큰은 주인에게만 내려온다. 비공개면 링크가 없다. */}
           {summary.shareToken && summary.visibility !== "PRIVATE" ? (
             <Button variant="secondary" onClick={onCopyLink}>

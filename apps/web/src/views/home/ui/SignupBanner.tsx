@@ -29,15 +29,11 @@ export function SignupBanner() {
       </div>
 
       <div className="flex shrink-0 flex-col gap-2 sm:w-40">
-        <Link href="/signup">
-          <Button className="w-full">회원가입</Button>
-        </Link>
+        <Button asChild className="w-full"><Link href="/signup">회원가입</Link></Button>
         {/* 이미 계정이 있는 사람이 배너 앞에서 막히지 않게 한다. */}
-        <Link href="/login">
-          <Button variant="secondary" className="w-full">
+        <Button asChild variant="secondary" className="w-full"><Link href="/login">
             로그인
-          </Button>
-        </Link>
+          </Link></Button>
       </div>
     </Card>
   );

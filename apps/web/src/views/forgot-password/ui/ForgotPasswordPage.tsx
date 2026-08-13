@@ -53,11 +53,9 @@ export function ForgotPasswordPage() {
               <Alert tone="ok">
                 가입된 주소라면 재설정 링크를 보냈습니다. 메일함을 확인해 주세요.
               </Alert>
-              <Link href="/login">
-                <Button variant="secondary" className="w-full">
+              <Button asChild variant="secondary" className="w-full"><Link href="/login">
                   로그인으로
-                </Button>
-              </Link>
+                </Link></Button>
             </>
           ) : (
             <>

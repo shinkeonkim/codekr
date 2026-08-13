@@ -49,12 +49,8 @@ export function Hero() {
       ) : null}
 
       <div className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
-        <Link href="/problems">
-          <Button>지금 시작하기</Button>
-        </Link>
-        <Link href="/signup">
-          <Button variant="secondary">회원가입</Button>
-        </Link>
+        <Button asChild><Link href="/problems">지금 시작하기</Link></Button>
+        <Button asChild variant="secondary"><Link href="/signup">회원가입</Link></Button>
       </div>
     </HeroFrame>
   );

@@ -84,21 +84,15 @@ export function SiteHeader() {
                   <UserLink nickname={user.nickname} />
                   {isAdmin ? " (관리자)" : ""}
                 </span>
-                <Link href="/settings">
-                  <Button variant="ghost">설정</Button>
-                </Link>
+                <Button asChild variant="ghost"><Link href="/settings">설정</Link></Button>
                 <Button variant="ghost" onClick={signOut}>
                   로그아웃
                 </Button>
               </>
             ) : (
               <>
-                <Link href="/login">
-                  <Button variant="ghost">로그인</Button>
-                </Link>
-                <Link href="/signup">
-                  <Button>회원가입</Button>
-                </Link>
+                <Button asChild variant="ghost"><Link href="/login">로그인</Link></Button>
+                <Button asChild><Link href="/signup">회원가입</Link></Button>
               </>
             )}
           </div>
