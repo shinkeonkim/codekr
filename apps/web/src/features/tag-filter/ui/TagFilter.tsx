@@ -1,5 +1,7 @@
 "use client";
 
+import { Tooltip } from "@/shared/ui";
+
 import { tagApi } from "@/entities/tag";
 import type { Tag } from "@/entities/tag";
 import { useEffect, useState } from "react";
@@ -56,11 +58,11 @@ export function TagFilter({
         {shown.map((tag) => {
           const on = selected.includes(tag.slug);
           return (
+            /* 설명을 툴팁으로 (#291 4단계, #288) — `title=` 은 키보드로 열리지 않는다. */
+            <Tooltip key={tag.id} content={tag.description ?? undefined}>
             <button
-              key={tag.id}
               type="button"
               onClick={() => toggle(tag.slug)}
-              title={tag.description ?? undefined}
               aria-pressed={on}
               className={`rounded-full border px-2.5 py-1 text-xs transition ${
                 on ? "border-brand bg-brand/10 text-brand" : "border-border text-ink-muted hover:text-ink"
@@ -70,6 +72,7 @@ export function TagFilter({
               {/* 개수를 함께 보여 준다 — 없으면 빈 결과를 계속 만난다. */}
               <span className="ml-1 opacity-60">{tag.problemCount}</span>
             </button>
+            </Tooltip>
           );
         })}
       </div>

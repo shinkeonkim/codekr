@@ -9,7 +9,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useState } from "react";
 
-import { Button } from "@/shared/ui";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/ui";
 import { NAV_ITEMS, activeHref } from "./nav";
 
 /**
@@ -79,16 +87,34 @@ export function SiteHeader() {
 
           <div className="hidden items-center gap-2 lg:flex">
             {loading ? null : user ? (
-              <>
-                <span className="text-ink-muted">
-                  <UserLink nickname={user.nickname} />
-                  {isAdmin ? " (관리자)" : ""}
-                </span>
-                <Button asChild variant="ghost"><Link href="/settings">설정</Link></Button>
-                <Button variant="ghost" onClick={signOut}>
-                  로그아웃
-                </Button>
-              </>
+              /*
+                사용자 영역을 메뉴 하나로 모은다 (#291 4단계).
+
+                전에는 닉네임·설정·로그아웃을 나란히 늘어놓아서 항목이 늘 때마다 헤더가
+                길어졌다. **키보드와 포커스는 Radix 가 맡는다** — 바깥 클릭·Esc·위아래
+                이동·닫을 때 원래 자리로 되돌리기를 직접 만들면 대개 절반만 맞고,
+                그 절반이 키보드로만 쓰는 사람에게는 전부다.
+              */
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost">
+                    {user.nickname}
+                    {isAdmin ? " (관리자)" : ""}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{user.nickname}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={`/users/${encodeURIComponent(user.handle)}`}>내 프로필</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings">설정</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => signOut()}>로그아웃</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
                 <Button asChild variant="ghost"><Link href="/login">로그인</Link></Button>
