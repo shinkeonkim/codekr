@@ -88,12 +88,33 @@ codekr:
     secret: ${CODEKR_JWT_SECRET:local-development-only-secret-change-me-please-32b}
     access-ttl-seconds: ${CODEKR_JWT_ACCESS_TTL_SECONDS:3600}
     refresh-ttl-seconds: ${CODEKR_JWT_REFRESH_TTL_SECONDS:1209600}
-  executor-scaling:
-    # 어드민이 조정할 수 있는 실행기 배포와 범위 (#40)
-    deployment: ${CODEKR_EXECUTOR_DEPLOYMENT:codekr-executor}
-    namespace: ${CODEKR_EXECUTOR_NAMESPACE:}
-    min-replicas: ${CODEKR_EXECUTOR_MIN_REPLICAS:1}
-    max-replicas: ${CODEKR_EXECUTOR_MAX_REPLICAS:20}
+  # 어드민이 조정할 수 있는 워크로드 (#40, #390).
+  #
+  # **허용 목록이다.** 여기 적힌 것만 조정된다 — 경로에 이름을 받아 아무 배포나
+  # 만질 수 있게 열면 어드민 화면이 곧 클러스터 전체를 만지는 도구가 된다.
+  scaling:
+    targets:
+      executor:
+        label: 실행기
+        deployment: ${CODEKR_EXECUTOR_DEPLOYMENT:codekr-executor}
+        namespace: ${CODEKR_EXECUTOR_NAMESPACE:}
+        min-replicas: ${CODEKR_EXECUTOR_MIN_REPLICAS:1}
+        max-replicas: ${CODEKR_EXECUTOR_MAX_REPLICAS:20}
+      judge:
+        label: 채점기
+        deployment: ${CODEKR_JUDGE_DEPLOYMENT:codekr-judge}
+        namespace: ${CODEKR_JUDGE_NAMESPACE:}
+        min-replicas: ${CODEKR_JUDGE_MIN_REPLICAS:1}
+        max-replicas: ${CODEKR_JUDGE_MAX_REPLICAS:10}
+        # 차선이 있으면 워커 수도 조정된다 (#390).
+        lane: general
+      judge-contest:
+        label: 대회 채점기
+        deployment: ${CODEKR_JUDGE_CONTEST_DEPLOYMENT:codekr-judge-contest}
+        namespace: ${CODEKR_JUDGE_CONTEST_NAMESPACE:}
+        min-replicas: ${CODEKR_JUDGE_CONTEST_MIN_REPLICAS:1}
+        max-replicas: ${CODEKR_JUDGE_CONTEST_MAX_REPLICAS:10}
+        lane: contest
   retention:
     # 소프트 삭제된 행을 실제로 지우기까지의 유예 (#46)
     enabled: ${CODEKR_RETENTION_ENABLED:true}

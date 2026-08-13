@@ -46,6 +46,26 @@ const (
 	LaneContest = "contest"
 )
 
+/*
+JudgeConcurrencyKey 는 그 차선의 **워커 수를 담아 두는 자리**다 (#390).
+
+`JUDGE_CONCURRENCY` 는 기동할 때 한 번 읽는 값이라, 바꾸려면 배포를 다시 해야 했다.
+**늘리려는 상황은 대개 큐가 밀린 때인데, 그때 재시작하는 것은 나쁘다** — 진행 중인
+채점이 끊긴다.
+
+Redis 에 두는 이유: 이미 큐로 쓰고 있고(ADR-0002), 파드가 여럿이어도 **전부가 같은
+값을 본다.** 채점기마다 엔드포인트를 두면 모든 파드에 따로 보내야 한다.
+
+값이 없으면 채점기는 기동할 때 읽은 값을 그대로 쓴다 — **설정이 비면 기능만 꺼지는**
+이 저장소의 규칙(#115)과 같다.
+*/
+func JudgeConcurrencyKey(lane string) string {
+	if lane == "" {
+		lane = LaneGeneral
+	}
+	return "codekr:judge:concurrency:" + lane
+}
+
 // JudgeStreamsFor 는 그 차선의 워커가 읽을 스트림을 돌려준다.
 //
 // 알 수 없는 차선은 일반으로 읽지 않고 **빈 목록**을 준다 — 오타 하나로 대회 워커가

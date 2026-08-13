@@ -31,6 +31,8 @@ class ContestPrescaler(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private val EXECUTOR = "executor"
+
     @Scheduled(fixedDelayString = "\${codekr.contest.prescale-check-interval-ms:60000}")
     @Transactional(readOnly = true)
     fun prescale() {
@@ -39,7 +41,8 @@ class ContestPrescaler(
             .findByStatusAndStartsAtBetween(ContestStatus.PUBLISHED, now, now.plus(LEAD_TIME))
         if (upcoming.isEmpty()) return
 
-        val status = scaleService.status()
+        // 대회 전에 늘리는 것은 **실행기**다 (#390 이 대상을 여럿으로 만들었다).
+        val status = scaleService.status(EXECUTOR)
         // **읽기에 성공했을 때만 움직인다** (#237). 지금 몇 개인지 모르는 채로 목표를 정하면
         // 이미 떠 있는 것을 무시하고 잘못된 수로 덮어쓴다.
         if (status.state != ExecutorScaleState.OK) return
@@ -56,7 +59,8 @@ class ContestPrescaler(
             upcoming.size,
             upcoming.sumOf { registrationRepository.countByIdContestId(it.id) },
         )
-        runCatching { scaleService.scale(target) }
+        // 사람이 아니라 스케줄러가 한 일이다. 기록의 행위자는 0 으로 남는다.
+        runCatching { scaleService.scale(actorId = 0, key = EXECUTOR, replicas = target) }
             .onFailure { log.warn("사전 스케일 아웃 실패: {}", it.message) }
     }
 
