@@ -4,7 +4,7 @@ import { postApi } from "@/entities/post";
 import type { Board, BoardOption } from "@/entities/post";
 import { RequireAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { Alert, Button, Card, Field, Input, Markdown, Select, Textarea, useToast } from "@/shared/ui";
+import { Alert, Button, Card, Field, Input, MarkdownEditor, Select, useToast } from "@/shared/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { use, useEffect, useState } from "react";
 
@@ -37,7 +37,6 @@ function Editor({ title, postId }: { title: string; postId?: number }) {
     title: "",
     body: "",
   });
-  const [preview, setPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -99,24 +98,17 @@ function Editor({ title, postId }: { title: string; postId?: number }) {
           />
         </Field>
         <Field label="본문 (마크다운)">
-          <Textarea
-            rows={14}
-            className="font-mono text-xs"
+          {/*
+            **버튼과 미리보기가 함께 온다** (#388). 질문 게시판의 대부분이 "이 코드가
+            왜 틀렸나요" 인데(#139), 코드 블록을 못 감싸면 들여쓰기가 뭉개지고 답하는
+            사람이 코드를 읽을 수 없다.
+          */}
+          <MarkdownEditor
             value={values.body}
-            onChange={(event) => setValues({ ...values, body: event.target.value })}
-            placeholder={"코드는 ``` 로 감쌉니다.\n\n```py\nprint(1)\n```"}
-            required
+            onChange={(body) => setValues({ ...values, body })}
+            placeholder={"코드는 ``` 로 감쌉니다. 위의 '코드 블록' 버튼을 눌러도 됩니다."}
           />
         </Field>
-        {/* 마크다운을 처음 쓰는 사람이 결과를 저장 전에 볼 수 있어야 한다. */}
-        <Button type="button" variant="secondary" className="px-3 py-1 text-xs" onClick={() => setPreview((it) => !it)}>
-          {preview ? "미리보기 닫기" : "미리보기"}
-        </Button>
-        {preview ? (
-          <div className="rounded-lg border border-border p-4">
-            <Markdown source={values.body} />
-          </div>
-        ) : null}
       </Card>
 
       <Button type="submit" disabled={saving}>
