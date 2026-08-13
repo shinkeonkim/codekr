@@ -22,6 +22,8 @@ class CommentTreeAssembler(
     private val principal: AuthPrincipal?,
     /** 이 안에 든 댓글은 자르지 않고 끝까지 편다 — 알림·링크로 들어온 자리다 (#212). */
     private val expanded: Set<Long> = emptySet(),
+    /** 본문이 부른 사람들의 이름표 (#214). 없는 사람은 빠지고, 화면이 알아서 다룬다. */
+    private val mentioned: Map<Long, codekr.api.board.mention.MentionResponse> = emptyMap(),
 ) {
     private val byParent: Map<Long?, List<Comment>> = comments.groupBy { it.parentId }
 
@@ -86,6 +88,11 @@ class CommentTreeAssembler(
                 (comment.authorId == principal.userId || principal.canModerate()),
             children = children,
             remainingChildren = remaining,
+            mentions = if (deleted) {
+                emptyList()
+            } else {
+                codekr.api.board.mention.Mentions.idsIn(comment.body).mapNotNull { mentioned[it] }
+            },
         )
     }
 

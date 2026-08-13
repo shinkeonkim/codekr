@@ -52,6 +52,13 @@ data class CommentResponse(
      * 펼칠 이유도 모른다.
      */
     val remainingChildren: Int,
+    /**
+     * 본문이 부른 사람들 (#214). 표기를 이름으로 바꾸는 데 쓴다.
+     *
+     * **본문과 함께 내린다** — 화면이 id 로 다시 조회하면 댓글 수만큼 요청이 나가고,
+     * 하나라도 실패하면 멘션이 표기 그대로 보인다.
+     */
+    val mentions: List<codekr.api.board.mention.MentionResponse>,
 )
 
 /**

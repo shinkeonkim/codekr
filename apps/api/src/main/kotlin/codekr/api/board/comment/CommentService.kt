@@ -3,7 +3,6 @@ package codekr.api.board.comment
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.board.repository.PostRepository
 import codekr.api.common.error.ApiException
-import codekr.api.notification.entity.NotificationCategory
 import codekr.api.common.error.ErrorCode
 import codekr.api.user.avatar.AvatarService
 import codekr.api.user.entity.User
@@ -17,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class CommentService(
-    private val notificationService: codekr.api.notification.service.NotificationService,
+    private val notifier: CommentNotifier,
     private val commentRepository: CommentRepository,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
@@ -43,7 +42,13 @@ class CommentService(
         if (comments.isEmpty()) return CommentTreeResponse(emptyList(), 0, 0)
 
         val authors = userRepository.findAllById(comments.map { it.authorId }).associateBy { it.id }
-        val assembler = CommentTreeAssembler(comments, authors, principal, ancestorsOf(comments, around))
+        val assembler = CommentTreeAssembler(
+            comments,
+            authors,
+            principal,
+            ancestorsOf(comments, around),
+            mentionLabels(comments),
+        )
 
         val top = assembler.build(null, depth = 0, limit = CommentTreeAssembler.TOP_PAGE, after = after)
         return CommentTreeResponse(
@@ -63,7 +68,7 @@ class CommentService(
         val parent = require(commentId)
         val comments = commentRepository.findByPostIdOrderByIdAsc(parent.postId)
         val authors = userRepository.findAllById(comments.map { it.authorId }).associateBy { it.id }
-        val assembler = CommentTreeAssembler(comments, authors, principal)
+        val assembler = CommentTreeAssembler(comments, authors, principal, emptySet(), mentionLabels(comments))
 
         val children = assembler.build(commentId, depth = 0, limit = CommentTreeAssembler.CHILD_PAGE, after = after)
         return CommentTreeResponse(
@@ -71,6 +76,18 @@ class CommentService(
             totalCount = assembler.visibleCount(),
             remainingTop = assembler.remaining(commentId, children.size, after),
         )
+    }
+
+    /**
+     * 본문이 부른 사람들의 이름표를 **한 번에** 읽는다 (#214).
+     *
+     * 댓글마다 조회하면 트리 크기만큼 질의가 나간다 — #138 이 트리를 한 번의 조회로
+     * 만들기로 한 것과 같은 이유다.
+     */
+    private fun mentionLabels(comments: List<Comment>): Map<Long, codekr.api.board.mention.MentionResponse> {
+        val ids = comments.flatMap { codekr.api.board.mention.Mentions.idsIn(it.body) }.distinct()
+        if (ids.isEmpty()) return emptyMap()
+        return userRepository.findAllById(ids).associate { it.id to codekr.api.board.mention.Mentions.of(it) }
     }
 
     /** [around] 로 지목된 댓글이 보이도록, 그 조상들을 접지 않는 목록으로 만든다. */
@@ -100,8 +117,9 @@ class CommentService(
             if (parent.isDeleted) throw ApiException(ErrorCode.VALIDATION_ERROR, "삭제된 댓글에는 답할 수 없습니다.")
         }
 
+        notifier.requireMentionLimit(request.body)
         val saved = commentRepository.save(Comment(postId, request.parentId, principal.userId, request.body))
-        notifyTarget(saved, principal.userId)
+        notifier.onCreated(saved, principal.userId)
         // 방금 쓴 댓글이 접힌 자리에 들어가면 쓴 사람이 자기 글을 못 본다.
         return findTree(postId, principal, around = saved.id)
     }
@@ -111,7 +129,12 @@ class CommentService(
         val comment = require(id)
         // 어드민도 남의 댓글을 고칠 수는 없다 (#137 과 같은 이유).
         if (comment.authorId != principal.userId) throw ApiException(ErrorCode.FORBIDDEN)
+        notifier.requireMentionLimit(request.body)
+        // **고쳐서 새로 부른 사람에게는 알린다** (#214). 이미 불린 사람에게 다시 보내면
+        // 오타를 고칠 때마다 알림이 간다.
+        val before = codekr.api.board.mention.Mentions.idsIn(comment.body).toSet()
         comment.edit(request.body)
+        notifier.onEdited(comment, principal.userId, before)
         return findTree(comment.postId, principal, around = comment.id)
     }
 
@@ -141,38 +164,6 @@ class CommentService(
 
     private fun requirePost(postId: Long) {
         postRepository.findByIdAndDeletedAtIsNull(postId) ?: throw ApiException(ErrorCode.POST_NOT_FOUND)
-    }
-
-    /**
-     * 답이 달렸다고 알린다 (#212).
-     *
-     * **두 경우의 문구와 대상이 다르다** — 내 글에 댓글이 달린 것과 내 댓글에 답이
-     * 달린 것은 눌러 갈 곳은 같아도 읽는 사람에게는 다른 일이다.
-     *
-     * **알림이 실패해도 댓글은 저장된다.** 대화가 알림 때문에 끊기면 안 된다.
-     */
-    private fun notifyTarget(comment: Comment, writerId: Long) {
-        runCatching {
-            val post = postRepository.findByIdAndDeletedAtIsNull(comment.postId) ?: return
-            val parent = comment.parentId?.let { commentRepository.findById(it).orElse(null) }
-
-            val targetId = parent?.authorId ?: post.authorId
-            // 자기 글에 자기가 단 댓글은 알리지 않는다.
-            if (targetId == writerId) return
-            // 탈퇴한 사람에게는 받을 곳이 없다 (#140).
-            if (userRepository.findById(targetId).map { it.isWithdrawn }.orElse(true)) return
-
-            val title = if (parent != null) "내 댓글에 답이 달렸습니다" else "내 글에 댓글이 달렸습니다"
-            notificationService.notify(
-                userId = targetId,
-                category = NotificationCategory.COMMENT,
-                title = title,
-                // 글 제목을 함께 준다 — 목록에서 어느 대화인지 알아야 누를지 정한다.
-                body = post.title,
-                // **그 댓글 자리로 간다.** 글만 열면 긴 스레드에서 다시 찾아야 한다.
-                link = "/posts/${comment.postId}#comment-${comment.id}",
-            )
-        }.onFailure { log.error("댓글 알림 실패 commentId={}", comment.id, it) }
     }
 
 }

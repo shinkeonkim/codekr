@@ -12,13 +12,30 @@ import type { ReactNode } from "react";
  *
  * 지원: 문단, 코드 블록(```), 인라인 코드, 링크, 불릿 목록, 제목(#).
  */
-export function Markdown({ source, hideCode = false }: { source: string; hideCode?: boolean }) {
+export function Markdown({
+  source,
+  hideCode = false,
+  /**
+   * 멘션 이름표 (#214). `@{u:42}` 를 무엇으로 그릴지 알려 준다.
+   *
+   * **없으면 표기를 그대로 두지 않고 "알 수 없는 사용자" 로 그린다** — 저장 표기가
+   * 그대로 보이면 사용자는 그것이 무엇인지 알 수 없다.
+   */
+  mentions,
+}: {
+  source: string;
+  hideCode?: boolean;
+  mentions?: { id: number; nickname: string }[];
+}) {
+  const labels = new Map((mentions ?? []).map((each) => [each.id, each.nickname]));
   return (
-    <div className="space-y-3 text-sm leading-relaxed text-ink">{renderBlocks(source, hideCode)}</div>
+    <div className="space-y-3 text-sm leading-relaxed text-ink">
+      {renderBlocks(source, hideCode, labels)}
+    </div>
   );
 }
 
-function renderBlocks(source: string, hideCode: boolean): ReactNode[] {
+function renderBlocks(source: string, hideCode: boolean, labels: Map<number, string>): ReactNode[] {
   const blocks: ReactNode[] = [];
   const lines = source.replace(/\r\n/g, "\n").split("\n");
 
@@ -66,7 +83,7 @@ function renderBlocks(source: string, hideCode: boolean): ReactNode[] {
       const sizes = ["text-lg font-bold", "text-base font-bold", "text-sm font-semibold"];
       blocks.push(
         <p key={key++} className={`${sizes[level - 1]} text-ink`}>
-          {renderInline(heading[2])}
+          {renderInline(heading[2], labels)}
         </p>,
       );
       index += 1;
@@ -82,7 +99,7 @@ function renderBlocks(source: string, hideCode: boolean): ReactNode[] {
       blocks.push(
         <ul key={key++} className="list-disc space-y-1 pl-5">
           {items.map((item, i) => (
-            <li key={i}>{renderInline(item)}</li>
+            <li key={i}>{renderInline(item, labels)}</li>
           ))}
         </ul>,
       );
@@ -101,7 +118,7 @@ function renderBlocks(source: string, hideCode: boolean): ReactNode[] {
     }
     blocks.push(
       <p key={key++} className="whitespace-pre-wrap break-words">
-        {renderInline(paragraph.join("\n"))}
+        {renderInline(paragraph.join("\n"), labels)}
       </p>,
     );
   }
@@ -109,10 +126,15 @@ function renderBlocks(source: string, hideCode: boolean): ReactNode[] {
   return blocks;
 }
 
-/** 인라인 코드와 링크. 나머지는 글자 그대로 둔다. */
-function renderInline(text: string): ReactNode[] {
+/**
+ * 인라인 코드와 링크와 멘션. 나머지는 글자 그대로 둔다.
+ *
+ * **코드 블록 안의 표기는 멘션이 되지 않는다** (#214). 코드 블록은 위에서 통째로
+ * 처리되고 여기까지 오지 않으며, 인라인 코드는 이 패턴의 첫 갈래가 먼저 잡는다.
+ */
+function renderInline(text: string, labels: Map<number, string>): ReactNode[] {
   const nodes: ReactNode[] = [];
-  const pattern = /(`[^`]+`)|(\[([^\]]+)\]\(([^)\s]+)\))/g;
+  const pattern = /(`[^`]+`)|(\[([^\]]+)\]\(([^)\s]+)\))|@\{u:(\d+)}/g;
   let last = 0;
   let key = 0;
   let match: RegExpExecArray | null;
@@ -125,6 +147,31 @@ function renderInline(text: string): ReactNode[] {
         <code key={key++} className="rounded bg-surface-muted px-1 py-0.5 text-xs">
           {match[1].slice(1, -1)}
         </code>,
+      );
+    } else if (match[5]) {
+      /*
+        멘션 (#214).
+
+        **색만으로 구분하지 않는다** — 이 저장소의 규칙이다(`ToastViewport`·잔디 그래프).
+        `@` 를 남겨 두는 것이 색 외의 단서다.
+
+        이름표가 없으면 링크로 만들지 않는다. 탈퇴했거나 지워진 계정이라 갈 곳이 없다.
+      */
+      const nickname = labels.get(Number(match[5]));
+      nodes.push(
+        nickname ? (
+          <a
+            key={key++}
+            href={`/users/${encodeURIComponent(nickname)}`}
+            className="rounded bg-brand/10 px-1 font-medium text-brand hover:underline"
+          >
+            @{nickname}
+          </a>
+        ) : (
+          <span key={key++} className="rounded bg-surface-muted px-1 text-ink-muted">
+            @알 수 없는 사용자
+          </span>
+        ),
       );
     } else {
       const href = match[4];
