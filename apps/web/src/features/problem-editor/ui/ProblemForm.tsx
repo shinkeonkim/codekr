@@ -14,6 +14,7 @@ import { ProblemDescriptionFields } from "./ProblemDescriptionFields";
 import { FormSection } from "./FormSection";
 import { ProblemMetaFields } from "./ProblemMetaFields";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
+import { AllowedRuntimeEditor } from "./AllowedRuntimeEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
@@ -276,6 +277,17 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         ))}
       </FormSection>
       )}
+
+      <FormSection
+        title="풀 수 있는 언어"
+        defaultOpen={open}
+        description="비우면 이 유형의 전부"
+      >
+      <AllowedRuntimeEditor
+        value={values.allowedRuntimeIds}
+        onChange={(allowedRuntimeIds) => update("allowedRuntimeIds", allowedRuntimeIds)}
+      />
+      </FormSection>
 
       <FormSection title="언어별 제한" defaultOpen={open} description="비우면 기본 제한을 쓴다">
       <RuntimeLimitEditor

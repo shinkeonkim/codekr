@@ -130,6 +130,16 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
 
   return (
     <div className="space-y-3">
+      {/*
+        **목록이 짧으면 사용자는 고장으로 읽는다** (#419). 출제자가 언어를 좁혀 둔
+        것이면 그렇게 말한다 — 그러지 않으면 "내 언어가 왜 없지" 로 남는다.
+      */}
+      {problem.runtimeRestricted ? (
+        <p className="text-xs text-ink-muted">
+          이 문제는 아래 언어로만 풀 수 있습니다. 출제자가 정한 것입니다.
+        </p>
+      ) : null}
+
       <div className="flex items-center gap-2">
         <Select
           className="min-w-0 flex-1"

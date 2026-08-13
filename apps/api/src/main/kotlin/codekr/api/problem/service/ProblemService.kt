@@ -41,9 +41,11 @@ class ProblemService(
         val problem = requirePublished(slug)
         // 이 문제의 유형으로 풀 수 있는 실행 환경만 내린다 (#60).
         // 전체를 내리면 화면이 SQL 문제에 파이썬을 권하게 된다.
+        //
+        // **문제가 언어를 좁혀 두었으면 그것까지 본다** (#419). 비어 있으면 종류 전부다.
         return ProblemDetailResponse.of(
             problem,
-            runtimeRegistry.findFor(problem.problemKind),
+            runtimeRegistry.findFor(problem.problemKind).filter { problem.allowsRuntime(it.id) },
             statsRepository.findOne(problem.id),
             tagService.tagsOf(problem.id),
             creditService.creditsOf(problem.id),

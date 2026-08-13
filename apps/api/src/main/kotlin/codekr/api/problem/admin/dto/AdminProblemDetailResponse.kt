@@ -43,6 +43,8 @@ data class AdminProblemDetailResponse(
     val testcases: List<TestcaseResponse>,
     val templates: List<TemplateResponse>,
     val runtimeLimits: List<RuntimeLimitResponse>,
+    /** 풀 수 있는 런타임 (#419). **비어 있으면 그 종류 전부**를 허용한다는 뜻이다. */
+    val allowedRuntimeIds: List<String>,
     val judgePriority: ProblemJudgePriority,
     val solution: SolutionResponse?,
     val verification: VerificationResponse?,
@@ -84,6 +86,7 @@ data class AdminProblemDetailResponse(
             testcases = problem.testcases.map(TestcaseResponse::from),
             templates = problem.templates.map(TemplateResponse::from),
             runtimeLimits = problem.runtimeLimits.map(RuntimeLimitResponse::from),
+            allowedRuntimeIds = problem.allowedRuntimeIds,
             judgePriority = problem.judgePriority,
             solution = SolutionResponse.from(problem),
             verification = verification,

@@ -231,6 +231,19 @@ class SubmissionService(
                 "이 문제에서 쓸 수 없는 실행 환경입니다: $runtimeId",
             )
         }
+        /*
+            **이 문제가 허용한 언어인가** (#419).
+
+            화면이 목록을 걸러 주지만 그것으로는 부족하다 — API 를 직접 부르면 통과한다.
+            거부 문구에 **무엇을 쓸 수 있는지**를 담는다. 목록이 짧은 것은 고장이 아니라
+            출제자의 선택이고, 그 사실을 여기서도 말해야 한다.
+        */
+        if (!problem.allowsRuntime(runtimeId)) {
+            throw ApiException(
+                ErrorCode.RUNTIME_NOT_FOUND,
+                "이 문제는 ${problem.allowedRuntimeIds.joinToString(", ")} 로만 풀 수 있습니다.",
+            )
+        }
         if (sourceCode.toByteArray().size > properties.maxSourceCodeBytes) {
             throw ApiException(ErrorCode.SOURCE_CODE_TOO_LARGE)
         }

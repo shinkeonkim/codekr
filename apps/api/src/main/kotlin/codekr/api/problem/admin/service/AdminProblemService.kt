@@ -106,6 +106,7 @@ class AdminProblemService(
             addTestcases(request.testcases.map(TestcaseRequest::toEntity))
             addTemplates(request.templates.map(TemplateRequest::toEntity))
             addRuntimeLimits(request.runtimeLimits.map(RuntimeLimitRequest::toEntity))
+            replaceAllowedRuntimes(request.allowedRuntimeIds)
             replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
         }
 
@@ -151,6 +152,8 @@ class AdminProblemService(
         problem.addTestcases(request.testcases.map(TestcaseRequest::toEntity))
         problem.addTemplates(request.templates.map(TemplateRequest::toEntity))
         problem.addRuntimeLimits(request.runtimeLimits.map(RuntimeLimitRequest::toEntity))
+        // 허용 목록은 통째로 교체한다 (#419). 소프트 삭제가 없으므로 flush 순서를 타지 않는다.
+        problem.replaceAllowedRuntimes(request.allowedRuntimeIds)
         problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
 
         /*
