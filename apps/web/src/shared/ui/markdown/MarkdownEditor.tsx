@@ -2,6 +2,7 @@
 
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/textarea";
+import { ApiError, request } from "@/shared/api";
 import { useRef, useState } from "react";
 import { Markdown } from "./Markdown";
 import { codeFence, linePrefix, wrap } from "./editorCommands";
@@ -32,7 +33,10 @@ export function MarkdownEditor({
   placeholder?: string;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   /**
    * 버튼을 누르면 **커서가 있던 자리로 돌아간다.**
@@ -51,6 +55,40 @@ export function MarkdownEditor({
     });
   };
 
+  /**
+   * 이미지를 올리고 그 자리에 넣는다 (#389).
+   *
+   * **주소를 사람이 옮겨 적지 않는다.** 올린 뒤 주소를 복사해 붙이게 하면 그 과정에서
+   * 틀리고, 틀린 것은 저장하고 나서야 보인다.
+   */
+  const upload = async (file: File) => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const { url } = await request<{ url: string }>("/api/v1/attachments", {
+        method: "POST",
+        auth: true,
+        body: form,
+      });
+      apply((text, start, end) => {
+        const mark = `![${file.name}](${url})`;
+        return {
+          text: `${text.slice(0, start)}${mark}${text.slice(end)}`,
+          selectionStart: start + mark.length,
+          selectionEnd: start + mark.length,
+        };
+      });
+    } catch (caught) {
+      // **폼은 그대로 둔다.** 올리기가 안 돼도 쓰던 글을 잃으면 안 된다.
+      setUploadError(caught instanceof ApiError ? caught.message : "이미지를 올리지 못했습니다.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
   return (
     <div className="space-y-2">
       {/* 좁은 화면에서는 줄이 접힌다. 도구 모음이 가로로 넘치면 못 쓰는 버튼이 생긴다. */}
@@ -61,10 +99,26 @@ export function MarkdownEditor({
         <ToolButton label="목록" onClick={() => apply((t, s, e) => linePrefix(t, s, e, "- "))} />
         <ToolButton label="제목" onClick={() => apply((t, s, e) => linePrefix(t, s, e, "## "))} />
         <ToolButton
+          label={uploading ? "올리는 중…" : "이미지"}
+          onClick={() => fileRef.current?.click()}
+        />
+        <ToolButton
           label={preview ? "미리보기 닫기" : "미리보기"}
           onClick={() => setPreview((it) => !it)}
         />
       </div>
+      {/* 버튼이 누르는 진짜 입력. 화면에는 안 보인다. */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void upload(file);
+        }}
+      />
+      {uploadError ? <p className="text-xs text-danger">{uploadError}</p> : null}
 
       <Textarea
         ref={ref}
