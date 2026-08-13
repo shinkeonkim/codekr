@@ -1,14 +1,14 @@
 "use client";
 
-import { MAX_VISUAL_DEPTH, postApi } from "@/entities/post";
+import { postApi } from "@/entities/post";
 import type { Comment } from "@/entities/post";
-import { Avatar } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { formatDateTime } from "@/shared/lib";
-import { Alert, Button, Card, Markdown, Textarea, useToast } from "@/shared/ui";
+import { Alert, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CommentForm } from "./CommentForm";
+import { CommentNode } from "./CommentNode";
 
 /**
  * 댓글 트리 (#138).
@@ -33,6 +33,21 @@ export function CommentTree({ postId }: { postId: number }) {
       setReplyTo(null);
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "댓글을 남기지 못했습니다.");
+    }
+  };
+
+  /**
+   * 제자리 편집 (#211).
+   *
+   * **성공 여부를 돌려준다** — 실패했는데 편집창이 닫히면 쓰던 내용이 사라진다.
+   */
+  const edit = async (id: number, body: string): Promise<boolean> => {
+    try {
+      setComments(await postApi.updateComment(id, body));
+      return true;
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "수정하지 못했습니다.");
+      return false;
     }
   };
 
@@ -71,119 +86,11 @@ export function CommentTree({ postId }: { postId: number }) {
             onReplyTo={setReplyTo}
             onSubmit={submit}
             onRemove={remove}
+            onEdit={edit}
           />
         ))}
       </div>
     </section>
-  );
-}
-
-function CommentNode({
-  comment,
-  depth,
-  replyTo,
-  canReply,
-  onReplyTo,
-  onSubmit,
-  onRemove,
-}: {
-  comment: Comment;
-  depth: number;
-  replyTo: number | null;
-  canReply: boolean;
-  onReplyTo: (id: number | null) => void;
-  onSubmit: (body: string, parentId?: number) => void;
-  onRemove: (id: number) => void;
-}) {
-  // 이 깊이를 넘으면 더 들여쓰지 않는다. 화면이 밀려나면 글을 읽을 수 없다.
-  const indent = Math.min(depth, MAX_VISUAL_DEPTH);
-
-  return (
-    <div style={{ marginLeft: indent * 16 }} className="space-y-2">
-      <Card className="space-y-2 p-4">
-        {comment.deleted ? (
-          // 지운 사람이 누구인지 남길 이유가 없다. 자리만 남긴다.
-          <p className="text-xs text-ink-muted">삭제된 댓글입니다.</p>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-              <Avatar nickname={comment.authorNickname ?? "?"} avatarUrl={comment.authorAvatarUrl} size="sm" />
-              <span className="text-ink">{comment.authorNickname}</span>
-              <span>{formatDateTime(comment.createdAt)}</span>
-              {comment.edited ? <span>· 수정됨</span> : null}
-            </div>
-            <Markdown source={comment.body ?? ""} />
-            <div className="flex flex-wrap gap-2">
-              {canReply ? (
-                <Button
-                  variant="ghost"
-                  className="px-2 py-0.5 text-xs"
-                  onClick={() => onReplyTo(replyTo === comment.id ? null : comment.id)}
-                >
-                  {replyTo === comment.id ? "취소" : "답글"}
-                </Button>
-              ) : null}
-              {comment.deletable ? (
-                <Button variant="ghost" className="px-2 py-0.5 text-xs" onClick={() => onRemove(comment.id)}>
-                  삭제
-                </Button>
-              ) : null}
-            </div>
-          </>
-        )}
-      </Card>
-
-      {replyTo === comment.id ? (
-        <div style={{ marginLeft: 16 }}>
-          <CommentForm onSubmit={(body) => onSubmit(body, comment.id)} placeholder="답글" />
-        </div>
-      ) : null}
-
-      {comment.children.map((child) => (
-        <CommentNode
-          key={child.id}
-          comment={child}
-          depth={depth + 1}
-          replyTo={replyTo}
-          canReply={canReply}
-          onReplyTo={onReplyTo}
-          onSubmit={onSubmit}
-          onRemove={onRemove}
-        />
-      ))}
-    </div>
-  );
-}
-
-function CommentForm({
-  onSubmit,
-  placeholder,
-}: {
-  onSubmit: (body: string) => void;
-  placeholder: string;
-}) {
-  const [body, setBody] = useState("");
-
-  return (
-    <form
-      className="space-y-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!body.trim()) return;
-        onSubmit(body);
-        setBody("");
-      }}
-    >
-      <Textarea
-        rows={3}
-        value={body}
-        onChange={(event) => setBody(event.target.value)}
-        placeholder={placeholder}
-      />
-      <Button type="submit" className="px-3 py-1 text-xs" disabled={!body.trim()}>
-        남기기
-      </Button>
-    </form>
   );
 }
 

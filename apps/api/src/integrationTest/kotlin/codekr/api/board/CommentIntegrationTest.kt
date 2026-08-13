@@ -190,4 +190,30 @@ class CommentIntegrationTest : IntegrationTestBase() {
 
         return jdbcClient.sql("SELECT max(id) FROM comments").query(Long::class.java).single()
     }
+    @Test
+    fun `고치면 고친 시각이 함께 온다`() {
+        // **`edited` 만으로는 부족하다** (#211). 답이 달린 뒤에 원글을 고치면 대화가
+        // 어긋나 보이는데, 언제 고쳤는지가 없으면 답글 쓴 사람이 잘못 읽은 것처럼 된다.
+        val id = comment(authorToken, null, "처음 쓴 내용")
+
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments").header("Authorization", "Bearer " + authorToken))
+            .andExpect(jsonPath("$.[0].edited").value(false))
+            .andExpect(jsonPath("$.[0].editedAt").doesNotExist())
+
+        // 5초 유예를 넘겨야 수정으로 친다 — 저장 직후의 시각 차이를 거르는 값이다.
+        jdbcClient.sql("UPDATE comments SET created_at = created_at - interval '1 hour' WHERE id = :id")
+            .param("id", id).update()
+
+        mockMvc.perform(
+            put("/api/v1/comments/" + id).header("Authorization", "Bearer " + authorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"body":"고친 내용"}"""),
+        ).andExpect(status().isOk)
+
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments").header("Authorization", "Bearer " + authorToken))
+            .andExpect(jsonPath("$.[0].body").value("고친 내용"))
+            .andExpect(jsonPath("$.[0].edited").value(true))
+            .andExpect(jsonPath("$.[0].editedAt").exists())
+    }
+
 }
