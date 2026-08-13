@@ -33,6 +33,23 @@ data class ProblemUpsertRequest(
     /** 채점 방식 (#59). 아직 구현이 없는 유형은 서비스가 막는다. */
     val problemKind: ProblemKind = ProblemKind.JUDGE_STDIO,
 
+    /**
+     * 출제자·검수자 (#236). 회원 id 다 — 화면이 **닉네임으로 찾아 고른다.**
+     *
+     * 여기까지 오는 것은 id 지만, 사람이 id 를 손으로 치게 하지 않는다 (#223 과 같은 문제).
+     */
+    val setterIds: List<Long> = emptyList(),
+    val reviewerIds: List<Long> = emptyList(),
+
+    /**
+     * 출처 (#236). **선택이다** — 필수로 두면 자체 제작 문제에 "자체 제작" 을 매번 적게 된다.
+     */
+    @field:Size(max = 200)
+    val sourceLabel: String? = null,
+
+    @field:Size(max = 500)
+    val sourceUrl: String? = null,
+
     /** SQL 유형일 때만 쓴다 (#60). 다른 유형에 실려 오면 서비스가 거부한다. */
     @field:Valid
     val sqlSpec: SqlSpecRequest? = null,

@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AdminProblemService(
+    private val creditService: codekr.api.problem.credit.ProblemCreditService,
     private val problemRepository: ProblemRepository,
     private val problemSearchRepository: ProblemSearchRepository,
     private val verificationService: SolutionVerificationService,
@@ -99,6 +100,8 @@ class AdminProblemService(
             floatEpsilon = request.floatEpsilon,
             published = request.published,
             createdBy = createdBy,
+            sourceLabel = request.sourceLabel?.trim()?.takeIf { it.isNotBlank() },
+            sourceUrl = request.sourceUrl?.trim()?.takeIf { it.isNotBlank() },
         ).apply {
             addTestcases(request.testcases.map(TestcaseRequest::toEntity))
             addTemplates(request.templates.map(TemplateRequest::toEntity))
@@ -108,6 +111,7 @@ class AdminProblemService(
 
         val saved = problemRepository.save(problem)
         request.sqlSpec?.let { sqlSpecRepository.save(it.toEntity(saved.id)) }
+        creditService.replace(saved.id, request.setterIds, request.reviewerIds)
         return ProblemCreatedResponse(saved.id, saved.slug)
     }
 
@@ -135,6 +139,8 @@ class AdminProblemService(
             outputComparison = request.outputComparison
             floatEpsilon = request.floatEpsilon
             published = request.published
+            sourceLabel = request.sourceLabel?.trim()?.takeIf { it.isNotBlank() }
+            sourceUrl = request.sourceUrl?.trim()?.takeIf { it.isNotBlank() }
             softDeleteTestcases()
             softDeleteTemplates()
             softDeleteRuntimeLimits()
@@ -157,6 +163,7 @@ class AdminProblemService(
             위의 flush 로 바뀐 값이 이미 표에 있다. 그전에 부르면 **옛 난이도**로 계산한다.
         */
         scoreResyncService.resync(problem.id)
+        creditService.replace(problem.id, request.setterIds, request.reviewerIds)
 
         // 태그는 이 요청으로 바뀌지 않지만, 응답에서 빠지면 편집 화면이 저장 직후 태그를
         // 잃어버린 것처럼 보인다.
@@ -165,6 +172,7 @@ class AdminProblemService(
             verificationService.findLatest(problem),
             upsertSqlSpec(problem.id, request),
             tagService.tagsOf(problem.id),
+            creditService.creditsOf(problem.id),
         )
     }
 

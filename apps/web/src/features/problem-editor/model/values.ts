@@ -37,6 +37,14 @@ export interface ProblemFormValues {
   /** 허용 오차. `FLOAT` 일 때만 쓰인다. */
   floatEpsilon: number;
   published: boolean;
+  /**
+   * 출제자·검수자 (#236). **닉네임으로 찾아 고른다** — id 를 손으로 치게 하지 않는다.
+   */
+  setters: { id: number; nickname: string }[];
+  reviewers: { id: number; nickname: string }[];
+  /** 출처 (#236). 선택이다 — 자체 제작이면 비운다. */
+  sourceLabel: string;
+  sourceUrl: string;
   testcases: Testcase[];
   templates: ProblemTemplate[];
   runtimeLimits: ProblemRuntimeLimit[];
@@ -66,6 +74,10 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     outputComparison: problem.outputComparison ?? "EXACT",
     floatEpsilon: problem.floatEpsilon ?? 0,
     published: problem.published,
+    setters: (problem.setters ?? []).map((each) => ({ id: each.userId, nickname: each.nickname })),
+    reviewers: (problem.reviewers ?? []).map((each) => ({ id: each.userId, nickname: each.nickname })),
+    sourceLabel: problem.sourceLabel ?? "",
+    sourceUrl: problem.sourceUrl ?? "",
     testcases: problem.testcases,
     templates: problem.templates,
     runtimeLimits: problem.runtimeLimits ?? [],
@@ -91,6 +103,10 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   outputComparison: "EXACT",
   floatEpsilon: 0,
   published: false,
+  setters: [],
+  reviewers: [],
+  sourceLabel: "",
+  sourceUrl: "",
   testcases: [EMPTY_TESTCASE],
   templates: [],
   runtimeLimits: [],
@@ -99,3 +115,21 @@ export const BLANK_PROBLEM: ProblemFormValues = {
 
 
 /** 문제 등록과 수정이 같은 폼을 쓴다 — 요청 본문 모양이 동일하기 때문이다. */
+
+/**
+ * 폼 값 → 저장 요청 (#236).
+ *
+ * **사람은 이름으로 고르고 서버는 id 를 받는다.** 그 변환을 화면마다 하면 한 곳이
+ * 빠졌을 때 출제자가 조용히 사라진다 — 등록과 수정이 같은 함수를 쓴다.
+ */
+export function toRequest(values: ProblemFormValues) {
+  const { setters, reviewers, sourceLabel, sourceUrl, ...rest } = values;
+  return {
+    ...rest,
+    setterIds: setters.map((each) => each.id),
+    reviewerIds: reviewers.map((each) => each.id),
+    // 빈 칸은 보내지 않는다 — 빈 문자열을 저장하면 "없음" 과 "빈 값" 이 갈린다.
+    sourceLabel: sourceLabel.trim() || null,
+    sourceUrl: sourceUrl.trim() || null,
+  };
+}

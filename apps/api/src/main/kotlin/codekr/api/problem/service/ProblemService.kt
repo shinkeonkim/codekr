@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class ProblemService(
+    private val creditService: codekr.api.problem.credit.ProblemCreditService,
     private val problemRepository: ProblemRepository,
     private val problemSearchRepository: ProblemSearchRepository,
     private val runtimeRegistry: RuntimeRegistry,
@@ -45,6 +46,7 @@ class ProblemService(
             runtimeRegistry.findFor(problem.problemKind),
             statsRepository.findOne(problem.id),
             tagService.tagsOf(problem.id),
+            creditService.creditsOf(problem.id),
         )
     }
 

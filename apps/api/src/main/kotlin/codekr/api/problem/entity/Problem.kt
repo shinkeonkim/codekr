@@ -100,6 +100,20 @@ class Problem(
     @Column(name = "created_by")
     var createdBy: Long? = null,
 
+    /**
+     * 출처 (#236). 사람이 아니라 **바깥의 무언가**를 가리킨다.
+     *
+     * **라벨과 링크는 한 쌍이다** — 링크만 있으면 무엇인지 모르고, 라벨만 있으면
+     * 확인할 수 없다. 다만 링크 없는 출처(책·대회 이름)는 있으므로 링크만 비울 수 있다.
+     *
+     * **필수가 아니다.** 필수로 두면 자체 제작 문제에 "자체 제작" 을 매번 적게 된다.
+     */
+    @Column(name = "source_label", length = 200)
+    var sourceLabel: String? = null,
+
+    @Column(name = "source_url", length = 500)
+    var sourceUrl: String? = null,
+
 ) : SoftDeletableEntity() {
 
     /**

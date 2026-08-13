@@ -75,6 +75,12 @@ export interface ProblemExample {
 }
 
 export interface ProblemDetail extends Omit<ProblemSummary, "published"> {
+  /** 누가 만들고 검수했는가 (#236). 탈퇴한 사람은 "탈퇴한 사용자" 로 온다 (#140). */
+  setters: ProblemCredit[];
+  reviewers: ProblemCredit[];
+  /** 어디서 온 문제인가 (#236). 자체 제작이면 비어 있다. */
+  sourceLabel: string | null;
+  sourceUrl: string | null;
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;
@@ -199,7 +205,19 @@ export const OUTPUT_COMPARISON_LABELS: Record<OutputComparison, string> = {
   FLOAT: "실수 오차 허용",
 };
 
+/** 문제에 이름이 붙은 사람 하나 (#236). */
+export interface ProblemCredit {
+  userId: number;
+  nickname: string;
+  role: "SETTER" | "REVIEWER";
+  roleLabel: string;
+}
+
 export interface AdminProblemDetail extends ProblemSummary {
+  setters?: ProblemCredit[];
+  reviewers?: ProblemCredit[];
+  sourceLabel?: string | null;
+  sourceUrl?: string | null;
   outputComparison: OutputComparison;
   floatEpsilon: number;
   problemKind: ProblemKind;

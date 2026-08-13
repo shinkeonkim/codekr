@@ -5,6 +5,7 @@ import type { ProblemVerification } from "@/entities/problem";
 import type { ProblemTag } from "@/entities/tag";
 import { ProblemForm, toFormValues } from "@/features/problem-editor";
 import type { ProblemFormValues } from "@/features/problem-editor";
+import { toRequest } from "@/features/problem-editor";
 import { ProblemTagEditor } from "@/features/problem-tags";
 import { EmptyState } from "@/shared/ui";
 import { use, useEffect, useState } from "react";
@@ -43,7 +44,7 @@ function EditProblem({ id }: { id: number }) {
         submitLabel="저장"
         problemId={id}
         verification={verification}
-        onSubmit={(values) => problemApi.update(id, values)}
+        onSubmit={(values) => problemApi.update(id, toRequest(values))}
       />
       {/* 문제 본문과 따로 저장한다 — 이유는 ProblemTagEditor 주석에 있다 (#232). */}
       <ProblemTagEditor problemId={id} initial={tags} />
