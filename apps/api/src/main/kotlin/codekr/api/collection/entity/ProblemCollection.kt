@@ -57,7 +57,9 @@ class ProblemCollection(
     }
 
     fun isVisibleTo(viewerId: Long?): Boolean =
-        ownerId == viewerId || visibility == CollectionVisibility.UNLISTED
+        ownerId == viewerId ||
+            visibility == CollectionVisibility.UNLISTED ||
+            visibility == CollectionVisibility.PUBLIC
 
     private companion object {
         val RANDOM = SecureRandom()

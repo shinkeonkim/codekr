@@ -13,4 +13,12 @@ package codekr.api.collection.entity
 enum class CollectionVisibility(val label: String) {
     PRIVATE("나만 보기"),
     UNLISTED("링크가 있는 사람만"),
+
+    /**
+     * 목록에 오른다 (#208).
+     *
+     * **`UNLISTED` 를 남긴다.** 링크 공유는 "아직 다듬는 중" 에 쓰임이 있다 —
+     * 공개와 같은 것으로 묶으면 그 단계가 사라진다.
+     */
+    PUBLIC("누구나 보기"),
 }

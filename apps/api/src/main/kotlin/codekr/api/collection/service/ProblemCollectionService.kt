@@ -10,8 +10,10 @@ import codekr.api.collection.entity.ProblemCollection
 import codekr.api.collection.entity.ProblemCollectionItem
 import codekr.api.collection.repository.ProblemCollectionItemRepository
 import codekr.api.collection.repository.ProblemCollectionRepository
+import codekr.api.common.dto.PageResponse
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import org.springframework.data.domain.Pageable
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.user.entity.WithdrawnUser
@@ -34,6 +36,30 @@ class ProblemCollectionService(
     private val userRepository: UserRepository,
     private val progressRepository: CollectionProgressRepository,
 ) {
+
+    /**
+     * 공개 문제집 목록 (#208).
+     *
+     * **로그인 없이 열린다** — 발견되지 않으면 공개의 뜻이 없다. 진행률은 보는 사람이
+     * 있을 때만 채워진다.
+     */
+    fun findPublic(viewerId: Long?, pageable: Pageable): PageResponse<CollectionSummaryResponse> {
+        val page = collectionRepository.findByVisibilityAndDeletedAtIsNull(CollectionVisibility.PUBLIC, pageable)
+        return PageResponse.from(
+            page.map { collection ->
+                val problems = livingProblems(collection.id)
+                val solved = viewerId?.let { progressRepository.solvedProblemIds(it, problems.map(Problem::id)) }
+                    ?: emptySet()
+                CollectionSummaryResponse.of(
+                    collection,
+                    nicknameOf(collection.ownerId),
+                    problems.size,
+                    solved.size,
+                    forOwner = collection.ownerId == viewerId,
+                )
+            },
+        )
+    }
 
     fun findMine(userId: Long): List<CollectionSummaryResponse> {
         val nickname = nicknameOf(userId)
@@ -98,8 +124,20 @@ class ProblemCollectionService(
             )
         }
         request.problemIds.forEach { problemId ->
-            problemRepository.findByIdAndDeletedAtIsNull(problemId)
+            val problem = problemRepository.findByIdAndDeletedAtIsNull(problemId)
                 ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND, "없는 문제를 담았습니다: $problemId")
+            /*
+                **미공개 문제의 제목이 공개 목록으로 새면 안 된다** (#208).
+
+                감추는 쪽(①)도 있지만, 그러면 "문제 5개" 라고 적힌 문제집에 3개만 보이고
+                주인은 이유를 모른다. 아예 막고 **왜 막혔는지 말하는** 편이 낫다.
+            */
+            if (request.visibility == CollectionVisibility.PUBLIC && !problem.published) {
+                throw ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "아직 공개되지 않은 문제가 있어 공개할 수 없습니다: ${problem.title}",
+                )
+            }
         }
     }
 
