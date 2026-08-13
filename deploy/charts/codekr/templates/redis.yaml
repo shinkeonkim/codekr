@@ -38,11 +38,31 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+  # **서버가 채워 넣는 값을 차트가 먼저 적는다** (#252).
+  #
+  # `volumeClaimTemplates` 는 PVC 객체의 목록이고, API 서버는 저장하면서 빠진 곳을
+  # 채운다 — `apiVersion`·`kind`·`volumeMode`. ArgoCD 는 최상위 `status` 는 무시하지만
+  # **이 안쪽까지는 무시하지 않아서**, 채워진 값이 매번 차이로 잡힌다.
+  #
+  # 동작에는 문제가 없다. 문제는 **OutOfSync 가 상시로 켜져 있으면 그 표시가 신호
+  # 구실을 못 한다**는 것이다 — 진짜로 어긋난 것이 생겨도 눈에 띄지 않는다.
+  #
+  # 여기서 적을 수 있는 것은 다 적었다. `status`(서버가 넣는 `phase: Pending`)만은
+  # 남는데, 그것은 매니페스트에 적을 값이 아니다 — ArgoCD 쪽 `ignoreDifferences` 로
+  # 좁게 무시한다 (`docs/09_배포_가이드.md` §6.4).
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
+        volumeMode: Filesystem
+        {{- with .Values.redis.storageClassName }}
+        # **비우면 클러스터 기본 StorageClass 를 쓴다** — 그때는 서버가 그 이름을
+        # 채워 넣으므로 그것도 차이가 된다. 값을 주면 그 차이까지 사라진다.
+        storageClassName: {{ . | quote }}
+        {{- end }}
         resources:
           requests:
             storage: {{ .Values.redis.storage }}

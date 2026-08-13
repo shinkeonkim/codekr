@@ -158,6 +158,12 @@ executor:
 
 redis:
   storage: 2Gi
+  # 비우면 클러스터 기본 StorageClass 를 쓴다.
+  #
+  # **비워 두면 ArgoCD 가 매번 차이를 본다** (#252) — 서버가 실제로 쓴 이름을 채워
+  # 넣기 때문이다. 클러스터의 기본 이름을 여기 적으면 그 차이가 사라진다.
+  # 기본값을 비워 두는 이유는 그 이름이 클러스터마다 다르기 때문이다.
+  storageClassName: ""
   resources:
     requests: { cpu: 50m, memory: 128Mi }
     limits: { memory: 256Mi }
