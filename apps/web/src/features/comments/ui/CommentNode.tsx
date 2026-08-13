@@ -47,7 +47,12 @@ export function CommentNode({
   };
 
   return (
-    <div style={{ marginLeft: indent * 16 }} className="space-y-2">
+    <div
+      // **알림이 이 자리로 온다** (#212). 글만 열면 긴 스레드에서 다시 찾아야 한다.
+      id={`comment-${comment.id}`}
+      style={{ marginLeft: indent * 16 }}
+      className="space-y-2 scroll-mt-20"
+    >
       <Card className="space-y-2 p-4">
         {comment.deleted ? (
           // 지운 사람이 누구인지 남길 이유가 없다. 자리만 남긴다.
