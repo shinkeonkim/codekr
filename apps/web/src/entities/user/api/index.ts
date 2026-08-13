@@ -103,6 +103,13 @@ export const userApi = {
   resetPassword: (token: string, newPassword: string) =>
     request<void>("/api/v1/auth/password/reset", { method: "POST", body: { token, newPassword } }),
 
+  /** 멘션 자동완성 (#214). 로그인해야 부른다 — 두 글자부터 찾는다. */
+  mentionCandidates: (q: string) =>
+    request<{ id: number; nickname: string }[]>("/api/v1/users/mention-candidates", {
+      auth: true,
+      query: { q },
+    }),
+
   /** 인증 링크를 확인한다 (#233). **로그인이 필요 없다** — 토큰 자체가 본인 확인이다. */
   verifyEmail: (token: string) =>
     request<void>("/api/v1/auth/email/verify", { method: "POST", body: { token } }),

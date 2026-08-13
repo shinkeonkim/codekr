@@ -35,6 +35,13 @@ export interface Comment {
   children: Comment[];
   /** 아직 안 내려온 답글 수 (#213). 0 이면 다 왔다. */
   remainingChildren: number;
+  /**
+   * 본문이 부른 사람들 (#214).
+   *
+   * **본문과 함께 온다** — 화면이 id 로 다시 조회하면 댓글 수만큼 요청이 나가고,
+   * 하나라도 실패하면 멘션이 저장 표기 그대로 보인다.
+   */
+  mentions: { id: number; nickname: string }[];
 }
 
 /**

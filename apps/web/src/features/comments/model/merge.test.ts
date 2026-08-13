@@ -17,6 +17,7 @@ function comment(id: number, children: Comment[] = [], remainingChildren = 0): C
     deletable: false,
     children,
     remainingChildren,
+    mentions: [],
   };
 }
 

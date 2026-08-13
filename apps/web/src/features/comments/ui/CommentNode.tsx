@@ -4,9 +4,12 @@ import { MAX_VISUAL_DEPTH } from "@/entities/post";
 import type { Comment } from "@/entities/post";
 import { Avatar } from "@/entities/user";
 import { formatDateTime } from "@/shared/lib";
-import { Button, Card, Markdown, Textarea } from "@/shared/ui";
+import { Button, Card, Markdown } from "@/shared/ui";
 import { useState } from "react";
+import type { MentionLabel } from "../model/mentionText";
+import { toDisplay, toStored } from "../model/mentionText";
 import { CommentForm } from "./CommentForm";
+import { MentionTextarea } from "./MentionTextarea";
 
 /**
  * 댓글 한 줄 (#138) 과 제자리 편집 (#211).
@@ -40,11 +43,15 @@ export function CommentNode({
   // 이 깊이를 넘으면 더 들여쓰지 않는다. 화면이 밀려나면 글을 읽을 수 없다.
   const indent = Math.min(depth, MAX_VISUAL_DEPTH);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(comment.body ?? "");
+  const [draft, setDraft] = useState("");
+  const [picked, setPicked] = useState<MentionLabel[]>([]);
 
   const startEditing = () => {
     // 취소하면 원래 내용으로 돌아와야 하므로, 열 때마다 지금 값을 다시 담는다.
-    setDraft(comment.body ?? "");
+    // **저장 표기가 그대로 보이면 안 된다** (#214) — 이름으로 되돌려 보여준다.
+    setDraft(toDisplay(comment.body ?? "", comment.mentions));
+    // 이미 들어 있던 멘션은 고른 것으로 친다. 안 그러면 고칠 때마다 멘션이 풀린다.
+    setPicked(comment.mentions);
     setEditing(true);
   };
 
@@ -79,13 +86,17 @@ export function CommentNode({
 
             {editing ? (
               <div className="space-y-2">
-                <Textarea rows={3} value={draft} onChange={(event) => setDraft(event.target.value)} />
+                <MentionTextarea
+                  value={draft}
+                  onChange={setDraft}
+                  onPick={(label) => setPicked((current) => [...current, label])}
+                />
                 <div className="flex gap-2">
                   <Button
                     className="px-3 py-1 text-xs"
                     disabled={!draft.trim()}
                     onClick={async () => {
-                      if (await onEdit(comment.id, draft)) setEditing(false);
+                      if (await onEdit(comment.id, toStored(draft, picked))) setEditing(false);
                     }}
                   >
                     저장
@@ -97,7 +108,7 @@ export function CommentNode({
                 </div>
               </div>
             ) : (
-              <Markdown source={comment.body ?? ""} />
+              <Markdown source={comment.body ?? ""} mentions={comment.mentions} />
             )}
 
             {editing ? null : (

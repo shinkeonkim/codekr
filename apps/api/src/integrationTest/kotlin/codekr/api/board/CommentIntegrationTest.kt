@@ -339,4 +339,84 @@ class CommentIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.comments[0].children[0].children[0].children[0].body").value("4단"))
     }
 
+    @Test
+    fun `부르면 알림이 가고 이름표가 함께 온다`() {
+        // **부르기만 하고 전달되지 않으면 그냥 글자다** (#214).
+        val target = userRepository.save(User("c@codekr.dev", "x", "불린이", setOf(UserRole.USER)))
+
+        comment(authorToken, null, "@{u:" + target.id + "} 이거 아세요?")
+
+        val notes = jdbcClient.sql("SELECT title FROM notifications WHERE user_id = :id")
+            .param("id", target.id).query(String::class.java).list()
+        kotlin.test.assertEquals(listOf("댓글에서 나를 불렀습니다"), notes)
+
+        // 화면이 표기를 이름으로 바꾸려면 이름표가 본문과 함께 와야 한다.
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andExpect(jsonPath("$.comments[0].mentions[0].id").value(target.id))
+            .andExpect(jsonPath("$.comments[0].mentions[0].nickname").value("불린이"))
+    }
+
+    @Test
+    fun `같은 사람을 여러 번 불러도 알림은 한 번이다`() {
+        val target = userRepository.save(User("c@codekr.dev", "x", "불린이", setOf(UserRole.USER)))
+        val tag = "@{u:" + target.id + "}"
+
+        comment(authorToken, null, tag + " " + tag + " 두 번 불렀다")
+
+        val count = jdbcClient.sql("SELECT count(*) FROM notifications WHERE user_id = :id")
+            .param("id", target.id).query(Int::class.java).single()
+        kotlin.test.assertEquals(1, count)
+    }
+
+    @Test
+    fun `자기 자신을 부르면 알리지 않는다`() {
+        comment(authorToken, null, "@{u:" + authorId + "} 나를 부른다")
+
+        val count = jdbcClient.sql("SELECT count(*) FROM notifications WHERE user_id = :id")
+            .param("id", authorId).query(Int::class.java).single()
+        kotlin.test.assertEquals(0, count)
+    }
+
+    @Test
+    fun `고쳐서 새로 부른 사람에게만 알린다`() {
+        val first = userRepository.save(User("c@codekr.dev", "x", "먼저", setOf(UserRole.USER)))
+        val later = userRepository.save(User("d@codekr.dev", "x", "나중", setOf(UserRole.USER)))
+        val id = comment(authorToken, null, "@{u:" + first.id + "} 안녕")
+
+        mockMvc.perform(
+            put("/api/v1/comments/" + id).header("Authorization", "Bearer " + authorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"body\":\"@{u:" + first.id + "} @{u:" + later.id + "} 안녕\"}"),
+        ).andExpect(status().isOk)
+
+        // 이미 불린 사람에게 다시 보내면 오타를 고칠 때마다 알림이 간다.
+        fun countFor(userId: Long) = jdbcClient.sql("SELECT count(*) FROM notifications WHERE user_id = :id")
+            .param("id", userId).query(Int::class.java).single()
+        kotlin.test.assertEquals(1, countFor(first.id))
+        kotlin.test.assertEquals(1, countFor(later.id))
+    }
+
+    @Test
+    fun `한 번에 다섯 명까지만 부를 수 있다`() {
+        // 알림을 끌 수 없으므로(#199) 부르면 반드시 간다 — 상한이 없으면 한 줄로
+        // 수십 명에게 알림을 보낼 수 있다.
+        val body = (1..6).joinToString(" ") { "@{u:" + it + "}" }
+        mockMvc.perform(
+            post("/api/v1/posts/" + postId + "/comments")
+                .header("Authorization", "Bearer " + authorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"body\":\"" + body + "\"}"),
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `없는 사람을 가리켜도 죽지 않는다`() {
+        comment(authorToken, null, "@{u:999999} 누구세요")
+
+        mockMvc.perform(get("/api/v1/posts/" + postId + "/comments"))
+            .andExpect(status().isOk)
+            // 이름표가 없을 뿐 본문은 그대로 온다 — 화면이 알아서 다룬다.
+            .andExpect(jsonPath("$.comments[0].mentions.length()").value(0))
+    }
+
 }
