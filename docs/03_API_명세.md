@@ -701,7 +701,7 @@ POST /api/v1/admin/problems/imports   (multipart/form-data)
 
 테스트케이스가 백 개를 넘으면 폼으로는 못 만든다. 묶음은 `problem.json` +
 `testcases` 아래의 `{seq}.in`·`{seq}.out` 이고, **JSON 은 시드 파일과 같은 형식**이다.
-자세한 것은 `docs/12_문제_묶음_형식.md` 에 있다.
+자세한 것은 `docs/13_문제_묶음_형식.md` 에 있다.
 
 - **언제나 초안**으로 들어온다. 묶음이 `published: true` 라 적어도 덮는다
 - **폼과 같은 검증**을 지난다
