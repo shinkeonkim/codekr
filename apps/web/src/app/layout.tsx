@@ -1,7 +1,7 @@
 import { AuthProvider } from "@/features/auth";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from "@/shared/config/site";
 import { ThemeScript } from "@/shared/theme";
-import { ToastProvider, ToastViewport } from "@/shared/ui";
+import { ToastViewport } from "@/shared/ui";
 import { AppShell } from "@/widgets/app-shell";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
@@ -61,14 +61,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         100vh 가 아니라 100dvh 인 이유: 모바일 주소창 때문에 vh 는 실제 높이와 어긋난다.
       */}
       <body className="flex min-h-[100dvh] flex-col bg-surface text-ink">
-        <ToastProvider>
-          <AuthProvider>
-            {/* 헤더·본문 폭·푸터는 AppShell 한 곳에서 정한다 (#131). */}
-            <AppShell>{children}</AppShell>
-          </AuthProvider>
-          {/* 화면을 넘어가도 살아남아야 하므로 라우트 바깥, 최상위에 둔다 (#112). */}
-          <ToastViewport />
-        </ToastProvider>
+        <AuthProvider>
+          {/* 헤더·본문 폭·푸터는 AppShell 한 곳에서 정한다 (#131). */}
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
+        {/*
+          화면을 넘어가도 살아남아야 하므로 라우트 바깥, 최상위에 둔다 (#112).
+
+          **감싸는 Provider 가 없다** (#291 5단계). 띄우는 함수가 전역이라
+          Provider 밖에서 불러도 터지지 않는다 — 전에 폴백으로 지키던 성질이다.
+        */}
+        <ToastViewport />
       </body>
     </html>
   );
