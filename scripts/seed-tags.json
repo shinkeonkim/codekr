@@ -8,15 +8,61 @@
     "처음부터 많이 만들지 않는다. 붙은 문제가 없는 태그는 고를 때 빈 결과만 준다."
   ],
   "tags": [
-    { "slug": "implementation", "name": "구현", "description": "특별한 기법 없이 문제에 적힌 절차를 그대로 코드로 옮긴다" },
-    { "slug": "string", "name": "문자열", "description": "문자열을 자르고 잇고 뒤집는 조작이 핵심인 문제" },
-    { "slug": "math", "name": "수학", "description": "식을 세우거나 성질을 찾아내면 풀리는 문제" },
-    { "slug": "sorting", "name": "정렬", "description": "정렬해 두면 답이 보이는 문제" },
-    { "slug": "binary-search", "name": "이분 탐색", "description": "정렬된 범위를 반씩 줄여 가며 찾는다" },
-    { "slug": "dp", "name": "다이나믹 프로그래밍", "description": "부분 문제의 답을 저장해 다시 쓴다" },
-    { "slug": "greedy", "name": "그리디", "description": "매 순간 가장 좋아 보이는 것을 고르는 선택이 전체 최적이 되는 문제" },
-    { "slug": "graph", "name": "그래프", "description": "정점과 간선으로 모형화해 탐색하는 문제" },
-    { "slug": "data-structure", "name": "자료 구조", "description": "스택·큐·힙 같은 구조를 골라 쓰는 것이 핵심인 문제" }
+    {
+      "slug": "implementation",
+      "name": "구현",
+      "description": "특별한 기법 없이 문제에 적힌 절차를 그대로 코드로 옮긴다"
+    },
+    {
+      "slug": "string",
+      "name": "문자열",
+      "description": "문자열을 자르고 잇고 뒤집는 조작이 핵심인 문제"
+    },
+    {
+      "slug": "math",
+      "name": "수학",
+      "description": "식을 세우거나 성질을 찾아내면 풀리는 문제"
+    },
+    {
+      "slug": "sorting",
+      "name": "정렬",
+      "description": "정렬해 두면 답이 보이는 문제"
+    },
+    {
+      "slug": "binary-search",
+      "name": "이분 탐색",
+      "description": "정렬된 범위를 반씩 줄여 가며 찾는다"
+    },
+    {
+      "slug": "dp",
+      "name": "다이나믹 프로그래밍",
+      "description": "부분 문제의 답을 저장해 다시 쓴다"
+    },
+    {
+      "slug": "greedy",
+      "name": "그리디",
+      "description": "매 순간 가장 좋아 보이는 것을 고르는 선택이 전체 최적이 되는 문제"
+    },
+    {
+      "slug": "graph",
+      "name": "그래프",
+      "description": "정점과 간선으로 모형화해 탐색하는 문제"
+    },
+    {
+      "slug": "data-structure",
+      "name": "자료 구조",
+      "description": "스택·큐·힙 같은 구조를 골라 쓰는 것이 핵심인 문제"
+    },
+    {
+      "slug": "aggregation",
+      "name": "집계",
+      "description": "묶어서 세거나 더하는 것이 핵심인 문제 (GROUP BY·HAVING)"
+    },
+    {
+      "slug": "join",
+      "name": "조인",
+      "description": "여러 표를 이어야 답이 나오는 문제"
+    }
   ],
   "_problems_comment": [
     "시드 문제에 붙일 태그. 슬러그로 가리킨다.",
@@ -25,7 +71,26 @@
     "제대로 다루는지 드러난다. 그것은 카테고리(NETWORK)로 이미 분류돼 있다."
   ],
   "problems": {
-    "two-sum": ["implementation", "math"],
-    "reverse-words": ["implementation", "string"]
+    "two-sum": [
+      "implementation",
+      "math"
+    ],
+    "reverse-words": [
+      "implementation",
+      "string"
+    ],
+    "sql-expensive-books": [
+      "sorting"
+    ],
+    "sql-genre-counts": [
+      "aggregation"
+    ],
+    "sql-open-loans": [
+      "join"
+    ],
+    "sql-frequent-borrowers": [
+      "join",
+      "aggregation"
+    ]
   }
 }

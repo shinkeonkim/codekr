@@ -1,0 +1,19 @@
+{
+  "slug": "sql-seoul-members",
+  "title": "서울에 사는 회원",
+  "category": "SQL",
+  "difficulty": "BRONZE_5",
+  "problemKind": "JUDGE_SQL",
+  "description": "도서관 회원 명부에서 서울에 사는 회원의 이름을 찾으세요.\n\n[표 구조]\n  members(id, name, city, joined_on)\n  books(id, title, genre, price)\n  loans(id, member_id, book_id, loaned_on, returned_on)\n\nloans.returned_on 이 비어 있으면(NULL) 아직 반납하지 않은 것입니다.\n",
+  "inputDescription": "주어지는 것은 위의 세 표입니다. 표준 입력은 없습니다.",
+  "outputDescription": "서울에 사는 회원의 name 을 출력합니다. 순서는 상관없습니다.\n\n채점은 열 이름을 보지 않고 값만 비교합니다. 다만 열 순서는 지켜야 합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 256,
+  "published": true,
+  "testcases": [],
+  "sqlSchemaFile": "sql/library.sql",
+  "sqlSpec": {
+    "answerSql": "SELECT name FROM members WHERE city = '서울';",
+    "ignoreRowOrder": true
+  }
+}
