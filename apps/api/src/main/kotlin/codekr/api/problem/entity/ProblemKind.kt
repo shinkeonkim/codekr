@@ -56,6 +56,16 @@ enum class ProblemKind(
      */
     JUDGE_FUNCTION("함수 구현", ready = true),
 
+    /**
+     * 채점 코드와 **도는 중에 주고받는** 문제 (#474).
+     *
+     * 스페셜 저지(#452)와 나눈 이유: 그쪽은 끝난 뒤 출력을 받아 판정하고 이쪽은
+     * 동시에 돌며 주고받는다. 실행 방식이 다르므로 유형이 다르다.
+     *
+     * 정답 코드 검증(#39)은 아직 없다 — 검증도 대화를 붙여야 하는 일이라 따로 본다.
+     */
+    JUDGE_INTERACTIVE("인터랙티브", ready = true, supportsSolutionVerification = false),
+
     /** 객관식·단답. 실행기를 쓰지 않고 api 에서 즉시 채점한다. */
     QUIZ("객관식 · 단답", ready = false),
 

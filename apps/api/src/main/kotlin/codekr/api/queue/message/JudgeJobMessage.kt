@@ -50,7 +50,7 @@ data class JudgeJobMessage(
      */
     val sql: JudgeSqlSpecMessage? = null,
     /** Redis 유형일 때만 실린다 (#455). */
-    val redis: JudgeRedisSpecMessage? = null,
+    val nosql: JudgeRedisSpecMessage? = null,
     /**
      * 함수형 유형일 때만 실린다 (#447, #421).
      *
@@ -65,6 +65,12 @@ data class JudgeJobMessage(
      * **채점기가 DB 를 읽지 않는다**(ADR-0004) — 판정에 필요한 것은 전부 실려 간다.
      */
     val checker: String? = null,
+    /**
+     * 인터랙티브 문제의 채점 코드 (#474).
+     *
+     * **채점기가 DB 를 읽지 않는다** (ADR-0004) — 판정에 필요한 것은 전부 실려 간다.
+     */
+    val interactor: String? = null,
 ) {
     companion object {
         /**
@@ -99,7 +105,9 @@ data class JudgeJobMessage(
                     ProblemKind.JUDGE_FUNCTION -> problem.harnessFor(submission.runtimeId)
                     else -> null
                 },
-                redis = redisSpec?.let(JudgeRedisSpecMessage::from),
+                nosql = redisSpec?.let(JudgeRedisSpecMessage::from),
+                interactor = problem.interactorSource
+                    ?.takeIf { problem.problemKind == ProblemKind.JUDGE_INTERACTIVE },
                 checker = problem.checkerSource
                     ?.takeIf { problem.outputComparison == OutputComparison.CHECKER },
             )
