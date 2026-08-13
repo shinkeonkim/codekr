@@ -120,6 +120,15 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      * **누가 무엇을 몇으로 바꿨는지**는 남는다. 전에는 그것도 없었다.
      */
     SCALE("워크로드 조정", requiresReason = false),
+
+    /**
+     * 소속·도메인 변경 (#397).
+     *
+     * 사유를 요구하지 않는다 — 목록을 채우는 일이라 매번 적게 하면 "추가" 같은 값만 쌓인다.
+     * 다만 **잘못 넣으면 그 도메인을 가진 모두가 그 소속을 얻으므로** 누가 무엇을
+     * 했는지는 반드시 남는다.
+     */
+    AFFILIATION_CHANGE("소속 변경", requiresReason = false),
 }
 
 enum class AuditTargetType { USER }
