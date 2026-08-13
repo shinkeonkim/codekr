@@ -1,0 +1,53 @@
+{
+  "slug": "aheui-sum",
+  "title": "아희로 두 수 더하기",
+  "category": "ALGORITHM",
+  "difficulty": "BRONZE_5",
+  "allowedRuntimeIds": [
+    "aheui:1.2"
+  ],
+  "description": "**아희로만 푸는 문제입니다.**\n\n정수 두 개를 읽어 합을 출력하세요.\n\n아희는 한글 음절 자체가 명령입니다. 첫 글자의 자음이 무엇을 할지, 모음이 어디로 갈지를 정합니다. 그래서 **이 문제의 어려움은 알고리즘이 아니라 언어**에 있습니다 — 답은 다섯 글자면 됩니다.\n\n필요한 것만 적어 둡니다.\n\n| 글자 | 무엇 |\n|---|---|\n| `방` | 정수 하나를 읽어 저장소에 넣는다 |\n| `다` | 저장소에서 둘을 꺼내 더한 값을 넣는다 |\n| `망` | 저장소에서 하나를 꺼내 정수로 출력한다 |\n| `희` | 프로그램을 끝낸다 |\n\n글자는 왼쪽에서 오른쪽으로 읽힙니다. 모음 `ㅏ` 가 그 방향을 뜻합니다.",
+  "inputDescription": "정수 A와 B가 주어집니다. 공백이나 줄바꿈으로 구분됩니다. (-1000 ≤ A, B ≤ 1000)",
+  "outputDescription": "A + B 를 출력합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 256,
+  "outputComparison": "EXACT",
+  "floatEpsilon": 0.0,
+  "published": true,
+  "testcases": [
+    {
+      "seq": 1,
+      "input": "3 4\n",
+      "expectedOutput": "7\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 2,
+      "input": "10\n-3\n",
+      "expectedOutput": "7\n",
+      "visibility": "PUBLIC"
+    },
+    {
+      "seq": 3,
+      "input": "0 0\n",
+      "expectedOutput": "0\n",
+      "visibility": "HIDDEN"
+    },
+    {
+      "seq": 4,
+      "input": "-1000 -1000\n",
+      "expectedOutput": "-2000\n",
+      "visibility": "HIDDEN"
+    }
+  ],
+  "templates": [
+    {
+      "runtimeId": "aheui:1.2",
+      "sourceCode": "방망희\n"
+    }
+  ],
+  "solution": {
+    "runtimeId": "aheui:1.2",
+    "sourceCode": "방방다망희\n"
+  }
+}
