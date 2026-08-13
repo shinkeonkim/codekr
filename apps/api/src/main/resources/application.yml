@@ -59,6 +59,20 @@ codekr:
     bucket: ${CODEKR_STORAGE_BUCKET:codekr}
     access-key: ${CODEKR_STORAGE_ACCESS_KEY:}
     secret-key: ${CODEKR_STORAGE_SECRET_KEY:}
+  mail:
+    # 메일 발송 (#233). **비우면 보내지 않는다** — 저장소(#115)와 같은 규칙이다.
+    # 로컬에서 메일 서버 없이 전체가 돌아야 하고, 발송이 안 된다고 서비스가 뜨지
+    # 못하면 안 된다.
+    #
+    # **보낼 수 없을 때는 인증을 요구하지도 않는다.** 요구만 하고 보내지 못하면
+    # 아무도 인증할 수 없는 계정이 만들어진다.
+    host: ${CODEKR_MAIL_HOST:}
+    port: ${CODEKR_MAIL_PORT:587}
+    username: ${CODEKR_MAIL_USERNAME:}
+    password: ${CODEKR_MAIL_PASSWORD:}
+    from: ${CODEKR_MAIL_FROM:no-reply@xn--o22b4l.kr}
+    # 인증 링크가 가리킬 곳. 메일은 서버가 만들므로 주소를 스스로 알아야 한다.
+    site-url: ${CODEKR_SITE_URL:http://localhost:13000}
   jwt:
     secret: ${CODEKR_JWT_SECRET:local-development-only-secret-change-me-please-32b}
     access-ttl-seconds: ${CODEKR_JWT_ACCESS_TTL_SECONDS:3600}

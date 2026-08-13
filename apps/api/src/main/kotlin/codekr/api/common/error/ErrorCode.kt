@@ -50,6 +50,15 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     // 429 다. 400 으로 두면 화면이 "고칠 수 있는 잘못"으로 다루는데, 여기서 할 일은
     // 기다리는 것뿐이다 (#189).
     SUBMISSION_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS, "제출이 너무 잦습니다."),
+    /** 인증 메일 재발송 같은 것 (#233). 발송량이 곧 비용이고 평판이다. */
+    TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 잦습니다."),
+    /**
+     * 이메일을 확인하지 않은 계정의 글쓰기 (#233).
+     *
+     * 403 이되 코드를 나눈다 — 화면이 "권한 없음" 이 아니라 **"인증 메일을 다시 받기"**
+     * 를 안내해야 한다.
+     */
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 확인이 필요합니다."),
     TESTCASE_REQUIRED(HttpStatus.BAD_REQUEST, "테스트케이스가 최소 1개 필요합니다."),
     SOLUTION_REQUIRED(HttpStatus.BAD_REQUEST, "검증하려면 정답 코드를 먼저 등록해야 합니다."),
 

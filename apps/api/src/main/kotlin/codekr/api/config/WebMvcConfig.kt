@@ -3,6 +3,7 @@ package codekr.api.config
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.auth.email.EmailVerificationGuard
 import codekr.api.user.suspension.SuspensionGuard
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.MethodParameter
@@ -23,7 +24,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  * 널 허용이 아닌데 인증이 없으면(설정 실수 등) 401 로 끊는다.
  */
 @Configuration
-class WebMvcConfig(private val suspensionGuard: SuspensionGuard) :
+class WebMvcConfig(
+    private val suspensionGuard: SuspensionGuard,
+    private val emailVerificationGuard: EmailVerificationGuard,
+) :
     HandlerMethodArgumentResolver, WebMvcConfigurer {
 
     override fun supportsParameter(parameter: MethodParameter): Boolean =
@@ -55,5 +59,7 @@ class WebMvcConfig(private val suspensionGuard: SuspensionGuard) :
      */
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(suspensionGuard)
+        // 확인하지 않은 주소로는 글을 쓸 수 없다 (#233). 무엇이 쓰기인지는 위와 같은 판정을 쓴다.
+        registry.addInterceptor(emailVerificationGuard)
     }
 }

@@ -57,6 +57,11 @@ dependencies {
     }
     implementation("software.amazon.awssdk:url-connection-client:2.31.78")
 
+    // 메일 발송 (#233). **직접 MTA 를 운영하지 않는다** — 발송 서비스의 SMTP 엔드포인트에
+    // 붙는다. 그러면 스팸 처리·바운스·평판 관리는 그 서비스가 지고, 우리는 벤더 SDK 를
+    // 하나 더 들이지 않는다 (#106 이 외부 발송을 피했던 이유의 절반은 여기서 해소된다).
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
     implementation("io.micrometer:micrometer-registry-prometheus")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")

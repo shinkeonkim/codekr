@@ -25,6 +25,12 @@ export interface User {
   avatarUrl: string | null;
   /** 소개 문구 (#310). 설정 화면이 지금 쓴 것을 보여주고 고치는 데 쓴다. */
   bio: string | null;
+  /**
+   * 이메일을 확인했는가 (#233).
+   *
+   * 언제 확인했는지는 사용자에게 쓸모가 없다 — 안내를 띄울지 정하는 값이다.
+   */
+  emailVerified: boolean;
 }
 
 export interface TokenResponse {

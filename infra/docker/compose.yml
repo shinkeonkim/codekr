@@ -78,6 +78,13 @@ services:
       # 로컬은 켜 둔다 (#285). 기능을 붙이고 시험 데이터를 넣고 다시 비우는 일이 반복된다.
       # **배포에서는 기본이 꺼짐이다** — 운영을 시작하는 날 그대로 두면 된다.
       CODEKR_DATA_RESET_ENABLED: ${CODEKR_DATA_RESET_ENABLED:-true}
+      # 메일 (#233). **기본은 비어 있다** — 비우면 보내지 않고 로그에 본문을 찍는다.
+      # 로컬에서 실제 발송까지 보려면 메일 싱크(mailpit 등)를 띄우고 이 값을 준다.
+      CODEKR_MAIL_HOST: ${CODEKR_MAIL_HOST:-}
+      CODEKR_MAIL_PORT: ${CODEKR_MAIL_PORT:-587}
+      CODEKR_MAIL_USERNAME: ${CODEKR_MAIL_USERNAME:-}
+      CODEKR_MAIL_PASSWORD: ${CODEKR_MAIL_PASSWORD:-}
+      CODEKR_SITE_URL: ${CODEKR_SITE_URL:-http://localhost:13000}
       # 오브젝트 스토리지 (#115). 운영은 S3 호환, 로컬은 MinIO — **같은 코드 경로**다.
       CODEKR_STORAGE_ENDPOINT: http://storage:9000
       CODEKR_STORAGE_BUCKET: ${STORAGE_BUCKET:-codekr}
