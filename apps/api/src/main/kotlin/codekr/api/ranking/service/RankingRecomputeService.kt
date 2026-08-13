@@ -1,6 +1,8 @@
 package codekr.api.ranking.service
 
-import codekr.api.ranking.badge.BadgeAwarder
+import codekr.api.ranking.badge.BadgeEvent
+import codekr.api.ranking.badge.BadgeEventType
+import codekr.api.ranking.badge.BadgeRuleEngine
 import codekr.api.ranking.repository.UserProblemScoreRepository
 import codekr.api.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -20,7 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate
 class RankingRecomputeService(
     private val scoreRepository: UserProblemScoreRepository,
     private val userRepository: UserRepository,
-    private val badgeAwarder: BadgeAwarder,
+    private val badgeRuleEngine: BadgeRuleEngine,
     private val transactionTemplate: TransactionTemplate,
 ) {
 
@@ -42,7 +44,11 @@ class RankingRecomputeService(
 
         // 뱃지 조건은 매번 원자료에서 확인하므로 문제마다 다시 불러도 안전하다.
         // 이미 받은 것은 다시 주지 않는다.
-        scoreRepository.solvedProblemIds(userId).forEach { badgeAwarder.onAccepted(userId, it) }
+        scoreRepository.solvedProblemIds(userId).forEach {
+            badgeRuleEngine.handle(BadgeEvent(BadgeEventType.PROBLEM_ACCEPTED, userId, it))
+        }
+        // 스트릭 뱃지는 문제마다가 아니라 사람마다 한 번이다.
+        badgeRuleEngine.handle(BadgeEvent(BadgeEventType.STREAK_UPDATED, userId))
 
         return RecomputeResult(score = score, solvedCount = solvedCount)
     }

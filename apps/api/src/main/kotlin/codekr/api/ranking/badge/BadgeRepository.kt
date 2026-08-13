@@ -26,6 +26,14 @@ class BadgeRepository(
             .param("code", code)
             .update() > 0
 
+    /** 이미 가진 코드들. **지표를 계산하기 전에 걸러내는 데 쓴다** (#202). */
+    fun codesOf(userId: Long): Set<String> =
+        jdbcClient.sql("SELECT code FROM user_badges WHERE user_id = :userId")
+            .param("userId", userId)
+            .query { rs, _ -> rs.getString("code") }
+            .list()
+            .toSet()
+
     /**
      * 그 사람이 받은 뱃지 (#58).
      *
