@@ -45,25 +45,17 @@ export const userApi = {
   /**
    * 아바타 등록·교체 (#116).
    *
-   * `request` 는 JSON 만 다루므로 여기서만 fetch 를 직접 쓴다 — multipart 는
-   * Content-Type 에 경계 문자열이 들어가서 손으로 지정하면 안 된다.
+   * **`request` 가 multipart 를 다룬다** (#389). 전에는 여기서만 `fetch` 를 직접 썼는데,
+   * 그러면 인증 헤더와 주소 규칙이 두 벌이 된다 — 한쪽만 고치면 조용히 갈라진다.
    */
-  uploadAvatar: async (file: File): Promise<{ avatarUrl: string | null }> => {
+  uploadAvatar: (file: File): Promise<{ avatarUrl: string | null }> => {
     const form = new FormData();
     form.append("file", file);
-
-    // **`apiUrl` 을 거친다.** 상대 경로로 부르면 API 가 다른 출처일 때 웹 서버로 가서
-    // 404 가 된다 — 실제로 그랬다.
-    const response = await fetch(apiUrl("/api/v1/users/me/avatar").toString(), {
+    return request<{ avatarUrl: string | null }>("/api/v1/users/me/avatar", {
       method: "PUT",
-      headers: authHeader(),
+      auth: true,
       body: form,
     });
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new ApiError(payload?.code ?? "UNKNOWN", payload?.message ?? "올리지 못했습니다.", response.status);
-    }
-    return payload;
   },
 
   removeAvatar: () => request<void>("/api/v1/users/me/avatar", { method: "DELETE", auth: true }),

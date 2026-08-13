@@ -1,6 +1,7 @@
 package codekr.api.board.service
 
 import codekr.api.auth.security.AuthPrincipal
+import codekr.api.board.attachment.AttachmentService
 import codekr.api.board.dto.BoardOption
 import codekr.api.board.dto.PostDetailResponse
 import codekr.api.board.dto.PostSummaryResponse
@@ -84,9 +85,28 @@ class PostService(
         )
     }
 
+    /**
+     * 한 글에 넣을 수 있는 이미지 장수 (#389).
+     *
+     * **크기 제한만으로는 안 막힌다** — 5MB 짜리를 백 장 넣으면 같은 결과다. 그리고
+     * 읽는 사람의 회선을 쓰는 것은 장수 쪽이다.
+     *
+     * 올릴 때가 아니라 **글을 저장할 때** 센다. 올리는 시점에는 어느 글에 붙을지 모른다.
+     */
+    private fun requireImageLimit(body: String) {
+        val count = AttachmentService.countIn(body)
+        if (count > AttachmentService.PER_POST_LIMIT) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "이미지는 글 하나에 ${AttachmentService.PER_POST_LIMIT}장까지 넣을 수 있습니다. (지금 ${count}장)",
+            )
+        }
+    }
+
     @Transactional
     fun create(principal: AuthPrincipal, request: PostUpsertRequest): PostDetailResponse {
         requireWritable(request.board, principal)
+        requireImageLimit(request.body)
         request.problemId?.let { requireQuestionable(it) }
         val post = postRepository.save(
             Post(request.board, principal.userId, request.title, request.body, request.problemId),
@@ -99,6 +119,7 @@ class PostService(
         val post = require(id)
         if (post.authorId != principal.userId) throw ApiException(ErrorCode.FORBIDDEN)
         requireWritable(request.board, principal)
+        requireImageLimit(request.body)
 
         post.board = request.board
         post.edit(request.title, request.body)

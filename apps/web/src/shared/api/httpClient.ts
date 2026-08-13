@@ -48,7 +48,15 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   });
 
   const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  /*
+    **multipart 는 Content-Type 을 손으로 지정하면 안 된다** (#389).
+
+    경계 문자열이 그 헤더에 들어가는데 그것은 브라우저가 만든다. 지정하면 서버가
+    본문을 파싱하지 못한다. 전에는 그래서 파일 업로드만 이 함수를 못 쓰고 손으로
+    `fetch` 를 썼는데, **인증 헤더와 주소 규칙이 두 벌**이 됐다.
+  */
+  const isMultipart = typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !isMultipart) headers["Content-Type"] = "application/json";
   if (auth) {
     const token = tokenStore.read();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -57,7 +65,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const response = await fetch(url.toString(), {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isMultipart ? (body as FormData) : JSON.stringify(body),
   });
 
   if (response.status === 204) return undefined as T;
