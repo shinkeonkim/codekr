@@ -1,6 +1,13 @@
 "use client";
 
-import { STATUS_LABELS, VERDICT_LABELS, VISIBILITY_LABELS, submissionApi, verdictTone } from "@/entities/submission";
+import {
+  SOURCE_HIDDEN,
+  STATUS_LABELS,
+  VERDICT_LABELS,
+  VISIBILITY_LABELS,
+  submissionApi,
+  verdictTone,
+} from "@/entities/submission";
 import type { SubmissionDetail, SubmissionVisibility } from "@/entities/submission";
 import { VerdictMascot } from "@/entities/submission";
 import { UserLink } from "@/entities/user";
@@ -183,7 +190,7 @@ function SubmissionView({ id }: { id: number }) {
           </pre>
         ) : (
           <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-ink-muted">
-            작성자가 공개하지 않은 코드입니다.
+            {SOURCE_HIDDEN}
           </p>
         )}
       </Card>

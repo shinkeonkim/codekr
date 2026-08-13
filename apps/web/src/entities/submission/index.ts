@@ -2,6 +2,7 @@ export { submissionApi } from "./api";
 export {
   STATUS_LABELS,
   VERDICT_LABELS,
+  SOURCE_HIDDEN,
   VISIBILITY_DESCRIPTIONS,
   VISIBILITY_LABELS,
   verdictTone,
