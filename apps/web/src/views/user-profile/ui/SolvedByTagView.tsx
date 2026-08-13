@@ -1,5 +1,5 @@
 import type { SolvedByTag } from "@/entities/user";
-import { Card } from "@/shared/ui";
+import { Card, CardTitle } from "@/shared/ui";
 
 /**
  * 태그별 푼 문제 수 (#232).
@@ -17,7 +17,7 @@ export function SolvedByTagView({ solvedByTag }: { solvedByTag: SolvedByTag[] })
 
   return (
     <Card className="space-y-2.5 p-5">
-      <h2 className="text-sm font-semibold text-ink">알고리즘 분류별 푼 문제</h2>
+      <CardTitle>알고리즘 분류별 푼 문제</CardTitle>
       <ul className="space-y-1.5">
         {solvedByTag.map((entry) => (
           <li key={entry.slug} className="flex items-center gap-3">

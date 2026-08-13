@@ -3,7 +3,7 @@
 import { badgeApi } from "@/entities/badge";
 import type { BadgeDefinition, BadgeRule } from "@/entities/badge";
 import { ApiError } from "@/shared/api";
-import { Badge, Button, Card, EmptyState, useToast } from "@/shared/ui";
+import { Badge, Button, Card, CardTitle, EmptyState, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 import { RuleDryRun } from "./RuleDryRun";
 
@@ -69,7 +69,7 @@ export function AdminBadgesPage() {
       <RuleDryRun />
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-ink">규칙</h2>
+        <CardTitle>규칙</CardTitle>
         {rules.length === 0 ? <EmptyState title="규칙이 없습니다." /> : null}
         {rules.map((rule) => (
           <Card key={rule.ruleKey} className="flex flex-wrap items-center gap-3 p-4 text-sm">
@@ -91,7 +91,7 @@ export function AdminBadgesPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-ink">정의</h2>
+        <CardTitle>정의</CardTitle>
         {definitions.map((definition) => (
           <Card key={definition.code} className="flex flex-wrap items-center gap-3 p-4 text-sm">
             <span className="font-medium text-ink">{definition.label}</span>

@@ -2,12 +2,6 @@ import { BrandCharacter } from "./brand/BrandCharacter";
 import type { BrandCharacterName } from "./brand/BrandCharacter";
 import type { ReactNode } from "react";
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-card border border-border bg-surface ${className}`}>{children}</div>
-  );
-}
-
 export function EmptyState({
   title,
   description,

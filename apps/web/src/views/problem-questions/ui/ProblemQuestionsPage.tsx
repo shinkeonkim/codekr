@@ -7,7 +7,7 @@ import { Avatar } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import type { Page } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Button, Card, EmptyState, Pagination } from "@/shared/ui";
+import { Button, Card, CardTitle, EmptyState, Pagination } from "@/shared/ui";
 import { ProblemHeader, ProblemTabs } from "@/widgets/problem-tabs";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -39,7 +39,7 @@ export function ProblemQuestionsPage({ params }: { params: Promise<{ slug: strin
       <ProblemTabs slug={problem.slug} />
 
       <div className="flex items-center gap-3">
-        <h2 className="text-sm font-semibold text-ink">질문 {result?.totalElements ?? 0}개</h2>
+        <CardTitle>질문 {result?.totalElements ?? 0}개</CardTitle>
         {user ? (
           <Link href={`/posts/new?problemId=${problem.id}`} className="ml-auto">
             <Button>질문하기</Button>

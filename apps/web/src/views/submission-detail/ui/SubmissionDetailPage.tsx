@@ -8,7 +8,7 @@ import { RequireAuth, useAuth } from "@/features/auth";
 import { JudgeProgressPanel, useJudgeStream } from "@/features/judge-stream";
 import { formatDateTime, formatMemory } from "@/shared/lib";
 import { ApiError } from "@/shared/api";
-import { Badge, Card, EmptyState, Select, useToast } from "@/shared/ui";
+import { Badge, Card, CardTitle, EmptyState, Select, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
@@ -118,7 +118,7 @@ function SubmissionView({ id }: { id: number }) {
 
       {submission.compileError ? (
         <Card className="p-5">
-          <h2 className="mb-2 text-sm font-semibold text-ink">컴파일 오류</h2>
+          <CardTitle className="mb-2">컴파일 오류</CardTitle>
           <pre className="max-h-60 overflow-auto rounded-lg bg-surface-muted p-3 text-xs text-danger">
             {submission.compileError}
           </pre>
@@ -127,7 +127,7 @@ function SubmissionView({ id }: { id: number }) {
 
       {submission.results.length > 0 ? (
         <Card className="p-5">
-          <h2 className="mb-3 text-sm font-semibold text-ink">테스트케이스</h2>
+          <CardTitle className="mb-3">테스트케이스</CardTitle>
           <ul className="space-y-1.5">
             {submission.results.map((result) => (
               <li
@@ -147,7 +147,7 @@ function SubmissionView({ id }: { id: number }) {
 
       <Card className="p-5">
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <h2 className="text-sm font-semibold text-ink">제출한 코드</h2>
+          <CardTitle>제출한 코드</CardTitle>
           {/* 공개 범위는 작성자만 바꿀 수 있다. */}
           {user?.nickname === submission.nickname ? (
             <Select

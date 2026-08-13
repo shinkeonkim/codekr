@@ -2,7 +2,7 @@
 
 import { badgeApi } from "@/entities/badge";
 import type { BadgeDryRun, BadgeVocabulary } from "@/entities/badge";
-import { Alert, Button, Card, Field, Input, Select } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, Field, Input, Select } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 /**
@@ -53,7 +53,7 @@ export function RuleDryRun() {
   return (
     <Card className="space-y-3 p-5">
       <div>
-        <h2 className="text-sm font-semibold text-ink">규칙 미리보기</h2>
+        <CardTitle>규칙 미리보기</CardTitle>
         <p className="mt-1 text-xs text-ink-muted">저장하지 않고 지금 이 조건이면 누가 받는지 봅니다.</p>
       </div>
 

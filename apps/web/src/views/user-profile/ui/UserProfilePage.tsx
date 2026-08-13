@@ -10,7 +10,7 @@ import { useAuth } from "@/features/auth";
 import { SubmissionExplorer } from "@/features/submission-explorer";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Card, EmptyState } from "@/shared/ui";
+import { Card, CardTitle, EmptyState } from "@/shared/ui";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { SolvedByTagView } from "./SolvedByTagView";
@@ -109,7 +109,7 @@ function ProfileView({ nickname }: { nickname: string }) {
       */}
       {profile.collections.length > 0 ? (
         <Card className="space-y-2.5 p-5">
-          <h2 className="text-sm font-semibold text-ink">만든 문제집</h2>
+          <CardTitle>만든 문제집</CardTitle>
           <ul className="space-y-1.5">
             {profile.collections.map((collection) => (
               <li key={collection.id} className="flex flex-wrap items-center gap-2 text-sm">
@@ -124,7 +124,7 @@ function ProfileView({ nickname }: { nickname: string }) {
       ) : null}
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-ink">최근 제출</h2>
+        <CardTitle>최근 제출</CardTitle>
         {/*
           **여기가 공개와 비공개의 경계다** (#333).
 
@@ -186,7 +186,7 @@ function Badges({ profile }: { profile: UserProfile }) {
 
   return (
     <Card className="space-y-2.5 p-5">
-      <h2 className="text-sm font-semibold text-ink">뱃지</h2>
+      <CardTitle>뱃지</CardTitle>
       <ul className="flex flex-wrap gap-2">
         {profile.badges.map((badge) => (
           <li
@@ -210,7 +210,7 @@ function SolvedByTierView({ profile }: { profile: UserProfile }) {
   return (
     <Card className="space-y-2.5 p-5">
       {/* '실력 티어'와 헷갈리지 않게 무엇의 난이도인지 밝힌다. */}
-      <h2 className="text-sm font-semibold text-ink">푼 문제의 난이도 분포</h2>
+      <CardTitle>푼 문제의 난이도 분포</CardTitle>
       <ul className="space-y-1.5">
         {profile.solvedByTier.map((entry) => (
           <li key={entry.tier} className="flex items-center gap-3">

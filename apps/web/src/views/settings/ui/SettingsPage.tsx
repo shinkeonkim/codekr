@@ -13,7 +13,7 @@ import { RequireAuth } from "@/features/auth";
 import { ThemePicker, applyAccountTheme, fromServer } from "@/features/theme";
 import { WithdrawalCard } from "./WithdrawalCard";
 import { ApiError } from "@/shared/api";
-import { Alert, Button, Card, EmptyState, Select, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, EmptyState, Select, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 export function SettingsPage() {
@@ -69,7 +69,7 @@ function SettingsView() {
 
       <Card className="space-y-3 p-5">
         <div>
-          <h2 className="text-sm font-semibold text-ink">남에게 보이는 프로필</h2>
+          <CardTitle>남에게 보이는 프로필</CardTitle>
           <p className="mt-1 text-xs text-ink-muted">
             이미지는 목록과 순위표에서 사람을 구분하는 데 쓰입니다 — 올리지 않으면 닉네임 첫
             글자가 보입니다. 소개는 프로필을 여는 사람에게 보입니다.
@@ -100,7 +100,7 @@ function SettingsView() {
 
       <Card className="space-y-3 p-5">
         <div>
-          <h2 className="text-sm font-semibold text-ink">화면 테마</h2>
+          <CardTitle>화면 테마</CardTitle>
           <p className="mt-1 text-xs text-ink-muted">
             로그인해 두면 다른 기기에서도 같은 테마로 열립니다.
           </p>
@@ -110,7 +110,7 @@ function SettingsView() {
 
       <Card className="space-y-3 p-5">
         <div>
-          <h2 className="text-sm font-semibold text-ink">제출 소스 코드 기본 공개 범위</h2>
+          <CardTitle>제출 소스 코드 기본 공개 범위</CardTitle>
           <p className="mt-1 text-xs text-ink-muted">
             새로 제출할 때 이 값이 기본으로 적용됩니다. 제출할 때 따로 고를 수도 있습니다.
           </p>
