@@ -8,11 +8,13 @@ import type { Difficulty } from "@/entities/problem";
  * **1차에는 공개 목록이 없다.** 누구나 공개 문제집을 만들 수 있게 하면 스팸·중복·방치가
  * 즉시 생기는데 지금은 신고도 정리도 할 수 없다.
  */
-export type CollectionVisibility = "PRIVATE" | "UNLISTED";
+export type CollectionVisibility = "PRIVATE" | "UNLISTED" | "PUBLIC";
 
 export const VISIBILITY_LABELS: Record<CollectionVisibility, string> = {
   PRIVATE: "나만 보기",
   UNLISTED: "링크가 있는 사람만",
+  // 목록에 오른다 (#208). 링크 공유(UNLISTED)는 "아직 다듬는 중" 에 쓰임이 있어 남겼다.
+  PUBLIC: "누구나 보기",
 };
 
 export interface CollectionSummary {

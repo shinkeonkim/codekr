@@ -85,6 +85,12 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      */
     BIO_CLEAR("소개 지우기", requiresReason = true),
 
+    /**
+     * 공개 문제집 내리기 (#208). **남에게 보이는 것을 내리는 일이라 사유가 필수다** —
+     * 주인에게 그 사유가 그대로 전해진다.
+     */
+    COLLECTION_TAKEDOWN("문제집 내리기", requiresReason = true),
+
     /** 정지 해제 (#224). 되돌리는 쪽이라 사유를 요구하지 않는다. */
     LIFT_SUSPENSION("정지 해제", requiresReason = false),
 

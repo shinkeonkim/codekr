@@ -15,6 +15,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/submissions/explore", label: "전체 제출" },
   { href: "/posts", label: "게시판" },
   { href: "/collections", label: "문제집" },
+  // 남이 만든 것을 발견하는 자리 (#208). 내 문제집과 다른 화면이다.
+  { href: "/collections/explore", label: "공개 문제집" },
   { href: "/contests", label: "대회" },
   { href: "/ranking", label: "랭킹" },
   { href: "/submissions", label: "내 제출" },

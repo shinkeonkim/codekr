@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -29,6 +30,22 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/collections")
 class ProblemCollectionController(private val collectionService: ProblemCollectionService) {
+
+    /**
+     * 공개 문제집 목록 (#208).
+     *
+     * **로그인 없이 열린다** — 발견되지 않으면 공개의 뜻이 없다.
+     */
+    @PublicApi
+    @GetMapping
+    fun findPublic(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        principal: AuthPrincipal?,
+    ) = collectionService.findPublic(
+        principal?.userId,
+        org.springframework.data.domain.PageRequest.of(maxOf(page, 0), size.coerceIn(1, 50)),
+    )
 
     @AuthenticatedApi
     @GetMapping("/me")

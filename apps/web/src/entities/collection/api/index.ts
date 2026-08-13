@@ -1,4 +1,5 @@
 import { request } from "@/shared/api";
+import type { Page } from "@/shared/api";
 import type { CollectionDetail, CollectionSummary, CollectionVisibility } from "../model/types";
 
 export interface CollectionUpsert {
@@ -10,6 +11,18 @@ export interface CollectionUpsert {
 }
 
 export const collectionApi = {
+  /** 공개 문제집 목록 (#208). 로그인 없이 열린다 — 발견되지 않으면 공개의 뜻이 없다. */
+  publicList: (query: { page?: number; size?: number }) =>
+    request<Page<CollectionSummary>>("/api/v1/collections", { query }),
+
+  /** 어드민이 목록에서 내린다 (#208). **지우지 않는다** — 비공개로 되돌린다. */
+  takedown: (id: number, reason: string) =>
+    request<void>(`/api/v1/admin/collections/${id}/takedown`, {
+      method: "POST",
+      auth: true,
+      query: { reason },
+    }),
+
   mine: () => request<CollectionSummary[]>("/api/v1/collections/me", { auth: true }),
 
   detail: (id: number) => request<CollectionDetail>(`/api/v1/collections/${id}`, { auth: true }),
