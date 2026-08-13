@@ -36,3 +36,14 @@ export interface GroupInvitePreview {
   memberCount: number;
   member: boolean;
 }
+
+/** 어드민이 보는 그룹 한 줄 (#438). **명단은 담기지 않는다** — 그 안의 일이다. */
+export interface AdminGroupRow {
+  id: number;
+  name: string;
+  description: string;
+  ownerNickname: string;
+  memberCount: number;
+  openJoin: boolean;
+  createdAt: string;
+}

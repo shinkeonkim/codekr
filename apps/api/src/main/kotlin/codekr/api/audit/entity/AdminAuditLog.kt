@@ -98,6 +98,15 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
     POST_DELETE("글 삭제", requiresReason = true),
     COMMENT_DELETE("댓글 삭제", requiresReason = true),
 
+    /**
+     * 그룹 해산 (#438). **사유가 필수다** — 남이 만든 것을 없애는 일이고, 멤버 전원에게
+     * 그 사유가 그대로 전해진다.
+     *
+     * 문제집 내리기(#208)와 다른 점: 그룹은 "비공개로 되돌리기" 가 없다. 초대 링크로
+     * 들어오는 곳이라 공개 여부가 존재 여부와 같다.
+     */
+    GROUP_TAKEDOWN("그룹 해산", requiresReason = true),
+
     /** 정지 해제 (#224). 되돌리는 쪽이라 사유를 요구하지 않는다. */
     LIFT_SUSPENSION("정지 해제", requiresReason = false),
 

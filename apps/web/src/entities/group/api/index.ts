@@ -1,7 +1,7 @@
 import { request } from "@/shared/api";
 import type { Page } from "@/shared/api";
 import type { RankingEntry } from "@/entities/ranking";
-import type { GroupDetail, GroupInvitePreview, GroupSummary } from "../model/types";
+import type { AdminGroupRow, GroupDetail, GroupInvitePreview, GroupSummary } from "../model/types";
 
 /** 그룹 API (#401). **전부 로그인이 필요하다** — 초대 미리보기도 그렇다. */
 export const groupApi = {
@@ -39,6 +39,18 @@ export const groupApi = {
 
   transferOwner: (id: number, userId: number) =>
     request<void>(`/api/v1/groups/${id}/owner/${userId}`, { method: "POST", auth: true }),
+
+  /** 어드민 목록 (#438). 내릴지 판단하는 데 필요한 것만 온다 — 명단은 오지 않는다. */
+  adminList: (query: { q?: string; page?: number; size?: number }) =>
+    request<Page<AdminGroupRow>>("/api/v1/admin/groups", { auth: true, query }),
+
+  /** 해산한다. **사유가 필수다** — 멤버 전원에게 그대로 전해진다. */
+  takedown: (id: number, reason: string) =>
+    request<void>(`/api/v1/admin/groups/${id}/takedown`, {
+      method: "POST",
+      auth: true,
+      query: { reason },
+    }),
 
   /**
    * 그룹 안 랭킹 (#402). **멤버만 볼 수 있다** — 그룹의 명단이 곧 그 랭킹이다.
