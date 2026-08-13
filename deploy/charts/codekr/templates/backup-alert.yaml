@@ -1,0 +1,49 @@
+{{- if .Values.backup.alerts.enabled }}
+{{/*
+  백업이 조용히 멈추는 것을 알아챈다 (#281).
+
+  **조용히 안 도는 백업이 없는 백업보다 나쁘다.** 없으면 없는 줄 알고 대비하지만,
+  있다고 믿는 백업이 사흘 전에 멈춰 있으면 그것을 믿고 지운다.
+
+  **왜 잡 안에서 웹훅을 부르지 않는가**: 덤프 이미지(CNPG)에 `curl` 이 없다. 넣으려면
+  이미지를 우리가 만들어야 하고, 그러면 "서버와 같은 이미지로 덤프한다" 는 규칙이
+  깨진다 — pg_dump 는 자기보다 새 서버를 덤프하지 못한다.
+
+  대신 **이미 도는 지표**를 본다. `kube-state-metrics` 가 CronJob 의 마지막 성공 시각과
+  Job 실패 수를 내보내므로, 알림 규칙만 얹으면 된다. 규칙을 이 저장소에 두는 이유는
+  **백업이 여기서 돌기 때문**이다 — 도는 곳과 지켜보는 곳이 갈리면 한쪽만 지워진다.
+
+  Prometheus Operator 가 없는 클러스터에서는 켜지 않는다 (기본 꺼짐).
+*/}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: codekr-db-backup
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+    {{- with .Values.backup.alerts.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: codekr-backup
+      rules:
+        # **하루 한 번 도는데 26시간을 넘겼다면** 한 번을 걸렀다는 뜻이다.
+        # 24시간으로 잡으면 정상 실행의 지터에도 울린다 — 울리다 무뎌지는 알림이
+        # 없는 알림보다 나쁘다.
+        - alert: CodekrBackupStale
+          expr: |
+            time() - kube_cronjob_status_last_successful_time{cronjob="codekr-db-backup"} > 26 * 3600
+          for: 30m
+          labels: { severity: critical }
+          annotations:
+            summary: "codekr DB 백업이 26시간 넘게 성공하지 않았습니다"
+            description: "마지막 성공 이후 지난 시간이 하루를 넘었습니다. RPO 1일이 이미 깨졌습니다."
+        # 실패가 이력에 남는 것만으로는 아무도 안 본다.
+        - alert: CodekrBackupFailed
+          expr: kube_job_status_failed{job_name=~"codekr-db-backup.*"} > 0
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: "codekr DB 백업 잡이 실패했습니다"
+            description: "덤프가 비었거나(최소 크기 미달) DB 에 붙지 못했습니다. 잡 로그를 보세요."
+{{- end }}
