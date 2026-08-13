@@ -24,7 +24,23 @@ export function CommentTree({ postId }: { postId: number }) {
   const [replyTo, setReplyTo] = useState<number | null>(null);
 
   useEffect(() => {
-    postApi.comments(postId).then(setComments).catch(() => setComments([]));
+    postApi
+      .comments(postId)
+      .then((loaded) => {
+        setComments(loaded);
+        /*
+          알림이 준 자리로 옮긴다 (#212).
+
+          댓글은 이 컴포넌트가 받아 온 뒤에 그려지므로, 주소에 앵커가 있어도 브라우저가
+          그릴 때는 아직 그 자리가 없다. 받아 온 다음 프레임에 직접 옮긴다.
+        */
+        const anchor = window.location.hash.slice(1);
+        if (!anchor.startsWith("comment-")) return;
+        requestAnimationFrame(() => {
+          document.getElementById(anchor)?.scrollIntoView({ block: "center" });
+        });
+      })
+      .catch(() => setComments([]));
   }, [postId]);
 
   const submit = async (body: string, parentId?: number) => {

@@ -3,6 +3,7 @@ package codekr.api.board.comment
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.board.repository.PostRepository
 import codekr.api.common.error.ApiException
+import codekr.api.notification.entity.NotificationCategory
 import codekr.api.common.error.ErrorCode
 import codekr.api.user.avatar.AvatarService
 import codekr.api.user.entity.User
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class CommentService(
+    private val notificationService: codekr.api.notification.service.NotificationService,
     private val commentRepository: CommentRepository,
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
@@ -45,6 +47,8 @@ class CommentService(
         return build(null)
     }
 
+    private val log = org.slf4j.LoggerFactory.getLogger(javaClass)
+
     @Transactional
     fun create(postId: Long, principal: AuthPrincipal, request: CommentUpsertRequest): List<CommentResponse> {
         requirePost(postId)
@@ -58,7 +62,8 @@ class CommentService(
             if (parent.isDeleted) throw ApiException(ErrorCode.VALIDATION_ERROR, "삭제된 댓글에는 답할 수 없습니다.")
         }
 
-        commentRepository.save(Comment(postId, request.parentId, principal.userId, request.body))
+        val saved = commentRepository.save(Comment(postId, request.parentId, principal.userId, request.body))
+        notifyTarget(saved, principal.userId)
         return findTree(postId, principal)
     }
 
@@ -125,6 +130,38 @@ class CommentService(
 
     private fun requirePost(postId: Long) {
         postRepository.findByIdAndDeletedAtIsNull(postId) ?: throw ApiException(ErrorCode.POST_NOT_FOUND)
+    }
+
+    /**
+     * 답이 달렸다고 알린다 (#212).
+     *
+     * **두 경우의 문구와 대상이 다르다** — 내 글에 댓글이 달린 것과 내 댓글에 답이
+     * 달린 것은 눌러 갈 곳은 같아도 읽는 사람에게는 다른 일이다.
+     *
+     * **알림이 실패해도 댓글은 저장된다.** 대화가 알림 때문에 끊기면 안 된다.
+     */
+    private fun notifyTarget(comment: Comment, writerId: Long) {
+        runCatching {
+            val post = postRepository.findByIdAndDeletedAtIsNull(comment.postId) ?: return
+            val parent = comment.parentId?.let { commentRepository.findById(it).orElse(null) }
+
+            val targetId = parent?.authorId ?: post.authorId
+            // 자기 글에 자기가 단 댓글은 알리지 않는다.
+            if (targetId == writerId) return
+            // 탈퇴한 사람에게는 받을 곳이 없다 (#140).
+            if (userRepository.findById(targetId).map { it.isWithdrawn }.orElse(true)) return
+
+            val title = if (parent != null) "내 댓글에 답이 달렸습니다" else "내 글에 댓글이 달렸습니다"
+            notificationService.notify(
+                userId = targetId,
+                category = NotificationCategory.COMMENT,
+                title = title,
+                // 글 제목을 함께 준다 — 목록에서 어느 대화인지 알아야 누를지 정한다.
+                body = post.title,
+                // **그 댓글 자리로 간다.** 글만 열면 긴 스레드에서 다시 찾아야 한다.
+                link = "/posts/${comment.postId}#comment-${comment.id}",
+            )
+        }.onFailure { log.error("댓글 알림 실패 commentId={}", comment.id, it) }
     }
 
     private companion object {

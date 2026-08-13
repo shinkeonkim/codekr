@@ -216,4 +216,42 @@ class CommentIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.[0].editedAt").exists())
     }
 
+    @Test
+    fun `내 글에 댓글이 달리면 알린다`() {
+        comment(otherToken, null, "답합니다")
+
+        val rows = jdbcClient.sql(
+            "SELECT category, title, link FROM notifications WHERE user_id = :id",
+        ).param("id", authorId).query { rs, _ ->
+            listOf(rs.getString("category"), rs.getString("title"), rs.getString("link"))
+        }.list()
+
+        kotlin.test.assertEquals(1, rows.size)
+        kotlin.test.assertEquals("COMMENT", rows[0][0])
+        kotlin.test.assertEquals("내 글에 댓글이 달렸습니다", rows[0][1])
+        // **그 댓글 자리로 간다** — 글만 열면 긴 스레드에서 다시 찾아야 한다.
+        kotlin.test.assertTrue(rows[0][2]!!.startsWith("/posts/" + postId + "#comment-"))
+    }
+
+    @Test
+    fun `내 댓글에 답이 달리면 문구가 다르다`() {
+        val mine = comment(authorToken, null, "질문에 붙이는 내 댓글")
+        comment(otherToken, mine, "그 댓글에 답")
+
+        val titles = jdbcClient.sql("SELECT title FROM notifications WHERE user_id = :id")
+            .param("id", authorId).query(String::class.java).list()
+
+        // 내 글에 단 내 댓글은 알리지 않으므로, 답글 하나만 남는다.
+        kotlin.test.assertEquals(listOf("내 댓글에 답이 달렸습니다"), titles)
+    }
+
+    @Test
+    fun `자기 글에 자기가 단 댓글은 알리지 않는다`() {
+        comment(authorToken, null, "내 글에 내가 단다")
+
+        val count = jdbcClient.sql("SELECT count(*) FROM notifications WHERE user_id = :id")
+            .param("id", authorId).query(Int::class.java).single()
+        kotlin.test.assertEquals(0, count)
+    }
+
 }
