@@ -8,7 +8,9 @@ out/
 !gradle-wrapper.jar
 
 # --- Node / Next.js ---
-node_modules/
+# **슬래시를 붙이지 않는다** (#467). `node_modules/` 는 디렉터리에만 걸려서,
+# 같은 이름의 **심볼릭 링크**는 그대로 통과한다 — 실제로 그렇게 커밋됐다.
+node_modules
 .next/
 next-env.d.ts
 .turbo/
