@@ -17,6 +17,16 @@ enum class ProblemKind(val label: String, val ready: Boolean) {
     /** 격리 PostgreSQL 에서 쿼리를 실행해 결과 집합을 비교한다 (#60). */
     JUDGE_SQL("SQL", ready = true),
 
+    /**
+     * 함수만 구현하는 문제 (#421). **하네스가 입출력을 맡는다.**
+     *
+     * 사용자에게는 함수 껍데기만 보이고, 보이지 않는 하네스가 입력을 읽어 그 함수를
+     * 부르고 결과를 찍는다. `JUDGE_STDIO` 에 얹지 않은 이유는 **"하네스가 있으면
+     * 함수형" 이라는 암묵 규칙**을 만들지 않기 위해서다 — 그러면 하네스를 지웠을 때
+     * 문제의 성격이 조용히 바뀐다.
+     */
+    JUDGE_FUNCTION("함수 구현", ready = true),
+
     /** 객관식·단답. 실행기를 쓰지 않고 api 에서 즉시 채점한다. */
     QUIZ("객관식 · 단답", ready = false),
 

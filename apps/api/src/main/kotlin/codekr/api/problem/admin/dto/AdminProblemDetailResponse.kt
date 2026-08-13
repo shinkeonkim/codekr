@@ -45,6 +45,12 @@ data class AdminProblemDetailResponse(
     val runtimeLimits: List<RuntimeLimitResponse>,
     /** 풀 수 있는 런타임 (#419). **비어 있으면 그 종류 전부**를 허용한다는 뜻이다. */
     val allowedRuntimeIds: List<String>,
+    /**
+     * 언어별 하네스 (#446). **어드민에게만 간다** — 공개 문제 상세에는 없다.
+     *
+     * 어드민이 고치려면 지금 무엇이 들어 있는지 보여야 한다.
+     */
+    val harnesses: Map<String, String>,
     val judgePriority: ProblemJudgePriority,
     val solution: SolutionResponse?,
     val verification: VerificationResponse?,
@@ -87,6 +93,7 @@ data class AdminProblemDetailResponse(
             templates = problem.templates.map(TemplateResponse::from),
             runtimeLimits = problem.runtimeLimits.map(RuntimeLimitResponse::from),
             allowedRuntimeIds = problem.allowedRuntimeIds,
+            harnesses = problem.harnessRuntimeIds.associateWith { problem.harnessFor(it) ?: "" },
             judgePriority = problem.judgePriority,
             solution = SolutionResponse.from(problem),
             verification = verification,

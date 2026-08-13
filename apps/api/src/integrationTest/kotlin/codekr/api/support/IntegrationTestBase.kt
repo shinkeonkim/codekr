@@ -53,7 +53,7 @@ abstract class IntegrationTestBase {
                      problem_sql_specs,
                      problem_templates, problem_testcases, problems,
                      notifications, admin_audit_logs, rejudge_batches, user_daily_activity,
-                     problem_allowed_runtimes,
+                     problem_allowed_runtimes, problem_harnesses,
                      problem_tags, problem_credits, tags,
                      user_problem_scores, user_badges, user_roles, user_suspensions,
                      email_verifications, password_resets, term_agreements, users
