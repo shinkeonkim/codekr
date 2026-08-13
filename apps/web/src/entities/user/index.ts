@@ -11,6 +11,7 @@ export type {
   TokenResponse,
   User,
   UserEmail,
+  ProfileAffiliation,
   UserProfile,
   UserRole,
   UserSettings,

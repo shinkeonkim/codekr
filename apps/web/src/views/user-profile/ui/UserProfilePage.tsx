@@ -10,7 +10,7 @@ import { useAuth } from "@/features/auth";
 import { SubmissionExplorer } from "@/features/submission-explorer";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Card, CardTitle, EmptyState } from "@/shared/ui";
+import { Badge, Card, CardTitle, EmptyState } from "@/shared/ui";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { SolvedByTagView } from "./SolvedByTagView";
@@ -67,6 +67,21 @@ function ProfileView({ nickname }: { nickname: string }) {
           <SkillTierBadge tier={profile.skillTier} />
         </div>
         <p className="mt-1 text-xs text-ink-muted">{formatDateTime(profile.joinedAt)} 가입</p>
+        {/*
+          소속 (#398, #429). **"인증" 이라고 쓰지 않는다** (기획서 3절) — 우리가 확인한
+          것은 "그 도메인의 메일을 받을 수 있다" 까지다. 졸업생도 재학생으로 보이고
+          회사는 더 약하다. "메일 확인됨" 이 딱 그만큼을 말한다.
+        */}
+        {profile.affiliations.length > 0 ? (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {profile.affiliations.map((each) => (
+              <Badge key={each.name} tone="muted">
+                {each.name}
+              </Badge>
+            ))}
+            <span className="text-xs text-ink-muted">메일 확인됨</span>
+          </div>
+        ) : null}
         {/*
           소개 문구 (#310). **안 썼으면 자리 자체가 없다** — 빈 칸이 남으면 "안 쓴
           사람" 이 아니라 "고장 난 화면" 으로 보인다.
