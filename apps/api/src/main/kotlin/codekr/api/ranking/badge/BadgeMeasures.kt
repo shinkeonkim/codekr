@@ -69,6 +69,55 @@ class BadgeMeasures(
                 .single()
         } ?: 0L
 
+        /*
+            대회 지표 (#463).
+
+            **셋을 다 둔다.** "참가 등록만" · "한 번이라도 제출" · "한 문제라도 맞힘" 은
+            서로 다른 문턱이고, 어느 것을 인정할지는 **규칙이 고를 일**이다 — 엔진이
+            데이터 기반인 이유가 그것이다(#201·#202). 여기서 하나로 정해 버리면
+            배포 없이 뱃지를 만든다는 약속이 반만 지켜진다.
+        */
+
+        /** 이번에 맞힌 것이 대회 제출인가. 이벤트 지표다 (#200 §4.1). */
+        "is_contest_submission" -> event.contestId != null
+
+        /** 등록한 대회 수. **나오지 않아도 센다** — 등록은 등록이다. */
+        "contest_registered_count" -> jdbcClient
+            .sql("SELECT count(*) FROM contest_registrations WHERE user_id = :userId")
+            .param("userId", event.userId)
+            .query(Long::class.java)
+            .single()
+
+        /**
+         * 제출해 본 대회 수. **실제로 나온 증거다.**
+         *
+         * 맞히지 못해도 센다 — 처음 나온 사람에게 아무것도 못 받는 대회가 되지 않게
+         * 하는 값이 여기 있다.
+         */
+        "contest_participated_count" -> jdbcClient
+            .sql(
+                """
+                SELECT count(DISTINCT contest_id) FROM submissions
+                WHERE user_id = :userId AND contest_id IS NOT NULL AND deleted_at IS NULL
+                """,
+            )
+            .param("userId", event.userId)
+            .query(Long::class.java)
+            .single()
+
+        /** 대회에서 맞힌 문제 수 (대회 × 문제로 센다). */
+        "contest_accepted_count" -> jdbcClient
+            .sql(
+                """
+                SELECT count(DISTINCT (contest_id, problem_id)) FROM submissions
+                WHERE user_id = :userId AND contest_id IS NOT NULL
+                  AND verdict = 'ACCEPTED' AND deleted_at IS NULL
+                """,
+            )
+            .param("userId", event.userId)
+            .query(Long::class.java)
+            .single()
+
         /** 활동 집계에서 본다 (#105). **제출을 다시 훑지 않는다.** */
         "longest_streak_days" -> activityService.streaksOf(event.userId).longest.toLong()
 

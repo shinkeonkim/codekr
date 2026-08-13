@@ -68,6 +68,8 @@ class JudgeResultRecorder(
                                 BadgeEventType.PROBLEM_ACCEPTED,
                                 submission.userId,
                                 submission.problemId,
+                                // 대회 제출이면 규칙이 그것을 볼 수 있어야 한다 (#463).
+                                submission.contestId,
                             ),
                         )
                         // 스트릭은 활동 집계가 갱신된 뒤에 본다 (#200 §3).
