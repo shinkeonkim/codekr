@@ -59,7 +59,14 @@ export const EMPTY_TESTCASE: Testcase = { seq: 1, input: "", expectedOutput: "",
 
 // 행 순서 무시가 기본이다 — 문제가 정렬을 요구하지 않는데 순서를 비교하면
 // 맞는 답이 틀린 것으로 나온다.
-export const BLANK_SQL_SPEC: SqlSpec = { schemaSql: "", answerSql: "", ignoreRowOrder: true };
+export const BLANK_SQL_SPEC: SqlSpec = {
+  schemaSql: "",
+  answerSql: "",
+  ignoreRowOrder: true,
+  // 기본은 읽기 전용이다 (#453). 여는 것은 출제자가 그 문제에서 정한다.
+  verifySql: null,
+  allowWrite: false,
+};
 
 export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
   return {

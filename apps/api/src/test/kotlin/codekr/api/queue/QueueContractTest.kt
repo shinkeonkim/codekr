@@ -78,6 +78,10 @@ class QueueContractTest {
         assertEquals(true, job.sql?.ignoreRowOrder)
         // SQL 문제의 채점 단위는 정답 쿼리 하나다. 테스트케이스가 없다.
         assertEquals(0, job.testcases.size)
+        // 이 필드가 없던 시절의 작업은 **읽기 전용**이다 (#453). 채점기(Go)도 같게 읽는다 —
+        // 조용히 쓰기가 열리면 옛 SELECT 문제가 다른 것을 재게 된다.
+        assertNull(job.sql?.verify)
+        assertEquals(false, job.sql?.allowWrite)
     }
 
     @Test

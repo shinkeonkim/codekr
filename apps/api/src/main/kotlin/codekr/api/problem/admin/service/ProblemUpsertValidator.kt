@@ -101,6 +101,19 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "SQL 문제가 아닌데 SQL 스펙이 실려 있습니다.")
         }
         validateHarnesses(request)
+        /*
+          쓰기를 열었는데 상태를 읽는 쿼리가 없으면 (#453) 채점은 **조용히** 결과 집합
+          비교로 돌아간다. `UPDATE` 는 결과 집합이 비어 있으니 아무나 통과한다 —
+          출제자는 자기 문제가 무엇을 재는지 모르는 채로 문제를 연다.
+        */
+        request.sqlSpec?.let { spec ->
+            if (spec.allowWrite && spec.verifySql.isNullOrBlank()) {
+                throw ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "쓰기를 여는 SQL 문제에는 끝난 뒤의 상태를 읽는 쿼리가 필요합니다.",
+                )
+            }
+        }
         // 채점할 대상이 없는 문제는 공개해도 아무 의미가 없다.
         // SQL 문제의 채점 대상은 테스트케이스가 아니라 정답 쿼리다 (#60).
         if (request.published && request.problemKind != ProblemKind.JUDGE_SQL && request.testcases.isEmpty()) {

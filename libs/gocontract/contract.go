@@ -251,6 +251,24 @@ type JudgeSQLSpec struct {
 	Answer string `json:"answer"`
 	// IgnoreRowOrder 가 참이면 행 순서를 맞추지 않고 비교한다.
 	IgnoreRowOrder bool `json:"ignoreRowOrder"`
+	/*
+		Verify 는 **끝난 뒤의 상태를 읽는 쿼리**다 (#453).
+
+		`INSERT`·`UPDATE`·`CREATE TABLE` 은 결과 집합이 없다 — 바뀌는 것은 **DB 의
+		상태**다. 그래서 비교 대상이 바뀐다: 정답 스크립트를 돌린 DB 와 제출을 돌린 DB
+		에서 **각각 이 쿼리를 돌려** 그 결과를 견준다.
+
+		비어 있으면 지금까지처럼 **제출 쿼리의 결과 집합**을 견준다.
+	*/
+	Verify string `json:"verify,omitempty"`
+	/*
+		AllowWrite 가 참이면 제출이 **쓸 수 있다** (#453).
+
+		**여는 것도 권한으로 한다.** 문자열 필터로 돌아가지 않는다 — 필터는 우회되지만
+		권한은 우회되지 않는다(#60 이 정한 것). 슈퍼유저 권한은 열지 않으므로
+		`COPY … FROM PROGRAM`·`pg_read_file`·`pg_authid` 는 그대로 막힌다.
+	*/
+	AllowWrite bool `json:"allowWrite,omitempty"`
 }
 
 // KindOf 는 작업의 문제 유형을 돌려준다. 비어 있으면 stdin/stdout 채점이다.

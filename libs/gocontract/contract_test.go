@@ -155,6 +155,10 @@ func TestJudgeJobSQLFixtureMatchesContract(t *testing.T) {
 	if len(job.Testcases) != 0 {
 		t.Fatalf("테스트케이스가 없어야 합니다: %+v", job.Testcases)
 	}
+	// 이 필드가 없던 시절의 작업은 **읽기 전용**이다 (#453). api(Kotlin)도 같게 읽는다.
+	if job.SQL.Verify != "" || job.SQL.AllowWrite {
+		t.Fatalf("옛 작업이 쓰기로 열리면 안 됩니다: %+v", job.SQL)
+	}
 }
 
 // 차선을 잘못 적었을 때 일반 큐를 먹어 치우지 않아야 한다 (#62).

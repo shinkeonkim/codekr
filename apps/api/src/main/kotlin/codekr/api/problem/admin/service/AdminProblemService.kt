@@ -73,6 +73,8 @@ class AdminProblemService(
         existing.schemaSql = spec.schemaSql
         existing.answerSql = spec.answerSql
         existing.ignoreRowOrder = spec.ignoreRowOrder
+        existing.verifySql = spec.verifySql?.ifBlank { null }
+        existing.allowWrite = spec.allowWrite
         return existing
     }
 
