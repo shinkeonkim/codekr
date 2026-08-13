@@ -83,21 +83,41 @@ export function PostListPage() {
       <div className="space-y-2">
         {result?.content.map((post) => (
           <Link key={post.id} href={`/posts/${post.id}`} className="block">
-            <Card className="flex flex-wrap items-center gap-3 p-4 transition hover:border-brand/50">
-              <Badge tone={post.board === "NOTICE" ? "info" : "muted"}>{post.boardLabel}</Badge>
-              <span className="min-w-0 flex-1 truncate font-medium text-ink">
-                {post.title}
-                {post.edited ? <span className="ml-1 text-xs text-ink-muted">(수정됨)</span> : null}
+            {/*
+              **좁으면 두 줄, 넓으면 한 줄** (#462).
+
+              전에는 다섯 가지가 한 줄에 `flex` 로 늘어서 있고 제목만 `flex-1 truncate`
+              였다. 남는 공간을 제목이 받으므로 **모자라면 제목만 줄어든다** — 목록에서
+              가장 중요한 것이 가장 먼저 사라졌다. 훑는 사람은 제목을 읽고 들어갈지
+              정한다.
+
+              **감추지 않는다.** 표는 좁을 때 열을 감추지만(#193), 카드는 세로로 늘릴 수
+              있다 — 작성자·댓글·날짜를 아랫줄로 내리면 다 보인다.
+
+              넓은 화면은 그대로 한 줄이다. 조밀함은 거기서 값이 크고(#79), 폭에 따라
+              모양이 달라지는 것보다 **좁은 쪽만 고치는** 편이 낫다.
+            */}
+            <Card className="flex flex-col gap-2 p-4 transition hover:border-brand/50 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+              <span className="flex min-w-0 items-center gap-3 sm:flex-1">
+                <Badge tone={post.board === "NOTICE" ? "info" : "muted"}>{post.boardLabel}</Badge>
+                {/*
+                  좁은 화면에서는 두 줄까지 보인다. 그보다 길면 자른다 — 카드가 계속
+                  높아지면 한 화면에 보이는 글 수가 줄어든다.
+                */}
+                <span className="min-w-0 flex-1 font-medium text-ink line-clamp-2 sm:truncate">
+                  {post.title}
+                  {post.edited ? <span className="ml-1 text-xs text-ink-muted">(수정됨)</span> : null}
+                </span>
               </span>
-              <span className="flex items-center gap-1.5 text-xs text-ink-muted">
-                <Avatar nickname={post.authorNickname} avatarUrl={post.authorAvatarUrl} size="sm" />
-                {post.authorNickname}
+              <span className="flex items-center gap-3 text-xs text-ink-muted">
+                <span className="flex items-center gap-1.5">
+                  <Avatar nickname={post.authorNickname} avatarUrl={post.authorAvatarUrl} size="sm" />
+                  {post.authorNickname}
+                </span>
+                {/* 답이 달렸는지가 목록에서 보여야 질문 글이 쓸모가 있다 (#138). */}
+                {post.commentCount > 0 ? <span>댓글 {post.commentCount}</span> : null}
+                <span>{formatDateTime(post.createdAt)}</span>
               </span>
-              {/* 답이 달렸는지가 목록에서 보여야 질문 글이 쓸모가 있다 (#138). */}
-              {post.commentCount > 0 ? (
-                <span className="text-xs text-ink-muted">댓글 {post.commentCount}</span>
-              ) : null}
-              <span className="text-xs text-ink-muted">{formatDateTime(post.createdAt)}</span>
             </Card>
           </Link>
         ))}
