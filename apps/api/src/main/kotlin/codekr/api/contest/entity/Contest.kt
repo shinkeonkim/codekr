@@ -59,6 +59,16 @@ class Contest(
         protected set
 
     /**
+     * 누가 볼 수 있는가 (#465). **`status` 와 다른 값이다.**
+     *
+     * `DRAFT` 는 "아직 준비 중", 이것은 "누구에게 보이는가" 다. 어드민이 대회를 고칠 때
+     * 함께 바꾸므로 setter 를 연다 — `status` 는 전용 경로(공개·취소)가 따로 있다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    var visibility: ContestVisibility = ContestVisibility.PUBLIC
+
+    /**
      * 최종 순위를 공개한 시각 (#86).
      *
      * **자동이 아니라 어드민의 행위다.** 종료와 동시에 자동 공개하면, 종료 직후 발견된

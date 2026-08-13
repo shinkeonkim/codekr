@@ -39,6 +39,15 @@ data class ContestUpsertRequest(
 
     val registrationOpenDuring: Boolean = true,
 
+    /**
+     * 공개 범위 (#465). **`status` 와 다른 값이다** — 그쪽은 "준비 중인가" 다.
+     *
+     * 기본이 `PUBLIC` 인 이유: 지금까지의 대회가 전부 그랬고, 기본을 바꾸면 **이 판
+     * 이후에 만든 대회만 조용히 숨는다.**
+     */
+    val visibility: codekr.api.contest.entity.ContestVisibility =
+        codekr.api.contest.entity.ContestVisibility.PUBLIC,
+
     @field:Valid
     val problems: List<ContestProblemRequest> = emptyList(),
 )

@@ -10,6 +10,7 @@ import codekr.api.contest.entity.Contest
 import codekr.api.contest.entity.ContestRegistration
 import codekr.api.contest.entity.ContestRegistrationId
 import codekr.api.contest.entity.ContestStatus
+import codekr.api.contest.entity.ContestVisibility
 import codekr.api.contest.repository.ContestProblemRepository
 import codekr.api.contest.repository.ContestRegistrationRepository
 import codekr.api.contest.repository.ContestRepository
@@ -36,9 +37,24 @@ class ContestService(
 
     fun findAll(pageable: Pageable): PageResponse<ContestSummaryResponse> {
         val now = Instant.now()
-        // 준비 중인 대회는 어드민만 본다.
-        val page = contestRepository
-            .findByStatusNotAndDeletedAtIsNullOrderByStartsAtDesc(ContestStatus.DRAFT, pageable)
+        // 준비 중인 대회는 어드민만 본다. **목록에 없는 대회(#465)도 여기 오지 않는다.**
+        val page = contestRepository.findByStatusNotAndVisibilityAndDeletedAtIsNullOrderByStartsAtDesc(
+            ContestStatus.DRAFT,
+            ContestVisibility.PUBLIC,
+            pageable,
+        )
+        return PageResponse.from(page.map { summaryOf(it, now) })
+    }
+
+    /**
+     * 내가 등록한 대회 (#465).
+     *
+     * **목록에 없는 대회에 들어간 사람이 그것을 다시 찾는 길이다.** 이 목록에는 범위와
+     * 무관하게 나온다 — 이미 들어간 대회이므로 감출 이유가 없다.
+     */
+    fun findRegistered(userId: Long, pageable: Pageable): PageResponse<ContestSummaryResponse> {
+        val now = Instant.now()
+        val page = contestRepository.findRegistered(userId, ContestStatus.DRAFT, pageable)
         return PageResponse.from(page.map { summaryOf(it, now) })
     }
 

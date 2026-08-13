@@ -18,6 +18,8 @@ data class AdminContestResponse(
     val freezeAt: Instant?,
     val registrationOpenDuring: Boolean,
     val status: ContestStatus,
+    /** 공개 범위 (#465). `status` 와 다른 값이다. */
+    val visibility: codekr.api.contest.entity.ContestVisibility,
     val phase: ContestPhase,
     val phaseLabel: String,
     /** 참가자에게 순위가 감춰지는 중인가. 어드민은 그래도 실제 순위를 본다 (#86). */
@@ -46,6 +48,7 @@ data class AdminContestResponse(
                 freezeAt = contest.freezeAt,
                 registrationOpenDuring = contest.registrationOpenDuring,
                 status = contest.status,
+                visibility = contest.visibility,
                 phase = phase,
                 phaseLabel = phase.label,
                 frozen = contest.frozenAt(now),

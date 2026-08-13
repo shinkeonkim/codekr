@@ -28,6 +28,19 @@ class ContestController(private val contestService: ContestService) {
         @PageableDefault(size = 20) pageable: Pageable,
     ): PageResponse<ContestSummaryResponse> = contestService.findAll(pageable)
 
+    /**
+     * 내가 등록한 대회 (#465).
+     *
+     * **목록에 없는 대회에 들어간 사람이 그것을 다시 찾는 길이다.** 링크를 잃으면
+     * 끝인 상태를 만들지 않는다.
+     */
+    @AuthenticatedApi
+    @GetMapping("/registered")
+    fun findRegistered(
+        @PageableDefault(size = 20) pageable: Pageable,
+        principal: AuthPrincipal,
+    ): PageResponse<ContestSummaryResponse> = contestService.findRegistered(principal.userId, pageable)
+
     @PublicApi
     @GetMapping("/{slug}")
     fun findDetail(

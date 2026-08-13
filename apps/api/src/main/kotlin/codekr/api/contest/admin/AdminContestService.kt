@@ -59,6 +59,7 @@ class AdminContestService(
                 createdBy = createdBy,
             ),
         )
+        contest.visibility = request.visibility
         replaceProblems(contest.id, request)
         return responseOf(contest, Instant.now())
     }
@@ -96,6 +97,7 @@ class AdminContestService(
             freezeMinutes = request.freezeMinutes
             submissionCooldownSeconds = request.submissionCooldownSeconds
             registrationOpenDuring = request.registrationOpenDuring
+            visibility = request.visibility
         }
         replaceProblems(contest.id, request)
         return responseOf(contest, Instant.now())

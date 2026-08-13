@@ -66,6 +66,9 @@ export const contestApi = {
     ),
 };
 
+/** 공개 범위 (#465). **`status` 와 다른 값이다** — 그쪽은 "준비 중인가" 다. */
+export type ContestVisibility = "PUBLIC" | "UNLISTED";
+
 export interface AdminContest {
   id: number;
   slug: string;
@@ -78,6 +81,7 @@ export interface AdminContest {
   phaseLabel: string;
   freezeMinutes: number;
   submissionCooldownSeconds: number;
+  visibility: ContestVisibility;
 }
 
 export interface ContestUpsert {
@@ -88,6 +92,7 @@ export interface ContestUpsert {
   endsAt: string;
   freezeMinutes: number;
   submissionCooldownSeconds: number;
+  visibility: ContestVisibility;
 }
 
 /**
