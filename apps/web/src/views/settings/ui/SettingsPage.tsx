@@ -6,6 +6,7 @@ import { userApi } from "@/entities/user";
 import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
 import { EmailAddressesCard, EmailVerificationCard } from "@/features/email-verification";
+import { MyAffiliationsCard } from "@/features/my-affiliations";
 import { TermAgreementsCard } from "@/features/terms";
 import { BioEditor, DisplayNameEditor } from "@/features/profile-bio";
 import { useAuth } from "@/features/auth";
@@ -140,6 +141,9 @@ function SettingsView() {
 
       {/* 학교·회사 메일을 여기서 더한다 (#396). 소속(#398)이 이 주소에 붙는다. */}
       <EmailAddressesCard />
+
+      {/* 소속은 그 주소에 붙는다 (#398). 그래서 주소 카드 바로 아래다. */}
+      <MyAffiliationsCard />
 
       {/* 내가 무엇에 동의했는지 확인할 수 있어야 한다 (#235). */}
       <TermAgreementsCard />
