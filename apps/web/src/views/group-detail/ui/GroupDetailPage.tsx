@@ -9,6 +9,7 @@ import { Badge, Button, Card, CardTitle, ConfirmDialog, EmptyState, useToast } f
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 import { GroupOwnerPanel } from "./GroupOwnerPanel";
+import { GroupRanking } from "./GroupRanking";
 
 /**
  * 그룹 상세 (#401).
@@ -77,6 +78,9 @@ function GroupDetailView({ id }: { id: number }) {
       </header>
 
       {group.owner ? <GroupOwnerPanel group={group} onChanged={reload} /> : null}
+
+      {/* 그룹에 들어오는 이유가 이것이다 — 명단보다 위에 둔다 (#402). */}
+      <GroupRanking groupId={group.id} />
 
       <Card className="space-y-3 p-5">
         <CardTitle>멤버</CardTitle>

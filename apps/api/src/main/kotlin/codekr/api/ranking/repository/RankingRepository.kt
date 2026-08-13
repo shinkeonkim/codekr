@@ -24,12 +24,14 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
         limit: Int,
         offset: Int,
         affiliationId: Long? = null,
+        groupId: Long? = null,
     ): List<RankingEntry> =
-        jdbcClient.sql(rankingSql(metric, period, affiliationId = affiliationId))
+        jdbcClient.sql(rankingSql(metric, period, affiliationId = affiliationId, groupId = groupId))
             .param("scoreLimit", SCORE_PROBLEM_LIMIT)
             .param("limit", limit)
             .param("offset", offset)
             .param("affiliationId", affiliationId)
+            .param("groupId", groupId)
             .query { rs, _ ->
                 RankingEntry(
                     rank = rs.getInt("rank"),
@@ -47,14 +49,17 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
      * **기간과 무관하다.** 아직 못 푼 사람도 목록에 있으므로, 이번 달 랭킹의 인원도
      * 가입자 수와 같다. 전에는 "그 기간에 푼 사람" 만 셌다.
      */
-    fun countRanked(period: RankingPeriod, affiliationId: Long? = null): Int =
+    fun countRanked(period: RankingPeriod, affiliationId: Long? = null, groupId: Long? = null): Int =
         jdbcClient.sql(
             """
             SELECT count(*) FROM users u
-            WHERE $RANKED_USER_FILTER AND ${affiliationCondition(affiliationId)}
+            WHERE $RANKED_USER_FILTER
+              AND ${affiliationCondition(affiliationId)}
+              AND ${groupCondition(groupId)}
             """,
         )
             .param("affiliationId", affiliationId)
+            .param("groupId", groupId)
             .query(Int::class.java)
             .single()
 
@@ -64,16 +69,20 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
         metric: RankingMetric,
         period: RankingPeriod,
         affiliationId: Long? = null,
+        groupId: Long? = null,
     ): RankingEntry? =
         jdbcClient.sql(
             """
-            SELECT * FROM (${rankingSql(metric, period, paged = false, affiliationId = affiliationId)}) ranked
+            SELECT * FROM (
+                ${rankingSql(metric, period, paged = false, affiliationId = affiliationId, groupId = groupId)}
+            ) ranked
             WHERE nickname = :nickname
             """,
         )
             .param("scoreLimit", SCORE_PROBLEM_LIMIT)
             .param("nickname", nickname)
             .param("affiliationId", affiliationId)
+            .param("groupId", groupId)
             .query { rs, _ ->
                 RankingEntry(
                     rank = rs.getInt("rank"),
@@ -131,11 +140,26 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
                 "WHERE ua.user_id = u.id AND ua.affiliation_id = :affiliationId)"
         }
 
+    /**
+     * 그 그룹 사람들만 (#402).
+     *
+     * **소속 랭킹(#399)과 같은 구조다** — 모집단을 좁힐 뿐 정렬을 바꾸지 않는다.
+     * 다른 것은 **누가 볼 수 있느냐**뿐이고, 그것은 여기가 아니라 경로가 정한다
+     * (`/groups/{id}/rankings` 는 멤버만 부를 수 있다).
+     */
+    private fun groupCondition(groupId: Long?): String =
+        if (groupId == null) {
+            "true"
+        } else {
+            "EXISTS (SELECT 1 FROM group_members gm WHERE gm.user_id = u.id AND gm.group_id = :groupId)"
+        }
+
     private fun rankingSql(
         metric: RankingMetric,
         period: RankingPeriod,
         paged: Boolean = true,
         affiliationId: Long? = null,
+        groupId: Long? = null,
     ): String {
         val tieBreak = "last_solved_at ASC NULLS LAST, created_at ASC"
         val order = when (metric) {
@@ -161,7 +185,9 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
                            row_number() OVER (PARTITION BY ups.user_id ORDER BY ups.score DESC, ups.problem_id) AS rn
                     FROM user_problem_scores ups
                 ) s ON s.user_id = u.id AND ${periodFilter(period)}
-                WHERE $RANKED_USER_FILTER AND ${affiliationCondition(affiliationId)}
+                WHERE $RANKED_USER_FILTER
+                  AND ${affiliationCondition(affiliationId)}
+                  AND ${groupCondition(groupId)}
                 GROUP BY u.id, u.nickname, u.created_at
             ) totals
             ORDER BY $order
