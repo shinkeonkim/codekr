@@ -143,7 +143,11 @@ class WithdrawalIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `어드민의 강제 탈퇴도 같은 결과를 낸다`() {
-        mockMvc.perform(delete("/api/v1/admin/users/" + leaverId).header("Authorization", "Bearer " + adminToken))
+        // 사유가 필수다 (#225) — 되돌릴 수 없는 조치라 기록의 사유가 유일한 답이 된다.
+        mockMvc.perform(
+            delete("/api/v1/admin/users/" + leaverId).param("reason", "약관 위반")
+                .header("Authorization", "Bearer " + adminToken),
+        )
             .andExpect(status().isNoContent)
 
         mockMvc.perform(get("/api/v1/posts/" + postId))

@@ -41,6 +41,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/audit-logs",
+    label: "관리 기록",
+    description: "역할 변경·강제 탈퇴의 자취",
+    // 어드민끼리 서로를 보는 것이라 최고 관리자만이다 (#225).
+    roles: ["SUPERUSER"],
+  },
+  {
     href: "/admin/operations",
     label: "운영 작업",
     description: "랭킹·활동 집계 재계산",

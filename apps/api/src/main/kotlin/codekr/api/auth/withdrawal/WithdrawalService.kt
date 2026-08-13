@@ -1,5 +1,7 @@
 package codekr.api.auth.withdrawal
 
+import codekr.api.audit.entity.AdminAction
+import codekr.api.audit.service.AdminAuditService
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.user.repository.UserRepository
@@ -19,13 +21,35 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class WithdrawalService(
+    private val auditService: AdminAuditService,
     private val userRepository: UserRepository,
     private val withdrawnTokens: WithdrawnTokenRegistry,
 ) {
 
-    fun withdraw(userId: Long) {
+    fun withdraw(userId: Long) = withdraw(userId, actorId = null, reason = null)
+
+    /**
+     * 어드민의 강제 탈퇴 (#140, #225).
+     *
+     * **사유가 필수다.** 되돌릴 수 없고, 계정이 사라진 뒤에 "누가 왜 지웠는지" 를
+     * 물으면 기록의 사유가 유일한 답이다.
+     *
+     * 닉네임을 **지우기 전에** 기록에 사본으로 남긴다 — `withdraw()` 가 그것을 그 자리에서
+     * 지우므로 순서가 뒤바뀌면 숫자만 남는다.
+     */
+    fun withdraw(userId: Long, actorId: Long?, reason: String?) {
         val user = userRepository.findById(userId).orElseThrow { ApiException(ErrorCode.USER_NOT_FOUND) }
         if (user.isWithdrawn) throw ApiException(ErrorCode.USER_NOT_FOUND)
+
+        if (actorId != null) {
+            auditService.record(
+                actorId = actorId,
+                action = AdminAction.FORCE_WITHDRAW,
+                targetId = user.id,
+                targetLabel = user.nickname,
+                reason = reason,
+            )
+        }
 
         user.withdraw()
         // 발급된 토큰도 더 이상 통하지 않아야 한다. 만료를 기다리지 않는다.

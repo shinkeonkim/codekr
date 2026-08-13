@@ -106,3 +106,18 @@ export interface AdminUserDetail extends AdminUserSummary {
   submissionCount: number;
   lastSubmittedAt: string | null;
 }
+
+/** 어드민 관리 기록 한 줄 (#225). 고치거나 지울 수 없다 — 덧붙이기만 된다. */
+export interface AdminAuditLog {
+  id: number;
+  actorId: number;
+  actorNickname: string | null;
+  action: string;
+  actionLabel: string;
+  targetId: number;
+  /** **그때의** 대상 이름. 강제 탈퇴가 닉네임을 지운 뒤에도 남는다 (#140). */
+  targetLabel: string | null;
+  reason: string | null;
+  detail: string | null;
+  createdAt: string;
+}

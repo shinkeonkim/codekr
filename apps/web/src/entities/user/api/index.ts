@@ -1,6 +1,7 @@
 import { ApiError, apiUrl, request, tokenStore } from "@/shared/api";
 import type { Page } from "@/shared/api";
 import type {
+  AdminAuditLog,
   AdminUserDetail,
   AdminUserSummary,
   TokenResponse,
@@ -80,9 +81,17 @@ export const userApi = {
   replaceRoles: (id: number, roles: string[]) =>
     request<string[]>(`/api/v1/admin/users/${id}/roles`, { method: "PUT", body: { roles }, auth: true }),
 
-  /** 강제 탈퇴 (#140). 되돌릴 수 없다 — 이메일·닉네임이 그 자리에서 지워진다. */
-  forceWithdraw: (id: number) =>
-    request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", auth: true }),
+  /**
+   * 강제 탈퇴 (#140). 되돌릴 수 없다 — 이메일·닉네임이 그 자리에서 지워진다.
+   *
+   * **사유가 필수다** (#225). 계정이 사라진 뒤에 "누가 왜" 를 물으면 그것이 유일한 답이다.
+   */
+  forceWithdraw: (id: number, reason: string) =>
+    request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", auth: true, query: { reason } }),
+
+  /** 관리 기록 (#225). **최고 관리자만** — 어드민끼리 서로를 보는 것이다. */
+  auditLogs: (query: { targetUserId?: number; actorId?: number; page?: number; size?: number }) =>
+    request<Page<AdminAuditLog>>("/api/v1/admin/audit-logs", { auth: true, query }),
 
   updateSettings: (body: Partial<UserSettings>) =>
     request<UserSettings>("/api/v1/users/me/settings", { method: "PATCH", body, auth: true }),
