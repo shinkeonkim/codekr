@@ -1,8 +1,22 @@
 "use client";
 
-import { ALL_DIFFICULTIES, CATEGORY_LABELS, SELECTABLE_KINDS, difficultyLabel } from "@/entities/problem";
-import type { Difficulty, ProblemVerification, SqlSpec, Testcase } from "@/entities/problem";
-import { BLANK_NOSQL_SPEC, BLANK_SQL_SPEC, EMPTY_TESTCASE } from "../model/values";
+import {
+  ALL_DIFFICULTIES,
+  CATEGORY_LABELS,
+  SELECTABLE_KINDS,
+  difficultyLabel,
+} from "@/entities/problem";
+import type {
+  Difficulty,
+  ProblemVerification,
+  SqlSpec,
+  Testcase,
+} from "@/entities/problem";
+import {
+  BLANK_NOSQL_SPEC,
+  BLANK_SQL_SPEC,
+  EMPTY_TESTCASE,
+} from "../model/values";
 import type { ProblemFormValues } from "../model/values";
 import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
@@ -19,7 +33,17 @@ import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { NoSqlSpecEditor } from "./NoSqlSpecEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
-import { Alert, Button, Card, CheckboxField, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
+import {
+  Alert,
+  Button,
+  Card,
+  CheckboxField,
+  Field,
+  Input,
+  Select,
+  Textarea,
+  useToast,
+} from "@/shared/ui";
 
 interface Props {
   initial: ProblemFormValues;
@@ -28,6 +52,13 @@ interface Props {
   /** 수정 화면에서만 주어진다 — 검증은 저장된 문제에 대해서만 실행할 수 있다. */
   problemId?: number;
   verification?: ProblemVerification | null;
+  /**
+   * 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495).
+   *
+   * **화면이 유형 이름을 나열하지 않는다** — 서버가 말해 준다. 나열하면 유형이 하나
+   * 늘 때마다 여기를 고쳐야 하고, 빠뜨리면 눌러도 안 되는 버튼이 남는다.
+   */
+  canVerifySolution?: boolean;
 }
 
 /**
@@ -40,7 +71,14 @@ interface Props {
  * 펴 두고, 고칠 때는 방해가 되므로 접어서 목차로 쓴다. **구획 컴포넌트와 검증·저장은
  * 한 벌이다** — 갈라지면 "등록에서는 되는데 수정에서는 안 되는" 것이 생긴다.
  */
-export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verification }: Props) {
+export function ProblemForm({
+  initial,
+  submitLabel,
+  onSubmit,
+  problemId,
+  verification,
+  canVerifySolution = true,
+}: Props) {
   /*
     **등록과 수정의 유일한 차이** (#337).
 
@@ -57,8 +95,10 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const update = <K extends keyof ProblemFormValues>(key: K, value: ProblemFormValues[K]) =>
-    setValues((previous) => ({ ...previous, [key]: value }));
+  const update = <K extends keyof ProblemFormValues>(
+    key: K,
+    value: ProblemFormValues[K],
+  ) => setValues((previous) => ({ ...previous, [key]: value }));
 
   /**
    * AI 가 채운 칸 (#230).
@@ -68,7 +108,9 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
    *
    * 사람이 그 칸을 손대면 표시가 사라진다 — 검토를 마쳤다는 뜻이다.
    */
-  const [drafted, setDrafted] = useState<Set<keyof ProblemFormValues>>(new Set());
+  const [drafted, setDrafted] = useState<Set<keyof ProblemFormValues>>(
+    new Set(),
+  );
 
   const fillFromDraft = (
     patch: Partial<ProblemFormValues>,
@@ -78,7 +120,10 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
     setDrafted(new Set(filled));
   };
 
-  const touched = <K extends keyof ProblemFormValues>(key: K, value: ProblemFormValues[K]) => {
+  const touched = <K extends keyof ProblemFormValues>(
+    key: K,
+    value: ProblemFormValues[K],
+  ) => {
     update(key, value);
     setDrafted((previous) => {
       if (!previous.has(key)) return previous;
@@ -104,15 +149,24 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
     setValues((previous) => ({
       ...previous,
       problemKind: nextKind,
-      sqlSpec: nextKind === "JUDGE_SQL" ? (previous.sqlSpec ?? BLANK_SQL_SPEC) : null,
-      nosqlSpec: nextKind === "JUDGE_NOSQL" ? (previous.nosqlSpec ?? BLANK_NOSQL_SPEC) : null,
-      testcases: nextKind === "JUDGE_SQL" || nextKind === "JUDGE_NOSQL" ? [] : previous.testcases,
+      sqlSpec:
+        nextKind === "JUDGE_SQL" ? (previous.sqlSpec ?? BLANK_SQL_SPEC) : null,
+      nosqlSpec:
+        nextKind === "JUDGE_NOSQL"
+          ? (previous.nosqlSpec ?? BLANK_NOSQL_SPEC)
+          : null,
+      testcases:
+        nextKind === "JUDGE_SQL" || nextKind === "JUDGE_NOSQL"
+          ? []
+          : previous.testcases,
     }));
 
   const updateTestcase = (index: number, patch: Partial<Testcase>) =>
     setValues((previous) => ({
       ...previous,
-      testcases: previous.testcases.map((it, i) => (i === index ? { ...it, ...patch } : it)),
+      testcases: previous.testcases.map((it, i) =>
+        i === index ? { ...it, ...patch } : it,
+      ),
     }));
 
   const addTestcase = () =>
@@ -120,7 +174,11 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
       ...previous,
       testcases: [
         ...previous.testcases,
-        { ...EMPTY_TESTCASE, seq: previous.testcases.length + 1, visibility: "HIDDEN" },
+        {
+          ...EMPTY_TESTCASE,
+          seq: previous.testcases.length + 1,
+          visibility: "HIDDEN",
+        },
       ],
     }));
 
@@ -144,7 +202,8 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
       router.push("/admin/problems");
     } catch (caught) {
       // 저장 실패는 이 화면에 남아 고쳐야 하는 일이라 인라인으로도 남긴다.
-      const message = caught instanceof ApiError ? caught.message : "저장에 실패했습니다.";
+      const message =
+        caught instanceof ApiError ? caught.message : "저장에 실패했습니다.";
       setError(message);
       toast.error(message);
     } finally {
@@ -183,9 +242,18 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         title="기본 정보"
         required
         defaultOpen={open}
-        description={draftBadge("title", "category", "timeLimitMs", "memoryLimitMb")}
+        description={draftBadge(
+          "title",
+          "category",
+          "timeLimitMs",
+          "memoryLimitMb",
+        )}
       >
-        <ProblemMetaFields values={values} onChange={touched} onChangeKind={changeKind} />
+        <ProblemMetaFields
+          values={values}
+          onChange={touched}
+          onChangeKind={changeKind}
+        />
       </FormSection>
 
       <FormSection
@@ -193,7 +261,8 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         required
         defaultOpen={open}
         description={
-          draftBadge("description", "inputDescription", "outputDescription") ?? "문제 설명과 입출력 형식"
+          draftBadge("description", "inputDescription", "outputDescription") ??
+          "문제 설명과 입출력 형식"
         }
       >
         <ProblemDescriptionFields values={values} onChange={touched} />
@@ -223,7 +292,10 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
       */}
       {isSql ? (
         <FormSection title="SQL 스키마와 정답" required defaultOpen={open}>
-          <SqlSpecEditor value={values.sqlSpec ?? BLANK_SQL_SPEC} onChange={(spec) => update("sqlSpec", spec)} />
+          <SqlSpecEditor
+            value={values.sqlSpec ?? BLANK_SQL_SPEC}
+            onChange={(spec) => update("sqlSpec", spec)}
+          />
         </FormSection>
       ) : isNoSql ? (
         <FormSection title="NoSQL 시드와 정답" required defaultOpen={open}>
@@ -233,59 +305,72 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
           />
         </FormSection>
       ) : (
-      <FormSection
-        title="테스트케이스"
-        required
-        defaultOpen={open}
-        description={draftBadge("testcases") ?? "공개(예제)와 비공개"}
-      >
-        <div className="flex items-center justify-end">
-          <Button type="button" variant="secondary" onClick={addTestcase}>
-            추가
-          </Button>
-        </div>
-
-        {values.testcases.map((testcase, index) => (
-          <div key={index} className="space-y-2 rounded-lg border border-border p-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-ink">#{testcase.seq}</span>
-              <Select
-                className="w-40"
-                value={testcase.visibility}
-                onChange={(event) =>
-                  updateTestcase(index, { visibility: event.target.value as Testcase["visibility"] })
-                }
-              >
-                <option value="PUBLIC">공개 (예제)</option>
-                <option value="HIDDEN">비공개</option>
-              </Select>
-              <Button
-                type="button"
-                variant="danger"
-                className="ml-auto"
-                onClick={() => removeTestcase(index)}
-                disabled={values.testcases.length === 1}
-              >
-                삭제
-              </Button>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Textarea
-                rows={3}
-                placeholder="입력"
-                value={testcase.input}
-                onChange={(event) => updateTestcase(index, { input: event.target.value })}
-              />
-              <Textarea
-                rows={3}
-                placeholder="기대 출력"
-                value={testcase.expectedOutput}
-                onChange={(event) => updateTestcase(index, { expectedOutput: event.target.value })}
-              />
-            </div>
+        <FormSection
+          title="테스트케이스"
+          required
+          defaultOpen={open}
+          description={draftBadge("testcases") ?? "공개(예제)와 비공개"}
+        >
+          <div className="flex items-center justify-end">
+            <Button type="button" variant="secondary" onClick={addTestcase}>
+              추가
+            </Button>
           </div>
-        ))}
-      </FormSection>
+
+          {values.testcases.map((testcase, index) => (
+            <div
+              key={index}
+              className="space-y-2 rounded-lg border border-border p-4"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-ink">
+                  #{testcase.seq}
+                </span>
+                <Select
+                  className="w-40"
+                  value={testcase.visibility}
+                  onChange={(event) =>
+                    updateTestcase(index, {
+                      visibility: event.target.value as Testcase["visibility"],
+                    })
+                  }
+                >
+                  <option value="PUBLIC">공개 (예제)</option>
+                  <option value="HIDDEN">비공개</option>
+                </Select>
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="ml-auto"
+                  onClick={() => removeTestcase(index)}
+                  disabled={values.testcases.length === 1}
+                >
+                  삭제
+                </Button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Textarea
+                  rows={3}
+                  placeholder="입력"
+                  value={testcase.input}
+                  onChange={(event) =>
+                    updateTestcase(index, { input: event.target.value })
+                  }
+                />
+                <Textarea
+                  rows={3}
+                  placeholder="기대 출력"
+                  value={testcase.expectedOutput}
+                  onChange={(event) =>
+                    updateTestcase(index, {
+                      expectedOutput: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+          ))}
+        </FormSection>
       )}
 
       <FormSection
@@ -293,36 +378,58 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         defaultOpen={open}
         description="비우면 이 유형의 전부"
       >
-      <AllowedRuntimeEditor
-        value={values.allowedRuntimeIds}
-        onChange={(allowedRuntimeIds) => update("allowedRuntimeIds", allowedRuntimeIds)}
-      />
+        <AllowedRuntimeEditor
+          value={values.allowedRuntimeIds}
+          onChange={(allowedRuntimeIds) =>
+            update("allowedRuntimeIds", allowedRuntimeIds)
+          }
+        />
       </FormSection>
 
-      <FormSection title="언어별 제한" defaultOpen={open} description="비우면 기본 제한을 쓴다">
-      <RuntimeLimitEditor
-        limits={values.runtimeLimits}
-        baseTimeLimitMs={values.timeLimitMs}
-        baseMemoryLimitMb={values.memoryLimitMb}
-        onChange={(runtimeLimits) => update("runtimeLimits", runtimeLimits)}
-      />
+      <FormSection
+        title="언어별 제한"
+        defaultOpen={open}
+        description="비우면 기본 제한을 쓴다"
+      >
+        <RuntimeLimitEditor
+          limits={values.runtimeLimits}
+          baseTimeLimitMs={values.timeLimitMs}
+          baseMemoryLimitMb={values.memoryLimitMb}
+          onChange={(runtimeLimits) => update("runtimeLimits", runtimeLimits)}
+        />
       </FormSection>
 
-      <FormSection title="초기 코드" defaultOpen={open} description="언어마다 처음 보이는 코드">
-      <ProblemTemplateEditor
-        templates={values.templates}
-        onChange={(templates) => update("templates", templates)}
-      />
+      <FormSection
+        title="초기 코드"
+        defaultOpen={open}
+        description="언어마다 처음 보이는 코드"
+      >
+        <ProblemTemplateEditor
+          templates={values.templates}
+          onChange={(templates) => update("templates", templates)}
+        />
       </FormSection>
 
-      <FormSection title="정답 코드와 검증" defaultOpen={open} description="사람이 아니라 기계가 확인한다 (#39)">
-      <SolutionVerifier
-        problemId={problemId ?? null}
-        solution={values.solution}
-        verification={verification ?? null}
-        onChange={(solution) => update("solution", solution)}
-      />
-      </FormSection>
+      {/*
+        **검증할 수 없는 유형에서는 자리를 그리지 않는다** (#495). SQL·NoSQL 문제는
+        테스트케이스가 0개인 것이 정상이고, 그 상태로 누르면 "테스트케이스가 없다" 는
+        고칠 수 없는 말이 돌아왔다. 유형 이름을 여기서 나열하지 않는 이유는 유형이
+        늘 때마다 이 화면을 고쳐야 하기 때문이다 — 서버가 말해 준다.
+      */}
+      {canVerifySolution ? (
+        <FormSection
+          title="정답 코드와 검증"
+          defaultOpen={open}
+          description="사람이 아니라 기계가 확인한다 (#39)"
+        >
+          <SolutionVerifier
+            problemId={problemId ?? null}
+            solution={values.solution}
+            verification={verification ?? null}
+            onChange={(solution) => update("solution", solution)}
+          />
+        </FormSection>
+      ) : null}
 
       <div className="flex items-center gap-3">
         <CheckboxField

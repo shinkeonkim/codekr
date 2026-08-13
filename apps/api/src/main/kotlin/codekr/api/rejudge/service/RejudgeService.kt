@@ -53,7 +53,14 @@ class RejudgeService(
     fun rejudgeProblem(problemId: Long, reason: String, requestedBy: Long): RejudgeResponse {
         val problem = problemRepository.findByIdAndDeletedAtIsNull(problemId)
             ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
-        if (problem.testcases.isEmpty()) throw ApiException(ErrorCode.TESTCASE_REQUIRED)
+        /*
+          **유형마다 채점 대상이 다르다** (#495). SQL 은 정답 쿼리, NoSQL 은 끝난 뒤의
+          상태다 — 테스트케이스를 요구하면 그 유형의 문제는 재채점을 아예 못 돌린다.
+          스키마를 고친 뒤 지난 제출을 다시 채점할 방법이 없었다.
+        */
+        if (problem.problemKind.needsTestcases && problem.testcases.isEmpty()) {
+            throw ApiException(ErrorCode.TESTCASE_REQUIRED)
+        }
 
         val targets = submissionRepository.findByProblemIdAndKindAndDeletedAtIsNull(
             problemId,

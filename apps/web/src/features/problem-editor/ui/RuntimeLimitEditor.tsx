@@ -30,11 +30,17 @@ export function RuntimeLimitEditor({
   const [selected, setSelected] = useState("");
 
   useEffect(() => {
-    problemApi.runtimes().then(setRuntimes).catch(() => setRuntimes([]));
+    problemApi
+      .runtimes()
+      .then(setRuntimes)
+      .catch(() => setRuntimes([]));
   }, []);
 
-  const available = runtimes.filter((runtime) => !limits.some((it) => it.runtimeId === runtime.id));
-  const labelOf = (runtimeId: string) => runtimes.find((it) => it.id === runtimeId)?.label ?? runtimeId;
+  const available = runtimes.filter(
+    (runtime) => !limits.some((it) => it.runtimeId === runtime.id),
+  );
+  const labelOf = (runtimeId: string) =>
+    runtimes.find((it) => it.id === runtimeId)?.label ?? runtimeId;
 
   const add = () => {
     const runtime = runtimes.find((it) => it.id === selected) ?? available[0];
@@ -52,7 +58,11 @@ export function RuntimeLimitEditor({
   };
 
   const update = (runtimeId: string, patch: Partial<ProblemRuntimeLimit>) =>
-    onChange(limits.map((it) => (it.runtimeId === runtimeId ? { ...it, ...patch } : it)));
+    onChange(
+      limits.map((it) =>
+        it.runtimeId === runtimeId ? { ...it, ...patch } : it,
+      ),
+    );
 
   const remove = (runtimeId: string) =>
     onChange(limits.filter((it) => it.runtimeId !== runtimeId));
@@ -61,8 +71,9 @@ export function RuntimeLimitEditor({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div>
-                    <p className="mt-0.5 text-xs text-ink-muted">
-            지정하지 않은 언어는 문제 기본 제한({baseTimeLimitMs}ms · {baseMemoryLimitMb}MB)을 씁니다.
+          <p className="mt-0.5 text-xs text-ink-muted">
+            지정하지 않은 언어는 문제 기본 제한({baseTimeLimitMs}ms ·{" "}
+            {baseMemoryLimitMb}MB)을 씁니다.
           </p>
         </div>
         <Select
@@ -79,13 +90,20 @@ export function RuntimeLimitEditor({
             </option>
           ))}
         </Select>
-        <Button type="button" variant="secondary" onClick={add} disabled={available.length === 0}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={add}
+          disabled={available.length === 0}
+        >
           추가
         </Button>
       </div>
 
       {limits.length === 0 ? (
-        <p className="text-xs text-ink-muted">모든 언어가 문제 기본 제한을 씁니다.</p>
+        <p className="text-xs text-ink-muted">
+          모든 언어가 문제 기본 제한을 씁니다.
+        </p>
       ) : (
         <ul className="space-y-2">
           {limits.map((limit) => (
@@ -93,7 +111,9 @@ export function RuntimeLimitEditor({
               key={limit.runtimeId}
               className="flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2"
             >
-              <span className="min-w-32 text-sm font-medium text-ink">{labelOf(limit.runtimeId)}</span>
+              <span className="min-w-32 text-sm font-medium text-ink">
+                {labelOf(limit.runtimeId)}
+              </span>
               <label className="flex items-center gap-1.5 text-xs text-ink-muted">
                 시간
                 <Input
@@ -101,7 +121,9 @@ export function RuntimeLimitEditor({
                   className="w-24"
                   value={limit.timeLimitMs}
                   onChange={(event) =>
-                    update(limit.runtimeId, { timeLimitMs: Number(event.target.value) })
+                    update(limit.runtimeId, {
+                      timeLimitMs: Number(event.target.value),
+                    })
                   }
                 />
                 ms
@@ -113,7 +135,9 @@ export function RuntimeLimitEditor({
                   className="w-24"
                   value={limit.memoryLimitMb}
                   onChange={(event) =>
-                    update(limit.runtimeId, { memoryLimitMb: Number(event.target.value) })
+                    update(limit.runtimeId, {
+                      memoryLimitMb: Number(event.target.value),
+                    })
                   }
                 />
                 MB

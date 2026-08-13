@@ -278,6 +278,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   sqlSpec: SqlSpec | null;
   /** NoSQL 유형이 아니면 null (#455). */
   nosqlSpec: NoSqlSpec | null;
+  /** 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495). */
+  canVerifySolution?: boolean;
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;

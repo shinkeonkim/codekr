@@ -56,7 +56,12 @@ export interface ProblemFormValues {
   solution: ProblemSolution | null;
 }
 
-export const EMPTY_TESTCASE: Testcase = { seq: 1, input: "", expectedOutput: "", visibility: "PUBLIC" };
+export const EMPTY_TESTCASE: Testcase = {
+  seq: 1,
+  input: "",
+  expectedOutput: "",
+  visibility: "PUBLIC",
+};
 
 // 행 순서 무시가 기본이다 — 문제가 정렬을 요구하지 않는데 순서를 비교하면
 // 맞는 답이 틀린 것으로 나온다.
@@ -95,8 +100,14 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     outputComparison: problem.outputComparison ?? "EXACT",
     floatEpsilon: problem.floatEpsilon ?? 0,
     published: problem.published,
-    setters: (problem.setters ?? []).map((each) => ({ id: each.userId, nickname: each.nickname })),
-    reviewers: (problem.reviewers ?? []).map((each) => ({ id: each.userId, nickname: each.nickname })),
+    setters: (problem.setters ?? []).map((each) => ({
+      id: each.userId,
+      nickname: each.nickname,
+    })),
+    reviewers: (problem.reviewers ?? []).map((each) => ({
+      id: each.userId,
+      nickname: each.nickname,
+    })),
     sourceLabel: problem.sourceLabel ?? "",
     sourceUrl: problem.sourceUrl ?? "",
     testcases: problem.testcases,
@@ -136,7 +147,6 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   allowedRuntimeIds: [],
   solution: null,
 };
-
 
 /** 문제 등록과 수정이 같은 폼을 쓴다 — 요청 본문 모양이 동일하기 때문이다. */
 

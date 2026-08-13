@@ -8,7 +8,6 @@ import { useState } from "react";
 import type { ProblemFormValues } from "../model/values";
 import { EMPTY_TESTCASE } from "../model/values";
 
-
 /**
  * 지문에서 초안 만들기 (#230).
  *
@@ -21,7 +20,10 @@ import { EMPTY_TESTCASE } from "../model/values";
 export function DraftFromStatement({
   onFill,
 }: {
-  onFill: (patch: Partial<ProblemFormValues>, filled: (keyof ProblemFormValues)[]) => void;
+  onFill: (
+    patch: Partial<ProblemFormValues>,
+    filled: (keyof ProblemFormValues)[],
+  ) => void;
 }) {
   const toast = useToast();
   const [statement, setStatement] = useState("");
@@ -32,7 +34,8 @@ export function DraftFromStatement({
     setWorking(true);
     setMissing(null);
     try {
-      const draft: ProblemDraft = await problemDraftApi.fromStatement(statement);
+      const draft: ProblemDraft =
+        await problemDraftApi.fromStatement(statement);
       const patch: Partial<ProblemFormValues> = {
         // **지문 자체는 붙여 넣은 것을 그대로 쓴다.** 모델이 다시 쓴 지문을 넣으면
         // 원문과 달라지고, 그 차이를 사람이 알아채기 어렵다.
@@ -86,7 +89,11 @@ export function DraftFromStatement({
         **실패해도 폼은 그대로다.** 여기서 하는 일은 알리는 것뿐이고, 손으로 채우는
         길은 처음부터 막히지 않았다.
       */
-      toast.error(caught instanceof ApiError ? caught.message : "초안을 만들지 못했습니다.");
+      toast.error(
+        caught instanceof ApiError
+          ? caught.message
+          : "초안을 만들지 못했습니다.",
+      );
     } finally {
       setWorking(false);
     }
@@ -96,8 +103,8 @@ export function DraftFromStatement({
     <div className="space-y-3">
       <Alert tone="info">
         여기서 만든 것은 <strong>초안</strong>입니다. 채워진 칸에 표시가 붙고,{" "}
-        <strong>저장은 확인한 뒤 사람이 누릅니다.</strong> 예제는 공개 테스트케이스로
-        들어가며 정답 코드 검증을 거쳐야 공개할 수 있습니다.
+        <strong>저장은 확인한 뒤 사람이 누릅니다.</strong> 예제는 공개
+        테스트케이스로 들어가며 정답 코드 검증을 거쳐야 공개할 수 있습니다.
       </Alert>
       <Field label="지문 붙여 넣기">
         <Textarea
@@ -107,13 +114,20 @@ export function DraftFromStatement({
           placeholder="문제 지문을 그대로 붙여 넣으세요. 제목·입출력 설명·예제를 뽑아냅니다."
         />
       </Field>
-      <Button type="button" variant="secondary" disabled={working || !statement.trim()} onClick={run}>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={working || !statement.trim()}
+        onClick={run}
+      >
         {working ? "만드는 중…" : "초안 만들기"}
       </Button>
 
       {/* **못 찾은 것을 감추지 않는다.** 지어낸 값보다 빈 칸이 낫고, 빈 칸보다 "왜 비었는지"가 낫다. */}
       {missing && missing.length > 0 ? (
-        <Alert tone="warn">지문에서 찾지 못한 것: {missing.join(", ")} — 손으로 채워 주세요.</Alert>
+        <Alert tone="warn">
+          지문에서 찾지 못한 것: {missing.join(", ")} — 손으로 채워 주세요.
+        </Alert>
       ) : null}
     </div>
   );

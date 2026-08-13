@@ -117,6 +117,43 @@ class SqlProblemIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.runtimes[0].monacoLanguage").value("sql"))
     }
 
+    @Test
+    fun `SQL 문제도 재채점할 수 있다`() {
+        /*
+          **테스트케이스가 0개인 것이 정상이다** (#60). 그것을 요구하면 스키마를 고친 뒤
+          지난 제출을 다시 채점할 방법이 없다 (#495).
+        */
+        val id = createSqlProblem()
+        mockMvc.perform(
+            post("/api/v1/problems/sql-city/submissions")
+                .header("Authorization", "Bearer $userToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"runtimeId":"sql:postgres16","sourceCode":"SELECT city FROM members;"}"""),
+        ).andExpect(status().isAccepted)
+
+        mockMvc.perform(
+            post("/api/v1/admin/problems/$id/rejudge")
+                .header("Authorization", "Bearer $adminToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"reason":"스키마를 고쳤습니다."}"""),
+        ).andExpect(status().is2xxSuccessful)
+    }
+
+    @Test
+    fun `SQL 문제에서 정답 코드 검증은 할 수 없다고 말한다`() {
+        // 전에는 "테스트케이스가 없다" 가 나왔다 — 출제자에게 **고칠 수 없는 것**을
+        // 고치라고 말하는 셈이었다 (#495).
+        val id = createSqlProblem()
+
+        mockMvc.perform(
+            post("/api/v1/admin/problems/$id/verify").header("Authorization", "Bearer $adminToken"),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(
+                jsonPath("$.message").value(org.hamcrest.Matchers.containsString("지원하지 않습니다")),
+            )
+    }
+
     private fun createSqlProblem(): Long {
         val response = mockMvc.perform(
             post("/api/v1/admin/problems")
