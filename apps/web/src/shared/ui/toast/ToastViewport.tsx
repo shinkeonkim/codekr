@@ -1,64 +1,48 @@
 "use client";
 
 import { OVERLAY } from "../overlay";
-import { useToast, useToastList } from "./ToastContext";
-import type { ToastTone } from "./ToastContext";
-
-/** 색만으로 구분하지 않는다 — 아이콘과 라벨이 함께 있어야 한다. */
-const TONES: Record<ToastTone, { className: string; icon: string; label: string }> = {
-  success: { className: "border-ok/40 bg-ok/12 text-ok", icon: "✓", label: "완료" },
-  error: { className: "border-danger/40 bg-danger/12 text-danger", icon: "!", label: "오류" },
-  info: { className: "border-info/40 bg-info/12 text-info", icon: "i", label: "안내" },
-};
+import { Toaster } from "sonner";
 
 /**
- * 토스트가 쌓이는 자리 (#112, #134).
+ * 토스트가 쌓이는 자리 (#112, #134, #291 5단계).
  *
- * `aria-live="polite"` 로 스크린 리더에 전달한다. `assertive` 를 쓰지 않는 이유는
- * 읽고 있던 내용을 끊기 때문이다 — 토스트는 대개 그만큼 급하지 않다.
+ * **#134 가 정한 것을 그대로 지킨다** — 데스크톱은 우측 하단이다. 가운데는 눈이 가장
+ * 자주 머무는 자리라 본문 위를 덮고, 결과를 알리면서 원래 내용도 계속 보여야 한다.
+ * 좁은 화면에서는 좌우 여백만 두고 가로로 채운다. 우측에 붙이면 글이 서너 줄로 접힌다.
  *
- * **위치를 바꿔도 DOM 순서는 그대로 둔다** (#134). 읽는 순서는 시각적 위치가 아니라
- * DOM 이 정하므로, 옮기면 스크린 리더가 듣는 순서가 달라진다.
+ * **`unstyled` 로 둔다.** sonner 의 기본 모양을 쓰면 이 저장소의 색 토큰
+ * (`ok`/`danger`/`info`)과 어긋나고, 라이트·다크가 따로 논다. 모양은 우리가 정하고
+ * 자리·쌓임·손짓만 sonner 에게 맡긴다.
  *
- * 새 토스트는 **아래에 붙는다.** 위에서 밀어 올리면 읽던 토스트가 움직이고,
- * 우측 하단에서는 가장 아래가 가장 최근이라는 것이 자연스럽다.
+ * 옮기면서 **얻은 것**:
+ *   - 읽는 동안 사라지지 않는다 (마우스를 올리면 타이머가 멈춘다).
+ *     전에는 5초가 지나면 읽던 중에도 사라졌다
+ *   - 탭이 가려져 있는 동안 시간이 흐르지 않는다
+ *   - 손가락으로 밀어 닫을 수 있다
+ *   - 키보드로 토스트에 닿는다 (`⌥T`). 전에는 DOM 끝까지 탭해야 했다
  */
 export function ToastViewport() {
-  const toasts = useToastList();
-  const { dismiss } = useToast();
-
   return (
-    <div
-      className={OVERLAY.toastViewport}
-      role="status"
-      aria-live="polite"
-    >
-      {toasts.map((toast) => {
-        const tone = TONES[toast.tone];
-        return (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg backdrop-blur ${OVERLAY.toastItem} ${tone.className}`}
-          >
-            <span aria-hidden className="mt-0.5 font-bold">
-              {tone.icon}
-            </span>
-            <span className="min-w-0 flex-1 break-words text-ink">
-              <span className="sr-only">{tone.label}: </span>
-              {toast.message}
-            </span>
-            {/* 긴 메시지를 다 못 읽고 사라지는 것도 문제지만, 남아서 가리는 것도 문제다. */}
-            <button
-              type="button"
-              onClick={() => dismiss(toast.id)}
-              className="shrink-0 rounded px-1 text-ink-muted transition hover:text-ink"
-              aria-label="알림 닫기"
-            >
-              ✕
-            </button>
-          </div>
-        );
-      })}
-    </div>
+    <Toaster
+      position={OVERLAY.toastPosition}
+      visibleToasts={OVERLAY.toastMaxVisible}
+      duration={OVERLAY.toastDurationMs}
+      offset={OVERLAY.toastOffset}
+      mobileOffset={OVERLAY.toastOffset}
+      // 모양은 우리 것이다. 색은 토큰에서 오므로 라이트·다크가 함께 따라온다.
+      toastOptions={{
+        unstyled: true,
+        classNames: {
+          toast: OVERLAY.toastItem,
+          success: OVERLAY.toastTone.success,
+          error: OVERLAY.toastTone.error,
+          default: OVERLAY.toastTone.info,
+          closeButton: "shrink-0 rounded px-1 text-ink-muted transition hover:text-ink",
+        },
+        style: { width: "100%", maxWidth: OVERLAY.toastWidth },
+      }}
+      // 긴 메시지를 다 못 읽고 사라지는 것도 문제지만, 남아서 가리는 것도 문제다.
+      closeButton
+    />
   );
 }

@@ -1,90 +1,63 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { toast as sonner } from "sonner";
 import type { ReactNode } from "react";
 
 export type ToastTone = "success" | "error" | "info";
-
-export interface Toast {
-  id: number;
-  tone: ToastTone;
-  message: string;
-}
 
 interface ToastApi {
   success: (message: string) => void;
   error: (message: string) => void;
   info: (message: string) => void;
-  dismiss: (id: number) => void;
+  dismiss: (id?: string | number) => void;
 }
 
-const ToastStateContext = createContext<Toast[]>([]);
-const ToastApiContext = createContext<ToastApi | null>(null);
-
-/** 한 번에 쌓아 둘 최대 개수. 넘치면 오래된 것부터 밀어낸다. */
-const MAX_VISIBLE = 3;
-
-/** 자동으로 사라지기까지의 시간. 닫기 버튼이 있으므로 너무 길게 두지 않는다. */
-const AUTO_DISMISS_MS = 5_000;
-
 /**
- * 토스트 보관소 (#112).
+ * 색만으로 구분하지 않는다 — 아이콘과 **소리 내어 읽히는 라벨**이 함께 있어야 한다.
  *
- * 상태와 조작을 **두 컨텍스트로 나눈** 이유: 토스트를 띄우기만 하는 화면이 목록이 바뀔
- * 때마다 다시 그려질 이유가 없다. 조작 컨텍스트의 값은 바뀌지 않는다.
+ * 이 저장소의 규칙이다 (잔디 그래프·멘션도 같다). 색각 이상이 있는 사람에게 초록과
+ * 빨강은 같은 회색이고, 스크린 리더에게는 색이 아예 없다.
  */
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const nextId = useRef(1);
+const TONES: Record<ToastTone, { icon: string; label: string }> = {
+  success: { icon: "✓", label: "완료" },
+  error: { icon: "!", label: "오류" },
+  info: { icon: "i", label: "안내" },
+};
 
-  const dismiss = useCallback((id: number) => {
-    setToasts((previous) => previous.filter((toast) => toast.id !== id));
-  }, []);
-
-  const push = useCallback(
-    (tone: ToastTone, message: string) => {
-      const id = nextId.current++;
-      setToasts((previous) => [...previous, { id, tone, message }].slice(-MAX_VISIBLE));
-      // 이미 사라진 id 를 지우는 것은 무해하므로 타이머를 따로 정리하지 않는다.
-      setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
-    },
-    [dismiss],
-  );
-
-  const api = useMemo<ToastApi>(
-    () => ({
-      success: (message) => push("success", message),
-      error: (message) => push("error", message),
-      info: (message) => push("info", message),
-      dismiss,
-    }),
-    [push, dismiss],
-  );
-
+function body(tone: ToastTone, message: string): ReactNode {
   return (
-    <ToastApiContext.Provider value={api}>
-      <ToastStateContext.Provider value={toasts}>{children}</ToastStateContext.Provider>
-    </ToastApiContext.Provider>
+    <span className="min-w-0 flex-1 break-words text-ink">
+      <span className="sr-only">{TONES[tone].label}: </span>
+      {message}
+    </span>
+  );
+}
+
+function icon(tone: ToastTone): ReactNode {
+  return (
+    <span aria-hidden className="mt-0.5 font-bold">
+      {TONES[tone].icon}
+    </span>
   );
 }
 
 /**
- * 토스트를 띄운다.
+ * 토스트를 띄운다 (#112, #134, #291 5단계).
  *
- * Provider 밖에서 불러도 **터지지 않는다.** 알림은 부가 기능이라 그것 때문에 화면이
- * 통째로 죽으면 안 된다. 대신 콘솔에 남겨 개발 중에 드러나게 한다.
+ * **부르는 쪽은 바뀌지 않았다** — `useToast().success(…)` 그대로다. 안에서 무엇이
+ * 도는지는 스물아홉 개 화면이 알 필요가 없고, 그래서 이 이관이 화면을 건드리지 않았다.
+ *
+ * 컨텍스트를 쓰지 않는다. sonner 의 `toast()` 는 전역 함수라 Provider 가 필요 없고,
+ * **Provider 밖에서 불러도 터지지 않는다** — 전에 폴백을 따로 둬서 지키던 성질이
+ * 이제 구조에서 나온다.
  */
 export function useToast(): ToastApi {
-  return useContext(ToastApiContext) ?? FALLBACK;
+  return API;
 }
 
-export function useToastList(): Toast[] {
-  return useContext(ToastStateContext);
-}
-
-const FALLBACK: ToastApi = {
-  success: (message) => console.warn("[toast] Provider 밖에서 호출됨:", message),
-  error: (message) => console.warn("[toast] Provider 밖에서 호출됨:", message),
-  info: (message) => console.warn("[toast] Provider 밖에서 호출됨:", message),
-  dismiss: () => undefined,
+const API: ToastApi = {
+  success: (message) => sonner.success(body("success", message), { icon: icon("success") }),
+  error: (message) => sonner.error(body("error", message), { icon: icon("error") }),
+  info: (message) => sonner.message(body("info", message), { icon: icon("info") }),
+  dismiss: (id) => sonner.dismiss(id),
 };
