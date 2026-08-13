@@ -74,6 +74,31 @@ export function AdminUserActions({
         }}
         onError={onError}
       />
+      {/*
+        사유 칸은 **되돌릴 수 없거나 남에게 보이는 조치가 함께 쓴다** (#225).
+        소개 지우기와 강제 탈퇴 둘 다 서버가 사유를 요구하므로 한 칸으로 둔다 —
+        조치마다 칸을 두면 어느 것을 채워야 하는지가 화면마다 달라진다.
+      */}
+      <Input
+        placeholder="사유 (지우기·탈퇴에 필요)"
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+      />
+
+      {/*
+        소개 지우기 (#310). **신고 기능이 없어도 지울 길은 있어야 한다** — 프로필은
+        남에게 보이는 자리라 광고나 사칭이 적힐 수 있다. 고쳐 쓰지 않고 지우기만 한다.
+      */}
+      <Button
+        variant="ghost"
+        disabled={running || reason.trim().length === 0}
+        onClick={() =>
+          run(() => userApi.clearBio(target.id, reason.trim()), `${target.nickname} 의 소개를 지웠습니다.`)
+        }
+      >
+        소개 지우기
+      </Button>
+
       <SuspendForm
         userId={target.id}
         onDone={(message) => {
@@ -119,15 +144,7 @@ export function AdminUserActions({
             value={confirmation}
             onChange={(event) => setConfirmation(event.target.value)}
           />
-          {/*
-            사유는 **서버가 요구한다** (#225). 계정이 지워진 뒤에 "누가 왜" 를 물으면
-            기록의 사유가 유일한 답이 된다.
-          */}
-          <Input
-            placeholder="사유 (필수)"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
+          {/* 사유는 위의 칸을 쓴다 — 서버가 요구한다 (#225). */}
           <Button
             variant="danger"
             disabled={running || confirmation !== target.nickname || reason.trim().length === 0}

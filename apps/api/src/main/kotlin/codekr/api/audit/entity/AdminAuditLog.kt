@@ -78,6 +78,13 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      */
     SUSPEND("정지", requiresReason = true),
 
+    /**
+     * 프로필 소개 지우기 (#310). **남에게 보이는 것을 지우는 일이라 사유가 필수다.**
+     *
+     * 지운 뒤에는 원래 무엇이 적혀 있었는지 알 길이 없다 — 사유가 유일한 설명이다.
+     */
+    BIO_CLEAR("소개 지우기", requiresReason = true),
+
     /** 정지 해제 (#224). 되돌리는 쪽이라 사유를 요구하지 않는다. */
     LIFT_SUSPENSION("정지 해제", requiresReason = false),
 

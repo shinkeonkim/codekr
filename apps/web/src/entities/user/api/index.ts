@@ -90,6 +90,14 @@ export const userApi = {
   forceWithdraw: (id: number, reason: string) =>
     request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", auth: true, query: { reason } }),
 
+  /** 내 프로필에서 남에게 보이는 값 (#310). 설정(내가 보는 값)과 나눈다. */
+  updateProfile: (body: { bio?: string }) =>
+    request<{ bio: string | null }>("/api/v1/users/me/profile", { method: "PATCH", auth: true, body }),
+
+  /** 어드민이 소개를 지운다 (#310). 신고 기능이 없어도 지울 길은 있어야 한다. */
+  clearBio: (id: number, reason: string) =>
+    request<void>(`/api/v1/admin/users/${id}/bio`, { method: "DELETE", auth: true, query: { reason } }),
+
   /**
    * 회원 정지 (#224). **`ADMIN` 이 건다** — 되돌릴 수 있는 조치라, 실제로 게시판을
    * 지키는 사람이 쓸 수 있어야 한다.

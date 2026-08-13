@@ -5,6 +5,7 @@ import type { SubmissionVisibility } from "@/entities/submission";
 import { userApi } from "@/entities/user";
 import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
+import { BioEditor } from "@/features/profile-bio";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
 import { ThemePicker, applyAccountTheme, fromServer } from "@/features/theme";
@@ -63,18 +64,26 @@ function SettingsView() {
 
       <Card className="space-y-3 p-5">
         <div>
-          <h2 className="text-sm font-semibold text-ink">프로필 이미지</h2>
+          <h2 className="text-sm font-semibold text-ink">남에게 보이는 프로필</h2>
           <p className="mt-1 text-xs text-ink-muted">
-            목록과 순위표에서 사람을 구분하는 데 쓰입니다. 올리지 않으면 닉네임 첫 글자가 보입니다.
+            이미지는 목록과 순위표에서 사람을 구분하는 데 쓰입니다 — 올리지 않으면 닉네임 첫
+            글자가 보입니다. 소개는 프로필을 여는 사람에게 보입니다.
           </p>
         </div>
         {user ? (
+          <>
           <AvatarEditor
             nickname={user.nickname}
             avatarUrl={user.avatarUrl}
             // 헤더와 프로필이 같은 값을 쓰므로 바뀌면 사용자 정보를 다시 받는다.
             onChange={() => refresh()}
           />
+          {/*
+            소개도 아바타와 같은 성격이다 (#310) — 본인이 쓰고, 남에게 보인다.
+            같은 카드에 두어 "남에게 보이는 것" 이 한자리에 모이게 한다.
+          */}
+          <BioEditor bio={user.bio} onChange={() => refresh()} />
+          </>
         ) : null}
       </Card>
 

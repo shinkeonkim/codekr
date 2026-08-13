@@ -23,6 +23,8 @@ export interface User {
   isAdmin: boolean;
   /** 아바타 주소 (#116). 올리지 않았으면 null — 화면이 기본 표현을 그린다. */
   avatarUrl: string | null;
+  /** 소개 문구 (#310). 설정 화면이 지금 쓴 것을 보여주고 고치는 데 쓴다. */
+  bio: string | null;
 }
 
 export interface TokenResponse {
@@ -53,6 +55,12 @@ export interface SolvedByTag {
 export interface UserProfile {
   nickname: string;
   avatarUrl: string | null;
+  /**
+   * 소개 문구 (#310). 안 썼으면 null — **빈 문자열이 오지 않는다.**
+   *
+   * 빈 자리를 그리면 "안 쓴 사람" 이 아니라 "고장 난 화면" 으로 보인다.
+   */
+  bio: string | null;
   joinedAt: string;
   solvedCount: number;
   submissionCount: number;
