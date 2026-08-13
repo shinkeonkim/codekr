@@ -225,7 +225,9 @@ class SubmissionService(
         val runtime = runtimeRegistry.require(runtimeId)
         // 유형이 맞지 않는 런타임은 고를 수 있어도 채점되지 않는다 (#60).
         // 화면이 목록을 걸러 주지만, 화면을 거치지 않는 경로가 생겨도 막히게 여기서도 본다.
-        if (runtime.problemKind != problem.problemKind) {
+        // 규칙은 `RuntimeDefinition.canSolve` 한 곳에 있다 (#446) — 목록을 거르는 곳과
+        // 제출을 막는 곳이 다른 규칙을 쓰면 화면에 보이는데 제출은 안 되는 조합이 생긴다.
+        if (!runtime.canSolve(problem.problemKind)) {
             throw ApiException(
                 ErrorCode.RUNTIME_NOT_FOUND,
                 "이 문제에서 쓸 수 없는 실행 환경입니다: $runtimeId",

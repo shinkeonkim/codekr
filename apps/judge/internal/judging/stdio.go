@@ -59,8 +59,11 @@ func (j *StdioJudge) runTestcase(
 	testcase contract.JudgeTestcase,
 ) contract.ExecResult {
 	result, err := j.executor.Run(ctx, contract.ExecJob{
-		RuntimeID:     job.RuntimeID,
-		SourceCode:    job.SourceCode,
+		RuntimeID:  job.RuntimeID,
+		SourceCode: job.SourceCode,
+		// 함수형이면 하네스가 함께 간다 (#447). 비교는 그대로 stdout 이다 —
+		// 하네스가 입력을 읽고 결과를 찍기 때문이다.
+		HarnessSource: job.Harness,
 		Stdin:         testcase.Input,
 		TimeLimitMs:   job.TimeLimitMs,
 		MemoryLimitMb: job.MemoryLimitMb,

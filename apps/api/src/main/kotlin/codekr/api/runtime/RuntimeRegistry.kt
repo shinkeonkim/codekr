@@ -33,11 +33,7 @@ class RuntimeRegistry(
      * 같고, 다른 것은 하네스가 진입점을 가져간다는 것뿐이다 — 그래서 stdio 런타임 중
      * **실행기가 하네스 방식을 아는 것**만 고른다.
      */
-    fun findFor(kind: ProblemKind): List<RuntimeDefinition> = when (kind) {
-        ProblemKind.JUDGE_FUNCTION ->
-            runtimes.filter { it.problemKind == ProblemKind.JUDGE_STDIO && it.supportsFunctionHarness }
-        else -> runtimes.filter { it.problemKind == kind }
-    }
+    fun findFor(kind: ProblemKind): List<RuntimeDefinition> = runtimes.filter { it.canSolve(kind) }
 
     fun require(id: String): RuntimeDefinition = byId[id] ?: throw ApiException(ErrorCode.RUNTIME_NOT_FOUND)
 

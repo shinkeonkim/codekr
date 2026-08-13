@@ -50,7 +50,10 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 	return &Service{
 		kinds: map[string]Kind{
 			contract.KindJudgeStdio: NewStdioJudge(executor, log),
-			contract.KindJudgeSQL:   NewSqlJudge(executor, log),
+			// **함수형도 stdout 을 비교한다** (#447). 다른 것은 하네스가 입출력을
+			// 맡는다는 것뿐이라, 채점 방식을 새로 만들지 않는다.
+			contract.KindJudgeFunction: NewStdioJudge(executor, log),
+			contract.KindJudgeSQL:      NewSqlJudge(executor, log),
 		},
 		events: events,
 		log:    log,
@@ -65,6 +68,21 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 		// 짐작해 채점하면 엉뚱한 판정이 사용자 기록에 남는다.
 		s.log.Error("처리할 수 없는 문제 유형입니다",
 			"submissionId", job.SubmissionID, "kind", job.KindOf())
+		s.complete(ctx, job, Summary{
+			Verdict:    contract.VerdictSystemError,
+			TotalCount: len(job.Testcases),
+		}, "")
+		return
+	}
+
+	/*
+		함수형인데 하네스가 없다 (#447).
+
+		**짐작해 돌리지 않는다.** 하네스 없이 함수만 있는 코드를 실행하면 출력이 없고,
+		그러면 "틀렸다" 로 기록된다 — 사용자 잘못이 아닌데 사용자 기록에 남는다.
+	*/
+	if job.KindOf() == contract.KindJudgeFunction && job.Harness == "" {
+		s.log.Error("함수형 문제인데 하네스가 없습니다", "submissionId", job.SubmissionID)
 		s.complete(ctx, job, Summary{
 			Verdict:    contract.VerdictSystemError,
 			TotalCount: len(job.Testcases),

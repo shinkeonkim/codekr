@@ -22,4 +22,18 @@ data class RuntimeDefinition(
      * (`runtimes.yaml` 의 `functionHarness`). 모르면 하네스를 줘도 돌릴 수 없다.
      */
     val supportsFunctionHarness: Boolean = false,
-)
+) {
+    /**
+     * 이 런타임으로 그 유형의 문제를 풀 수 있는가 (#60, #446).
+     *
+     * **함수형은 자기 런타임을 따로 갖지 않는다.** 파이썬 문제를 파이썬으로 푸는 것은
+     * 같고, 다른 것은 하네스가 진입점을 가져간다는 것뿐이다.
+     *
+     * 규칙을 여기 한 곳에 둔다 — 목록을 거르는 곳과 제출을 막는 곳이 다른 규칙을 쓰면
+     * **화면에 보이는데 제출은 안 되는** 조합이 생긴다.
+     */
+    fun canSolve(kind: ProblemKind): Boolean = when (kind) {
+        ProblemKind.JUDGE_FUNCTION -> problemKind == ProblemKind.JUDGE_STDIO && supportsFunctionHarness
+        else -> problemKind == kind
+    }
+}

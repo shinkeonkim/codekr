@@ -35,6 +35,14 @@ data class JudgeJobMessage(
      * 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
      */
     val sql: JudgeSqlSpecMessage? = null,
+    /**
+     * 함수형 유형일 때만 실린다 (#447, #421).
+     *
+     * **제출한 언어의 하네스다.** 실행기가 사용자 코드와 나란히 놓고 이것을 돌린다.
+     * 채점기는 하네스가 비어 있으면 **채점하지 않는다** — 하네스 없이 함수만 있는
+     * 코드를 돌리면 출력이 없고, 그것은 "틀렸다" 가 아니라 우리 잘못이다.
+     */
+    val harness: String? = null,
 ) {
     companion object {
         /**
@@ -61,6 +69,10 @@ data class JudgeJobMessage(
                 comparison = problem.outputComparison,
                 epsilon = problem.floatEpsilon,
                 sql = sqlSpec?.let(JudgeSqlSpecMessage::from),
+                harness = when (problem.problemKind) {
+                    ProblemKind.JUDGE_FUNCTION -> problem.harnessFor(submission.runtimeId)
+                    else -> null
+                },
             )
         }
     }
