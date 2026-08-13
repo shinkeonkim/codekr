@@ -48,6 +48,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["SUPERUSER"],
   },
   {
+    href: "/admin/badges",
+    label: "뱃지",
+    description: "문구·노출과 달성 규칙",
+    // 뱃지는 모두에게 보이는 것이라 아무 어드민이나 바꾸면 안 된다 (#203).
+    roles: ["SUPERUSER"],
+  },
+  {
     href: "/admin/operations",
     label: "운영 작업",
     description: "랭킹·활동 집계 재계산",
