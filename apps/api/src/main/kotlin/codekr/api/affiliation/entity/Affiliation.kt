@@ -1,4 +1,4 @@
-package codekr.api.affiliation
+package codekr.api.affiliation.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -8,7 +8,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import org.springframework.data.jpa.repository.JpaRepository
 import java.time.Instant
 
 /** 학교인가 회사인가 (#397). 화면이 나눠 보여 준다. */
@@ -77,16 +76,4 @@ class AffiliationDomain(
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: Instant = Instant.now()
-}
-
-interface AffiliationRepository : JpaRepository<Affiliation, Long> {
-    fun findByDeletedAtIsNullOrderByNameAsc(): List<Affiliation>
-    fun findByIdAndDeletedAtIsNull(id: Long): Affiliation?
-    fun existsByNameAndDeletedAtIsNull(name: String): Boolean
-}
-
-interface AffiliationDomainRepository : JpaRepository<AffiliationDomain, Long> {
-    fun findByAffiliationIdOrderByDomainAsc(affiliationId: Long): List<AffiliationDomain>
-    fun findByDomain(domain: String): AffiliationDomain?
-    fun deleteByAffiliationId(affiliationId: Long)
 }

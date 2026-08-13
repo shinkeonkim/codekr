@@ -1,5 +1,7 @@
 package codekr.api.affiliation
 
+import codekr.api.affiliation.repository.AffiliationDomainRepository
+import codekr.api.affiliation.repository.AffiliationRepository
 import codekr.api.auth.security.JwtTokenProvider
 import codekr.api.support.IntegrationTestBase
 import codekr.api.user.entity.User
