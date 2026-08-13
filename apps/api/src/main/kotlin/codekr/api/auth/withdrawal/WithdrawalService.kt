@@ -5,6 +5,7 @@ import codekr.api.auth.security.RevokedTokenRegistry
 import codekr.api.audit.service.AdminAuditService
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.user.email.UserEmailRepository
 import codekr.api.user.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -25,6 +26,7 @@ class WithdrawalService(
     private val auditService: AdminAuditService,
     private val userRepository: UserRepository,
     private val revokedTokens: RevokedTokenRegistry,
+    private val userEmails: UserEmailRepository,
 ) {
 
     fun withdraw(userId: Long) = withdraw(userId, actorId = null, reason = null)
@@ -51,6 +53,14 @@ class WithdrawalService(
                 reason = reason,
             )
         }
+
+        /*
+            **확인한 추가 주소도 지운다** (#396, #140).
+
+            학교·회사 메일이라 실명이 들어 있는 경우가 많다 — 로그인 주소를 지우면서
+            이것을 남기면 "식별 정보를 남기지 않는다" 가 반만 지켜진다.
+        */
+        userEmails.deleteByUserId(user.id)
 
         user.withdraw()
         // 발급된 토큰도 더 이상 통하지 않아야 한다. 만료를 기다리지 않는다.

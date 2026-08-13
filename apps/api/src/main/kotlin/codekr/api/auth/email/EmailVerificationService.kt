@@ -2,6 +2,8 @@ package codekr.api.auth.email
 
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.user.email.UserEmail
+import codekr.api.user.email.UserEmailRepository
 import codekr.api.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -19,6 +21,7 @@ class EmailVerificationService(
     private val mailSender: MailSender,
     private val properties: MailProperties,
     private val clock: Clock,
+    private val userEmails: UserEmailRepository,
 ) {
 
     /**
@@ -28,11 +31,11 @@ class EmailVerificationService(
      * 여기서는 토큰 발급까지만 책임진다.
      */
     @Transactional
-    fun send(userId: Long, email: String, enforceCooldown: Boolean = false) {
+    fun send(userId: Long, email: String, enforceCooldown: Boolean = false, forAddress: String? = null) {
         val now = clock.instant()
 
         if (enforceCooldown) {
-            repository.findFirstByUserIdOrderByIdDesc(userId)?.let { last ->
+            repository.findFirstByUserIdAndEmailOrderByIdDesc(userId, forAddress)?.let { last ->
                 val next = last.createdAt.plus(COOLDOWN)
                 if (next.isAfter(now)) {
                     val seconds = Duration.between(now, next).seconds + 1
@@ -46,7 +49,9 @@ class EmailVerificationService(
         }
 
         val token = newToken()
-        repository.save(EmailVerification(userId, hash(token), now.plus(TTL)))
+        // `forAddress` 가 있으면 **추가 주소**를 확인하는 토큰이다 (#396).
+        // 없으면 로그인 주소 — 가입 때 보내는 그것이다.
+        repository.save(EmailVerification(userId, hash(token), now.plus(TTL), forAddress))
 
         val link = "${properties.siteUrl}/verify-email?token=$token"
         mailSender.send(
@@ -89,7 +94,24 @@ class EmailVerificationService(
         }
 
         record.use(now)
-        user.verifyEmail(now)
+
+        /*
+            **어느 주소를 확인한 것인가** (#396).
+
+            추가 주소면 로그인 주소의 확인 여부를 건드리지 않는다 — 학교 메일을
+            확인했다고 가입 주소가 확인된 것은 아니다.
+        */
+        val address = record.email
+        if (address == null) {
+            user.verifyEmail(now)
+            return
+        }
+
+        // 기다리는 동안 남이 먼저 확인했을 수 있다. 그때는 붙이지 않는다.
+        if (userRepository.findByEmail(address) != null || userEmails.existsByEmail(address)) {
+            throw ApiException(ErrorCode.EMAIL_ALREADY_EXISTS)
+        }
+        userEmails.save(UserEmail(record.userId, address))
     }
 
     private fun newToken(): String {

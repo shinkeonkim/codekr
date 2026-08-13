@@ -56,7 +56,7 @@ class EmailVerificationIntegrationTest : IntegrationTestBase() {
         ).andExpect(status().isCreated)
 
         val created = userRepository.findByEmail("new@codekr.dev")!!
-        assertNotNull(verifications.findFirstByUserIdOrderByIdDesc(created.id))
+        assertNotNull(verifications.findFirstByUserIdAndEmailOrderByIdDesc(created.id, null))
         // **가입은 성공한다.** 메일 설정이 없어도(로컬이 그렇다) 발급까지는 된다.
         assertNull(created.emailVerifiedAt)
     }
