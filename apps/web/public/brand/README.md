@@ -24,8 +24,33 @@
 | `mascot-cat.webp` | `cat1.png` | 알림 빈 화면 |
 | `wordmark.webp` | `logo/codekr-wordmark2.png` | 헤더·푸터 로고 |
 
+두 번째 묶음 (#461):
+
+| 파일 | 출처 | 쓰는 곳 |
+|---|---|---|
+| `banner-submissions-1.webp` | `banner/submissions-01.png` | 전체 제출 상단 슬라이드쇼 1장 |
+| `banner-submissions-2.webp` | `banner/submissions-02.png` | 전체 제출 상단 슬라이드쇼 2장 |
+| `banner-admin.webp` | `banner/admin-02.png` | 어드민 첫 화면 배너 |
+| `state-login.webp` | `welcome-login.png` | 로그인 화면 |
+
 파비콘·앱 아이콘·OG 이미지는 Next 규약대로 `src/app/` 에 둔다
 (`icon.png`, `apple-icon.png`, `opengraph-image.jpg`).
+README 그림은 웹이 서빙하지 않으므로 여기 두지 않는다 — `docs/images/readme-welcome.webp` 다.
+
+## 두 번째 묶음에서 달라진 것 (#461)
+
+**배너는 자르지 않았다.** 첫 묶음은 그림 속 버튼("TRY AGAIN", "로그인 하기")을 잘라
+냈지만, 배너 셋은 목록 위에 까는 **장식 띠**여서 그림 속 UI 를 조작으로 착각할 자리가
+아니다 — 진짜 버튼은 배너 바깥에 따로 있다. 어드민 배너의 숫자(12,543 · 62.4%)도 실제
+값이 아니다. **진짜 지표를 그 자리에 넣게 되면 그림을 뺀다.**
+
+**배경 제거도 하지 않았다.** 배너 셋은 배경 자체가 그림이라 걷어 낼 것이 없다.
+`state-login.webp` 만 원본이 이미 투명이라 **투명 여백만 잘라 냈다**(1536×1024 →
+1154×1014 → 460×404). 첫 묶음의 flood fill 은 이번에 쓸 일이 없었다.
+
+**배너 셋은 폭 1600 이다.** 본문 폭이 `max-w-6xl`(1152px)이라 그 1.4배다. 셋 다 원본
+비율 1983×793 을 지켜 1600×640 이 됐다 — **비율이 어긋나면 슬라이드가 바뀔 때 아래
+목록이 튄다.**
 
 ## 워드마크는 2판을 쓴다
 

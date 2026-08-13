@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/features/auth";
-import { Card, EmptyState } from "@/shared/ui";
+import { BrandBanner, Card, EmptyState } from "@/shared/ui";
 import { visibleNav } from "@/widgets/admin-nav";
 import Link from "next/link";
 
@@ -21,6 +21,12 @@ export function AdminHomePage() {
 
   return (
     <div className="space-y-5">
+      {/*
+        접근할 구획이 하나도 없는 사람에게는 위의 `forbidden` 만 보이고 여기까지 오지 않는다 —
+        들어올 수 없는 화면에 환영 배너를 걸지 않는다 (#461).
+      */}
+      <BrandBanner name="admin" priority />
+
       <header>
         <h1 className="text-2xl font-bold text-ink">어드민</h1>
         <p className="mt-1 text-sm text-ink-muted">권한이 있는 구획만 보입니다.</p>
