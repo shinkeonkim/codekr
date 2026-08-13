@@ -53,6 +53,7 @@ abstract class IntegrationTestBase {
                      problem_files,
                      problem_difficulty_votes,
                      problem_reports,
+                     user_score_history,
                      problem_sql_specs,
                      problem_nosql_specs,
                      problem_templates, problem_testcases, problems,
