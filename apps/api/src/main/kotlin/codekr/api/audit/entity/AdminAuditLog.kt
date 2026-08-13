@@ -91,6 +91,13 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      */
     COLLECTION_TAKEDOWN("문제집 내리기", requiresReason = true),
 
+    /**
+     * 남의 글·댓글 내리기 (#336). **사유가 필수다** — 남이 쓴 것을 지우는 일이고,
+     * 지운 뒤에는 무엇이었는지 알 길이 없다.
+     */
+    POST_DELETE("글 삭제", requiresReason = true),
+    COMMENT_DELETE("댓글 삭제", requiresReason = true),
+
     /** 정지 해제 (#224). 되돌리는 쪽이라 사유를 요구하지 않는다. */
     LIFT_SUSPENSION("정지 해제", requiresReason = false),
 

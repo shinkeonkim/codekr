@@ -48,6 +48,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["SUPERUSER"],
   },
   {
+    href: "/admin/board",
+    label: "게시판 관리",
+    description: "글·댓글 훑어보기와 내리기",
+    // 공지를 쓰고 남의 글을 내리는 역할이다 (#336).
+    roles: ["BOARD_MANAGER"],
+  },
+  {
     href: "/admin/badges",
     label: "뱃지",
     description: "문구·노출과 달성 규칙",
