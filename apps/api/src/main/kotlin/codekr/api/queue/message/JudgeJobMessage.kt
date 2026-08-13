@@ -35,6 +35,12 @@ data class JudgeJobMessage(
      * 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
      */
     val sql: JudgeSqlSpecMessage? = null,
+    /**
+     * 스페셜 저지의 채점 코드 (#452). `comparison` 이 `CHECKER` 일 때만 실린다.
+     *
+     * **채점기가 DB 를 읽지 않는다**(ADR-0004) — 판정에 필요한 것은 전부 실려 간다.
+     */
+    val checker: String? = null,
 ) {
     companion object {
         /**
@@ -61,6 +67,8 @@ data class JudgeJobMessage(
                 comparison = problem.outputComparison,
                 epsilon = problem.floatEpsilon,
                 sql = sqlSpec?.let(JudgeSqlSpecMessage::from),
+                checker = problem.checkerSource
+                    ?.takeIf { problem.outputComparison == OutputComparison.CHECKER },
             )
         }
     }

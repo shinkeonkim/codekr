@@ -59,6 +59,14 @@ data class ProblemUpsertRequest(
      */
     val allowedRuntimeIds: List<String> = emptyList(),
 
+    /**
+     * 스페셜 저지의 채점 코드 (#452). 파이썬이다.
+     *
+     * `outputComparison` 이 `CHECKER` 일 때만 쓴다 — 아니면 서비스가 거부한다.
+     * 입력·제출 출력·정답 출력을 **파일로** 받고, 종료 코드로 답한다 (0=맞음, 1=틀림).
+     */
+    val checkerSource: String? = null,
+
     /** SQL 유형일 때만 쓴다 (#60). 다른 유형에 실려 오면 서비스가 거부한다. */
     @field:Valid
     val sqlSpec: SqlSpecRequest? = null,

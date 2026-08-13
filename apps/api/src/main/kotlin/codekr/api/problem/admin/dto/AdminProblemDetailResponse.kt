@@ -47,6 +47,12 @@ data class AdminProblemDetailResponse(
     val allowedRuntimeIds: List<String>,
     val judgePriority: ProblemJudgePriority,
     val solution: SolutionResponse?,
+    /**
+     * 스페셜 저지의 채점 코드 (#452). **어드민에게만 간다** — 공개 상세에는 없다.
+     *
+     * 고치려면 지금 무엇이 들어 있는지 보여야 한다.
+     */
+    val checkerSource: String?,
     val verification: VerificationResponse?,
     /** 지금 붙어 있는 태그 (#232). 편집 화면이 무엇을 고쳐야 할지 알려면 필요하다. */
     val tags: List<ProblemTagResponse> = emptyList(),
@@ -89,6 +95,7 @@ data class AdminProblemDetailResponse(
             allowedRuntimeIds = problem.allowedRuntimeIds,
             judgePriority = problem.judgePriority,
             solution = SolutionResponse.from(problem),
+            checkerSource = problem.checkerSource,
             verification = verification,
             tags = tags,
         )

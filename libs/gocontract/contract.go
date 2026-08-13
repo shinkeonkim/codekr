@@ -180,6 +180,17 @@ type JudgeJob struct {
 	// 유형별 자료를 공통 필드에 섞지 않고 블록으로 나눈 이유: 유형이 늘어날 때
 	// 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
 	SQL *JudgeSQLSpec `json:"sql,omitempty"`
+	/*
+		Checker 는 CompareChecker 일 때 실리는 **출제자의 채점 코드**다 (#452).
+
+		파이썬으로 고정한다 — 언어를 열면 실행기가 언어마다 채점 코드를 돌리는 법을
+		알아야 하고, 그것은 하네스(#421)가 이미 겪는 문제다. **늘리는 것은 나중에
+		할 수 있고, 줄이는 것은 못 한다.**
+
+		비어 있으면 채점하지 않는다 — 견줄 기대값도 없고 물어볼 코드도 없는 상태라,
+		그것은 **오답이 아니라 출제자의 실수**다.
+	*/
+	Checker string `json:"checker,omitempty"`
 }
 
 // 출력 비교 방식 (#279, ADR-0010).
@@ -191,6 +202,13 @@ const (
 	CompareExact = "EXACT"
 	// CompareFloat 는 토큰마다 숫자로 읽히면 오차 안에서 비교한다.
 	CompareFloat = "FLOAT"
+	/*
+		CompareChecker 는 **출제자가 쓴 코드가 판정한다** (#452).
+
+		정답이 여럿인 문제 — 조건을 만족하는 아무 배치, 임의 순서, "성질이 맞는가" —
+		는 기대값과 견줄 수가 없다. 그때는 견주는 대신 **물어본다.**
+	*/
+	CompareChecker = "CHECKER"
 )
 
 // ComparisonOf 는 빈 값을 CompareExact 로 읽는다. 옛 작업과 새 채점기를 잇는다.
