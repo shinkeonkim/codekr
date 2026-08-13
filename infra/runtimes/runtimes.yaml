@@ -292,3 +292,50 @@ runtimes:
     template: |
       -- 여기에 SELECT 문을 작성하세요.
       SELECT 1 + 2;
+
+  # ── 난해한 언어 (#394) ─────────────────────────────────────────────────────
+  #
+  # **문제를 푸는 방법이 아니라 언어 자체가 놀이인 쪽**이다. 하나라도 있으면 같은
+  # 문제를 다시 풀 이유가 생긴다.
+  #
+  # 둘 다 공식 이미지가 없어 직접 만든다 (infra/runtimes/images/).
+  # 그리고 둘 다 **JIT 없는 순수 파이썬 인터프리터**라 느리다 — 실행 제한을 따로 준다(#97).
+  - id: "aheui:1.2"
+    label: "아희 (pyaheui 1.2)"
+    # Monaco 가 이 언어를 모른다. 문법 강조가 없는 편이 **틀린 강조보다 낫다.**
+    monacoLanguage: "plaintext"
+    image: "codekr-runtime-aheui:1.2"
+    sourceFile: "main.aheui"
+    run: ["aheui", "main.aheui"]
+    # **도는 프로그램 하나를 둔다.** 아희는 빈 화면에서 시작하기가 특히 어렵다 —
+    # 한글 음절 자체가 코드라 무엇을 쳐야 할지조차 알기 어렵다. 공식 예제의
+    # "안녕하세요?" 를 그대로 뒀다 (aheui/snippets).
+    template: |
+      어듀벊벖버범벅벖떠벋벍떠벑번뻐버떠뻐벚벌버더벊벖떠벛벜버버
+      　ㅇ　　ㅏㄴㄴㅕㅇ　　ㅎ　　ㅏ　ㅅ　　ㅔ　ㅇ　　ㅛ　　　\0
+      　뿌멓더떠떠떠떠더벋떠벌뻐뻐뻐
+      붉차밠밪따따다밠밨따따다　박봃
+      받빠따따맣반발따맣아희～
+  - id: "umjunsik:1.0"
+    label: "엄랭 (umjunsik-lang)"
+    monacoLanguage: "plaintext"
+    image: "codekr-runtime-umjunsik:1.0"
+    sourceFile: "main.umm"
+    run: ["python", "-m", "umjunsik", "main.umm"]
+    # 두 수를 읽어 더해 출력한다. **빈 화면에서 시작하기가 특히 어려운 언어**라,
+    # 도는 프로그램 하나를 두는 것이 시작 코드의 값이다 (저장소의 예제에서 가져왔다).
+    template: |
+      어떻게
+      
+      엄식?
+      어엄식?
+      
+      동탄어?준... ....
+      
+      엄어,
+      어엄어어.
+      
+      준.. ...
+      식어어!
+      
+      이 사람이름이냐ㅋㅋ
