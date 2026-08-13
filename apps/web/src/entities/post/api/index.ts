@@ -61,3 +61,43 @@ export const postApi = {
   removeComment: (id: number) =>
     request<CommentTree>(`/api/v1/comments/${id}`, { method: "DELETE", auth: true }),
 };
+
+export interface AdminPostRow {
+  id: number;
+  board: string;
+  title: string;
+  authorNickname: string;
+  problemId: number | null;
+  commentCount: number;
+  createdAt: string;
+}
+
+export interface AdminCommentRow {
+  id: number;
+  postId: number;
+  postTitle: string;
+  authorNickname: string;
+  excerpt: string;
+  createdAt: string;
+}
+
+/**
+ * 게시판 관리 (#336).
+ *
+ * **글과 댓글을 따로 훑는다** — 댓글이 글 안에 숨어 있으면 어디에 무엇이 달렸는지
+ * 알 방법이 없다.
+ */
+export const adminBoardApi = {
+  posts: (query: { authorNickname?: string; board?: string; page?: number; size?: number }) =>
+    request<Page<AdminPostRow>>("/api/v1/admin/board/posts", { auth: true, query }),
+
+  comments: (query: { authorNickname?: string; page?: number; size?: number }) =>
+    request<Page<AdminCommentRow>>("/api/v1/admin/board/comments", { auth: true, query }),
+
+  /** 사유는 관리 기록에 남는다 (#225). */
+  deletePost: (id: number, reason: string) =>
+    request<void>(`/api/v1/admin/board/posts/${id}`, { method: "DELETE", auth: true, query: { reason } }),
+
+  deleteComment: (id: number, reason: string) =>
+    request<void>(`/api/v1/admin/board/comments/${id}`, { method: "DELETE", auth: true, query: { reason } }),
+};
