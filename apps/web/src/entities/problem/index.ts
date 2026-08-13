@@ -1,4 +1,4 @@
-export { problemApi } from "./api";
+export { problemApi, siteStatsApi } from "./api";
 export {
   ALL_DIFFICULTIES,
   CATEGORY_LABELS,

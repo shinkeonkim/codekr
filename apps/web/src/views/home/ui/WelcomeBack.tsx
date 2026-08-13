@@ -1,6 +1,8 @@
 "use client";
 
 import { activityApi } from "@/entities/activity";
+import { submissionApi } from "@/entities/submission";
+import type { SubmissionSummary } from "@/entities/submission";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/shared/ui";
 import Link from "next/link";
@@ -22,12 +24,36 @@ import { HeroFrame } from "./HeroFrame";
 export function WelcomeBack() {
   const { user } = useAuth();
   const [streak, setStreak] = useState<number | null>(null);
+  const [unsolved, setUnsolved] = useState<SubmissionSummary | null>(null);
 
   useEffect(() => {
     activityApi
       .mine()
       .then((activity) => setStreak(activity.currentStreak))
       .catch(() => setStreak(null));
+  }, []);
+
+  useEffect(() => {
+    /*
+      **이어서 풀 문제** (#231).
+
+      최근에 냈지만 아직 못 맞힌 문제다 — "오늘 무엇을 할지" 를 정해 주는 자리에서
+      가장 값이 있는 한 줄이고, 이미 있는 API 로 만들 수 있다. 첫 화면 전용 API 를
+      새로 만들면 같은 값을 두 곳에서 세게 된다.
+    */
+    submissionApi
+      .mine({ size: 20 })
+      .then((page) => {
+        const solved = new Set(
+          page.content.filter((each) => each.verdict === "ACCEPTED").map((each) => each.problemSlug),
+        );
+        setUnsolved(
+          page.content.find(
+            (each) => each.problemId !== null && each.verdict !== null && !solved.has(each.problemSlug),
+          ) ?? null,
+        );
+      })
+      .catch(() => setUnsolved(null));
   }, []);
 
   const { headline, note } = greeting(user?.nickname ?? "", streak);
@@ -38,6 +64,16 @@ export function WelcomeBack() {
       <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-ink-muted lg:mx-0">
         {note}
       </p>
+
+      {/* 못 맞힌 문제가 있으면 그것부터 권한다. 없으면 이 줄이 아예 없다. */}
+      {unsolved?.problemId ? (
+        <p className="mt-3 text-sm text-ink-muted">
+          이어서 풀 문제:{" "}
+          <Link href={`/problems/${unsolved.problemId}`} className="font-medium text-brand hover:underline">
+            {unsolved.problemTitle}
+          </Link>
+        </p>
+      ) : null}
 
       <div className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
         <Link href="/problems">

@@ -40,3 +40,13 @@ export const problemApi = {
   remove: (id: number) =>
     request<void>(`/api/v1/admin/problems/${id}`, { method: "DELETE", auth: true }),
 };
+
+/**
+ * 첫 화면이 보여 줄 숫자 (#231).
+ *
+ * **부끄럽지 않은 것만 온다** — 문제 수와 지원 언어 수다. 회원 수·제출 수는 초기에
+ * 비어 보이므로 서버가 내리지 않는다.
+ */
+export const siteStatsApi = {
+  fetch: () => request<{ problemCount: number; runtimeCount: number }>("/api/v1/stats/site"),
+};
