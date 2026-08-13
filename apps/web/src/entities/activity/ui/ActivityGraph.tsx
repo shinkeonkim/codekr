@@ -39,6 +39,9 @@ function toKey(date: Date): string {
  * 실제 정보(날짜·활동량)는 `title` 과 스크린 리더용 텍스트로 함께 제공한다.
  */
 /** 툴팁이 화면 밖으로 나가지 않게 끝에서 몇 주를 예외로 볼지. */
+/** 위에 툴팁이 들어갈 자리가 없는 줄 수 (#312). 실제로 재어 정했다. */
+const ROWS_WITHOUT_ROOM = 3;
+
 const EDGE_WEEKS = 4;
 
 interface Props {
@@ -115,6 +118,15 @@ export function ActivityGraph({ activity, year, onYearChange }: Props) {
                         levelClassName={LEVELS[levelOf(count)].className}
                         submissions={count}
                         solved={entry?.solvedCount ?? 0}
+                        /*
+                          위쪽 줄은 툴팁을 **아래로** 띄운다 (#312).
+
+                          감싼 상자가 `overflow-x-auto` 라 위로 나간 툴팁이 잘린다.
+                          브라우저에서 재어 보니 첫 줄은 32px, 둘째 줄은 16px, 셋째
+                          줄은 1px 잘렸다 — 툴팁 높이(약 27px)가 줄 간격(15px)보다
+                          커서 세 줄까지 자리가 모자란다.
+                        */
+                        side={weekdayIndex < ROWS_WITHOUT_ROOM ? "bottom" : "top"}
                         // 양 끝에서는 툴팁이 화면 밖으로 나가지 않게 붙이는 쪽을 바꾼다.
                         align={
                           weekIndex < EDGE_WEEKS
