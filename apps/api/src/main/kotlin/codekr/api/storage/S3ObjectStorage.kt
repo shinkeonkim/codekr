@@ -1,5 +1,7 @@
 package codekr.api.storage
 
+import codekr.api.common.error.ApiException
+import codekr.api.common.error.ErrorCode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -19,25 +21,46 @@ import java.net.URI
 /**
  * S3 호환 저장소 (#115). 운영은 S3, 로컬은 MinIO — 같은 코드다.
  *
- * 설정이 없으면 [available] 이 false 이고 아무것도 하지 않는다. 스토리지 없이도
- * 나머지 기능이 돌아야 한다 — 아바타 때문에 서비스 전체가 뜨지 못하면 안 된다.
+ * 설정이 없거나 붙지 못하면 [available] 이 false 다. 스토리지 없이도 나머지 기능이
+ * 돌아야 한다 — 아바타 때문에 서비스 전체가 뜨지 못하면 안 된다.
+ *
+ * **다만 읽기와 쓰기를 다르게 다룬다** (#424). 읽기는 조용히 없는 것으로 답하고,
+ * **쓰기는 실패로 알린다.** 저장하지 못했는데 성공했다고 답하면 부르는 쪽이 키를
+ * 기록하고, 그때부터 DB 가 없는 파일을 가리킨다.
  */
 @Component
 class S3ObjectStorage(private val properties: StorageProperties) : ObjectStorage {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override val available: Boolean = properties.endpoint.isNotBlank()
+    /**
+     * 쓸 수 있는 상태인가.
+     *
+     * **주소가 있는 것과 붙을 수 있는 것은 다르다** (#424). 전에는 endpoint 만 봐서,
+     * 자격증명이 비어 클라이언트를 못 만들어도 `true` 였다. 그러면 위층은 저장할 수
+     * 있다고 믿고 [put] 을 부르는데, 거기서 조용히 아무 일도 일어나지 않았다 —
+     * **없는 파일을 가리키는 행이 DB 에 남았다.**
+     */
+    override val available: Boolean get() = client != null
+
+    private val configured: Boolean = properties.endpoint.isNotBlank()
 
     private val client: S3Client? by lazy {
-        if (!available) return@lazy null
+        if (!configured) return@lazy null
         runCatching { buildClient() }
             .onFailure { log.error("오브젝트 스토리지 연결 실패: {}", it.message) }
             .getOrNull()
     }
 
+    /**
+     * 저장한다.
+     *
+     * **저장하지 못하면 실패로 알린다** (#424). 조용히 넘어가면 부르는 쪽은 성공한 줄
+     * 알고 키를 기록한다. 스토리지가 없어도 서비스가 떠야 한다는 규칙(#115)은
+     * **읽기에 대한 것**이지, 쓰기가 거짓말을 해도 된다는 뜻이 아니다.
+     */
     override fun put(key: String, bytes: ByteArray, contentType: String) {
-        val s3 = client ?: return
+        val s3 = client ?: throw ApiException(ErrorCode.STORAGE_UNAVAILABLE)
         ensureBucket(s3)
         s3.putObject(
             PutObjectRequest.builder()
