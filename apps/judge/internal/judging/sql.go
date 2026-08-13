@@ -10,6 +10,27 @@ import (
 // SQL 실행 환경. 문제마다 새 PostgreSQL 을 샌드박스 안에서 띄운다 (#60).
 const sqlRuntimeID = "sql:postgres16"
 
+/*
+sqlFiles 는 하네스가 읽을 파일을 만든다 (#60, #453).
+
+**신호도 파일이다.** 쓰기를 여는 것을 환경 변수로 하면 그 값이 어디서 오는지 아는 곳이
+하나 늘어난다 — 스키마·정답·검사 쿼리가 오는 길이 이미 여기다.
+*/
+func sqlFiles(spec *contract.JudgeSQLSpec) map[string]string {
+	files := map[string]string{
+		"schema.sql": spec.Schema,
+		"answer.sql": spec.Answer,
+	}
+	// 상태를 묻는 문제 (#453). 있으면 하네스가 데이터베이스를 둘 만든다.
+	if spec.Verify != "" {
+		files["verify.sql"] = spec.Verify
+	}
+	if spec.AllowWrite {
+		files["allow-write"] = "1"
+	}
+	return files
+}
+
 // SqlJudge 는 SQL 문제를 채점한다 (#60).
 //
 // **정답 쿼리와 제출 쿼리를 같은 데이터베이스에서 돌려 결과를 비교한다.** 정답을
@@ -41,10 +62,7 @@ func (j *SqlJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emitte
 		SourceCode:    job.SourceCode,
 		TimeLimitMs:   job.TimeLimitMs,
 		MemoryLimitMb: job.MemoryLimitMb,
-		ExtraFiles: map[string]string{
-			"schema.sql": job.SQL.Schema,
-			"answer.sql": job.SQL.Answer,
-		},
+		ExtraFiles:    sqlFiles(job.SQL),
 	})
 	if err != nil {
 		j.log.Error("실행 요청 실패", "submissionId", job.SubmissionID, "error", err)

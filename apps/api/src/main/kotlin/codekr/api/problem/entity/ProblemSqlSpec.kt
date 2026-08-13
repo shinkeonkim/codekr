@@ -34,4 +34,23 @@ class ProblemSqlSpec(
      */
     @Column(name = "ignore_row_order", nullable = false)
     var ignoreRowOrder: Boolean = true,
+
+    /**
+     * 끝난 뒤의 **상태를 읽는 쿼리** (#453).
+     *
+     * `INSERT`·`UPDATE`·`CREATE TABLE` 은 결과 집합이 없다. 정답 스크립트를 돌린 DB 와
+     * 제출을 돌린 DB 에서 각각 이 쿼리를 돌려 견준다. 비어 있으면 지금까지처럼
+     * 제출 쿼리의 결과 집합을 견준다.
+     */
+    @Column(name = "verify_sql")
+    var verifySql: String? = null,
+
+    /**
+     * 제출이 쓸 수 있는지 (#453).
+     *
+     * **문자열 필터가 아니라 권한으로 연다** — 필터는 우회되지만 권한은 아니다.
+     * 켜도 슈퍼유저는 주지 않으므로 파일 읽기나 다른 사람의 테이블 삭제는 여전히 막힌다.
+     */
+    @Column(name = "allow_write", nullable = false)
+    var allowWrite: Boolean = false,
 )

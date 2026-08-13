@@ -201,6 +201,14 @@ export interface SqlSpec {
   answerSql: string;
   /** 문제가 정렬을 요구하지 않으면 켜 둔다. 켠 채로 두는 것이 기본이다. */
   ignoreRowOrder: boolean;
+  /**
+   * 끝난 뒤의 **상태를 읽는 쿼리** (#453). 비면 제출 쿼리의 결과 집합을 견준다.
+   *
+   * `INSERT`·`UPDATE`·`CREATE TABLE` 은 결과 집합이 없다 — 바뀌는 것은 DB 의 상태다.
+   */
+  verifySql: string | null;
+  /** 제출이 쓸 수 있는지 (#453). **권한으로 연다.** */
+  allowWrite: boolean;
 }
 
 /** 출력 비교 방식 (#279). */
