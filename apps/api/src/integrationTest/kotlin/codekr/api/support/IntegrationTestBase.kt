@@ -36,6 +36,8 @@ abstract class IntegrationTestBase {
 
     @Autowired private lateinit var redisTemplate: StringRedisTemplate
 
+    @Autowired private lateinit var badgeCatalog: codekr.api.ranking.badge.BadgeCatalog
+
     @BeforeEach
     fun truncateAll() {
         // 순위표 캐시는 애플리케이션 전체가 공유한다. 비우지 않으면 앞 시험의 결과가 남는다.
@@ -63,6 +65,24 @@ abstract class IntegrationTestBase {
             시험이 동의할 판을 잃는다. 대신 시험이 넣은 개정만 걷는다.
         */
         jdbcClient.sql("DELETE FROM term_documents WHERE version <> '1.0'").update()
+
+        /*
+            뱃지 정의도 마이그레이션이 넣은 것이다 (#201) — 비우지 않고, 시험이 고친
+            문구·노출만 되돌린다. 캐시도 함께 비운다.
+        */
+        jdbcClient.sql(
+            """
+            UPDATE badges SET label = seed.label, description = seed.description,
+                              visible = true, sort_order = seed.sort_order
+            FROM (VALUES
+                ('FIRST_ACCEPT', '첫 정답', '처음으로 문제를 맞혔습니다', 10),
+                ('STREAK_7', '일주일 연속', '7일 연속으로 문제를 풀었습니다', 20)
+            ) AS seed(code, label, description, sort_order)
+            WHERE badges.code = seed.code
+            """,
+        ).update()
+        jdbcClient.sql("DELETE FROM badges WHERE code NOT LIKE 'CATEGORY_10_%' AND code NOT IN ('FIRST_ACCEPT','STREAK_7','STREAK_30','FIRST_SOLVER')").update()
+        badgeCatalog.invalidate()
     }
 
 
