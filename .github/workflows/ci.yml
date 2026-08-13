@@ -134,6 +134,16 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
+      # **같은 번호가 둘이면 Flyway 가 아예 뜨지 않는다.** 두 브랜치가 각자 다음 번호를
+      # 집으면 각각은 통과하고 **합쳐진 뒤에 깨진다** — 그것이 실제로 일어났다.
+      # 시험보다 먼저 본다: 이것이 깨지면 어차피 모든 통합 시험이 컨텍스트 로딩에서 죽는다.
+      - name: 마이그레이션 번호 중복 확인
+        run: |
+          dupes=$(ls src/main/resources/db/migration | grep -oE '^V[0-9]+' | sort | uniq -d)
+          if [ -n "$dupes" ]; then
+            echo "::error::같은 번호의 마이그레이션이 둘 이상입니다: $dupes"
+            exit 1
+          fi
       # Testcontainers 가 필요한 통합 테스트는 아래 별도 잡에서 돌린다.
       - run: ./gradlew test
 
