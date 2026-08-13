@@ -141,6 +141,25 @@ func buildInputArchive(spec Spec, scripts stageScripts) (io.Reader, error) {
 		{"run.sh", scripts.run, 0o755},
 	}
 
+	// 문제가 제공한 하네스 (#421). 사용자 코드와 **파일로 나뉘어** 놓인다 —
+	// 그래야 오류의 줄 번호가 사용자 코드 기준으로 남는다.
+	if spec.HarnessSource != "" {
+		if spec.HarnessFile == "" || spec.HarnessFile == spec.SourceFile {
+			return nil, fmt.Errorf("하네스 파일 이름이 올바르지 않습니다: %q", spec.HarnessFile)
+		}
+		if err := validateExtraFileName(spec.HarnessFile, reserved); err != nil {
+			return nil, err
+		}
+		files = append(files, struct {
+			name string
+			body string
+			mode int64
+		}{spec.HarnessFile, spec.HarnessSource, 0o644})
+		// 문제 자료가 하네스를 덮어쓰지 못하게 잠근다 — 덮어쓰면 하네스가 하는 일을
+		// 출제자가 아닌 쪽이 정하게 된다.
+		reserved[spec.HarnessFile] = true
+	}
+
 	// 런타임이 필요로 하는 하네스 (#60). 문제 자료보다 먼저 넣어 이름이 겹치면
 	// 문제 자료 쪽이 거부되게 한다 — 하네스를 덮어쓰면 임의 명령을 실행할 수 있다.
 	harnessFiles, err := harness.Files(spec.Harness)

@@ -125,6 +125,18 @@ type ExecJob struct {
 	// SQL 문제의 스키마·시드·정답 쿼리처럼 **문제가 소유하는 자료**를 싣는다.
 	// 이름에 경로를 쓸 수 없고 샌드박스 예약 이름과 겹칠 수 없다 — 실행기가 거부한다.
 	ExtraFiles map[string]string `json:"extraFiles,omitempty"`
+	/*
+		HarnessSource 는 **문제가 제공한 하네스**다 (#445, #421).
+
+		런타임이 정한 하네스 파일(`functionHarness.file`)로 저장되고, 그 런타임의
+		`functionHarness.run` 이 실행된다 — 사용자 코드는 `sourceFile` 로 따로 저장된다.
+
+		**파일을 나누는 것이 핵심이다.** 문자열로 이어 붙이면 오류의 줄 번호가 통째로
+		어긋나고, 틀린 곳을 못 찾는 오류 메시지는 없는 것만 못하다.
+
+		비어 있으면 지금까지처럼 사용자 코드 하나를 그대로 돌린다.
+	*/
+	HarnessSource string `json:"harnessSource,omitempty"`
 }
 
 // ExecResult 는 실행기가 응답 스트림으로 돌려주는 결과다.
