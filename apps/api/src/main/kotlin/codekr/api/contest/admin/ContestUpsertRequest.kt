@@ -48,6 +48,14 @@ data class ContestUpsertRequest(
     val visibility: codekr.api.contest.entity.ContestVisibility =
         codekr.api.contest.entity.ContestVisibility.PUBLIC,
 
+    /**
+     * 참가에 승인이 필요한가 (#466). **공개 범위와 직교한다.**
+     *
+     * 기본이 꺼짐인 이유: 지금까지의 대회가 전부 그랬고, 켜진 채로 만들어지면
+     * **아무도 못 내는 대회**가 조용히 생긴다.
+     */
+    val requiresApproval: Boolean = false,
+
     @field:Valid
     val problems: List<ContestProblemRequest> = emptyList(),
 )

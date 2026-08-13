@@ -107,6 +107,14 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      */
     GROUP_TAKEDOWN("그룹 해산", requiresReason = true),
 
+    /**
+     * 대회 참가 승인·거절 (#466).
+     *
+     * **사유는 거절에만 필수다.** 승인은 신청한 것을 받아 주는 일이라 설명할 것이 없고,
+     * 거절은 **행을 지우므로** 그 사유가 유일한 설명이 된다.
+     */
+    CONTEST_APPROVAL("대회 참가 승인", requiresReason = false),
+
     /** 정지 해제 (#224). 되돌리는 쪽이라 사유를 요구하지 않는다. */
     LIFT_SUSPENSION("정지 해제", requiresReason = false),
 

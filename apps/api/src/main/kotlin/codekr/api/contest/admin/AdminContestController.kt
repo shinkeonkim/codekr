@@ -34,7 +34,31 @@ import org.springframework.web.bind.annotation.RestController
 class AdminContestController(
     private val adminContestService: AdminContestService,
     private val auditService: ContestAuditService,
+    private val approvalService: ContestApprovalService,
 ) {
+
+    /** 승인 대기 목록 (#466). */
+    @AdminApi(UserRole.CONTEST_MANAGER)
+    @GetMapping("/{id}/applicants")
+    fun applicants(@PathVariable id: Long): List<PendingApplicant> = approvalService.pending(id)
+
+    /** 받는다. **시작한 뒤에는 안 된다** — 늦게 승인된 사람만 시간이 적다. */
+    @AdminApi(UserRole.CONTEST_MANAGER)
+    @PostMapping("/{id}/applicants/{userId}/approval")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun approve(@PathVariable id: Long, @PathVariable userId: Long, principal: AuthPrincipal) =
+        approvalService.approve(principal.userId, id, userId)
+
+    /** 거절한다. **사유가 필수다** — 신청 행을 지우므로 그것이 유일한 설명이다. */
+    @AdminApi(UserRole.CONTEST_MANAGER)
+    @DeleteMapping("/{id}/applicants/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun reject(
+        @PathVariable id: Long,
+        @PathVariable userId: Long,
+        @RequestParam reason: String,
+        principal: AuthPrincipal,
+    ) = approvalService.reject(principal.userId, id, userId, reason)
 
     @AdminApi(UserRole.CONTEST_MANAGER)
     @GetMapping

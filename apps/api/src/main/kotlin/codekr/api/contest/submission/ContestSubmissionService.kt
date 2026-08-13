@@ -35,6 +35,7 @@ class ContestSubmissionService(
     private val contestRepository: ContestRepository,
     private val contestProblemRepository: ContestProblemRepository,
     private val registrationRepository: ContestRegistrationRepository,
+    private val contestService: codekr.api.contest.service.ContestService,
     private val problemRepository: ProblemRepository,
     private val submissionRepository: SubmissionRepository,
     private val queuePublisher: QueuePublisher,
@@ -59,8 +60,16 @@ class ContestSubmissionService(
         if (!contest.phaseAt(receivedAt).acceptsSubmission) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "지금은 제출을 받지 않습니다.")
         }
-        if (!registrationRepository.existsById(ContestRegistrationId(contest.id, userId))) {
-            throw ApiException(ErrorCode.VALIDATION_ERROR, "참가 등록을 먼저 해야 합니다.")
+        // **"등록했다" 가 아니라 "승인됐다" 이다** (#466). 판정은 한 곳에 있다.
+        if (!contestService.isParticipant(contest.id, userId)) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                if (contestService.hasApplied(contest.id, userId)) {
+                    "참가 승인을 기다리는 중입니다."
+                } else {
+                    "참가 등록을 먼저 해야 합니다."
+                },
+            )
         }
 
         val problem = problemRepository.findBySlugAndDeletedAtIsNull(problemSlug)
