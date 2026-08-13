@@ -83,6 +83,11 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
     localStorage.setItem(draftKey(problem.slug, runtime.id), source);
   }, [problem.slug, runtime, source]);
 
+  /*
+    화면은 이미 `RequireAuth` 가 막는다 (#459). **이것은 그 뒤의 한 겹이다** —
+    같은 탭에서 로그아웃하면 이 부품은 그대로 떠 있고, 그때 누르면 서버가 401 을
+    준다. 그 401 을 "로그인이 필요합니다" 로 바꾸는 자리가 여기다.
+  */
   const guardLogin = () => {
     if (user) return true;
     setError("로그인이 필요합니다.");
