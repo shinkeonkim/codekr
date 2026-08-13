@@ -135,14 +135,37 @@ class RankingIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `한 문제도 못 푼 사람은 랭킹에 나오지 않는다`() {
+    fun `한 문제도 못 푼 사람도 랭킹에 나온다`() {
+        /*
+          **전에는 안 나왔다** (#391). `user_problem_scores` 는 사용자 × 푼 문제 = 1행
+          이라, 푼 문제가 없으면 행이 없고 행이 없으면 순위표에 없었다.
+
+          #207 이 "일부만 보이는 순위표는 순위가 아니다" 며 비참여 설정을 걷어냈는데,
+          0점인 사람은 **설정이 아니라 집계 구조로** 빠지고 있어서 그때 안 드러났다.
+          가입만 한 사람은 자기가 목록에 없으니 **올라갈 곳도 보이지 않았다.**
+        */
         problem(id = 1, level = 11)
         accept(userId, problemId = 1)
 
-        // 가입만 한 사람으로 목록을 채우면 랭킹이 회원 명부가 된다.
         mockMvc.perform(get("/api/v1/rankings"))
-            .andExpect(jsonPath("$.content.length()").value(1))
-            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content.length()").value(2))
+            .andExpect(jsonPath("$.totalElements").value(2))
+            // 푼 사람이 위, 못 푼 사람이 아래. **0점도 등수를 받는다.**
+            .andExpect(jsonPath("$.content[0].nickname").value("풀이왕"))
+            .andExpect(jsonPath("$.content[1].score").value(0))
+            .andExpect(jsonPath("$.content[1].solvedCount").value(0))
+            .andExpect(jsonPath("$.content[1].rank").value(2))
+    }
+
+    @Test
+    fun `못 푼 사람의 푼 문제 수는 0이다`() {
+        // 왼쪽 조인이라 푼 문제가 없어도 행이 하나 남는다 — `count(*)` 로 세면
+        // **1문제 푼 것으로 나온다.** 눈에 잘 안 띄는 자리라 시험으로 못 박는다.
+        problem(id = 1, level = 11)
+
+        mockMvc.perform(get("/api/v1/rankings"))
+            .andExpect(jsonPath("$.content[0].solvedCount").value(0))
+            .andExpect(jsonPath("$.content[1].solvedCount").value(0))
     }
 
     @Test

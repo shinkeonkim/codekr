@@ -38,18 +38,22 @@ class RankingRecomputeIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `기능 도입 전의 제출은 랭킹에 없고, 재계산으로 되살아난다`() {
+    fun `기능 도입 전의 제출은 점수가 0이고, 재계산으로 되살아난다`() {
         problem(id = 1, level = 11)
         acceptedBeforeRanking(userId, problemId = 1)
 
-        // 이것이 사용자가 본 화면이다 — 제출은 분명히 있는데 랭킹이 비어 있다.
+        /*
+          이것이 사용자가 본 화면이다 — **제출은 분명히 있는데 점수가 0이다.**
+
+          전에는 "랭킹이 비어 있다" 로 확인했는데, #391 이 0점인 사람도 목록에 넣으면서
+          그 방식이 뜻을 잃었다. **이 시험이 보는 것은 목록의 크기가 아니라 점수다.**
+        */
         mockMvc.perform(get("/api/v1/rankings"))
-            .andExpect(jsonPath("$.totalElements").value(0))
+            .andExpect(jsonPath("$.content[0].score").value(0))
 
         assertEquals(1, recomputeService.recomputeEveryone())
 
         mockMvc.perform(get("/api/v1/rankings"))
-            .andExpect(jsonPath("$.totalElements").value(1))
             .andExpect(jsonPath("$.content[0].nickname").value("풀이왕"))
             .andExpect(jsonPath("$.content[0].score").value(93))
     }
