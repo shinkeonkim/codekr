@@ -58,7 +58,7 @@ class RuntimeKindIntegrationTest : IntegrationTestBase() {
         mockMvc.perform(get("/api/v1/runtimes").param("problemKind", "JUDGE_SQL"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$[?(@.id == 'sql:postgres16')]").isNotEmpty)
-            .andExpect(jsonPath("$[?(@.id == 'sql:mysql8')]").isNotEmpty)
+            .andExpect(jsonPath("$[?(@.id == 'sql:mariadb11')]").isNotEmpty)
             .andExpect(jsonPath("$[?(@.monacoLanguage != 'sql')]").isEmpty)
     }
 

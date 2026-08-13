@@ -19,7 +19,7 @@ data class RuntimeDefinition(
      * 이 런타임이 **기동에 쓰는 시간** (#454).
      *
      * 문제의 시간 제한은 컨테이너 전체에 걸린다 — DB 를 띄우는 시간도 그 안이다.
-     * MySQL 은 3초, PostgreSQL 은 0.5초다. 이것을 모르면 출제자는 "쿼리는 순식간인데
+     * MariaDB 는 3.5초, PostgreSQL 은 0.5초다. 이것을 모르면 출제자는 "쿼리는 순식간인데
      * 무엇을 내도 시간 초과" 를 만나고, 그 이유를 짐작할 방법이 없다.
      */
     val startupMs: Int = 0,

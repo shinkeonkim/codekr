@@ -1,7 +1,7 @@
 -- SQL 문제는 어느 DB 인지 정한다 (#454).
 --
--- SQL 런타임이 둘이 된 순간(PostgreSQL, MySQL) "비워 두면 전부 허용"(#419)의 뜻이
--- SQL 문제에서 달라졌다 — PostgreSQL 문법으로 쓴 스키마와 정답 쿼리가 MySQL 제출에서도
+-- SQL 런타임이 둘이 된 순간(PostgreSQL, MariaDB) "비워 두면 전부 허용"(#419)의 뜻이
+-- SQL 문제에서 달라졌다 — PostgreSQL 문법으로 쓴 스키마와 정답 쿼리가 MariaDB 제출에서도
 -- 돌게 된다. 그러면 **출제자의 스키마가 먼저 깨져** 제출자는 자기 잘못이 아닌
 -- SYSTEM_ERROR 를 받는다.
 --

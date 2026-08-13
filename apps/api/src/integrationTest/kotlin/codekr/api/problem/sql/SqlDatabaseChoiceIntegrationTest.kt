@@ -46,29 +46,29 @@ class SqlDatabaseChoiceIntegrationTest : IntegrationTestBase() {
     @Test
     fun `두 데이터베이스를 함께 고를 수 없다`() {
         // 스키마도 정답도 지문도 갈라진다. 같은 질문을 두 DB 로 내려면 문제를 둘 만든다.
-        create(slug = "two-db", databases = listOf("sql:postgres16", "sql:mysql8"))
+        create(slug = "two-db", databases = listOf("sql:postgres16", "sql:mariadb11"))
             .andExpect(status().isBadRequest)
     }
 
     @Test
-    fun `MySQL 문제를 낼 수 있다`() {
-        create(slug = "mysql-one", databases = listOf("sql:mysql8"), timeLimitMs = 15000)
+    fun `MariaDB 문제를 낼 수 있다`() {
+        create(slug = "mariadb-one", databases = listOf("sql:mariadb11"), timeLimitMs = 15000)
             .andExpect(status().isCreated)
 
-        mockMvc.perform(get("/api/v1/problems/mysql-one"))
+        mockMvc.perform(get("/api/v1/problems/mariadb-one"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.runtimes.length()").value(1))
-            .andExpect(jsonPath("$.runtimes[0].id").value("sql:mysql8"))
+            .andExpect(jsonPath("$.runtimes[0].id").value("sql:mariadb11"))
     }
 
     @Test
     fun `기동 시간보다 빠듯한 제한은 거부한다`() {
         /*
           **기동도 문제의 시간 제한 안에서 흐른다** — 제한은 컨테이너 전체에 걸린다.
-          MySQL 은 뜨는 데만 3초를 쓰므로 2초 제한을 준 문제는 어떤 쿼리를 내도
+          MariaDB 는 뜨는 데만 3초 넘게 쓰므로 2초 제한을 준 문제는 어떤 쿼리를 내도
           시간 초과가 되고, 출제자는 그 이유를 짐작할 방법이 없다.
         */
-        create(slug = "too-tight", databases = listOf("sql:mysql8"), timeLimitMs = 2000)
+        create(slug = "too-tight", databases = listOf("sql:mariadb11"), timeLimitMs = 2000)
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("뜨는 데만")))
     }

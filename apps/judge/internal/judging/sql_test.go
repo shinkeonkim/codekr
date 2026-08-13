@@ -199,7 +199,7 @@ func TestSqlJudgeKeepsReadOnlyByDefault(t *testing.T) {
 /*
 어느 DB 로 풀지는 제출이 고른다 (#454).
 
-전에는 채점기가 `sql:postgres16` 을 박아 보냈다. 그러면 MySQL 로 낸 제출도 PostgreSQL
+전에는 채점기가 `sql:postgres16` 을 박아 보냈다. 그러면 MariaDB 로 낸 제출도 PostgreSQL
 에서 돌아 **문법이 맞는데 틀린 답**이 된다.
 */
 func TestSqlJudgeSendsSubmittedDatabase(t *testing.T) {
@@ -207,12 +207,12 @@ func TestSqlJudgeSendsSubmittedDatabase(t *testing.T) {
 		Status: contract.StatusOK, Stdout: harnessOutput("1", "1"),
 	}}
 	job := sqlJob("SELECT 1;", true)
-	job.RuntimeID = "sql:mysql8"
+	job.RuntimeID = "sql:mariadb11"
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	NewSqlJudge(captured, log).Judge(context.Background(), job, func(contract.Event) {})
 
-	if captured.job.RuntimeID != "sql:mysql8" {
+	if captured.job.RuntimeID != "sql:mariadb11" {
 		t.Fatalf("제출이 고른 DB 로 보내야 합니다: %s", captured.job.RuntimeID)
 	}
 }
