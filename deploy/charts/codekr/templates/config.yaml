@@ -9,6 +9,15 @@ data:
   CODEKR_STORAGE_ENDPOINT: {{ .Values.storage.endpoint | quote }}
   CODEKR_STORAGE_BUCKET: {{ .Values.storage.bucket | quote }}
   {{- end }}
+  {{- if .Values.mail.host }}
+  # 메일 (#355). **자격증명은 여기 없다** — 시크릿에서 온다.
+  CODEKR_MAIL_HOST: {{ .Values.mail.host | quote }}
+  CODEKR_MAIL_PORT: {{ .Values.mail.port | quote }}
+  CODEKR_MAIL_SSL: {{ .Values.mail.ssl | quote }}
+  CODEKR_MAIL_FROM: {{ .Values.mail.from | quote }}
+  {{- end }}
+  # 메일 본문의 링크가 가리킬 곳. 사람이 눈으로 보는 주소라 정본 표기를 따른다 (ADR-0009).
+  CODEKR_SITE_URL: "https://{{ .Values.ingress.publicHost }}"
   CODEKR_DB_URL: "jdbc:postgresql://{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
   CODEKR_REDIS_HOST: "codekr-redis.{{ .Release.Namespace }}.svc.cluster.local"
   CODEKR_REDIS_PORT: "6379"

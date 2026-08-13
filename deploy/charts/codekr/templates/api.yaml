@@ -31,6 +31,11 @@ spec:
             # values.yaml 은 저장소에 남는다.
             - secretRef: { name: {{ .Values.storage.secretName }} }
             {{- end }}
+            {{- if and .Values.mail.host (ne .Values.mail.secretName .Values.postgres.secretName) }}
+            # 메일 자격증명 (#355). 기본은 postgres 와 같은 `codekr-secrets` 라
+            # 위에서 이미 붙는다 — 다른 시크릿을 쓸 때만 하나 더 건다.
+            - secretRef: { name: {{ .Values.mail.secretName }} }
+            {{- end }}
           volumeMounts:
             - { name: runtimes, mountPath: /etc/codekr }
             - { name: tmp, mountPath: /tmp }

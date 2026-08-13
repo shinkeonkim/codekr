@@ -68,9 +68,14 @@ codekr:
     # 아무도 인증할 수 없는 계정이 만들어진다.
     host: ${CODEKR_MAIL_HOST:}
     port: ${CODEKR_MAIL_PORT:587}
+    # 붙자마자 TLS 인가 (#355). **465 는 STARTTLS 로 붙지 못한다** — 켜지 않으면
+    # 타임아웃까지 매달렸다가 실패하고, 발송은 예외를 삼키므로 조용히 안 나간다.
+    ssl: ${CODEKR_MAIL_SSL:false}
     username: ${CODEKR_MAIL_USERNAME:}
     password: ${CODEKR_MAIL_PASSWORD:}
-    from: ${CODEKR_MAIL_FROM:no-reply@xn--o22b4l.kr}
+    # **인증 계정과 같은 주소여야 한다** (#355). 다르면 제공자가 거부하거나
+    # SPF/DKIM 정렬이 깨져 스팸함으로 간다.
+    from: ${CODEKR_MAIL_FROM:no-reply@xn--hy1by51c.kr}
     # 인증 링크가 가리킬 곳. 메일은 서버가 만들므로 주소를 스스로 알아야 한다.
     site-url: ${CODEKR_SITE_URL:http://localhost:13000}
   jwt:
