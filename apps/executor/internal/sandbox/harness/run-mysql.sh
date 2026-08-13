@@ -37,6 +37,9 @@ die() {
     # 알 수 없다 — 실행 계정과 디렉터리의 주인을 같이 봐야 한다.
     echo "실행 계정: $(id)" >&2
     ls -ld /work /work/data 2>&1 | sed 's/^/  /' >&2
+    # **셸도 못 만드는지 본다.** 프로세스의 문제와 자리의 문제는 고칠 곳이 다르다.
+    echo "  셸 mkdir: $(mkdir /work/probe.d 2>&1 && echo 됨)" >&2
+    echo "  셸 touch: $(touch /work/probe.f 2>&1 && echo 됨)" >&2
     tail -30 /work/.my.log >&2 2>/dev/null || true
     exit 1
 }
