@@ -1,0 +1,112 @@
+{{- if .Values.backup.enabled }}
+{{/*
+  하루 한 번 논리 백업 (#281).
+
+  **배포 직전 덤프(#246)와 다른 물건이다.** 그쪽은 "이 배포 직전으로 돌아갈 지점" 이고
+  이쪽은 "어제로 돌아갈 지점" 이다. 성격이 다르므로 둘 다 남긴다.
+
+  전에는 백업이 뜨는 유일한 계기가 배포였다. **RPO 가 배포 주기에 묶여 있었고, 배포
+  주기는 보장할 수 있는 것이 아니다** — 기능이 안정될수록 배포가 뜸해지고 그럴수록
+  RPO 가 나빠진다. 거꾸로 하루에 다섯 번 배포하면 덤프 다섯 개가 보존 한도를 밀어내
+  이틀치만 남는다.
+
+  **CNPG 의 ScheduledBackup 을 쓰지 않은 이유**: `Cluster` CR 이 이 저장소에 없다
+  (홈랩 인프라 쪽에 있다). 백업이 두 저장소에 걸치면 이 저장소만 보고는 백업이 있는지
+  알 수 없다. 여기서 도는 것을 여기 둔다 — 그리고 오브젝트 스토리지로 한 벌 더 보내는
+  것은 그쪽에서 한다 (docs/09 §5.2).
+*/}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: codekr-db-backup
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  timeZone: {{ .Values.backup.timeZone | quote }}
+  # **밀린 것을 몰아서 돌리지 않는다.** 클러스터가 몇 시간 꺼져 있었다면 지난 백업을
+  # 여러 개 뜨는 것보다 다음 정시에 한 번 뜨는 편이 낫다.
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  # **성공·실패 이력을 남긴다.** 마지막 성공이 언제인지 볼 수 있어야 한다 (#281):
+  #   kubectl get cronjob codekr-db-backup -o jsonpath='{.status.lastSuccessfulTime}'
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # **조용히 안 도는 백업이 없는 백업보다 나쁘다.** 두 번까지만 다시 해 보고
+      # 그 뒤에는 실패로 남긴다 — 계속 재시도하면 실패가 이력에 드러나지 않는다.
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 604800
+      template:
+        metadata:
+          labels: { app.kubernetes.io/name: codekr-db-backup }
+        spec:
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 26
+            runAsGroup: 26
+            fsGroup: 26
+          containers:
+            - name: dump
+              # 서버와 같은 이미지. pg_dump 는 자기보다 새 서버를 덤프하지 못한다.
+              image: {{ .Values.predeployDump.image }}
+              command: [/bin/bash, -c]
+              args:
+                - |
+                  set -euo pipefail
+                  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+                  target="/dumps/daily-${stamp}.dump"
+
+                  # **여기서는 DB 가 없으면 실패다.** 배포 직전 덤프(#250)는 첫 설치를
+                  # 막지 않으려고 넘어가지만, 정기 백업이 조용히 넘어가면 그것이 곧
+                  # "백업이 없는데 아무도 모르는" 상태다.
+                  pg_isready --timeout=30
+
+                  echo "백업 시작: $target"
+                  pg_dump --format=custom --no-owner --no-privileges --file="${target}.partial"
+                  # 다 쓴 뒤에 이름을 바꾼다 — 중간에 죽은 파일이 온전한 덤프로 보이면 안 된다.
+                  mv "${target}.partial" "$target"
+
+                  # **빈 덤프를 성공으로 두지 않는다.** pg_dump 는 붙기만 하면 0 으로
+                  # 끝나므로, 크기를 보지 않으면 0바이트 파일이 매일 쌓인다.
+                  size=$(stat -c %s "$target")
+                  if [ "$size" -lt "$MIN_BYTES" ]; then
+                    echo "덤프가 너무 작습니다 (${size} 바이트). 백업으로 보지 않습니다." >&2
+                    exit 1
+                  fi
+                  ls -lh "$target"
+
+                  # 마지막 성공 시각을 파일로도 남긴다 — CronJob 상태를 볼 수 없는
+                  # 사람도 덤프 디렉터리만 보고 알 수 있게.
+                  echo "$stamp $target ${size}" > /dumps/LATEST
+
+                  # 오래된 것부터 지운다. **정기 백업만 센다** — 배포 직전 덤프는
+                  # 이름이 다르고 보존 규칙도 다르다.
+                  cd /dumps
+                  ls -1t daily-*.dump 2>/dev/null | tail -n +$((KEEP + 1)) | xargs -r rm -v --
+              env:
+                - name: KEEP
+                  value: {{ .Values.backup.keep | quote }}
+                - name: MIN_BYTES
+                  value: {{ .Values.backup.minBytes | quote }}
+                - name: PGHOST
+                  value: {{ .Values.postgres.host }}
+                - name: PGPORT
+                  value: {{ .Values.postgres.port | quote }}
+                - name: PGDATABASE
+                  value: {{ .Values.postgres.database }}
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef: { name: {{ .Values.postgres.secretName }}, key: CODEKR_DB_USERNAME }
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: {{ .Values.postgres.secretName }}, key: CODEKR_DB_PASSWORD }
+              volumeMounts:
+                - { name: dumps, mountPath: /dumps }
+              resources:
+                requests: { cpu: 100m, memory: 128Mi }
+                limits: { memory: 512Mi }
+          volumes:
+            - name: dumps
+              persistentVolumeClaim: { claimName: codekr-db-dumps }
+{{- end }}
