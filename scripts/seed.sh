@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# 데모 계정과 시드 문제를 주입한다. 여러 번 실행해도 안전하다.
+# 로컬 개발용 시드 (#15, #342). 데모 계정을 만들고 시드 문제를 넣는다.
+#
+# **여기는 로컬 전용이다.** 데모 계정을 만들고 DB 에 직접 붙기 때문이다.
+# 문제를 넣는 일 자체는 `seed-problems.sh` 가 하고, 그쪽은 운영에서도 쓴다 —
+# **운영에 데모 계정이 만들어지는 길을 옵션이 아니라 구조로 막는다.**
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -45,105 +49,14 @@ login_token() {
 
 # 첫 최고 관리자는 API 로 만들 수 없다 — 역할을 줄 수 있는 사람이 아직 없다.
 # 그래서 가입 후 DB 에서 한 번만 올린다. 이후의 역할 부여는 API 로 한다 (#103).
+#
+# **운영에는 이미 어드민이 있으므로 이 단계가 필요 없다.** 그것이 이 스크립트가
+# 로컬 전용인 두 번째 이유다.
 promote_admin() {
   docker exec codekr-postgres psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
     -c "INSERT INTO user_roles (user_id, role)
         SELECT id, 'SUPERUSER' FROM users WHERE email='${ADMIN_EMAIL}'
         ON CONFLICT DO NOTHING;" > /dev/null
-}
-
-# SQL 문제는 스키마를 **별도 파일**에서 끼워 넣는다 (#313).
-#
-# 다섯 문제가 같은 스키마를 쓰는데 `schema_sql` 은 문제마다 저장된다. 시드 JSON 안에
-# SQL 을 통째로 박으면 한 글자를 고칠 때 다섯 파일을 고쳐야 하고, JSON 문자열 안의
-# 여러 줄 SQL 은 읽을 수가 없다.
-#
-# **조립은 보내기 전에 끝난다** — `sqlSpec` 은 어드민 API 의 규격이라 필드 이름을 바꿀
-# 수 없다. `sqlSchemaFile` 은 시드에서만 쓰는 키이고 여기서 사라진다.
-assemble_problem() {
-  SEED_DIR="$(dirname "$1")" python3 - "$1" <<'PYTHON'
-import json
-import os
-import sys
-
-body = json.load(open(sys.argv[1], encoding="utf-8"))
-schema_file = body.pop("sqlSchemaFile", None)
-if schema_file:
-    path = os.path.join(os.environ["SEED_DIR"], schema_file)
-    body.setdefault("sqlSpec", {})["schemaSql"] = open(path, encoding="utf-8").read()
-json.dump(body, sys.stdout, ensure_ascii=False)
-PYTHON
-}
-
-create_problem() {
-  local token="$1" file="$2"
-  local status
-  status=$(assemble_problem "${file}" | curl -s -o /tmp/codekr-seed-response.json -w '%{http_code}' \
-    -X POST "${API}/api/v1/admin/problems" \
-    -H "Authorization: Bearer ${token}" \
-    -H 'Content-Type: application/json' \
-    --data-binary @-)
-
-  case "${status}" in
-    201) echo "  생성됨: $(basename "${file}")" ;;
-    409) echo "  이미 있음: $(basename "${file}")" ;;
-    *) echo "  실패(${status}): $(basename "${file}") — $(cat /tmp/codekr-seed-response.json)" >&2 ;;
-  esac
-}
-
-# 알고리즘 분류를 만들고 시드 문제에 붙인다 (#232).
-#
-# **비어 있는 채로 시작하면 필터가 아무것도 걸러 주지 못한다.** 태그 기능만 있고 붙은
-# 문제가 없으면, 처음 켠 사람은 그것이 고장 난 것인지 원래 그런 것인지 알 수 없다.
-#
-# 이미 있는 태그·이미 붙은 문제는 그대로 둔다 — 시드는 여러 번 돌 수 있어야 한다.
-seed_tags() {
-  local token="$1"
-  API="${API}" TOKEN="${token}" python3 - "${ROOT_DIR}/scripts/seed-tags.json" <<'PYTHON'
-import json
-import os
-import sys
-import urllib.error
-import urllib.request
-
-api, token = os.environ["API"], os.environ["TOKEN"]
-seed = json.load(open(sys.argv[1], encoding="utf-8"))
-
-
-def call(method, path, body=None):
-    data = json.dumps(body).encode() if body is not None else None
-    request = urllib.request.Request(f"{api}{path}", data=data, method=method)
-    request.add_header("Authorization", f"Bearer {token}")
-    if data:
-        request.add_header("Content-Type", "application/json")
-    try:
-        with urllib.request.urlopen(request) as response:
-            return json.loads(response.read() or "null")
-    except urllib.error.HTTPError as error:
-        # 이미 있는 태그는 400, 없는 문제는 404 로 돌아온다. 둘 다 넘어간다.
-        if error.code in (400, 404):
-            return None
-        raise
-
-
-for tag in seed["tags"]:
-    call("POST", "/api/v1/admin/tags", tag)
-
-by_slug = {tag["slug"]: tag["id"] for tag in call("GET", "/api/v1/tags")}
-print(f"  태그 {len(by_slug)}개")
-
-for problem_slug, tag_slugs in seed["problems"].items():
-    problem = call("GET", f"/api/v1/problems/{problem_slug}")
-    if problem is None:
-        print(f"  건너뜀(문제 없음): {problem_slug}")
-        continue
-    call(
-        "PUT",
-        f"/api/v1/admin/problems/{problem['id']}/tags",
-        {"tagIds": [by_slug[slug] for slug in tag_slugs if slug in by_slug]},
-    )
-    print(f"  {problem_slug}: {', '.join(tag_slugs)}")
-PYTHON
 }
 
 wait_for_api
@@ -153,17 +66,10 @@ signup "${ADMIN_EMAIL}" "${ADMIN_PASSWORD}" "관리자"
 signup "${USER_EMAIL}" "${USER_PASSWORD}" "코더"
 promote_admin
 
-TOKEN=$(login_token "${ADMIN_EMAIL}" "${ADMIN_PASSWORD}")
+# 토큰을 인자로 넘기지 않는다 — `ps` 에 보이고 히스토리에 남는다.
+CODEKR_API="${API}" CODEKR_ADMIN_TOKEN="$(login_token "${ADMIN_EMAIL}" "${ADMIN_PASSWORD}")" \
+  "${ROOT_DIR}/scripts/seed-problems.sh"
 
-log "시드 문제 주입"
-for problem in "${ROOT_DIR}"/scripts/seed-problems/*.json; do
-  create_problem "${TOKEN}" "${problem}"
-done
-
-log "알고리즘 분류 주입"
-seed_tags "${TOKEN}"
-
-log "완료"
 echo "  어드민: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}"
 echo "  사용자: ${USER_EMAIL} / ${USER_PASSWORD}"
 echo "  사이트: http://localhost:${WEB_HOST_PORT:-13000}"
