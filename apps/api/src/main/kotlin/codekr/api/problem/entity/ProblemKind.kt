@@ -16,18 +16,27 @@ enum class ProblemKind(
     /**
      * 채점 대상이 테스트케이스인지 (#455).
      *
-     * **유형마다 "무엇을 채점하는가" 가 다르다.** SQL 은 정답 쿼리이고 Redis 는 끝난
+     * **유형마다 "무엇을 채점하는가" 가 다르다.** SQL 은 정답 쿼리이고 Redis 은 끝난
      * 뒤의 상태다. 이 사실을 쓰는 곳(제출·저장 검증)마다 유형 이름을 나열하면 유형이
      * 하나 늘 때 그중 하나를 빠뜨리게 되고, 그 경로에서만 조용히 막힌다 —
      * 실제로 SQL 하나를 나열하던 자리가 둘 있었다.
      */
     val needsTestcases: Boolean = true,
+    /**
+     * 정답 코드 검증(#39)을 할 수 있는 유형인가 (#495).
+     *
+     * 그 기능이 하는 일은 **정답 코드를 테스트케이스에 돌려 보는 것**이다. SQL 의
+     * 대응물은 "정답 쿼리를 스키마에 돌려 본다" 이고 Redis 은 "정답 명령을 시드에
+     * 돌려 상태를 본다" 이다 — **유형마다 "검증한다" 의 뜻이 다르다.** 그것을 갖추기
+     * 전까지는 **할 수 없다고 말하는 편**이 테스트케이스가 없다고 말하는 것보다 낫다.
+     */
+    val supportsSolutionVerification: Boolean = true,
 ) {
     /** 소스 코드를 실행해 stdout 을 기대 출력과 비교한다 (ADR-0006). 지금 있는 모든 문제. */
     JUDGE_STDIO("코드 실행 (stdin/stdout)", ready = true),
 
     /** 격리 PostgreSQL 에서 쿼리를 실행해 결과 집합을 비교한다 (#60). */
-    JUDGE_SQL("SQL", ready = true, needsTestcases = false),
+    JUDGE_SQL("SQL", ready = true, needsTestcases = false, supportsSolutionVerification = false),
 
     /**
      * 격리 Redis 에서 명령의 연속을 실행해 **끝난 뒤의 상태**를 비교한다 (#455).
@@ -35,7 +44,7 @@ enum class ProblemKind(
      * SQL 과 나눈 이유: 제출이 쿼리 하나가 아니라 명령의 연속이고, 정답이 결과 집합이
      * 아니라 상태다. 같은 유형에 두면 "무엇이 정답인가" 가 문제마다 달라진다.
      */
-    JUDGE_REDIS("Redis", ready = true, needsTestcases = false),
+    JUDGE_REDIS("Redis", ready = true, needsTestcases = false, supportsSolutionVerification = false),
 
     /**
      * 함수만 구현하는 문제 (#421). **하네스가 입출력을 맡는다.**

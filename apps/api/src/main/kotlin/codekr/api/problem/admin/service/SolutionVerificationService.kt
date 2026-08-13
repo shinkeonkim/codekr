@@ -38,6 +38,19 @@ class SolutionVerificationService(
         val problem = problemRepository.findByIdAndDeletedAtIsNull(problemId)
             ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
 
+        /*
+          **할 수 없는 유형에서는 그렇게 말한다** (#495).
+
+          전에는 "테스트케이스가 없다" 가 나왔다. SQL·NoSQL 문제는 테스트케이스가 0개인
+          것이 정상이므로, 그 문구는 출제자에게 **고칠 수 없는 것을 고치라고** 말하는
+          셈이었다. 유형마다 "검증한다" 의 뜻이 다르다는 것이 진짜 이유다.
+        */
+        if (!problem.problemKind.supportsSolutionVerification) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "${problem.problemKind.label} 문제는 아직 정답 코드 검증을 지원하지 않습니다.",
+            )
+        }
         if (!problem.hasSolution) throw ApiException(ErrorCode.SOLUTION_REQUIRED)
         if (problem.testcases.isEmpty()) throw ApiException(ErrorCode.TESTCASE_REQUIRED)
 

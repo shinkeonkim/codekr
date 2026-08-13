@@ -108,7 +108,9 @@ function PersonPicker({
                 <button
                   type="button"
                   aria-label={`${person.nickname} 빼기`}
-                  onClick={() => onChange(picked.filter((each) => each.id !== person.id))}
+                  onClick={() =>
+                    onChange(picked.filter((each) => each.id !== person.id))
+                  }
                 >
                   <Badge tone="info">{person.nickname} ✕</Badge>
                 </button>
