@@ -28,7 +28,9 @@ class ProblemCreditService(
             throw ApiException(ErrorCode.USER_NOT_FOUND, "지정한 회원 중 없는 사람이 있습니다.")
         }
 
-        repository.deleteByIdProblemId(problemId)
+        // **기여자는 지우지 않는다** (#478). 그것은 어드민이 고르는 값이 아니라
+        // 신고가 받아들여질 때 붙는 값이라, 함께 지우면 다음 편집에서 이름이 사라진다.
+        repository.deleteByIdProblemIdAndIdRoleIn(problemId, listOf(CreditRole.SETTER, CreditRole.REVIEWER))
         repository.saveAll(
             setterIds.distinct().map { ProblemCredit(ProblemCreditId(problemId, it, CreditRole.SETTER)) } +
                 reviewerIds.distinct().map { ProblemCredit(ProblemCreditId(problemId, it, CreditRole.REVIEWER)) },
