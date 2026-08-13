@@ -4,6 +4,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"time"
 )
 
 // Config 는 실행기 구동에 필요한 모든 설정이다.
@@ -33,6 +34,10 @@ type Config struct {
 	// 붙으면 사람이 `--self-test` 를 돌려 보는 단계가 사라지므로, 그 확인을 기동에
 	// 붙여 통과하지 못한 실행기가 채점을 받지 않게 한다.
 	SelfTestOnStart bool
+
+	// Drain 은 종료 신호를 받은 뒤 **하던 실행을 마치는 데 주는 시간**이다 (#415).
+	// 파드의 `terminationGracePeriodSeconds` 보다 짧아야 한다.
+	Drain time.Duration
 }
 
 // Load 는 환경 변수를 읽어 설정을 만든다. 값이 없으면 로컬 개발에 맞는 기본값을 쓴다.
@@ -54,6 +59,7 @@ func Load() Config {
 		SeccompProfilePath:   env("CODEKR_SECCOMP_PROFILE", ""),
 		RuntimeRegistry:      env("CODEKR_RUNTIME_REGISTRY", ""),
 		SelfTestOnStart:      env("EXECUTOR_SELF_TEST_ON_START", "false") == "true",
+		Drain:                time.Duration(envInt("CODEKR_DRAIN_SECONDS", 90)) * time.Second,
 	}
 }
 

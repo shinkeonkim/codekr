@@ -30,6 +30,8 @@ data:
     {{- $origins = append $origins (printf "https://%s" .) }}
     {{- end }}
     {{ join "," $origins }}
+  # 종료 신호를 받은 뒤 하던 일을 마치는 데 쓰는 시간 (#415)
+  CODEKR_DRAIN_SECONDS: "{{ .Values.workers.drainSeconds }}"
   # 실행기가 조정할 수 있는 범위 (#40)
   CODEKR_EXECUTOR_DEPLOYMENT: "codekr-executor"
   CODEKR_EXECUTOR_NAMESPACE: {{ include "codekr.executorNamespace" . | quote }}

@@ -20,6 +20,7 @@ spec:
         app.kubernetes.io/name: codekr
         app.kubernetes.io/component: executor
     spec:
+      {{- include "codekr.terminationGrace" . | nindent 6 }}
       {{- include "codekr.imagePullSecrets" . | nindent 6 }}
       {{/*
         **비어 있으면 아예 넣지 않는다.** Helm 은 맵을 병합하므로 값 파일에

@@ -111,7 +111,7 @@ func run() int {
 	)
 	consumer := worker.NewConsumer(redisClient, runner, cfg.ConsumerName, cfg.Concurrency, log)
 	exitCode := 0
-	if err := consumer.Start(ctx); err != nil {
+	if err := consumer.Start(ctx, cfg.Drain); err != nil {
 		log.Error("실행 큐 소비 실패", "error", err)
 		exitCode = 1
 	}
