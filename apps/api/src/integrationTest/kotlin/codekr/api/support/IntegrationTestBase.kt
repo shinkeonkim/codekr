@@ -51,6 +51,7 @@ abstract class IntegrationTestBase {
                      contest_registrations, contest_problems, contests,
                      submission_testcase_results, submissions, problem_runtime_limits,
                      problem_files,
+                     problem_difficulty_votes,
                      problem_sql_specs,
                      problem_nosql_specs,
                      problem_templates, problem_testcases, problems,
