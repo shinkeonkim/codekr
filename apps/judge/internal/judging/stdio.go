@@ -82,8 +82,10 @@ func (j *StdioJudge) runTestcase(
 	testcase contract.JudgeTestcase,
 ) contract.ExecResult {
 	result, err := j.executor.Run(ctx, contract.ExecJob{
-		RuntimeID:     job.RuntimeID,
-		SourceCode:    job.SourceCode,
+		RuntimeID:  job.RuntimeID,
+		SourceCode: job.SourceCode,
+		// 여러 파일로 낸 제출 (#457). 비면 SourceCode 하나로 돈다.
+		SourceFiles:   job.SourceFiles,
 		Stdin:         testcase.Input,
 		TimeLimitMs:   job.TimeLimitMs,
 		MemoryLimitMb: job.MemoryLimitMb,

@@ -109,7 +109,9 @@ runtimes:
     image: "gcc:13"
     digest: "sha256:ad3bd9a25f8495c0d2830d9fdd15c6ce889ada806bc1a00f611f22411a1f8b7c"
     sourceFile: "main.cpp"
-    compile: ["g++", "-O2", "-std=c++17", "-o", "main", "main.cpp"]
+    # `*.cpp` 인 이유 (#457): 여러 파일로 내는 문제에서 형제 파일도 컴파일해야 한다.
+    # 파일이 하나면 지금까지와 같다.
+    compile: ["sh", "-c", "g++ -O2 -std=c++17 -o main *.cpp"]
     run: ["./main"]
     template: |
       #include <bits/stdc++.h>
@@ -130,7 +132,7 @@ runtimes:
     image: "gcc:13"
     digest: "sha256:ad3bd9a25f8495c0d2830d9fdd15c6ce889ada806bc1a00f611f22411a1f8b7c"
     sourceFile: "main.cpp"
-    compile: ["g++", "-O2", "-std=c++20", "-o", "main", "main.cpp"]
+    compile: ["sh", "-c", "g++ -O2 -std=c++20 -o main *.cpp"]
     run: ["./main"]
     template: |
       #include <bits/stdc++.h>
@@ -151,7 +153,7 @@ runtimes:
     image: "gcc:13"
     digest: "sha256:ad3bd9a25f8495c0d2830d9fdd15c6ce889ada806bc1a00f611f22411a1f8b7c"
     sourceFile: "main.c"
-    compile: ["gcc", "-O2", "-std=c17", "-o", "main", "main.c", "-lm"]
+    compile: ["sh", "-c", "gcc -O2 -std=c17 -o main *.c -lm"]
     run: ["./main"]
     template: |
       #include <stdio.h>
@@ -191,7 +193,7 @@ runtimes:
     monacoLanguage: "kotlin"
     image: "codekr-runtime-kotlin:2.2"
     sourceFile: "Main.kt"
-    compile: ["kotlinc", "Main.kt", "-include-runtime", "-d", "main.jar"]
+    compile: ["sh", "-c", "kotlinc *.kt -include-runtime -d main.jar"]
     run: ["java", "-XX:+UseSerialGC", "-jar", "main.jar"]
     template: |
       fun main() {
@@ -207,7 +209,7 @@ runtimes:
     digest: "sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2"
     sourceFile: "main.go"
     # 캐시 디렉터리를 작업 디렉터리 안에 두어야 읽기 전용 rootfs 에서도 빌드된다.
-    compile: ["sh", "-c", "GOCACHE=/work/.gocache GOFLAGS=-mod=mod go build -o main main.go"]
+    compile: ["sh", "-c", "GOCACHE=/work/.gocache GOFLAGS=-mod=mod go build -o main *.go"]
     run: ["./main"]
     template: |
       package main

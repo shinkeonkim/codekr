@@ -130,30 +130,61 @@ func buildInputArchive(spec Spec, scripts stageScripts) (io.Reader, error) {
 		reserved[name] = true
 	}
 
+	// 하네스를 먼저 준비한다 (#60). 사용자·문제 파일이 그 이름을 쓸 수 없게 하기 위함이다.
+	harnessFiles, err := harness.Files(spec.Harness)
+	if err != nil {
+		return nil, err
+	}
+	for name := range harnessFiles {
+		reserved[name] = true
+	}
+
 	files := []struct {
 		name string
 		body string
 		mode int64
 	}{
-		{spec.SourceFile, spec.SourceCode, 0o644},
 		{"input.txt", spec.Stdin, 0o644},
 		{"compile.sh", scripts.compile, 0o755},
 		{"run.sh", scripts.run, 0o755},
 	}
 
-	// 런타임이 필요로 하는 하네스 (#60). 문제 자료보다 먼저 넣어 이름이 겹치면
-	// 문제 자료 쪽이 거부되게 한다 — 하네스를 덮어쓰면 임의 명령을 실행할 수 있다.
-	harnessFiles, err := harness.Files(spec.Harness)
-	if err != nil {
-		return nil, err
+	/*
+		제출한 소스 (#457).
+
+		파일 하나면 지금까지와 같다 — `SourceFile` 이름으로 `SourceCode` 를 놓는다.
+		여럿이면 그 파일들을 놓되 **진입점이 그 안에 있어야 한다**: 없으면 무엇을
+		컴파일·실행할지가 없고, 그 상태로 돌리면 "빈 파일을 짠 결과" 가 판정으로 남는다.
+	*/
+	sources := spec.SourceFiles
+	if len(sources) == 0 {
+		sources = map[string]string{spec.SourceFile: spec.SourceCode}
+	} else if _, ok := sources[spec.SourceFile]; !ok {
+		return nil, fmt.Errorf("진입점 파일이 제출에 없습니다: %q", spec.SourceFile)
 	}
+	for _, name := range sortedNames(sources) {
+		// 사용자가 쓴 이름이다. 예약 이름과 경로 탈출을 여기서 막는다 — 화면이 걸러도
+		// API 를 직접 부르는 길이 생기면 그대로 뚫린다.
+		if err := validateExtraFileName(name, reserved); err != nil {
+			return nil, err
+		}
+		files = append(files, struct {
+			name string
+			body string
+			mode int64
+		}{name, sources[name], 0o644})
+		// **사용자 파일끼리도 겹칠 수 없고**, 뒤따르는 문제 자료가 이것을 덮지도 못한다.
+		reserved[name] = true
+	}
+
+	// 런타임이 필요로 하는 하네스 (#60). 이름은 위에서 이미 예약해 두었다 —
+	// 하네스를 덮어쓰면 임의 명령을 실행할 수 있다.
 	for _, name := range sortedNames(harnessFiles) {
 		files = append(files, struct {
 			name string
 			body string
 			mode int64
 		}{name, harnessFiles[name], 0o755})
-		reserved[name] = true
 	}
 
 	// 문제가 싣는 파일 (#60). 예약 이름과 경로 탈출은 미리 막는다 — 이 자료는

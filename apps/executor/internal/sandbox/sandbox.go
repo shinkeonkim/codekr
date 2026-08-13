@@ -32,6 +32,16 @@ type Spec struct {
 	// 런타임마다 다를 수 있어 열어 뒀다 (#60) — PostgreSQL 의 initdb 는 UID 가
 	// /etc/passwd 에 없으면 거부하므로, 이미지에 있는 계정을 써야 한다.
 	User string
+	/*
+		SourceFiles 는 **사용자가 쓴 파일들**이다 (#457).
+
+		비어 있으면 지금까지처럼 `SourceCode` 하나를 `SourceFile` 이름으로 놓는다.
+		차 있으면 그 파일들을 놓는다 — 진입점(`SourceFile`)도 그 안에 있어야 한다.
+
+		`ExtraFiles` 와 나눠 둔 이유는 **주인이 다르기 때문**이다. 문제가 소유하는
+		자료를 사용자가 덮어쓸 수 있으면 채점이 무엇을 견주는지 알 수 없게 된다.
+	*/
+	SourceFiles map[string]string
 	// ExtraFiles 는 소스 외에 작업 디렉터리에 함께 풀 파일이다 (#60).
 	//
 	// SQL 문제의 스키마·시드·정답 쿼리처럼 **문제가 소유하는 자료**를 싣는다.
