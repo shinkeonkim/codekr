@@ -6,7 +6,7 @@ import { TIER_BADGE_CLASSES, TIER_LABELS } from "@/entities/problem";
 import { SkillTierBadge } from "@/entities/ranking";
 import { Avatar, userApi } from "@/entities/user";
 import type { UserProfile } from "@/entities/user";
-import { RequireAuth } from "@/features/auth";
+import { useAuth } from "@/features/auth";
 import { SubmissionExplorer } from "@/features/submission-explorer";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
@@ -15,16 +15,19 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { SolvedByTagView } from "./SolvedByTagView";
 
+/**
+ * 프로필 (#83, #333).
+ *
+ * **로그인 없이 열린다.** 전에는 아니었고, 그래서 게시판·랭킹·문제집에 걸린 이름을
+ * 비로그인이 누르면 로그인 화면으로 튕겼다 — 누르면 튕기는 링크는 고장으로 보인다.
+ */
 export function UserProfilePage({ params }: { params: Promise<{ nickname: string }> }) {
   const { nickname } = use(params);
-  return (
-    <RequireAuth>
-      <ProfileView nickname={decodeURIComponent(nickname)} />
-    </RequireAuth>
-  );
+  return <ProfileView nickname={decodeURIComponent(nickname)} />;
 }
 
 function ProfileView({ nickname }: { nickname: string }) {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityResponse | null>(null);
@@ -122,11 +125,29 @@ function ProfileView({ nickname }: { nickname: string }) {
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-ink">최근 제출</h2>
-        {/* 전체 제출 목록을 이 사람으로 좁혀 그대로 재사용한다. 같은 화면을 두 벌 만들지 않는다. */}
-        <SubmissionExplorer
-          fixedNickname={profile.nickname}
-          emptyMessage="아직 제출한 코드가 없습니다."
-        />
+        {/*
+          **여기가 공개와 비공개의 경계다** (#333).
+
+          위쪽은 전부 센 숫자라 로그인 없이 보인다. 이 목록은 어떤 문제를 어떤 결과로
+          냈는지 한 줄씩 보여 주는 것이고, 전체 제출 목록(#34)이 로그인을 요구한다 —
+          여기만 열면 그것이 우회로가 된다.
+
+          비로그인에게 **빈 목록이나 오류를 보이지 않는다.** 그러면 "제출이 없는 사람"
+          으로 읽힌다. 왜 안 보이는지 한 줄로 말한다.
+        */}
+        {user ? (
+          <SubmissionExplorer
+            fixedNickname={profile.nickname}
+            emptyMessage="아직 제출한 코드가 없습니다."
+          />
+        ) : (
+          <Card className="p-5 text-sm text-ink-muted">
+            제출 내역은 로그인하면 볼 수 있습니다.{" "}
+            <Link href="/login" className="text-brand hover:underline">
+              로그인
+            </Link>
+          </Card>
+        )}
       </section>
     </div>
   );

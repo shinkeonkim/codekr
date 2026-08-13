@@ -1,7 +1,7 @@
 package codekr.api.user.controller
 
 import codekr.api.auth.security.AuthPrincipal
-import codekr.api.config.security.AuthenticatedApi
+import codekr.api.config.security.PublicApi
 import codekr.api.user.dto.UserProfileResponse
 import codekr.api.user.service.UserProfileService
 import org.springframework.web.bind.annotation.GetMapping
@@ -14,13 +14,21 @@ import org.springframework.web.bind.annotation.RestController
 class UserProfileController(private val userProfileService: UserProfileService) {
 
     /**
-     * 회원 프로필.
+     * 회원 프로필 (#83, #333).
      *
-     * **로그인이 필요하다.** 전체 제출 목록(#34)이 이미 로그인 사용자에게만 열려 있으므로,
-     * 그것을 사람 기준으로 묶은 이 화면만 더 열어 둘 이유가 없다. 공개 범위를 바꾼다면
-     * 두 곳을 함께 바꿔야 한다 — 한쪽만 열면 우회로가 된다.
+     * **로그인 없이 열린다.** 전에는 아니었고, 그래서 게시판·랭킹·문제집에 걸린 이름을
+     * 비로그인이 누르면 로그인 화면으로 튕겼다 — **누르면 튕기는 링크는 고장으로 보인다**
+     * (#131 이 어드민 메뉴에서 같은 판단을 했다).
+     *
+     * **제출 목록(#34)을 함께 열지는 않는다.** 그쪽은 지금도 로그인이 필요하고, 그것이
+     * 우회되지 않는 이유는 이 화면이 주는 것이 **센 숫자**이지 "누가 어떤 문제를 언제
+     * 냈는지" 가 아니기 때문이다. 푼 문제 수·점수·순위는 랭킹(#57)이 이미 공개한다.
+     *
+     * 여기서 새로 공개되는 것은 소개 문구(#310)·연속 기록·태그별 분포·뱃지다.
+     * 소개 문구는 **순수 글자 100자에 링크가 열리지 않으므로**(#310) 공개를 전제로
+     * 이미 판단된 값이다.
      */
-    @AuthenticatedApi
+    @PublicApi
     @GetMapping("/{handle}")
     fun findProfile(
         @PathVariable handle: String,
