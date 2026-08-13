@@ -3,7 +3,7 @@
 import { tagApi } from "@/entities/tag";
 import type { ProblemTag, Tag } from "@/entities/tag";
 import { ApiError } from "@/shared/api";
-import { Button, Card, CardTitle, useToast } from "@/shared/ui";
+import { Button, Card, CardTitle, Tooltip, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 /**
@@ -58,11 +58,11 @@ export function ProblemTagEditor({ problemId, initial }: { problemId: number; in
           {tags.map((tag) => {
             const on = picked.includes(tag.id);
             return (
+              /* 설명을 툴팁으로 (#291 4단계, #288). */
+              <Tooltip key={tag.id} content={tag.description ?? undefined}>
               <button
-                key={tag.id}
                 type="button"
                 onClick={() => toggle(tag.id)}
-                title={tag.description ?? undefined}
                 className={`rounded-full border px-2.5 py-1 text-xs transition ${
                   on
                     ? "border-brand bg-brand/10 text-brand"
@@ -73,6 +73,7 @@ export function ProblemTagEditor({ problemId, initial }: { problemId: number; in
                 {/* 붙은 문제 수를 함께 보여 준다 — 비슷한 태그가 둘 생겼는지 여기서 드러난다. */}
                 <span className="ml-1 opacity-60">{tag.problemCount}</span>
               </button>
+              </Tooltip>
             );
           })}
         </div>
