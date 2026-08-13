@@ -8,6 +8,10 @@ package codekr.api.scaling.dto
  * 화면이 다르게 말해야 하는데 구분할 수단이 없었다.
  */
 data class ExecutorScaleStatus(
+    /** 조정할 때 경로에 쓰는 이름 (#390). 설정의 허용 목록 키다. */
+    val key: String,
+    /** 사람이 읽는 이름 — 실행기·채점기·대회 채점기. */
+    val label: String,
     val state: ExecutorScaleState,
     val deployment: String,
     /** 보고 있는 네임스페이스. 클러스터 밖이면 null. */
@@ -16,6 +20,13 @@ data class ExecutorScaleStatus(
     val readyReplicas: Int,
     val minReplicas: Int,
     val maxReplicas: Int,
+    /**
+     * 지금 정해진 워커 수 (#390). 채점기에만 있다.
+     *
+     * **null 은 "정한 적이 없다" 다.** 그때 채점기는 기동할 때 읽은 값을 쓴다 —
+     * 0 으로 내려보내면 화면이 "워커가 없다" 로 읽는다.
+     */
+    val workers: Int? = null,
     val reason: String? = null,
 ) {
     /** 조정 버튼을 보일지. **읽기 실패와 별개다** — 권한이 scale 에만 있어도 조정은 된다. */

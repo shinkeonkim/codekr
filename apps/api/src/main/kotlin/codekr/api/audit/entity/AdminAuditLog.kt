@@ -112,6 +112,14 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      * 되돌릴 것이 없고, 매번 적게 하면 "확인" 같은 값만 쌓인다.
      */
     PROBLEM_DRAFT("문제 초안 만들기", requiresReason = false),
+
+    /**
+     * 실행기·채점기 조정 (#390).
+     *
+     * 사유를 요구하지 않는다 — 되돌릴 수 있고, 큐가 밀릴 때 급히 누르는 일이다.
+     * **누가 무엇을 몇으로 바꿨는지**는 남는다. 전에는 그것도 없었다.
+     */
+    SCALE("워크로드 조정", requiresReason = false),
 }
 
 enum class AuditTargetType { USER }

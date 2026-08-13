@@ -1,6 +1,6 @@
 package codekr.api.scaling.service
 
-import codekr.api.config.properties.ExecutorScalingProperties
+import codekr.api.config.properties.ScalingProperties
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.client.JdkClientHttpRequestFactory
@@ -22,12 +22,17 @@ import java.time.Duration
 @Component
 class KubernetesScaleClient(
     private val objectMapper: ObjectMapper,
-    properties: ExecutorScalingProperties,
+    properties: ScalingProperties,
 ) : ExecutorScaleClient {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    private val credentials: ServiceAccountCredentials? = ServiceAccountCredentials.load(properties.namespace)
+    /*
+        기본 네임스페이스는 **실행기 설정에서 온다** — 그것만 별도 네임스페이스에 놓일 수
+        있기 때문이다 (#390). 대상마다 다르면 호출할 때 넘긴다.
+    */
+    private val credentials: ServiceAccountCredentials? =
+        ServiceAccountCredentials.load(properties.target("executor")?.namespace ?: "")
 
     override val available: Boolean = credentials != null
 
@@ -58,10 +63,11 @@ class KubernetesScaleClient(
             .build()
     }
 
-    override fun read(deployment: String): Pair<Int, Int> {
+    override fun read(deployment: String, namespaceOverride: String?): Pair<Int, Int> {
+        val ns = namespaceOverride?.takeIf { it.isNotBlank() } ?: namespace
         val body = call("읽기", deployment) {
             restClient.get()
-                .uri("/apis/apps/v1/namespaces/{ns}/deployments/{name}", namespace, deployment)
+                .uri("/apis/apps/v1/namespaces/{ns}/deployments/{name}", ns, deployment)
                 .retrieve()
                 .body(String::class.java)
         } ?: return 0 to 0
@@ -73,17 +79,18 @@ class KubernetesScaleClient(
         return desired to ready
     }
 
-    override fun scale(deployment: String, replicas: Int) {
+    override fun scale(deployment: String, replicas: Int, namespaceOverride: String?) {
+        val ns = namespaceOverride?.takeIf { it.isNotBlank() } ?: namespace
         call("조정", deployment) {
             restClient.patch()
-                .uri("/apis/apps/v1/namespaces/{ns}/deployments/{name}/scale", namespace, deployment)
+                .uri("/apis/apps/v1/namespaces/{ns}/deployments/{name}/scale", ns, deployment)
                 .contentType(MediaType.valueOf("application/merge-patch+json"))
                 .body("""{"spec":{"replicas":$replicas}}""")
                 .retrieve()
                 .toBodilessEntity()
         }
 
-        log.info("실행기 replica 를 {} 로 조정했습니다: {}/{}", replicas, namespace, deployment)
+        log.info("replica 를 {} 로 조정했습니다: {}/{}", replicas, ns, deployment)
     }
 
     /**

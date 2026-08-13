@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -26,8 +27,18 @@ type Consumer struct {
 	concurrency  int
 	// streams 는 이 워커가 읽을 스트림이다. 차선(#62)이 정한다.
 	streams []string
+	lane    string
+	// running 은 지금 도는 루프 수다 (#390). 조정과 상태 보고가 같은 값을 본다.
+	running atomic.Int32
 	log     *slog.Logger
 }
+
+const (
+	concurrencyPollInterval = 5 * time.Second
+	minConcurrency          = 1
+	// 기동 설정의 몇 배까지 허용할지. 실수로 큰 수를 넣어도 노드가 죽지 않아야 한다.
+	maxConcurrencyFactor = 8
+)
 
 // NewConsumer 는 채점 큐 소비자를 만든다.
 //
@@ -47,11 +58,21 @@ func NewConsumer(
 		consumerName: consumerName,
 		concurrency:  concurrency,
 		streams:      contract.JudgeStreamsFor(lane),
+		lane:         lane,
 		log:          log,
 	}
 }
 
-// Start 는 concurrency 만큼의 소비 루프를 띄우고 ctx 가 끝날 때까지 돈다.
+/*
+Start 는 소비 루프를 띄우고 ctx 가 끝날 때까지 돈다.
+
+**루프 수는 도는 중에 바뀐다** (#390). 큐가 밀릴 때 워커를 늘리려면 전에는 배포를
+다시 해야 했는데, 늘리려는 상황이 곧 재시작하면 안 되는 상황이다 — 진행 중인 채점이
+끊긴다. 그래서 원하는 수를 Redis 에서 주기적으로 읽고 그만큼 맞춘다.
+
+**줄일 때 진행 중인 채점을 끊지 않는다.** 루프마다 ctx 를 따로 주고 그것을 취소하면,
+그 루프는 **지금 처리 중인 것을 끝낸 뒤** 다음 차례에 빠져나간다.
+*/
 func (c *Consumer) Start(ctx context.Context) error {
 	// 차선을 잘못 적으면 읽을 스트림이 없다. 조용히 도는 대신 여기서 끊는다 (#62).
 	if len(c.streams) == 0 {
@@ -65,15 +86,101 @@ func (c *Consumer) Start(ctx context.Context) error {
 	}
 
 	var wg sync.WaitGroup
-	for i := 0; i < c.concurrency; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			c.loop(ctx)
-		}()
+	stops := make([]context.CancelFunc, 0, c.concurrency)
+
+	setRunning := func() { c.running.Store(int32(len(stops))) }
+	grow := func(to int) {
+		for len(stops) < to {
+			loopCtx, stop := context.WithCancel(ctx)
+			stops = append(stops, stop)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				c.loop(loopCtx)
+			}()
+		}
+		setRunning()
+	}
+	shrink := func(to int) {
+		for len(stops) > to {
+			last := len(stops) - 1
+			stops[last]()
+			stops = stops[:last]
+		}
+		setRunning()
+	}
+
+	grow(c.concurrency)
+	c.log.Info("채점 워커 시작", "lane", c.lane, "workers", len(stops))
+
+	ticker := time.NewTicker(concurrencyPollInterval)
+	defer ticker.Stop()
+	for ctx.Err() == nil {
+		select {
+		case <-ctx.Done():
+		case <-ticker.C:
+			desired := c.desiredConcurrency(ctx)
+			if desired == len(stops) {
+				continue
+			}
+			c.log.Info("채점 워커 수를 바꿉니다", "lane", c.lane, "from", len(stops), "to", desired)
+			grow(desired)
+			shrink(desired)
+		}
+	}
+
+	// 남은 루프들은 ctx 가 끝나며 함께 멈춘다. 취소 함수는 자원 정리용으로만 부른다.
+	for _, stop := range stops {
+		stop()
 	}
 	wg.Wait()
 	return nil
+}
+
+// current 는 지금 도는 루프 수다.
+func (c *Consumer) current() int {
+	if running := int(c.running.Load()); running > 0 {
+		return running
+	}
+	return c.concurrency
+}
+
+/*
+desiredConcurrency 는 지금 몇 개로 돌아야 하는지 읽는다.
+
+**읽지 못하면 지금 값을 유지한다.** Redis 가 잠깐 흔들렸다고 워커 수가 기본값으로
+되돌아가면, 늘려 둔 것이 조용히 사라진다 — 그리고 그것을 아무도 모른다.
+
+상한은 기동 설정의 배수로 둔다. 어드민이 실수로 큰 수를 넣어도 노드가 죽지 않아야 한다.
+*/
+func (c *Consumer) desiredConcurrency(ctx context.Context) int {
+	value, err := c.redis.Get(ctx, contract.JudgeConcurrencyKey(c.lane)).Int()
+	if err != nil {
+		if !errors.Is(err, redis.Nil) && ctx.Err() == nil {
+			c.log.Warn("워커 수를 읽지 못했습니다. 지금 값을 유지합니다", "error", err)
+		}
+		return c.current()
+	}
+	return clampConcurrency(value, c.concurrency)
+}
+
+// clampConcurrency 는 받은 값을 쓸 수 있는 범위로 자른다.
+//
+// **0 을 허용하지 않는다.** 0 이면 그 차선의 채점이 통째로 멈추는데, 화면에서 그것은
+// "적체" 로 보인다 — 원인이 조정이라는 것을 아무도 모른다.
+func clampConcurrency(value, base int) int {
+	// `max` 라고 부르지 않는다 — Go 1.21 의 내장 함수를 가린다 (gocritic builtinShadow).
+	upper := base * maxConcurrencyFactor
+	if upper < minConcurrency {
+		upper = minConcurrency
+	}
+	if value < minConcurrency {
+		return minConcurrency
+	}
+	if value > upper {
+		return upper
+	}
+	return value
 }
 
 func (c *Consumer) loop(ctx context.Context) {
