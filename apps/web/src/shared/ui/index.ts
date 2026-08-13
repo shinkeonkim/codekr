@@ -15,6 +15,7 @@ export type { Column } from "./Table";
 export { EmptyState } from "./primitives";
 export { Card, CardTitle } from "./card";
 export { ConfirmDialog } from "./ConfirmDialog";
+export { Tooltip } from "./tooltip";
 export { Button, type ButtonVariant } from "./button";
 export { Checkbox } from "./checkbox";
 export { CheckboxField } from "./CheckboxField";

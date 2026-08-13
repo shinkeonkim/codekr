@@ -138,6 +138,17 @@ function WorkloadCard({
       */}
       {unreadable ? <Alert>{status.reason ?? "배포 상태를 읽지 못했습니다."}</Alert> : null}
 
+      {/*
+        **파드 수의 주인은 클러스터다** (#418, ADR-0011). 전에는 "조정했습니다" 라고
+        말해 놓고 몇 분 뒤 ArgoCD 가 되돌렸는데, 화면은 그것을 몰랐다. 지금은 배포
+        저장소가 `spec.replicas` 를 보지 않으므로 여기서 정한 값이 남는다 — 그리고
+        **차트를 고쳐도 이 값은 안 바뀐다.** 둘 다 사실이므로 둘 다 적는다.
+      */}
+      <p className="text-xs text-ink-muted">
+        여기서 정한 파드 수는 배포해도 되돌아가지 않습니다. 차트의 값은 처음 만들 때만
+        쓰입니다.
+      </p>
+
       {/* 준비된 수가 목표에 못 미치면 확장이 진행 중이라는 뜻이다. */}
       {!unreadable && status.readyReplicas < status.desiredReplicas ? (
         <p className="text-xs text-warn">파드를 늘리는 중입니다…</p>

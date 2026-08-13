@@ -23,11 +23,15 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
         period: RankingPeriod,
         limit: Int,
         offset: Int,
+        affiliationId: Long? = null,
+        groupId: Long? = null,
     ): List<RankingEntry> =
-        jdbcClient.sql(rankingSql(metric, period))
+        jdbcClient.sql(rankingSql(metric, period, affiliationId = affiliationId, groupId = groupId))
             .param("scoreLimit", SCORE_PROBLEM_LIMIT)
             .param("limit", limit)
             .param("offset", offset)
+            .param("affiliationId", affiliationId)
+            .param("groupId", groupId)
             .query { rs, _ ->
                 RankingEntry(
                     rank = rs.getInt("rank"),
@@ -45,21 +49,40 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
      * **기간과 무관하다.** 아직 못 푼 사람도 목록에 있으므로, 이번 달 랭킹의 인원도
      * 가입자 수와 같다. 전에는 "그 기간에 푼 사람" 만 셌다.
      */
-    fun countRanked(period: RankingPeriod): Int =
-        jdbcClient.sql("SELECT count(*) FROM users u WHERE $RANKED_USER_FILTER")
+    fun countRanked(period: RankingPeriod, affiliationId: Long? = null, groupId: Long? = null): Int =
+        jdbcClient.sql(
+            """
+            SELECT count(*) FROM users u
+            WHERE $RANKED_USER_FILTER
+              AND ${affiliationCondition(affiliationId)}
+              AND ${groupCondition(groupId)}
+            """,
+        )
+            .param("affiliationId", affiliationId)
+            .param("groupId", groupId)
             .query(Int::class.java)
             .single()
 
     /** 그 사용자의 순위. 랭킹에 낄 자격이 있으면 **0점이어도 순위가 있다** (#391). */
-    fun findRankOf(nickname: String, metric: RankingMetric, period: RankingPeriod): RankingEntry? =
+    fun findRankOf(
+        nickname: String,
+        metric: RankingMetric,
+        period: RankingPeriod,
+        affiliationId: Long? = null,
+        groupId: Long? = null,
+    ): RankingEntry? =
         jdbcClient.sql(
             """
-            SELECT * FROM (${rankingSql(metric, period, paged = false)}) ranked
+            SELECT * FROM (
+                ${rankingSql(metric, period, paged = false, affiliationId = affiliationId, groupId = groupId)}
+            ) ranked
             WHERE nickname = :nickname
             """,
         )
             .param("scoreLimit", SCORE_PROBLEM_LIMIT)
             .param("nickname", nickname)
+            .param("affiliationId", affiliationId)
+            .param("groupId", groupId)
             .query { rs, _ ->
                 RankingEntry(
                     rank = rs.getInt("rank"),
@@ -100,7 +123,44 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
      *   2. **닉네임은 이제 바뀐다** (#307). 바뀌는 값으로 등수를 가르면 이름을 고친
      *      사람 때문에 남의 등수가 함께 움직인다. 가입일은 바뀌지 않는다
      */
-    private fun rankingSql(metric: RankingMetric, period: RankingPeriod, paged: Boolean = true): String {
+    /**
+     * 그 소속 사람들만 (#399).
+     *
+     * **모집단을 좁히는 것이지 정렬을 바꾸는 것이 아니다.** 그래서 등수는 그 안에서
+     * 1위부터 다시 매겨진다 — "우리 학교에서 3등" 이 이 기능의 이유다.
+     *
+     * `null` 이면 조건이 `true` 다. 조건을 문자열로 끼우되 **값은 바인딩한다** —
+     * 소속 id 는 사람이 보내는 값이다.
+     */
+    private fun affiliationCondition(affiliationId: Long?): String =
+        if (affiliationId == null) {
+            "true"
+        } else {
+            "EXISTS (SELECT 1 FROM user_affiliations ua " +
+                "WHERE ua.user_id = u.id AND ua.affiliation_id = :affiliationId)"
+        }
+
+    /**
+     * 그 그룹 사람들만 (#402).
+     *
+     * **소속 랭킹(#399)과 같은 구조다** — 모집단을 좁힐 뿐 정렬을 바꾸지 않는다.
+     * 다른 것은 **누가 볼 수 있느냐**뿐이고, 그것은 여기가 아니라 경로가 정한다
+     * (`/groups/{id}/rankings` 는 멤버만 부를 수 있다).
+     */
+    private fun groupCondition(groupId: Long?): String =
+        if (groupId == null) {
+            "true"
+        } else {
+            "EXISTS (SELECT 1 FROM group_members gm WHERE gm.user_id = u.id AND gm.group_id = :groupId)"
+        }
+
+    private fun rankingSql(
+        metric: RankingMetric,
+        period: RankingPeriod,
+        paged: Boolean = true,
+        affiliationId: Long? = null,
+        groupId: Long? = null,
+    ): String {
         val tieBreak = "last_solved_at ASC NULLS LAST, created_at ASC"
         val order = when (metric) {
             RankingMetric.SCORE -> "score DESC, solved_count DESC, $tieBreak"
@@ -126,6 +186,8 @@ class RankingRepository(private val jdbcClient: JdbcClient) {
                     FROM user_problem_scores ups
                 ) s ON s.user_id = u.id AND ${periodFilter(period)}
                 WHERE $RANKED_USER_FILTER
+                  AND ${affiliationCondition(affiliationId)}
+                  AND ${groupCondition(groupId)}
                 GROUP BY u.id, u.nickname, u.created_at
             ) totals
             ORDER BY $order

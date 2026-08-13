@@ -52,6 +52,14 @@ data class UserProfileResponse(
     val rank: Int?,
     val badges: List<AwardedBadge>,
     /**
+     * 붙어 있는 소속 (#398).
+     *
+     * **"학교 인증" 이 아니라 "학교 메일 확인됨" 이다** (기획서 3절). 인증이 실제로
+     * 말하는 것은 "그 도메인의 메일을 받을 수 있다" 까지다 — 졸업생도 재학생으로
+     * 보이고, 회사는 더 약하다. 화면이 그 한계를 감추지 않게 한다.
+     */
+    val affiliations: List<ProfileAffiliation>,
+    /**
      * 이 사람이 만든 **공개** 문제집 (#209).
      *
      * 비공개가 남에게 새면 안 되므로 내 프로필에서도 공개된 것만 보인다 — 내 것 전체는
@@ -66,3 +74,6 @@ data class SkillTierResponse(val level: Int, val name: String, val nextLevelScor
         fun from(tier: SkillTier) = SkillTierResponse(tier.level, tier.name, tier.nextLevelScore)
     }
 }
+
+/** 프로필에 보이는 소속 한 줄 (#398). 주소는 담지 않는다 — 남에게 보일 것이 아니다. */
+data class ProfileAffiliation(val name: String, val kindLabel: String)

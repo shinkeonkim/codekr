@@ -97,6 +97,18 @@ export interface UserProfile {
   /** 랭킹을 껐거나 푼 문제가 없으면 null — 꼴찌가 아니라 순위가 없는 것이다. */
   rank: number | null;
   badges: AwardedBadge[];
+  /**
+   * 붙어 있는 소속 (#398).
+   *
+   * **"학교 인증" 이 아니라 "학교 메일 확인됨" 이다** (기획서 3절). 어느 주소로
+   * 붙었는지는 오지 않는다 — 남에게 보일 것이 아니다.
+   */
+  affiliations: ProfileAffiliation[];
+}
+
+export interface ProfileAffiliation {
+  name: string;
+  kindLabel: string;
 }
 
 /**
@@ -188,4 +200,11 @@ export interface TermAgreement {
   title: string;
   version: string;
   agreedAt: string;
+}
+
+/** 확인을 마친 추가 메일 주소 (#396). 로그인 주소는 이 목록에 없다. */
+export interface UserEmail {
+  id: number;
+  email: string;
+  verifiedAt: string;
 }

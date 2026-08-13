@@ -19,6 +19,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/collections/explore", label: "공개 문제집" },
   { href: "/contests", label: "대회" },
   { href: "/ranking", label: "랭킹" },
+  // 그룹은 **소속과 다른 것이다** (#401) — 같은 목록에 섞지 않는다.
+  { href: "/groups", label: "그룹" },
   { href: "/submissions", label: "내 제출" },
 ];
 

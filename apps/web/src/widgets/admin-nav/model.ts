@@ -69,6 +69,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["ADMIN"],
   },
   {
+    href: "/admin/affiliations",
+    label: "소속 관리",
+    description: "학교·회사와 그 메일 도메인",
+    // **잘못 넣으면 그 도메인을 가진 모두가 그 소속을 얻는다** (#397). 서버도 ADMIN 이다.
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/badges",
     label: "뱃지",
     description: "문구·노출과 달성 규칙",

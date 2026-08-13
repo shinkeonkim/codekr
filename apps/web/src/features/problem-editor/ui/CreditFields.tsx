@@ -1,7 +1,7 @@
 "use client";
 
 import { userApi } from "@/entities/user";
-import { Badge, Button, Field, Input } from "@/shared/ui";
+import { Badge, Button, Field, Input, Tooltip } from "@/shared/ui";
 import { useState } from "react";
 
 interface Person {
@@ -99,14 +99,20 @@ function PersonPicker({
         {picked.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {picked.map((person) => (
-              <button
-                key={person.id}
-                type="button"
-                onClick={() => onChange(picked.filter((each) => each.id !== person.id))}
-                title="빼기"
-              >
-                <Badge tone="info">{person.nickname} ✕</Badge>
-              </button>
+              /*
+                **`title=` 을 걷었다** (#291 4단계). 브라우저 기본 툴팁은 1초 넘게
+                걸리고 키보드로 닿지 않는다 — 그리고 이름은 툴팁이 아니라
+                `aria-label` 이 맡아야 한다. 스크린 리더는 시각적 툴팁을 읽지 않는다.
+              */
+              <Tooltip key={person.id} content="빼기">
+                <button
+                  type="button"
+                  aria-label={`${person.nickname} 빼기`}
+                  onClick={() => onChange(picked.filter((each) => each.id !== person.id))}
+                >
+                  <Badge tone="info">{person.nickname} ✕</Badge>
+                </button>
+              </Tooltip>
             ))}
           </div>
         ) : null}

@@ -9,6 +9,7 @@ import type {
   TermSummary,
   TokenResponse,
   User,
+  UserEmail,
   UserProfile,
   UserSettings,
 } from "../model/types";
@@ -129,6 +130,22 @@ export const userApi = {
   /** 인증 메일을 다시 받는다. 쿨다운과 하루 상한이 걸린다. */
   resendVerification: () =>
     request<void>("/api/v1/auth/email/verification", { method: "POST", auth: true }),
+
+  /**
+   * 확인을 마친 **추가** 주소들 (#396). 로그인 주소는 여기 없다.
+   *
+   * 확인 링크를 누르기 전에는 목록에 나타나지 않는다 — 적어 두기만 한 주소는
+   * `@snu.ac.kr` 이라고 적기만 하면 서울대가 되는 것과 같기 때문이다.
+   */
+  emails: () => request<UserEmail[]>("/api/v1/users/me/emails", { auth: true }),
+
+  /** 주소를 더한다. **바로 붙지 않고 확인 메일이 간다.** */
+  addEmail: (email: string) =>
+    request<void>("/api/v1/users/me/emails", { method: "POST", auth: true, body: { email } }),
+
+  /** 뗀다. 이 주소로 붙은 소속(#398)도 함께 떨어진다. */
+  removeEmail: (id: number) =>
+    request<void>(`/api/v1/users/me/emails/${id}`, { method: "DELETE", auth: true }),
 
   /** 내 프로필에서 남에게 보이는 값 (#310). 설정(내가 보는 값)과 나눈다. */
   updateProfile: (body: { bio?: string; displayName?: string }) =>

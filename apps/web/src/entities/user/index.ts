@@ -10,6 +10,8 @@ export type {
   SolvedByTier,
   TokenResponse,
   User,
+  UserEmail,
+  ProfileAffiliation,
   UserProfile,
   UserRole,
   UserSettings,
