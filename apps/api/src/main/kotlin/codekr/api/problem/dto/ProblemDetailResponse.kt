@@ -68,6 +68,12 @@ data class ProblemDetailResponse(
             credits: List<ProblemCreditResponse> = emptyList(),
             /** 런타임 → 그 언어로 풀 때 채울 파일들 (#457). */
             files: Map<String, List<ProblemFile>> = emptyMap(),
+            /**
+             * 런타임 → 함수형 문제의 **껍데기** (#421).
+             *
+             * 하네스 자체는 절대 내려가지 않는다 — 여기 오는 것은 사용자가 채울 자리다.
+             */
+            harnessTemplates: Map<String, String> = emptyMap(),
         ) = ProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
@@ -94,7 +100,8 @@ data class ProblemDetailResponse(
             runtimes = runtimes.map {
                 ProblemRuntimeResponse.of(
                     it,
-                    problem.templateOf(it.id),
+                    // 껍데기가 있으면 그것이 시작 코드다 (#421).
+                    harnessTemplates[it.id] ?: problem.templateOf(it.id),
                     problem.limitsFor(it.id),
                     files[it.id].orEmpty(),
                 )

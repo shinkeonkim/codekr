@@ -27,7 +27,7 @@ class RuntimeRegistry(
     fun findAll(): List<RuntimeDefinition> = runtimes
 
     /** 그 유형으로 풀 수 있는 런타임만 (#60). */
-    fun findFor(kind: ProblemKind): List<RuntimeDefinition> = runtimes.filter { it.problemKind == kind }
+    fun findFor(kind: ProblemKind): List<RuntimeDefinition> = runtimes.filter { it.canSolve(kind) }
 
     fun require(id: String): RuntimeDefinition = byId[id] ?: throw ApiException(ErrorCode.RUNTIME_NOT_FOUND)
 
@@ -55,6 +55,8 @@ class RuntimeRegistry(
                     ?.let(ProblemKind::valueOf) ?: ProblemKind.JUDGE_STDIO,
                 // 적지 않으면 0 이다 — 대부분의 런타임은 기동이랄 것이 없다 (#454).
                 startupMs = (it["startupMs"] as? Int) ?: 0,
+                // 실행기와 **같은 파일**을 본다 (#421).
+                supportsFunctionHarness = it["functionHarness"] != null,
             )
         }
     }

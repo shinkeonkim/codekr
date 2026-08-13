@@ -56,6 +56,16 @@ enum class ProblemKind(
      */
     JUDGE_INTERACTIVE("인터랙티브", ready = true, supportsSolutionVerification = false),
 
+    /**
+     * **함수만 구현하는** 문제 (#421).
+     *
+     * 보이지 않는 하네스가 사용자 코드를 부른다. `JUDGE_STDIO` 에 얹지 않은 이유:
+     * 얹으면 "하네스가 있으면 함수형" 이라는 **암묵 규칙**이 생기고, 하네스를 지웠을 때
+     * 문제의 성격이 조용히 바뀐다. 화면도 갈라야 한다 — 템플릿이 "시작 코드" 가 아니라
+     * **"채워야 할 껍데기"** 다.
+     */
+    JUDGE_FUNCTION("함수 구현", ready = true),
+
     /** 객관식·단답. 실행기를 쓰지 않고 api 에서 즉시 채점한다. */
     QUIZ("객관식 · 단답", ready = false),
 

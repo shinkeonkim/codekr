@@ -10,6 +10,7 @@ import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.dto.ProblemFileResponse
 import codekr.api.problem.entity.ProblemFile
+import codekr.api.problem.harness.ProblemHarness
 import codekr.api.problem.entity.ProblemTestcaseGroup
 import codekr.api.problem.entity.ProblemNoSqlSpec
 import codekr.api.problem.entity.ProblemSqlSpec
@@ -38,6 +39,8 @@ data class AdminProblemDetailResponse(
     val testcaseGroups: List<TestcaseGroupResponse> = emptyList(),
     /** 어드민에게만 간다 (#474) — 고치려면 지금 무엇이 들어 있는지 보여야 한다. */
     val interactorSource: String? = null,
+    /** 함수형 문제의 하네스 (#421). **어드민에게만** 간다. */
+    val harnesses: List<HarnessResponse> = emptyList(),
     /** 편집 화면이 지금 붙어 있는 사람을 그대로 보여야 한다 (#236). */
     val setters: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
     val reviewers: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
@@ -83,6 +86,7 @@ data class AdminProblemDetailResponse(
             noSqlSpec: ProblemNoSqlSpec? = null,
             files: List<ProblemFile> = emptyList(),
             testcaseGroups: List<ProblemTestcaseGroup> = emptyList(),
+            harnesses: List<ProblemHarness> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
             credits: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
         ) = AdminProblemDetailResponse(
@@ -97,6 +101,7 @@ data class AdminProblemDetailResponse(
             files = files.map(ProblemFileResponse::from),
             testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),
             interactorSource = problem.interactorSource,
+            harnesses = harnesses.map(HarnessResponse::from),
             setters = credits.filter { it.role == codekr.api.problem.credit.CreditRole.SETTER },
             reviewers = credits.filter { it.role == codekr.api.problem.credit.CreditRole.REVIEWER },
             sourceLabel = problem.sourceLabel,
@@ -133,5 +138,13 @@ data class TestcaseGroupResponse(val groupNo: Int, val score: Int, val label: St
     companion object {
         fun from(group: ProblemTestcaseGroup) =
             TestcaseGroupResponse(group.groupNo, group.score, group.label)
+    }
+}
+
+/** 함수형 문제의 하네스 (#421). 어드민 화면이 고칠 수 있게 그대로 준다. */
+data class HarnessResponse(val runtimeId: String, val source: String, val template: String) {
+    companion object {
+        fun from(harness: ProblemHarness) =
+            HarnessResponse(harness.runtimeId, harness.source, harness.template)
     }
 }

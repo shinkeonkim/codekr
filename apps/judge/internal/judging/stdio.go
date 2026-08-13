@@ -102,7 +102,9 @@ func (j *StdioJudge) runTestcase(
 		RuntimeID:  job.RuntimeID,
 		SourceCode: job.SourceCode,
 		// 여러 파일로 낸 제출 (#457). 비면 SourceCode 하나로 돈다.
-		SourceFiles:   job.SourceFiles,
+		SourceFiles: job.SourceFiles,
+		// 함수만 구현하는 문제의 보이지 않는 코드 (#421). 비면 지금까지와 같다.
+		HarnessSource: job.Harness,
 		Stdin:         testcase.Input,
 		TimeLimitMs:   job.TimeLimitMs,
 		MemoryLimitMb: job.MemoryLimitMb,

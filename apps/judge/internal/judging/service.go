@@ -53,6 +53,9 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 			contract.KindJudgeSQL:         NewSqlJudge(executor, log),
 			contract.KindJudgeNoSQL:       NewNoSqlJudge(executor, log),
 			contract.KindJudgeInteractive: NewInteractiveJudge(executor, log),
+			// 함수형 문제도 stdin/stdout 으로 채점한다 (#421) — 다른 것은 **무엇을
+			// 돌리는가**뿐이고, 그 판단은 실행기가 런타임 정의를 보고 한다.
+			contract.KindJudgeFunction: NewStdioJudge(executor, log),
 		},
 		events: events,
 		log:    log,

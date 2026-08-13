@@ -135,8 +135,34 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         }
     }
 
+    /**
+     * 함수형 문제에는 **하네스가 있어야 한다** (#421).
+     *
+     * 없으면 사용자 코드를 부를 것이 없어 아무도 못 푸는 문제가 된다. 그리고 하네스를
+     * 쓴 언어가 곧 허용 목록이므로(#419), 하나도 없으면 **풀 수 있는 언어도 없다.**
+     */
+    private fun validateHarnesses(request: ProblemUpsertRequest) {
+        if (request.problemKind == ProblemKind.JUDGE_FUNCTION && request.harnesses.isEmpty()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "함수 구현 문제에는 언어별 하네스가 필요합니다.")
+        }
+        if (request.problemKind != ProblemKind.JUDGE_FUNCTION && request.harnesses.isNotEmpty()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "함수 구현 문제가 아닌데 하네스가 실려 있습니다.")
+        }
+        // 하네스를 얹을 수 없는 언어를 고르면, 그 언어로 낸 제출은 실행기가 거절한다.
+        val unsupported = request.harnesses
+            .map { it.runtimeId }
+            .filterNot { runtimeRegistry.exists(it) && runtimeRegistry.require(it).supportsFunctionHarness }
+        if (unsupported.isNotEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "이 언어는 함수 구현 문제를 지원하지 않습니다: ${unsupported.joinToString()}",
+            )
+        }
+    }
+
     fun validate(request: ProblemUpsertRequest) {
         validateSqlDatabase(request)
+        validateHarnesses(request)
         validateInteractor(request)
         validateNoSqlProduct(request)
 

@@ -50,18 +50,39 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 		return systemError(job, err.Error())
 	}
 
+	/*
+		함수만 구현하는 문제 (#421).
+
+		**파일을 나눠 놓는다.** 사용자 코드는 `solution.py` 로, 하네스는 `main.py` 로
+		간다 — 한 파일로 합치면 오류의 줄 번호가 통째로 어긋나 사용자가 자기 코드의
+		어디가 틀렸는지 알 수 없다.
+
+		하네스를 지원하지 않는 런타임에 하네스가 실려 오면 **돌리지 않는다.** 짐작해서
+		합치면 그 순간 위의 약속이 깨진다.
+	*/
+	sourceFile, runCommand := definition.SourceFile, definition.Run
+	extraFiles := job.ExtraFiles
+	if job.HarnessSource != "" {
+		harness := definition.FunctionHarness
+		if harness == nil {
+			return systemError(job, fmt.Sprintf("이 런타임은 함수형 문제를 지원하지 않습니다: %s", job.RuntimeID))
+		}
+		sourceFile, runCommand = harness.SourceFile, harness.Run
+		extraFiles = withHarness(extraFiles, harness.File, job.HarnessSource)
+	}
+
 	outcome, err := r.box.Run(ctx, sandbox.Spec{
 		Image:      definition.ImageRef(r.runtimeRegistry),
-		SourceFile: definition.SourceFile,
+		SourceFile: sourceFile,
 		SourceCode: job.SourceCode,
 		// 여러 파일로 낸 제출 (#457). 비면 SourceCode 하나로 돈다.
 		SourceFiles:          job.SourceFiles,
 		Stdin:                job.Stdin,
 		Compile:              definition.Compile,
-		Run:                  definition.Run,
+		Run:                  runCommand,
 		Harness:              definition.Harness,
 		User:                 definition.User,
-		ExtraFiles:           job.ExtraFiles,
+		ExtraFiles:           extraFiles,
 		TimeLimitMs:          job.TimeLimitMs,
 		MemoryLimitMb:        job.MemoryLimitMb,
 		CompileTimeoutMs:     r.compileTimeoutMs,
@@ -109,4 +130,19 @@ func systemError(job contract.ExecJob, message string) contract.ExecResult {
 		Status: contract.StatusSystemError,
 		Stderr: message,
 	}
+}
+
+/*
+withHarness 는 하네스를 문제 자료 옆에 놓는다 (#421).
+
+**원본 map 을 고치지 않는다.** 작업 메시지에서 온 값이라, 여기서 바꾸면 같은 작업을
+다시 쓰는 자리(재시도 등)에서 무엇이 원본인지 알 수 없게 된다.
+*/
+func withHarness(files map[string]string, name, source string) map[string]string {
+	merged := make(map[string]string, len(files)+1)
+	for key, value := range files {
+		merged[key] = value
+	}
+	merged[name] = source
+	return merged
 }

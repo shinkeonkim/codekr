@@ -52,6 +52,7 @@ abstract class IntegrationTestBase {
                      submission_testcase_results, submissions, problem_runtime_limits,
                      problem_files,
                      problem_testcase_groups,
+                     problem_harnesses,
                      problem_difficulty_votes,
                      problem_reports,
                      user_score_history,

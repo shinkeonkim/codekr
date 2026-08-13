@@ -21,6 +21,7 @@ import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemNoSqlSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.problem.repository.ProblemFileRepository
+import codekr.api.problem.harness.ProblemHarnessRepository
 import codekr.api.problem.repository.ProblemTestcaseGroupRepository
 import codekr.api.problem.repository.ProblemNoSqlSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
@@ -44,6 +45,7 @@ class AdminProblemService(
     private val noSqlSpecRepository: ProblemNoSqlSpecRepository,
     private val fileRepository: ProblemFileRepository,
     private val groupRepository: ProblemTestcaseGroupRepository,
+    private val harnessRepository: ProblemHarnessRepository,
     private val scoreResyncService: ProblemScoreResyncService,
     private val validator: ProblemUpsertValidator,
 ) {
@@ -63,6 +65,7 @@ class AdminProblemService(
             noSqlSpecRepository.findById(id).orElse(null),
             fileRepository.findByProblemIdOrderBySeq(id),
             groupRepository.findByProblemIdOrderByGroupNo(id),
+            harnessRepository.findByProblemId(id),
             tagService.tagsOf(id),
         )
     }
@@ -100,6 +103,19 @@ class AdminProblemService(
      * 묶음을 다시 쓴다 (#473). 파일 목록(#457)과 같은 이유로 통째로 갈아 끼운다 —
      * 번호가 바뀌면 그것은 다른 묶음이고, 무엇이 무엇의 개정인지 짐작하면 점수가 어긋난다.
      */
+    /**
+     * 하네스를 다시 쓴다 (#421).
+     *
+     * **허용 목록도 여기서 정해진다.** 하네스를 쓴 언어가 곧 그 문제를 풀 수 있는
+     * 언어다 — 목록을 따로 고르게 하면 두 곳이 어긋난다 (기획서 §4).
+     */
+    private fun replaceHarnesses(problem: Problem, request: ProblemUpsertRequest) {
+        harnessRepository.deleteByProblemId(problem.id)
+        if (request.harnesses.isEmpty()) return
+        harnessRepository.saveAll(request.harnesses.map { it.toEntity(problem.id) })
+        problem.replaceAllowedRuntimes(request.harnesses.map { it.runtimeId })
+    }
+
     private fun replaceTestcaseGroups(problemId: Long, request: ProblemUpsertRequest) {
         groupRepository.deleteByProblemId(problemId)
         if (request.testcaseGroups.isEmpty()) return
@@ -173,6 +189,7 @@ class AdminProblemService(
         request.nosqlSpec?.let { noSqlSpecRepository.save(it.toEntity(saved.id)) }
         replaceFiles(saved.id, request)
         replaceTestcaseGroups(saved.id, request)
+        replaceHarnesses(saved, request)
         creditService.replace(saved.id, request.setterIds, request.reviewerIds)
         return ProblemCreatedResponse(saved.id, saved.slug)
     }
@@ -220,6 +237,7 @@ class AdminProblemService(
         problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
         replaceFiles(problem.id, request)
         replaceTestcaseGroups(problem.id, request)
+        replaceHarnesses(problem, request)
 
         /*
             바뀐 난이도·공개 여부를 이미 맞힌 사람들의 점수에 반영한다 (#194).
@@ -242,6 +260,7 @@ class AdminProblemService(
             upsertNoSqlSpec(problem.id, request),
             fileRepository.findByProblemIdOrderBySeq(problem.id),
             groupRepository.findByProblemIdOrderByGroupNo(problem.id),
+            harnessRepository.findByProblemId(problem.id),
             tagService.tagsOf(problem.id),
             creditService.creditsOf(problem.id),
         )

@@ -8,6 +8,7 @@ import codekr.api.problem.dto.ProblemStats
 import codekr.api.problem.dto.ProblemSummaryResponse
 import codekr.api.problem.repository.ProblemStatsRepository
 import codekr.api.problem.entity.Problem
+import codekr.api.problem.harness.ProblemHarnessRepository
 import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.repository.ProblemSearchCondition
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class ProblemService(
     private val fileRepository: ProblemFileRepository,
+    private val harnessRepository: ProblemHarnessRepository,
     private val creditService: codekr.api.problem.credit.ProblemCreditService,
     private val problemRepository: ProblemRepository,
     private val problemSearchRepository: ProblemSearchRepository,
@@ -54,6 +56,8 @@ class ProblemService(
             // 파일 목록은 런타임마다다 (#457). 한 번에 읽어 언어별로 나눈다 —
             // 언어마다 질의하면 목록이 긴 문제에서 조회가 언어 수만큼 는다.
             fileRepository.findByProblemIdOrderBySeq(problem.id).groupBy { it.runtimeId },
+            // 함수형 문제는 **껍데기**가 시작 코드다 (#421) — 빈 화면에서 시작할 수 없다.
+            harnessRepository.findByProblemId(problem.id).associate { it.runtimeId to it.template },
         )
     }
 

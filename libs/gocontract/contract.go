@@ -126,6 +126,14 @@ type ExecJob struct {
 	// 이름에 경로를 쓸 수 없고 샌드박스 예약 이름과 겹칠 수 없다 — 실행기가 거부한다.
 	ExtraFiles map[string]string `json:"extraFiles,omitempty"`
 	/*
+		HarnessSource 는 **보이지 않는 코드**다 (#421).
+
+		함수만 구현하는 문제에서 사용자 코드를 부르는 쪽이다. 차 있으면 실행기가 런타임
+		정의의 `functionHarness` 대로 파일을 나눠 놓는다 — **사용자 코드와 한 파일로
+		합치지 않는다.** 합치면 줄 번호가 어긋나 오류가 어디인지 알 수 없다.
+	*/
+	HarnessSource string `json:"harnessSource,omitempty"`
+	/*
 		SourceFiles 는 **사용자가 쓴 파일들**이다 (#457).
 
 		`SourceCode` 와 나눠 둔 이유: 둘은 주인이 다르다. 하나는 제출이고 하나는 문제가
@@ -184,8 +192,10 @@ const (
 	KindJudgeNoSQL = "JUDGE_NOSQL"
 	// KindJudgeInteractive 는 **도는 중에 주고받는** 문제다 (#474).
 	KindJudgeInteractive = "JUDGE_INTERACTIVE"
-	KindQuiz             = "QUIZ"
-	KindManual           = "MANUAL"
+	// KindJudgeFunction 은 **함수만 구현하는** 문제다 (#421).
+	KindJudgeFunction = "JUDGE_FUNCTION"
+	KindQuiz          = "QUIZ"
+	KindManual        = "MANUAL"
 )
 
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.
@@ -236,6 +246,13 @@ type JudgeJob struct {
 		판정하고, 이쪽은 제출과 동시에 돌며 주고받는다. 판정을 종료 코드로 말하는
 		규약은 같고(0 정답 · 1 오답), 거기에 **3 = 교착**이 더해진다.
 	*/
+	/*
+		Harness 는 함수만 구현하는 문제의 **보이지 않는 코드**다 (#421).
+
+		언어마다 다르다 — 문제 × 언어 = 하네스 하나. 하네스를 쓴 언어만 그 문제를 풀 수
+		있고, 그것이 곧 #419 의 허용 목록이다.
+	*/
+	Harness    string `json:"harness,omitempty"`
 	Interactor string `json:"interactor,omitempty"`
 	Checker    string `json:"checker,omitempty"`
 	// NoSQL 은 KindJudgeNoSQL 일 때만 실린다 (#455).

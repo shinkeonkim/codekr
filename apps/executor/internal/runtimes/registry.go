@@ -31,10 +31,33 @@ type Definition struct {
 	// PostgreSQL 의 initdb 는 UID 가 /etc/passwd 에 없으면 거부하므로, SQL 런타임은
 	// 이미지에 있는 계정(70:70)을 써야 한다.
 	User string `yaml:"user"`
+	/*
+		FunctionHarness 는 함수만 구현하는 문제의 실행 방법이다 (#421).
+
+		**합치는 방법을 런타임 정의가 안다.** 언어마다 실행기 코드에 분기를 두면 언어가
+		늘 때마다 실행기를 고쳐야 하고, 하네스 안에 `{{USER_CODE}}` 자리를 만들면
+		문자열을 이어 붙이는 것이라 **줄 번호가 통째로 어긋난다.**
+
+		비어 있으면 그 런타임은 함수형 문제를 지원하지 않는다 — 그리고 그것이 곧
+		#419 의 허용 목록이 된다 (기획서 §4).
+	*/
+	FunctionHarness *FunctionHarness `yaml:"functionHarness"`
 	// Template 은 실행에 쓰이지 않지만, "기본 템플릿이 실제로 컴파일·실행되는가"를
 	// 검증하는 데 필요해 함께 읽는다.
 	Template string `yaml:"template"`
 }
+
+// FunctionHarness 는 하네스를 어떻게 놓고 돌릴지다 (#421).
+type FunctionHarness struct {
+	// File 은 하네스가 놓일 이름이다. 이것을 돌린다.
+	File string `yaml:"file"`
+	// SourceFile 은 **사용자 코드**가 놓일 이름이다. 하네스가 이것을 부른다.
+	SourceFile string   `yaml:"sourceFile"`
+	Run        []string `yaml:"run"`
+}
+
+// SupportsFunctionHarness 는 이 런타임으로 함수형 문제를 풀 수 있는지 알려준다 (#421).
+func (d Definition) SupportsFunctionHarness() bool { return d.FunctionHarness != nil }
 
 // NeedsCompile 은 실행 전 컴파일 단계가 필요한지 알려준다.
 func (d Definition) NeedsCompile() bool { return len(d.Compile) > 0 }

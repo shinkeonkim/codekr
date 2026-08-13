@@ -8,6 +8,7 @@ import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.harness.ProblemHarness
 import codekr.api.problem.entity.ProblemTestcaseGroup
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMax
@@ -161,6 +162,14 @@ data class ProblemUpsertRequest(
     @field:Size(max = 100_000)
     val interactorSource: String? = null,
 
+    /**
+     * 함수만 구현하는 문제의 하네스 (#421). 언어마다 하나다.
+     *
+     * **여기에 쓴 언어가 곧 허용 목록이다** — 목록을 따로 고르게 하지 않는다.
+     */
+    @field:Valid
+    val harnesses: List<HarnessRequest> = emptyList(),
+
     /** 런타임별 실행 제한 오버라이드 (#97). 적지 않은 런타임은 위 기본 제한을 쓴다. */
     @field:Valid
     val runtimeLimits: List<RuntimeLimitRequest> = emptyList(),
@@ -207,4 +216,16 @@ data class TestcaseGroupRequest(
     @field:Size(max = 60) val label: String = "",
 ) {
     fun toEntity(problemId: Long) = ProblemTestcaseGroup(problemId, groupNo, score, label)
+}
+
+/** 함수형 문제의 하네스 하나 (#421). */
+data class HarnessRequest(
+    @field:NotBlank val runtimeId: String,
+    @field:NotBlank(message = "하네스 코드가 필요합니다.")
+    @field:Size(max = 100_000)
+    val source: String,
+    /** 사용자가 채울 껍데기. 빈 화면에서 시작할 수 없는 유형이다. */
+    val template: String = "",
+) {
+    fun toEntity(problemId: Long) = ProblemHarness(problemId, runtimeId, source, template)
 }

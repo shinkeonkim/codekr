@@ -63,6 +63,12 @@ data class JudgeJobMessage(
      * **채점기가 DB 를 읽지 않는다** (ADR-0004) — 판정에 필요한 것은 전부 실려 간다.
      */
     val interactor: String? = null,
+    /**
+     * 함수형 문제의 하네스 (#421). **제출한 언어의 것**이 실린다.
+     *
+     * 채점기가 DB 를 읽지 않으므로(ADR-0004) 여기 없으면 그 문제는 채점될 수 없다.
+     */
+    val harness: String? = null,
 ) {
     companion object {
         /**
@@ -75,6 +81,7 @@ data class JudgeJobMessage(
             submission: Submission,
             problem: Problem,
             groups: List<ProblemTestcaseGroup> = emptyList(),
+            harness: String? = null,
             sqlSpec: ProblemSqlSpec? = null,
             noSqlSpec: ProblemNoSqlSpec? = null,
         ): JudgeJobMessage {
@@ -90,6 +97,7 @@ data class JudgeJobMessage(
                 memoryLimitMb = limits.memoryLimitMb,
                 testcases = problem.testcases.map(JudgeTestcaseMessage::from),
                 groups = groups.map(JudgeTestcaseGroupMessage::from),
+                harness = harness,
                 comparison = problem.outputComparison,
                 epsilon = problem.floatEpsilon,
                 sql = sqlSpec?.let(JudgeSqlSpecMessage::from),

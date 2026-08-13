@@ -38,6 +38,14 @@ runtimes:
     digest: "sha256:540c7d91f98ff6880174c40e99067bf5941eb54d818a7a5e094d188b196a934d"
     sourceFile: "main.py"
     run: ["python3", "main.py"]
+    # 함수만 구현하는 문제 (#421). **파일을 나눠 둔다** — 문자열을 이어 붙이면
+    # 줄 번호가 통째로 어긋나고, 그러면 오류가 사용자 코드의 어디인지 알 수 없다.
+    #   sourceFile : 사용자 코드가 이 이름으로 저장된다
+    #   file       : 하네스가 이 이름으로 놓이고, 사용자 코드를 import 한다
+    functionHarness:
+      file: "main.py"
+      sourceFile: "solution.py"
+      run: ["python3", "main.py"]
     template: |
       import sys
 
