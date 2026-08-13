@@ -164,6 +164,41 @@ class WithdrawalIntegrationTest : IntegrationTestBase() {
             .andExpect(status().isNotFound)
     }
 
+    @Test
+    fun `두 사람이 탈퇴해도 서로 부딪히지 않는다`() {
+        /*
+          **한 명으로는 영원히 못 잡는 결함이 있었다** (#368).
+
+          덮어쓰는 값이 `withdrawn+${'$'}id@...` 처럼 이스케이프되어, 누가 탈퇴하든 늘
+          똑같은 문자열이 저장됐다. email·nickname·handle 은 **셋 다 유니크**라
+          두 번째 탈퇴부터 제약 위반이다. 위의 시험들은 전부 한 명만 탈퇴시킨다.
+        */
+        withdraw()
+
+        val second = userRepository.save(User("second@codekr.dev", "x", "둘째떠나는이", setOf(UserRole.USER)))
+        mockMvc.perform(
+            delete("/api/v1/users/me").header("Authorization", "Bearer " + tokenProvider.issueAccessToken(second)),
+        ).andExpect(status().isNoContent)
+
+        val rows = jdbcClient.sql("SELECT id, email, nickname, handle FROM users WHERE id IN (:a, :b)")
+            .param("a", leaverId).param("b", second.id)
+            .query { rs, _ ->
+                listOf(rs.getLong("id").toString(), rs.getString("email"), rs.getString("nickname"), rs.getString("handle"))
+            }
+            .list()
+
+        // **덮어쓴 값에 그 사람의 id 가 실제로 들어갔는지**를 본다. "덮어썼다" 만
+        // 단언하면 모두가 같은 값이어도 통과한다.
+        rows.forEach { (id, email, nickname, handle) ->
+            assertTrue(email.contains(id), "이메일에 id 가 들어가야 합니다: $email")
+            assertTrue(nickname.contains(id), "닉네임에 id 가 들어가야 합니다: $nickname")
+            assertTrue(handle.contains(id), "주소에 id 가 들어가야 합니다: $handle")
+            assertTrue(!email.contains("$") && !nickname.contains("$") && !handle.contains("$"), "달러가 그대로 남으면 안 됩니다")
+        }
+        assertEquals(2, rows.map { it[1] }.toSet().size, "두 탈퇴자의 이메일이 같으면 안 됩니다")
+        assertEquals(2, rows.map { it[3] }.toSet().size, "두 탈퇴자의 주소가 같으면 안 됩니다")
+    }
+
     private fun withdraw() {
         mockMvc.perform(delete("/api/v1/users/me").header("Authorization", "Bearer " + leaverToken))
             .andExpect(status().isNoContent)

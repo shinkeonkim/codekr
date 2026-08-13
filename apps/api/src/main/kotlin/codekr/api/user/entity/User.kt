@@ -179,8 +179,8 @@ class User(
         if (isWithdrawn) return
         withdrawnAt = now
         // 되돌릴 수 없다. 유예 기간을 두지 않기로 했으므로 여기서 바로 지운다.
-        email = "withdrawn+${'$'}id@codekr.invalid"
-        nickname = "탈퇴회원${'$'}id"
+        email = "withdrawn+$id@codekr.invalid"
+        nickname = "탈퇴회원$id"
         /*
             **주소도 지운다** (#307, #140).
 
@@ -188,7 +188,7 @@ class User(
             "식별 정보를 남기지 않는 것이 탈퇴의 뜻" 이라면 여기도 지워야 한다.
             대신 링크가 깨지는데, 탈퇴한 계정의 프로필은 어차피 열리지 않는다.
         */
-        handle = "withdrawn-${'$'}id"
+        handle = "withdrawn-$id"
         // 로그인을 막는 것과 별개로, 남은 비밀번호 해시도 쓸모가 없어야 한다.
         passwordHash = ""
         avatarKey = null
