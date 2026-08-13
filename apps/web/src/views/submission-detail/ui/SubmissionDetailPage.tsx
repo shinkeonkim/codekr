@@ -8,21 +8,36 @@ import {
   submissionApi,
   verdictTone,
 } from "@/entities/submission";
-import type { SubmissionDetail, SubmissionVisibility } from "@/entities/submission";
+import type {
+  SubmissionDetail,
+  SubmissionVisibility,
+} from "@/entities/submission";
 import { VerdictMascot } from "@/entities/submission";
 import { UserLink } from "@/entities/user";
 import { RequireAuth, useAuth } from "@/features/auth";
+import { CompileErrorHint } from "@/features/compile-error-hint";
 import { JudgeProgressPanel, useJudgeStream } from "@/features/judge-stream";
 import { formatDateTime, formatMemory } from "@/shared/lib";
 import { ApiError } from "@/shared/api";
-import { Badge, Card, CardTitle, EmptyState, Select, useToast } from "@/shared/ui";
+import {
+  Badge,
+  Card,
+  CardTitle,
+  EmptyState,
+  Select,
+  useToast,
+} from "@/shared/ui";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
 /** 채점이 끝나지 않았다면 짧게 폴링한다 (이 화면에 늦게 들어온 경우). */
 const POLL_INTERVAL_MS = 2000;
 
-export function SubmissionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export function SubmissionDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   return (
     <RequireAuth>
@@ -41,11 +56,19 @@ function SubmissionView({ id }: { id: number }) {
   const changeVisibility = async (visibility: SubmissionVisibility) => {
     try {
       await submissionApi.changeVisibility(id, visibility);
-      setSubmission((previous) => (previous ? { ...previous, visibility } : previous));
+      setSubmission((previous) =>
+        previous ? { ...previous, visibility } : previous,
+      );
       // 공개 범위는 되돌리기 어려운 결정이라, 바뀐 사실을 분명히 알린다.
-      toast.success(`공개 범위를 "${VISIBILITY_LABELS[visibility]}" 로 바꿨습니다.`);
+      toast.success(
+        `공개 범위를 "${VISIBILITY_LABELS[visibility]}" 로 바꿨습니다.`,
+      );
     } catch (caught) {
-      toast.error(caught instanceof ApiError ? caught.message : "공개 범위를 바꾸지 못했습니다.");
+      toast.error(
+        caught instanceof ApiError
+          ? caught.message
+          : "공개 범위를 바꾸지 못했습니다.",
+      );
     }
   };
 
@@ -76,25 +99,33 @@ function SubmissionView({ id }: { id: number }) {
    * 하나씩 통과하는 것이 보여야 기다릴 만하다고 느낀다. 폴링은 그대로 두어 이벤트가
    * 유실돼도 결과는 반드시 확정된다.
    */
-  const judging = submission?.status === "PENDING" || submission?.status === "JUDGING";
+  const judging =
+    submission?.status === "PENDING" || submission?.status === "JUDGING";
   useEffect(() => {
-    if (judging && progress.submissionId !== id) watch(id, submission?.totalCount ?? 0);
+    if (judging && progress.submissionId !== id)
+      watch(id, submission?.totalCount ?? 0);
   }, [judging, id, progress.submissionId, submission?.totalCount, watch]);
 
   if (error) return <EmptyState title={error} />;
-  if (!submission) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
+  if (!submission)
+    return (
+      <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>
+    );
 
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <Link href={`/problems/${submission.problemId}`} className="text-sm text-brand hover:underline">
+          <Link
+            href={`/problems/${submission.problemId}`}
+            className="text-sm text-brand hover:underline"
+          >
             {submission.problemTitle}
           </Link>
           <h1 className="text-2xl font-bold text-ink">제출 #{submission.id}</h1>
           <p className="mt-1 text-xs text-ink-muted">
-            <UserLink nickname={submission.nickname} /> · {submission.runtimeId} ·{" "}
-            {formatDateTime(submission.createdAt)}
+            <UserLink nickname={submission.nickname} /> · {submission.runtimeId}{" "}
+            · {formatDateTime(submission.createdAt)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -105,7 +136,9 @@ function SubmissionView({ id }: { id: number }) {
           */}
           <VerdictMascot verdict={submission.verdict} />
           {submission.verdict ? (
-            <Badge tone={verdictTone(submission.verdict)}>{VERDICT_LABELS[submission.verdict]}</Badge>
+            <Badge tone={verdictTone(submission.verdict)}>
+              {VERDICT_LABELS[submission.verdict]}
+            </Badge>
           ) : (
             <Badge>{STATUS_LABELS[submission.status]}</Badge>
           )}
@@ -113,13 +146,29 @@ function SubmissionView({ id }: { id: number }) {
       </header>
 
       {judging ? (
-        <JudgeProgressPanel progress={progress} pending={submission?.status === "PENDING"} />
+        <JudgeProgressPanel
+          progress={progress}
+          pending={submission?.status === "PENDING"}
+        />
       ) : null}
 
+      {/* 파일이 여럿인 문제에서 오류가 어느 탭의 이야기인지 알려 준다 (#457). */}
+      <CompileErrorHint
+        compileError={progress.compileError ?? submission.compileError}
+        problemSlug={submission.problemSlug}
+        runtimeId={submission.runtimeId}
+      />
+
       <Card className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
-        <Stat label="통과" value={`${submission.passedCount} / ${submission.totalCount}`} />
+        <Stat
+          label="통과"
+          value={`${submission.passedCount} / ${submission.totalCount}`}
+        />
         <Stat label="최대 실행 시간" value={`${submission.maxRuntimeMs} ms`} />
-        <Stat label="최대 메모리" value={formatMemory(submission.maxMemoryKb)} />
+        <Stat
+          label="최대 메모리"
+          value={formatMemory(submission.maxMemoryKb)}
+        />
         <Stat label="상태" value={STATUS_LABELS[submission.status]} />
       </Card>
 
@@ -141,8 +190,12 @@ function SubmissionView({ id }: { id: number }) {
                 key={result.seq}
                 className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm"
               >
-                <span className="w-16 shrink-0 text-ink-muted">#{result.seq}</span>
-                <Badge tone={verdictTone(result.verdict)}>{VERDICT_LABELS[result.verdict]}</Badge>
+                <span className="w-16 shrink-0 text-ink-muted">
+                  #{result.seq}
+                </span>
+                <Badge tone={verdictTone(result.verdict)}>
+                  {VERDICT_LABELS[result.verdict]}
+                </Badge>
                 <span className="ml-auto text-xs text-ink-muted">
                   {result.runtimeMs}ms · {formatMemory(result.memoryKb)}
                 </span>
@@ -162,7 +215,9 @@ function SubmissionView({ id }: { id: number }) {
               className="ml-auto w-auto px-2 py-1 text-xs"
               aria-label="공개 범위"
               value={submission.visibility}
-              onChange={(event) => changeVisibility(event.target.value as SubmissionVisibility)}
+              onChange={(event) =>
+                changeVisibility(event.target.value as SubmissionVisibility)
+              }
             >
               {Object.entries(VISIBILITY_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -180,8 +235,8 @@ function SubmissionView({ id }: { id: number }) {
         */}
         {submission.viewNotified ? (
           <p className="text-xs text-ink-muted">
-            작성자가 열람 알림을 켜 두었습니다. 이 코드를 본 사실이 작성자에게 전해집니다
-            (누가 봤는지는 알려지지 않습니다).
+            작성자가 열람 알림을 켜 두었습니다. 이 코드를 본 사실이 작성자에게
+            전해집니다 (누가 봤는지는 알려지지 않습니다).
           </p>
         ) : null}
         {submission.sourceVisible && submission.sourceCode !== null ? (

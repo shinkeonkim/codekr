@@ -34,6 +34,8 @@ export interface Runtime {
   id: string;
   label: string;
   monacoLanguage: string;
+  /** 이 언어로 풀 때 채워야 하는 파일들 (#457). 비면 파일 하나짜리다. */
+  files?: ProblemFile[];
   template: string;
   /** 이 런타임으로 실행할 때 실제 적용되는 제한. 문제 기본값과 다를 수 있다 (#97). */
   timeLimitMs: number;
@@ -242,6 +244,20 @@ export interface RedisSpec {
   verifyCommands: string;
   /** 기본은 순서를 지킨다 — 정렬 집합·리스트에서 순서는 자료의 일부다. */
   ignoreOrder: boolean;
+}
+
+/**
+ * 여러 파일을 완성하는 문제의 파일 하나 (#457).
+ *
+ * **런타임마다 목록이 다르다** — 자바는 `Main.java`, 파이썬은 `main.py` 다. 그래서
+ * 문제가 아니라 런타임 안에 온다.
+ */
+export interface ProblemFile {
+  runtimeId: string;
+  name: string;
+  template: string;
+  /** 거짓이면 제출에 실리지 않는다. 서버가 문제의 시작 코드를 그대로 쓴다. */
+  editable: boolean;
 }
 
 /** 출력 비교 방식 (#279). */
