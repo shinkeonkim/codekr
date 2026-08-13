@@ -231,7 +231,7 @@ jobs:
           # 아무도 확인하지 않는다. 셸 검사 둘을 더해 9개다 (#456).
           test "$passed" -eq 9
 
-      - name: 채점 흐름 · seccomp · SQL · 재매핑
+      - name: 채점 흐름 · seccomp · SQL · MySQL · 재매핑
         working-directory: apps/executor/internal/sandbox
         env:
           CODEKR_SANDBOX_TEST: "1"
@@ -246,13 +246,14 @@ jobs:
           # 이미지가 올라가면 이 제외를 지운다.
           set -o pipefail
           sudo -E /tmp/sandbox.test -test.v -test.timeout 30m \
-            -test.run 'TestLive(Runs|Reports|Detects|Blocks|Hardening|Narrowed|SQL|UserNamespace)' \
+            -test.run 'TestLive(Runs|Reports|Detects|Blocks|Hardening|Narrowed|SQL|MySQL|UserNamespace)' \
             2>&1 | tee /tmp/sandbox.log
           ran=$(grep -cE '^(    )?--- (PASS|FAIL)' /tmp/sandbox.log || true)
           failed=$(grep -cE '^(    )?--- FAIL' /tmp/sandbox.log || true)
           echo "돌아간 검사: ${ran}개 (실패 ${failed}개)"
           # SKIP 만 남은 상태를 막는 하한이다. 검사를 늘리면 이 숫자도 올린다.
-          test "$ran" -ge 16
+          # MySQL 하네스 검사 10개를 더해 30개다 (#454). 로컬 실측과 같은 필터다.
+          test "$ran" -ge 28
           # 세는 것만으로는 부족하다. **실패가 0 인지도 따로 본다** — pipefail 을 빠뜨렸을
           # 때 이 줄이 마지막 방어선이 된다.
           test "$failed" -eq 0
