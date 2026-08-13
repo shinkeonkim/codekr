@@ -50,6 +50,8 @@ export interface ProblemFormValues {
   runtimeLimits: ProblemRuntimeLimit[];
   /** 풀 수 있는 언어 (#419). **비우면 이 유형의 전부**를 허용한다. */
   allowedRuntimeIds: string[];
+  /** 언어별 하네스 (#448). **여기 쓴 언어가 곧 풀 수 있는 언어다.** */
+  harnesses: Record<string, string>;
   solution: ProblemSolution | null;
 }
 
@@ -84,6 +86,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     templates: problem.templates,
     runtimeLimits: problem.runtimeLimits ?? [],
     allowedRuntimeIds: problem.allowedRuntimeIds ?? [],
+    harnesses: problem.harnesses ?? {},
     solution: problem.solution,
   };
 }
@@ -114,6 +117,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   templates: [],
   runtimeLimits: [],
   allowedRuntimeIds: [],
+  harnesses: {},
   solution: null,
 };
 
@@ -128,8 +132,15 @@ export const BLANK_PROBLEM: ProblemFormValues = {
  */
 export function toRequest(values: ProblemFormValues) {
   const { setters, reviewers, sourceLabel, sourceUrl, ...rest } = values;
+  const functionKind = values.problemKind === "JUDGE_FUNCTION";
   return {
     ...rest,
+    /*
+      **함수형은 하네스가 곧 허용 언어다** (#446). 둘을 함께 보내면 서버가 거부한다 —
+      화면이 실수로 남겨 둔 값 때문에 저장이 막히지 않게 여기서 정리한다.
+    */
+    allowedRuntimeIds: functionKind ? [] : values.allowedRuntimeIds,
+    harnesses: functionKind ? values.harnesses : {},
     setterIds: setters.map((each) => each.id),
     reviewerIds: reviewers.map((each) => each.id),
     // 빈 칸은 보내지 않는다 — 빈 문자열을 저장하면 "없음" 과 "빈 값" 이 갈린다.

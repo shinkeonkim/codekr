@@ -15,6 +15,7 @@ import { FormSection } from "./FormSection";
 import { ProblemMetaFields } from "./ProblemMetaFields";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { AllowedRuntimeEditor } from "./AllowedRuntimeEditor";
+import { HarnessEditor } from "./HarnessEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
@@ -92,6 +93,8 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
     keys.some((key) => drafted.has(key)) ? "AI 초안 — 확인하세요" : undefined;
 
   const isSql = values.problemKind === "JUDGE_SQL";
+  // 함수형은 허용 언어를 따로 고르지 않는다 — 하네스가 그것을 정한다 (#446).
+  const isFunction = values.problemKind === "JUDGE_FUNCTION";
 
   /**
    * 채점 방식을 바꾸면 **그 유형의 자료만 남긴다** (#60).
@@ -278,6 +281,18 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
       </FormSection>
       )}
 
+      {isFunction ? (
+      <FormSection
+        title="하네스 (보이지 않는 실행 코드)"
+        defaultOpen={open}
+        description="여기 쓴 언어로만 풀 수 있다"
+      >
+      <HarnessEditor
+        value={values.harnesses}
+        onChange={(harnesses) => update("harnesses", harnesses)}
+      />
+      </FormSection>
+      ) : (
       <FormSection
         title="풀 수 있는 언어"
         defaultOpen={open}
@@ -288,6 +303,7 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
         onChange={(allowedRuntimeIds) => update("allowedRuntimeIds", allowedRuntimeIds)}
       />
       </FormSection>
+      )}
 
       <FormSection title="언어별 제한" defaultOpen={open} description="비우면 기본 제한을 쓴다">
       <RuntimeLimitEditor

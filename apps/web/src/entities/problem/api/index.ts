@@ -13,7 +13,13 @@ export const problemApi = {
 
   detail: (slug: string) => request<ProblemDetail>(`/api/v1/problems/${slug}`),
 
-  runtimes: () => request<Runtime[]>("/api/v1/runtimes"),
+  /**
+   * 실행 환경 목록 (#60, #448). 유형으로 거른다.
+   *
+   * `JUDGE_FUNCTION` 은 **실행기가 하네스 방식을 아는 언어만** 돌려준다 (#446).
+   */
+  runtimes: (problemKind = "JUDGE_STDIO") =>
+    request<Runtime[]>("/api/v1/runtimes", { query: { problemKind } }),
 
   adminList: (query: Query) =>
     request<Page<ProblemSummary>>("/api/v1/admin/problems", { auth: true, query }),

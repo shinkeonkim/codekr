@@ -134,6 +134,17 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
         **목록이 짧으면 사용자는 고장으로 읽는다** (#419). 출제자가 언어를 좁혀 둔
         것이면 그렇게 말한다 — 그러지 않으면 "내 언어가 왜 없지" 로 남는다.
       */}
+      {problem.problemKind === "JUDGE_FUNCTION" ? (
+        /*
+          **함수만 쓰면 된다** (#450, #421). 이 말이 없으면 사용자는 입력을 읽는 코드부터
+          쓰고, 그러면 보이지 않는 하네스와 **두 번 읽는다** — 그리고 왜 틀렸는지 모른다.
+        */
+        <p className="text-xs text-ink-muted">
+          <span className="text-ink">함수만 구현하면 됩니다.</span> 입력을 읽고 결과를 찍는
+          것은 문제가 대신합니다 — 아래 코드의 빈 곳을 채우세요.
+        </p>
+      ) : null}
+
       {problem.runtimeRestricted ? (
         <p className="text-xs text-ink-muted">
           이 문제는 아래 언어로만 풀 수 있습니다. 출제자가 정한 것입니다.

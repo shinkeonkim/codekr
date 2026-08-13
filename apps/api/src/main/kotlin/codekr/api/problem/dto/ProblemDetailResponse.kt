@@ -4,6 +4,7 @@ import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.DifficultyTier
 import codekr.api.problem.entity.Problem
+import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.runtime.RuntimeDefinition
 import codekr.api.tag.dto.ProblemTagResponse
@@ -49,6 +50,13 @@ data class ProblemDetailResponse(
      */
     val runtimeRestricted: Boolean,
     /**
+     * 문제 유형 (#450). **화면이 무엇을 쓰라고 말할지 정한다.**
+     *
+     * 함수형이면 "프로그램" 이 아니라 "함수" 를 쓰는 것이고, 그 사실을 모르면 사용자는
+     * 입력을 읽는 코드부터 쓴다 — 그러면 하네스와 두 번 읽는다.
+     */
+    val problemKind: ProblemKind,
+    /**
      * 알고리즘 분류 (#232).
      *
      * **답의 일부다.** "이 문제는 DP" 를 알고 푸는 것과 모르고 푸는 것은 다른 문제라,
@@ -88,6 +96,7 @@ data class ProblemDetailResponse(
             stats = stats,
             examples = problem.examples.map(ProblemExampleResponse::from),
             runtimeRestricted = problem.allowedRuntimeIds.isNotEmpty(),
+            problemKind = problem.problemKind,
             runtimes = runtimes.map {
                 ProblemRuntimeResponse.of(it, problem.templateOf(it.id), problem.limitsFor(it.id))
             },
