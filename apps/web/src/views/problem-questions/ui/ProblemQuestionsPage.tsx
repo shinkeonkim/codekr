@@ -8,7 +8,7 @@ import { useAuth } from "@/features/auth";
 import type { Page } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
 import { Button, Card, CardTitle, EmptyState, Pagination } from "@/shared/ui";
-import { ProblemHeader, ProblemTabs } from "@/widgets/problem-tabs";
+import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
@@ -35,8 +35,8 @@ export function ProblemQuestionsPage({ params }: { params: Promise<{ slug: strin
 
   return (
     <div className="space-y-5">
+      {/* 탭은 레이아웃이 그린다 (#386). 여기서 한 번 더 그리면 줄이 두 번 나온다. */}
       <ProblemHeader problem={problem} />
-      <ProblemTabs slug={problem.slug} />
 
       <div className="flex items-center gap-3">
         <CardTitle>질문 {result?.totalElements ?? 0}개</CardTitle>
