@@ -28,6 +28,9 @@ abstract class IntegrationTestBase {
     @Autowired
     private lateinit var jdbcClient: JdbcClient
 
+    @Autowired
+    protected lateinit var jdbcOfBase: JdbcClient
+
     /** 테스트 클래스 사이에 데이터가 새지 않도록 매 테스트 전에 전체를 비운다. */
     @Autowired private lateinit var scoreboardCache: ScoreboardCache
 
@@ -50,10 +53,28 @@ abstract class IntegrationTestBase {
                      notifications, admin_audit_logs, rejudge_batches, user_daily_activity,
                      problem_tags, problem_credits, tags,
                      user_problem_scores, user_badges, user_roles, user_suspensions,
-                     email_verifications, password_resets, users
+                     email_verifications, password_resets, term_agreements, users
             RESTART IDENTITY CASCADE
             """,
         ).update()
+
+        /*
+            약관 판은 **마이그레이션이 넣은 것**이라 비우지 않는다 (#235) — 비우면 가입
+            시험이 동의할 판을 잃는다. 대신 시험이 넣은 개정만 걷는다.
+        */
+        jdbcClient.sql("DELETE FROM term_documents WHERE version <> '1.0'").update()
+    }
+
+
+    /**
+     * 가입 본문. **필수 약관에 동의해야 가입이 된다** (#235).
+     *
+     * 시행 중인 약관 id 를 그때그때 읽어 넣는다 — 시드가 넣은 판의 id 를 시험이 알 수 없다.
+     */
+    protected fun signupBody(email: String, password: String, nickname: String): String {
+        val ids = jdbcOfBase.sql("SELECT id FROM term_documents WHERE effective_at <= now()")
+            .query(Long::class.java).list()
+        return """{"email":"$email","password":"$password","nickname":"$nickname","agreedTermIds":${ids}}"""
     }
 
     companion object {

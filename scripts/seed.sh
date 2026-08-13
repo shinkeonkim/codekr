@@ -28,9 +28,12 @@ wait_for_api() {
 
 # 이미 가입된 계정이면 409 가 나므로 실패를 무시하고 로그인으로 넘어간다.
 signup() {
+  # 필수 약관에 동의해야 가입이 된다 (#235). 시행 중인 판을 그때그때 읽어 넣는다.
+  local ids
+  ids=$(curl -s "${API}/api/v1/terms" | python3 -c 'import json,sys; print([t["id"] for t in json.load(sys.stdin)])')
   curl -s -o /dev/null -X POST "${API}/api/v1/auth/signup" \
     -H 'Content-Type: application/json' \
-    -d "{\"email\":\"$1\",\"password\":\"$2\",\"nickname\":\"$3\"}" || true
+    -d "{\"email\":\"$1\",\"password\":\"$2\",\"nickname\":\"$3\",\"agreedTermIds\":${ids}}" || true
 }
 
 login_token() {

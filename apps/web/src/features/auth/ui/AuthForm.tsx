@@ -36,6 +36,10 @@ interface Props {
   footer: { text: string; href: string; linkLabel: string };
   /** 폼 아래에 덧붙일 것. 로그인 화면의 "비밀번호를 잊으셨나요" 가 그것이다 (#315). */
   aside?: ReactNode;
+  /** 제출 버튼 **위**에 들어갈 것. 가입 화면의 약관 동의가 그것이다 (#235). */
+  beforeSubmit?: ReactNode;
+  /** 제출을 막을지. 필수 약관에 동의하지 않으면 누를 수 없다 (#235). */
+  submitDisabled?: boolean;
   onSubmit: (values: Record<string, string>) => Promise<TokenResponse>;
 }
 
@@ -48,6 +52,8 @@ export function AuthForm({
   submitLabel,
   footer,
   aside,
+  beforeSubmit,
+  submitDisabled = false,
   onSubmit,
 }: Props) {
   const router = useRouter();
@@ -107,7 +113,9 @@ export function AuthForm({
             </Field>
           ))}
 
-          <Button type="submit" className="w-full" disabled={submitting}>
+          {beforeSubmit}
+
+          <Button type="submit" className="w-full" disabled={submitting || submitDisabled}>
             {submitting ? "처리 중…" : submitLabel}
           </Button>
         </form>

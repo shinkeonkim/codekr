@@ -34,6 +34,8 @@ export function SiteFooter() {
             { href: REPOSITORY_URL, label: "GitHub 저장소" },
             { href: `${REPOSITORY_URL}/blob/main/LICENSE`, label: "MIT 라이선스" },
             { href: `${REPOSITORY_URL}/issues`, label: "문제 신고·제안" },
+            // 약관은 **가입하기 전에 읽을 수 있어야** 한다 (#235, #234).
+            { href: "/terms", label: "약관" },
           ]}
         />
 

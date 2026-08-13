@@ -95,7 +95,7 @@ class WithdrawalIntegrationTest : IntegrationTestBase() {
         mockMvc.perform(
             post("/api/v1/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"email\":\"new@codekr.dev\",\"password\":\"password1234\",\"nickname\":\"떠나는이\"}"),
+                .content(signupBody("new@codekr.dev", "password1234", "떠나는이")),
         ).andExpect(status().isCreated)
     }
 
