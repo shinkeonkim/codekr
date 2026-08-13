@@ -338,8 +338,14 @@ runtimes:
       -- 여기에 SELECT 문을 작성하세요.
       SELECT 1 + 2;
 
-  # MySQL 문제 (#454). **SQL 은 방언이 있다** — 한 DB 만 있으면 "SQL 을 배웠다" 가
+  # MariaDB 문제 (#454). **SQL 은 방언이 있다** — 한 DB 만 있으면 "SQL 을 배웠다" 가
   # "PostgreSQL 을 배웠다" 가 된다.
+  #
+  # **MySQL 이 아니라 MariaDB 인 이유:** MySQL 8.4 는 이 샌드박스 안에서 초기화되지
+  # 않는다. user namespace 재매핑(#130)이 켜지면 `mysqld --initialize` 가 데이터
+  # 디렉터리를 만들지 못하고(errno 13), 셸이 만들어 준 빈 디렉터리도 거절한다.
+  # MariaDB 는 초기화가 셸 스크립트라 그 단계가 없다. 목적은 **방언을 하나 더 들이는
+  # 것**이고 둘은 그 목적에서 같으므로, 되는 쪽을 쓴다.
   #
   # 구조는 이미 여러 개를 받는다: `problemKind` 로 걸러지므로 같은 유형에 런타임을 더
   # 두면 목록에 함께 나온다. **막는 것은 하네스였다** — `run-sql.sh` 는 PostgreSQL
@@ -349,22 +355,22 @@ runtimes:
   # DB 마다 있어야 하는데(스펙이 DB 마다 하나), 그것은 #419 의 허용 목록으로 문제를
   # 묶는 편이 단순하다.
   #
-  # user 가 999:999 인 이유: mysqld 는 데이터 디렉터리의 주인으로 돌아야 한다.
+  # user 가 999:999 인 이유: 서버가 데이터 디렉터리의 주인으로 돌아야 한다.
   # Oracle 은 넣지 않는다 — 공식 이미지가 무료 재배포를 제한하는데 우리는 미러링(#96)한다.
-  - id: "sql:mysql8"
-    label: "MySQL 8.4"
+  - id: "sql:mariadb11"
+    label: "MariaDB 11"
     monacoLanguage: "sql"
     problemKind: "JUDGE_SQL"
-    image: "mysql:8.4"
-    digest: "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+    image: "mariadb:11"
+    digest: "sha256:d9f7eb2637296652f24b484afd5d246f759f49f5babcadc6a9e344c9acb75fbf"
     sourceFile: "query.sql"
-    harness: "mysql"
+    harness: "mariadb"
     user: "999:999"
-    run: ["sh", "run-mysql.sh"]
-    # **기동 비용이 DB 마다 다르다** (#454). mysqld 는 initialize 에만 2초 남짓 쓴다 —
-    # 실측 3.0초로 PostgreSQL(0.4초)의 일곱 배다. 문제의 시간 제한이 이보다 빠듯하면
+    run: ["sh", "run-mariadb.sh"]
+    # **기동 비용이 DB 마다 다르다** (#454). 초기화 스크립트가 대부분을 쓴다 —
+    # 실측 3.5초로 PostgreSQL(0.4초)의 여덟 배다. 문제의 시간 제한이 이보다 빠듯하면
     # 어떤 쿼리를 내도 시간 초과가 되므로, API 가 등록할 때 막는다.
-    startupMs: 3000
+    startupMs: 3500
     template: |
       -- 여기에 SELECT 문을 작성하세요.
       SELECT 1 + 2;

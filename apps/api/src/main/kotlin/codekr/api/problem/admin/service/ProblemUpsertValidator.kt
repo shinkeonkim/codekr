@@ -92,7 +92,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
      * SQL 문제는 **어느 DB 인지 정해야 한다** (#454).
      *
      * SQL 런타임이 둘이 된 순간, "비워 두면 전부 허용"(#419)은 SQL 문제에서 뜻이 달라졌다 —
-     * PostgreSQL 문법으로 쓴 스키마·정답 쿼리가 MySQL 제출에서도 돌게 된다. 그러면
+     * PostgreSQL 문법으로 쓴 스키마·정답 쿼리가 MariaDB 제출에서도 돌게 된다. 그러면
      * **출제자의 스키마가 먼저 깨져** 제출자는 자기 잘못이 아닌 SYSTEM_ERROR 를 받는다.
      *
      * 그래서 **문제 하나에 DB 하나**다. 같은 질문을 두 DB 로 내고 싶으면 문제를 둘 만든다 —
@@ -114,7 +114,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
 
         /*
           **기동 시간도 문제의 시간 제한 안에서 흐른다.** 제한은 컨테이너 전체에 걸리기
-          때문이다. MySQL 은 뜨는 데만 3초를 쓰므로, 2초 제한을 준 문제는 어떤 쿼리를
+          때문이다. MariaDB 는 뜨는 데만 3초 넘게 쓰므로, 2초 제한을 준 문제는 어떤 쿼리를
           내도 시간 초과가 된다 — 출제자는 그 이유를 짐작할 방법이 없다.
         */
         val startupMs = runtimeRegistry.require(databases.single()).startupMs
