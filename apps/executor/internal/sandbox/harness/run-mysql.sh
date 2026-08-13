@@ -33,6 +33,10 @@ export MYSQL_HOME=/work
 # 빈 출력만 남고, 그것은 "쿼리가 아무 결과도 내지 않았다" 와 구분되지 않는다.
 die() {
     echo "mysqld 를 띄우지 못했습니다: $1" >&2
+    # 실패한 자리의 상태를 함께 남긴다. 로그만으로는 "권한이 없다" 가 누구의 권한인지
+    # 알 수 없다 — 실행 계정과 디렉터리의 주인을 같이 봐야 한다.
+    echo "실행 계정: $(id)" >&2
+    ls -ld /work /work/data 2>&1 | sed 's/^/  /' >&2
     tail -30 /work/.my.log >&2 2>/dev/null || true
     exit 1
 }
