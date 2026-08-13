@@ -315,6 +315,15 @@ class Problem(
     val isVerificationStale: Boolean
         get() = verificationSubmissionId != null && verifiedSignature != verificationSignature()
 
+    /**
+     * 스페셜 저지의 채점 코드 (#452).
+     *
+     * **사용자에게 절대 내려가지 않는다.** 정답의 일부나 판정 방식이 들어간다 —
+     * 문제 상세에도, 오류 메시지에도 나가지 않는다.
+     */
+    @Column(name = "checker_source", columnDefinition = "text")
+    var checkerSource: String? = null
+
     fun replaceSolution(runtimeId: String?, sourceCode: String?) {
         val nextRuntimeId = runtimeId?.takeIf { !sourceCode.isNullOrBlank() }
         val nextSourceCode = sourceCode?.takeIf { it.isNotBlank() }

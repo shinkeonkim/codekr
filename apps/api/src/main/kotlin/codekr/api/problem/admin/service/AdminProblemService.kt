@@ -108,6 +108,7 @@ class AdminProblemService(
             addRuntimeLimits(request.runtimeLimits.map(RuntimeLimitRequest::toEntity))
             replaceAllowedRuntimes(request.allowedRuntimeIds)
             replaceHarnesses(request.harnesses)
+            checkerSource = request.checkerSource?.takeIf { it.isNotBlank() }
             replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
         }
 
@@ -156,6 +157,7 @@ class AdminProblemService(
         // 허용 목록은 통째로 교체한다 (#419). 소프트 삭제가 없으므로 flush 순서를 타지 않는다.
         problem.replaceAllowedRuntimes(request.allowedRuntimeIds)
         problem.replaceHarnesses(request.harnesses)
+        problem.checkerSource = request.checkerSource?.takeIf { it.isNotBlank() }
         problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
 
         /*

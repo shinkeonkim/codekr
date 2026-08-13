@@ -33,7 +33,7 @@ func (j *StdioJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emit
 	accumulator := NewAccumulator(total)
 	for _, testcase := range job.Testcases {
 		result := j.runTestcase(ctx, job, testcase)
-		verdict := VerdictOf(result, testcase.ExpectedOutput, job.ComparisonOf(), job.Epsilon)
+		verdict := j.verdictFor(ctx, job, testcase, result)
 		accumulator.Add(verdict, result.RuntimeMs, result.MemoryKb)
 
 		emit(contract.Event{
@@ -51,6 +51,29 @@ func (j *StdioJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emit
 		}
 	}
 	return Outcome{Summary: accumulator.Summarize()}
+}
+
+/*
+verdictFor 는 판정을 고른다.
+
+**스페셜 저지(#452)면 견주지 않고 물어본다.** 다만 그 전에 프로그램이 제대로 끝났는지는
+그대로 본다 — 죽은 프로그램의 출력을 채점 코드에 넘길 이유가 없고, TLE 를 "틀렸다" 로
+바꿔 보여 줄 이유도 없다.
+*/
+func (j *StdioJudge) verdictFor(
+	ctx context.Context,
+	job contract.JudgeJob,
+	testcase contract.JudgeTestcase,
+	result contract.ExecResult,
+) contract.Verdict {
+	if job.ComparisonOf() != contract.CompareChecker {
+		return VerdictOf(result, testcase.ExpectedOutput, job.ComparisonOf(), job.Epsilon)
+	}
+	if result.Status != contract.StatusOK {
+		// 실행 자체가 실패한 것은 채점 코드가 판단할 일이 아니다.
+		return VerdictOf(result, testcase.ExpectedOutput, contract.CompareExact, 0)
+	}
+	return CheckWithCode(ctx, j.executor, j.log, job, testcase, result.Stdout)
 }
 
 func (j *StdioJudge) runTestcase(

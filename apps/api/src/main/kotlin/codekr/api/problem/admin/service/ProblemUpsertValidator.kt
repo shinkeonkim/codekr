@@ -3,6 +3,7 @@ package codekr.api.problem.admin.service
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
+import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.runtime.RuntimeRegistry
 import org.springframework.stereotype.Component
@@ -54,6 +55,34 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         }
     }
 
+    /**
+     * 스페셜 저지 (#452).
+     *
+     * **채점 코드 없이 `CHECKER` 를 고르면 아무도 못 푸는 문제가 된다** — 견줄 기대값도
+     * 없고 물어볼 코드도 없어서 모든 제출이 SYSTEM_ERROR 로 끝난다.
+     */
+    private fun validateChecker(request: ProblemUpsertRequest) {
+        val hasChecker = !request.checkerSource.isNullOrBlank()
+        if (request.outputComparison == OutputComparison.CHECKER && !hasChecker) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "채점 코드로 판정하려면 채점 코드를 써야 합니다.",
+            )
+        }
+        if (request.outputComparison != OutputComparison.CHECKER && hasChecker) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "채점 코드는 '채점 코드로 판정' 일 때만 쓸 수 있습니다.",
+            )
+        }
+        // SQL 은 결과 집합을 견준다 (#60) — 출력 비교 방식 자체가 다른 자리다.
+        if (request.outputComparison == OutputComparison.CHECKER &&
+            request.problemKind == ProblemKind.JUDGE_SQL
+        ) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "SQL 문제에는 채점 코드를 쓸 수 없습니다.")
+        }
+    }
+
     fun validate(request: ProblemUpsertRequest) {
 
         // 채점기 구현도 스펙 테이블도 없는 유형으로는 문제를 만들 수 없다 (#59).
@@ -77,6 +106,8 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         if (request.published && request.problemKind != ProblemKind.JUDGE_SQL && request.testcases.isEmpty()) {
             throw ApiException(ErrorCode.TESTCASE_REQUIRED)
         }
+
+        validateChecker(request)
 
         if (request.testcases.groupingBy { it.seq }.eachCount().any { it.value > 1 }) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "테스트케이스 순번이 중복되었습니다.")
