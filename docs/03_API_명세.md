@@ -765,6 +765,22 @@ fun detail(...)
 `rule_key` 는 지금 **코드 규칙의 이름**이다. #200 의 DSL 이 오면 이 자리가 규칙으로
 대체된다 — 그때 갈아 끼울 수 있게 문자열로 뒀다.
 
+### 대회 관리 (#335)
+
+`GET|POST /api/v1/admin/contests` · `PUT /{id}` · `PUT /{id}/status` ·
+`POST /{id}/unfreeze` · `PUT /{id}/problems/{problemId}/exclusion` — **`CONTEST_MANAGER`.**
+
+API 는 처음부터 있었는데 **명세에도 화면에도 없어서** `CONTEST_MANAGER` 가 할 일이
+없었다. "만들어 두고 아무도 모르는" 상태였다.
+
+**진행 중인 대회는 고칠 수 없다** (#335). 대회 중에 시작 시각이나 문제 목록이 바뀌면
+**이미 제출한 사람과 아닌 사람이 다른 대회를 본 것**이 된다.
+
+- **서버가 막는다** (`AdminContestService.update`) — 화면만 막으면 API 는 열려 있다
+- 막히는 것은 **수정**이지 운영이 아니다. 공지·질의 답변(#147)과 순위 공개(#86)는
+  다른 경로라 대회 중에도 그대로 된다 — 함께 막으면 대회를 운영할 수 없다
+- 준비 중·시작 전·끝난 대회는 그대로 고쳐진다
+
 ### 게시판 관리 (#336)
 
 `GET /api/v1/admin/board/posts` · `.../comments` · `DELETE` — **`BOARD_MANAGER`.**

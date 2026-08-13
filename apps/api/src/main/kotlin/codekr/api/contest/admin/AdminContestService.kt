@@ -6,6 +6,7 @@ import codekr.api.common.error.ErrorCode
 import codekr.api.contest.entity.Contest
 import codekr.api.contest.entity.ContestProblem
 import codekr.api.contest.entity.ContestProblemId
+import codekr.api.contest.entity.ContestPhase
 import codekr.api.contest.entity.ContestStatus
 import codekr.api.contest.repository.ContestProblemRepository
 import codekr.api.contest.repository.ContestRegistrationRepository
@@ -21,6 +22,7 @@ import java.time.Instant
 @Service
 @Transactional(readOnly = true)
 class AdminContestService(
+    private val clock: java.time.Clock,
     private val contestRepository: ContestRepository,
     private val contestProblemRepository: ContestProblemRepository,
     private val registrationRepository: ContestRegistrationRepository,
@@ -64,6 +66,22 @@ class AdminContestService(
     @Transactional
     fun update(id: Long, request: ContestUpsertRequest): AdminContestResponse {
         val contest = require(id)
+        /*
+            **진행 중인 대회는 고칠 수 없다** (#335).
+
+            대회 중에 시작 시각이나 문제 목록이 바뀌면 **이미 제출한 사람과 아닌 사람이
+            다른 대회를 본 것**이 된다. 경고로 두면 언젠가 눌린다.
+
+            **서버가 막는다** — 화면만 막으면 API 는 그대로 열려 있다. 그리고 막히는 것은
+            **수정**이지 운영이 아니다: 공지·질의 답변(#147)과 순위 공개(#86)는
+            다른 경로라 그대로 된다. 함께 막으면 대회를 운영할 수 없다.
+        */
+        if (contest.phaseAt(clock.instant()) == ContestPhase.RUNNING) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "진행 중인 대회는 고칠 수 없습니다. 공지와 질의 답변은 그대로 됩니다.",
+            )
+        }
         if (contest.slug != request.slug && contestRepository.existsBySlugAndDeletedAtIsNull(request.slug)) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "이미 쓰고 있는 slug 입니다.")
         }

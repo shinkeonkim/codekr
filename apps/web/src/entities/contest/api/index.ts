@@ -65,3 +65,53 @@ export const contestApi = {
       { method: "PUT", body, auth: true },
     ),
 };
+
+export interface AdminContest {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  phase: string;
+  phaseLabel: string;
+  freezeMinutes: number;
+  submissionCooldownSeconds: number;
+}
+
+export interface ContestUpsert {
+  slug: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  freezeMinutes: number;
+  submissionCooldownSeconds: number;
+}
+
+/**
+ * 대회 관리 (#335).
+ *
+ * API 는 전부 있었는데 **화면이 없어서 `CONTEST_MANAGER` 가 할 일이 없었다.**
+ */
+export const adminContestApi = {
+  list: (query: { page?: number; size?: number }) =>
+    request<Page<AdminContest>>("/api/v1/admin/contests", { auth: true, query }),
+
+  detail: (id: number) => request<AdminContest>(`/api/v1/admin/contests/${id}`, { auth: true }),
+
+  create: (body: ContestUpsert) =>
+    request<AdminContest>("/api/v1/admin/contests", { method: "POST", auth: true, body }),
+
+  /** **진행 중인 대회는 서버가 막는다** (#335) — 화면도 막지만 그것만으로는 부족하다. */
+  update: (id: number, body: ContestUpsert) =>
+    request<AdminContest>(`/api/v1/admin/contests/${id}`, { method: "PUT", auth: true, body }),
+
+  changeStatus: (id: number, status: string) =>
+    request<AdminContest>(`/api/v1/admin/contests/${id}/status`, {
+      method: "PUT",
+      auth: true,
+      query: { status },
+    }),
+};
