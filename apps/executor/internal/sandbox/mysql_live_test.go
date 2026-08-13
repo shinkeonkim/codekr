@@ -52,8 +52,9 @@ func TestLiveMySQLSubmissionCannotEscapeReadOnly(t *testing.T) {
 			outcome := runMySQL(t, box, testcase.query)
 
 			if !strings.Contains(outcome.Stderr, testcase.expected) {
-				t.Fatalf("막혀야 할 쿼리가 막히지 않았습니다.\nstdout=%q\nstderr=%q",
-					outcome.Stdout, outcome.Stderr)
+				// 하네스 자체가 죽은 경우와 구분해서 알린다 — 둘 다 "막히지 않았다" 로
+				// 보이지만 고칠 곳이 다르다.
+				t.Fatalf("막혀야 할 쿼리가 막히지 않았습니다.\noutcome=%+v", outcome)
 			}
 		})
 	}
