@@ -92,6 +92,7 @@ class CommentService(
     ): CommentResponse {
         val author = authors[comment.authorId]
         val deleted = comment.isDeleted
+        val edited = !deleted && comment.updatedAt.isAfter(comment.createdAt.plusSeconds(EDIT_GRACE_SECONDS))
 
         return CommentResponse(
             id = comment.id,
@@ -101,7 +102,9 @@ class CommentService(
             body = if (deleted) null else comment.body,
             deleted = deleted,
             createdAt = comment.createdAt,
-            edited = !deleted && comment.updatedAt.isAfter(comment.createdAt.plusSeconds(EDIT_GRACE_SECONDS)),
+            edited = edited,
+            // 고친 적이 있을 때만 시각을 준다 — 없는 값을 화면이 걸러 내지 않게.
+            editedAt = comment.updatedAt.takeIf { edited },
             editable = !deleted && principal != null && comment.authorId == principal.userId,
             deletable = !deleted && principal != null &&
                 (comment.authorId == principal.userId || canModerate(principal)),

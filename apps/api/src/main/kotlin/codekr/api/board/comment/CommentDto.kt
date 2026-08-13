@@ -32,6 +32,14 @@ data class CommentResponse(
     val deleted: Boolean,
     val createdAt: Instant,
     val edited: Boolean,
+    /**
+     * 고친 시각 (#211). 고친 적이 없으면 null.
+     *
+     * **`edited` 만으로는 부족하다.** 누군가 답을 단 뒤에 원글을 고치면 대화가 어긋나
+     * 보이는데, 언제 고쳤는지가 없으면 읽는 사람은 답글 쓴 사람이 잘못 읽었다고
+     * 생각한다.
+     */
+    val editedAt: Instant?,
     val editable: Boolean,
     val deletable: Boolean,
     val children: List<CommentResponse>,

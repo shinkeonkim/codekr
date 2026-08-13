@@ -8,6 +8,13 @@ export interface Comment {
   body: string | null;
   deleted: boolean;
   createdAt: string;
+  /**
+   * 고친 시각 (#211). 고친 적이 없으면 null.
+   *
+   * `edited` 만으로는 부족하다 — 답이 달린 뒤에 원글을 고치면 대화가 어긋나 보이는데,
+   * 언제 고쳤는지가 없으면 답글 쓴 사람이 잘못 읽은 것처럼 된다.
+   */
+  editedAt: string | null;
   edited: boolean;
   editable: boolean;
   deletable: boolean;
