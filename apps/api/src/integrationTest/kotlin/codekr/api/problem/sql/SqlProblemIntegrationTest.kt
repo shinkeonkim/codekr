@@ -129,6 +129,9 @@ class SqlProblemIntegrationTest : IntegrationTestBase() {
     }
 
     private fun body(slug: String, kind: String = "JUDGE_SQL", withSpec: Boolean = true): String {
+        // SQL 문제는 어느 DB 인지 정해야 한다 (#454). 유형이 아닌 요청은 비운다 —
+        // 그쪽은 SQL 런타임을 적을 수 없다(종류 규칙이 먼저다).
+        val databases = if (kind == "JUDGE_SQL") "\"sql:postgres16\"" else ""
         val spec = if (withSpec) {
             """,
               "sqlSpec": {
@@ -144,6 +147,7 @@ class SqlProblemIntegrationTest : IntegrationTestBase() {
               "slug": "$slug", "title": "도시별 인원",
               "category": "SQL", "problemKind": "$kind", "difficulty": "SILVER_5",
               "description": "도시별 인원을 세세요.", "published": true,
+              "allowedRuntimeIds": [$databases],
               "testcases": [], "templates": []$spec
             }
         """.trimIndent()

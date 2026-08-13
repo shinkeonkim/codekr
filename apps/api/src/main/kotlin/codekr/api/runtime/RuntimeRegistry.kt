@@ -53,6 +53,8 @@ class RuntimeRegistry(
                 // 적지 않으면 stdin/stdout 이다 — 지금까지의 모든 런타임이 그것이다.
                 problemKind = (it["problemKind"] as? String)
                     ?.let(ProblemKind::valueOf) ?: ProblemKind.JUDGE_STDIO,
+                // 적지 않으면 0 이다 — 대부분의 런타임은 기동이랄 것이 없다 (#454).
+                startupMs = (it["startupMs"] as? Int) ?: 0,
             )
         }
     }

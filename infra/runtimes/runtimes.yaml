@@ -318,6 +318,40 @@ runtimes:
     harness: "sql"
     user: "70:70"
     run: ["sh", "run-sql.sh"]
+    # 기동에 드는 시간 (#454). 문제의 시간 제한은 이것보다 넉넉해야 한다 —
+    # 제한은 컨테이너 전체에 걸리므로 기동도 그 안에서 일어난다. 실측 0.4초.
+    startupMs: 500
+    template: |
+      -- 여기에 SELECT 문을 작성하세요.
+      SELECT 1 + 2;
+
+  # MySQL 문제 (#454). **SQL 은 방언이 있다** — 한 DB 만 있으면 "SQL 을 배웠다" 가
+  # "PostgreSQL 을 배웠다" 가 된다.
+  #
+  # 구조는 이미 여러 개를 받는다: `problemKind` 로 걸러지므로 같은 유형에 런타임을 더
+  # 두면 목록에 함께 나온다. **막는 것은 하네스였다** — `run-sql.sh` 는 PostgreSQL
+  # 전용이라 DB 마다 하나씩 필요하다 (`run-mysql.sh`).
+  #
+  # **문제 하나에 DB 하나다.** 같은 문제를 여러 DB 로 풀게 하면 스키마와 정답 쿼리가
+  # DB 마다 있어야 하는데(스펙이 DB 마다 하나), 그것은 #419 의 허용 목록으로 문제를
+  # 묶는 편이 단순하다.
+  #
+  # user 가 999:999 인 이유: mysqld 는 데이터 디렉터리의 주인으로 돌아야 한다.
+  # Oracle 은 넣지 않는다 — 공식 이미지가 무료 재배포를 제한하는데 우리는 미러링(#96)한다.
+  - id: "sql:mysql8"
+    label: "MySQL 8.4"
+    monacoLanguage: "sql"
+    problemKind: "JUDGE_SQL"
+    image: "mysql:8.4"
+    digest: "sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb"
+    sourceFile: "query.sql"
+    harness: "mysql"
+    user: "999:999"
+    run: ["sh", "run-mysql.sh"]
+    # **기동 비용이 DB 마다 다르다** (#454). mysqld 는 initialize 에만 2초 남짓 쓴다 —
+    # 실측 3.0초로 PostgreSQL(0.4초)의 일곱 배다. 문제의 시간 제한이 이보다 빠듯하면
+    # 어떤 쿼리를 내도 시간 초과가 되므로, API 가 등록할 때 막는다.
+    startupMs: 3000
     template: |
       -- 여기에 SELECT 문을 작성하세요.
       SELECT 1 + 2;

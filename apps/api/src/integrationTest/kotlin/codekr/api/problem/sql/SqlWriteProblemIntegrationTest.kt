@@ -136,6 +136,7 @@ class SqlWriteProblemIntegrationTest : IntegrationTestBase() {
           "slug": "$slug", "title": "부산 사람을 서울로 옮기기",
           "category": "SQL", "problemKind": "JUDGE_SQL", "difficulty": "SILVER_5",
           "description": "부산에 사는 사람의 도시를 서울로 바꾸세요.", "published": true,
+          "allowedRuntimeIds": ["sql:postgres16"],
           "testcases": [], "templates": [],
           "sqlSpec": {
             "schemaSql": "CREATE TABLE members (id int, city text);",
