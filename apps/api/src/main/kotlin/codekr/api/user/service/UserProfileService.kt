@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class UserProfileService(
+    private val collectionService: codekr.api.collection.service.ProblemCollectionService,
     private val userRepository: UserRepository,
     private val profileRepository: UserProfileRepository,
     private val activityService: ActivityService,
@@ -34,7 +35,7 @@ class UserProfileService(
     private val badgeRepository: BadgeRepository,
 ) {
 
-    fun findByNickname(nickname: String): UserProfileResponse {
+    fun findByNickname(nickname: String, viewerId: Long? = null): UserProfileResponse {
         val user = userRepository.findByNickname(nickname) ?: throw ApiException(ErrorCode.USER_NOT_FOUND)
         // 탈퇴한 계정의 프로필은 열리지 않는다. 남은 글에서도 링크가 걸리지 않는다 (#140).
         if (user.isWithdrawn) throw ApiException(ErrorCode.USER_NOT_FOUND)
@@ -47,6 +48,7 @@ class UserProfileService(
             nickname = user.nickname,
             avatarUrl = AvatarService.urlOf(user.avatarKey),
             bio = user.bio,
+            collections = collectionService.findPublicOf(user.id, viewerId),
             joinedAt = user.createdAt,
             solvedCount = profileRepository.countSolvedProblems(user.id),
             submissionCount = profileRepository.countSubmissions(user.id),

@@ -1,5 +1,6 @@
 package codekr.api.user.controller
 
+import codekr.api.auth.security.AuthPrincipal
 import codekr.api.config.security.AuthenticatedApi
 import codekr.api.user.dto.UserProfileResponse
 import codekr.api.user.service.UserProfileService
@@ -21,6 +22,9 @@ class UserProfileController(private val userProfileService: UserProfileService) 
      */
     @AuthenticatedApi
     @GetMapping("/{nickname}")
-    fun findProfile(@PathVariable nickname: String): UserProfileResponse =
-        userProfileService.findByNickname(nickname)
+    fun findProfile(
+        @PathVariable nickname: String,
+        // 보는 사람이 있으면 문제집 진행률이 채워진다 (#209). 없어도 목록은 그대로다.
+        principal: AuthPrincipal?,
+    ): UserProfileResponse = userProfileService.findByNickname(nickname, principal?.userId)
 }

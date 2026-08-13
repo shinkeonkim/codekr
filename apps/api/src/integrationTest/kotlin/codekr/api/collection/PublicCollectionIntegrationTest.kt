@@ -130,6 +130,33 @@ class PublicCollectionIntegrationTest : IntegrationTestBase() {
         ).andExpect(status().isBadRequest)
     }
 
+    @Test
+    fun `프로필에 그 사람의 공개 문제집이 보인다`() {
+        // 프로필은 **사람으로부터 문제집에 닿는 유일한 길**이다 (#209).
+        create("공개한 것", "PUBLIC", publishedIds)
+        create("나만 보는 것", "PRIVATE", publishedIds)
+        create("링크만", "UNLISTED", publishedIds)
+
+        mockMvc.perform(get("/api/v1/users/주인").header("Authorization", "Bearer $ownerToken"))
+            .andExpect(status().isOk)
+            // **비공개가 남에게 새면 안 된다** — 내 프로필에서도 공개된 것만 보인다.
+            .andExpect(jsonPath("$.collections.length()").value(1))
+            .andExpect(jsonPath("$.collections[0].name").value("공개한 것"))
+    }
+
+    @Test
+    fun `내린 문제집은 프로필에서도 빠진다`() {
+        val id = create("내려갈 것", "PUBLIC", publishedIds)
+
+        mockMvc.perform(
+            post("/api/v1/admin/collections/$id/takedown").param("reason", "광고")
+                .header("Authorization", "Bearer $adminToken"),
+        ).andExpect(status().isNoContent)
+
+        mockMvc.perform(get("/api/v1/users/주인").header("Authorization", "Bearer $ownerToken"))
+            .andExpect(jsonPath("$.collections.length()").value(0))
+    }
+
     private fun create(name: String, visibility: String, problemIds: List<Long>): Long {
         val response = mockMvc.perform(
             post("/api/v1/collections").header("Authorization", "Bearer $ownerToken")

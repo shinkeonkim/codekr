@@ -80,8 +80,16 @@ export function PublicCollectionsPage() {
             <Link href={`/collections/${collection.id}`} className="flex-1 truncate font-medium text-ink">
               {collection.name}
             </Link>
-            {/* 만든 사람이 보여야 따라갈지 정할 수 있다. */}
-            <span className="text-xs text-ink-muted">{collection.ownerNickname}</span>
+            {/*
+              만든 사람이 보여야 따라갈지 정할 수 있고, **눌러서 그 사람의 다른 문제집**
+              으로 갈 수 있어야 한다 (#209) — 양방향이어야 길이 된다.
+            */}
+            <Link
+              href={`/users/${encodeURIComponent(collection.ownerNickname)}`}
+              className="text-xs text-ink-muted hover:text-ink hover:underline"
+            >
+              {collection.ownerNickname}
+            </Link>
             <Badge tone="muted">{collection.problemCount}문제</Badge>
             {/* 어드민에게만 보인다 (#131 과 같은 결) — 눌러서 403 이 나는 버튼은 고장으로 보인다. */}
             {isAdmin ? (

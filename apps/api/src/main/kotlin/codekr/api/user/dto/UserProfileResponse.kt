@@ -49,6 +49,13 @@ data class UserProfileResponse(
     /** 랭킹을 껐거나 아직 푼 문제가 없으면 null — 꼴찌가 아니라 순위가 없는 것이다. */
     val rank: Int?,
     val badges: List<AwardedBadge>,
+    /**
+     * 이 사람이 만든 **공개** 문제집 (#209).
+     *
+     * 비공개가 남에게 새면 안 되므로 내 프로필에서도 공개된 것만 보인다 — 내 것 전체는
+     * `/collections` 가 보여 준다.
+     */
+    val collections: List<codekr.api.collection.dto.CollectionSummaryResponse>,
 )
 
 /** 실력 티어 (#58). 다음 티어까지 얼마가 남았는지 함께 준다 — 없으면 숫자가 목표가 되지 못한다. */

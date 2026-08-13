@@ -11,6 +11,7 @@ import { SubmissionExplorer } from "@/features/submission-explorer";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
 import { Card, EmptyState } from "@/shared/ui";
+import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { SolvedByTagView } from "./SolvedByTagView";
 
@@ -91,6 +92,28 @@ function ProfileView({ nickname }: { nickname: string }) {
       <SolvedByTierView profile={profile} />
       {/* 난이도 분포가 '얼마나 어려운 것' 이면, 이것은 '무엇을' 이다 (#232). */}
       <SolvedByTagView solvedByTag={profile.solvedByTag} />
+
+      {/*
+        이 사람이 만든 공개 문제집 (#209).
+
+        **없으면 자리 자체가 없다** — 대부분은 문제집을 만들지 않는다. 빈 상자를 두면
+        프로필이 "비어 있는 화면" 으로 보인다.
+      */}
+      {profile.collections.length > 0 ? (
+        <Card className="space-y-2.5 p-5">
+          <h2 className="text-sm font-semibold text-ink">만든 문제집</h2>
+          <ul className="space-y-1.5">
+            {profile.collections.map((collection) => (
+              <li key={collection.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <Link href={`/collections/${collection.id}`} className="text-brand hover:underline">
+                  {collection.name}
+                </Link>
+                <span className="text-xs text-ink-muted">{collection.problemCount}문제</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-ink">최근 제출</h2>

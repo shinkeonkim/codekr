@@ -1,3 +1,4 @@
+import type { CollectionSummary } from "@/entities/collection";
 import type { NotificationCategory, NotificationCategoryOption } from "@/entities/notification";
 import type { SubmissionVisibility } from "@/entities/submission";
 import type { AwardedBadge, SkillTier } from "@/entities/ranking";
@@ -59,6 +60,12 @@ export interface SolvedByTag {
  * 받았는지 이미 보여주므로, 이 화면은 그것을 사람 기준으로 묶은 것이다.
  */
 export interface UserProfile {
+  /**
+   * 이 사람이 만든 **공개** 문제집 (#209).
+   *
+   * 비공개는 오지 않는다 — 내 프로필에서도 같다.
+   */
+  collections: CollectionSummary[];
   nickname: string;
   avatarUrl: string | null;
   /**
