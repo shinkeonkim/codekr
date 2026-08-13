@@ -49,7 +49,7 @@ abstract class IntegrationTestBase {
                      problem_templates, problem_testcases, problems,
                      notifications, admin_audit_logs, rejudge_batches, user_daily_activity,
                      problem_tags, tags,
-                     user_problem_scores, user_badges, user_roles, users
+                     user_problem_scores, user_badges, user_roles, user_suspensions, users
             RESTART IDENTITY CASCADE
             """,
         ).update()

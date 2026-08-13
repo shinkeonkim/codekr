@@ -97,6 +97,13 @@ export interface AdminUserSummary {
   createdAt: string;
   /** 탈퇴한 회원이면 그 시각. 목록에서 기본으로 빠진다. */
   withdrawnAt: string | null;
+  /**
+   * 지금 걸려 있는 정지의 범위 (#224). 비어 있으면 정지가 없다.
+   *
+   * **목록에서 보여야 한다** — 상세를 하나씩 열어 봐야 안다면 이미 정지된 사람을
+   * 또 정지시킨다.
+   */
+  suspendedScopes: string[];
 }
 
 /** 한 사람의 상태를 한 화면에서 (#223). */
@@ -105,6 +112,17 @@ export interface AdminUserDetail extends AdminUserSummary {
   solvedCount: number;
   submissionCount: number;
   lastSubmittedAt: string | null;
+}
+
+/** 지금 걸려 있는 정지 하나 (#224). */
+export interface Suspension {
+  id: number;
+  scope: "WRITE" | "SUBMIT" | "ALL";
+  scopeLabel: string;
+  reason: string;
+  /** null 이면 기한 없음 — 어드민이 풀기 전까지 이어진다. */
+  endsAt: string | null;
+  createdAt: string;
 }
 
 /** 어드민 관리 기록 한 줄 (#225). 고치거나 지울 수 없다 — 덧붙이기만 된다. */

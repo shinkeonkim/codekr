@@ -3,6 +3,7 @@ export type {
   AdminAuditLog,
   AdminUserDetail,
   AdminUserSummary,
+  Suspension,
   SolvedByTag,
   SolvedByTier,
   TokenResponse,

@@ -10,6 +10,15 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 유효하지 않거나 만료되었습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
 
+    /**
+     * 정지된 회원의 쓰기·제출 (#224).
+     *
+     * 403 이되 `FORBIDDEN` 과 코드를 나눈다 — 화면이 "권한이 없는 화면" 과 "지금
+     * 막혀 있는 나" 를 다르게 안내해야 한다. 메시지에 **사유와 언제 풀리는지**가
+     * 실려 온다.
+     */
+    SUSPENDED(HttpStatus.FORBIDDEN, "정지된 계정입니다."),
+
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     SLUG_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 slug 입니다."),
@@ -22,6 +31,7 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "태그를 찾을 수 없습니다."),
+    SUSPENSION_NOT_FOUND(HttpStatus.NOT_FOUND, "정지 기록을 찾을 수 없습니다."),
 
     /**
      * 꺼져 있는 기능 (#285).

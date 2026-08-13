@@ -2,6 +2,7 @@
 
 import { userApi } from "@/entities/user";
 import type { AdminUserSummary } from "@/entities/user";
+import { ActiveSuspensions, SuspendForm } from "@/features/admin-suspension";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { Button, Input, Select } from "@/shared/ui";
@@ -26,14 +27,18 @@ export function AdminUserActions({
   onDone: (message: string) => void;
   onError: (message: string) => void;
 }) {
-  const { isSuperuser } = useRoles();
+  const { isAdmin, isSuperuser } = useRoles();
+  // 정지·해제 뒤에 걸려 있는 목록을 다시 읽는 방아쇠.
+  const [suspensionKey, setSuspensionKey] = useState(0);
   const [open, setOpen] = useState(false);
   const [roles, setRoles] = useState<string[]>(target.roles);
   const [confirmation, setConfirmation] = useState("");
   const [reason, setReason] = useState("");
   const [running, setRunning] = useState(false);
 
-  if (!isSuperuser || target.withdrawnAt) return null;
+  // **정지는 ADMIN 도 건다** (#224). 되돌릴 수 있는 조치라, 실제로 게시판을
+  // 지키는 사람이 쓸 수 있어야 한다. 역할 변경·강제 탈퇴만 SUPERUSER 다.
+  if (!isAdmin || target.withdrawnAt) return null;
 
   const run = async (action: () => Promise<unknown>, message: string) => {
     setRunning(true);
@@ -60,6 +65,26 @@ export function AdminUserActions({
 
   return (
     <div className="space-y-2 rounded-lg border border-border p-3 text-left">
+      <ActiveSuspensions
+        userId={target.id}
+        reloadKey={suspensionKey}
+        onDone={(message) => {
+          setSuspensionKey((key) => key + 1);
+          onDone(message);
+        }}
+        onError={onError}
+      />
+      <SuspendForm
+        userId={target.id}
+        onDone={(message) => {
+          setSuspensionKey((key) => key + 1);
+          onDone(message);
+        }}
+        onError={onError}
+      />
+
+      {!isSuperuser ? null : (
+      <>
       <Select
         aria-label="역할"
         value={roles[0] ?? "USER"}
@@ -118,6 +143,9 @@ export function AdminUserActions({
         </>
       )}
 
+      </>
+      )}
+
       <Button variant="ghost" onClick={() => setOpen(false)}>
         닫기
       </Button>
@@ -128,5 +156,7 @@ export function AdminUserActions({
 /** 역할 위계는 화면도 안다 — 감출지 말지를 정하기 위해서다 (#131). */
 function useRoles() {
   const { user } = useAuth();
-  return { isSuperuser: user?.roles?.includes("SUPERUSER") ?? false };
+  const roles = user?.roles ?? [];
+  const isSuperuser = roles.includes("SUPERUSER");
+  return { isSuperuser, isAdmin: isSuperuser || roles.includes("ADMIN") };
 }
