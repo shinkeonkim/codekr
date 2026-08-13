@@ -8,7 +8,7 @@ import {
   difficultyLabel,
 } from "@/entities/problem";
 import type { Difficulty, DifficultyState, OutputComparison } from "@/entities/problem";
-import { Card, Field, Input, Select } from "@/shared/ui";
+import { Field, Input, Select } from "@/shared/ui";
 import type { ProblemFormValues } from "../model/values";
 
 /**
@@ -29,7 +29,7 @@ export function ProblemMetaFields({
   const changeKind = onChangeKind;
 
   return (
-      <Card className="grid gap-4 p-5 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2">
         <Field label="slug (URL 식별자)">
           <Input
             value={values.slug}
@@ -147,6 +147,6 @@ export function ProblemMetaFields({
             </p>
           </Field>
         ) : null}
-      </Card>
+    </div>
   );
 }

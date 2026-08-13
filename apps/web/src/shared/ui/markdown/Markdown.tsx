@@ -10,7 +10,11 @@ import type { ReactNode } from "react";
  * 설정 하나가 어긋나면 구멍이 난다. 사용자가 쓴 것을 그리는 첫 기능이라 **구멍이 날 수
  * 없는 방식**을 골랐다. 여기서 새는 구멍은 나중에 붙는 댓글·질문에 그대로 이어진다.
  *
- * 지원: 문단, 코드 블록(```), 인라인 코드, 링크, 불릿 목록, 제목(#).
+ * 지원: 문단, 코드 블록(```), 인라인 코드, **굵게**, 링크, 불릿 목록, 제목(#).
+ *
+ * **기울임(`*x*`·`_x_`)은 넣지 않았다** (#338). 문제 지문에는 `loans.member_id` 처럼
+ * 밑줄이 든 식별자가 흔하다 — 기울임을 켜면 그 이름들이 조용히 기울어진다.
+ * 시드의 SQL 문제 다섯이 전부 그렇다. 얻는 것보다 잃는 것이 크다.
  */
 export function Markdown({
   source,
@@ -134,7 +138,7 @@ function renderBlocks(source: string, hideCode: boolean, labels: Map<number, str
  */
 function renderInline(text: string, labels: Map<number, string>): ReactNode[] {
   const nodes: ReactNode[] = [];
-  const pattern = /(`[^`]+`)|(\[([^\]]+)\]\(([^)\s]+)\))|@\{u:(\d+)}/g;
+  const pattern = /(`[^`]+`)|(\*\*(?=\S)([^*]+)\*\*)|(\[([^\]]+)\]\(([^)\s]+)\))|@\{u:(\d+)}/g;
   let last = 0;
   let key = 0;
   let match: RegExpExecArray | null;
@@ -148,7 +152,19 @@ function renderInline(text: string, labels: Map<number, string>): ReactNode[] {
           {match[1].slice(1, -1)}
         </code>,
       );
-    } else if (match[5]) {
+    } else if (match[2]) {
+      /*
+        **굵게** (#338).
+
+        시드 문제 `a-divided-by-b` 가 이미 `**정답은 실수입니다.**` 라고 쓰고 있었다 —
+        출제자는 마크다운이라고 여기고 썼는데 별표가 그대로 보였다.
+      */
+      nodes.push(
+        <strong key={key++} className="font-semibold text-ink">
+          {match[3]}
+        </strong>,
+      );
+    } else if (match[7]) {
       /*
         멘션 (#214).
 
@@ -157,7 +173,7 @@ function renderInline(text: string, labels: Map<number, string>): ReactNode[] {
 
         이름표가 없으면 링크로 만들지 않는다. 탈퇴했거나 지워진 계정이라 갈 곳이 없다.
       */
-      const nickname = labels.get(Number(match[5]));
+      const nickname = labels.get(Number(match[7]));
       nodes.push(
         nickname ? (
           <a
@@ -174,7 +190,7 @@ function renderInline(text: string, labels: Map<number, string>): ReactNode[] {
         ),
       );
     } else {
-      const href = match[4];
+      const href = match[6];
       // **javascript: 같은 주소는 링크로 만들지 않는다.** 글자 그대로 둔다.
       nodes.push(
         isSafeUrl(href) ? (
@@ -186,7 +202,7 @@ function renderInline(text: string, labels: Map<number, string>): ReactNode[] {
             // 새 창으로 열 때 opener 를 넘기지 않는다.
             rel="noreferrer noopener"
           >
-            {match[3]}
+            {match[5]}
           </a>
         ) : (
           <span key={key++}>{match[0]}</span>
