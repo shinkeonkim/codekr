@@ -51,6 +51,7 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 		kinds: map[string]Kind{
 			contract.KindJudgeStdio: NewStdioJudge(executor, log),
 			contract.KindJudgeSQL:   NewSqlJudge(executor, log),
+			contract.KindJudgeNoSQL: NewNoSqlJudge(executor, log),
 		},
 		events: events,
 		log:    log,

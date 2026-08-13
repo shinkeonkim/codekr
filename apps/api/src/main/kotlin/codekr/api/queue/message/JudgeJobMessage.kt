@@ -3,6 +3,7 @@ package codekr.api.queue.message
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.ProblemNoSqlSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.submission.entity.Submission
 
@@ -35,6 +36,8 @@ data class JudgeJobMessage(
      * 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
      */
     val sql: JudgeSqlSpecMessage? = null,
+    /** NoSQL 유형일 때만 실린다 (#455). */
+    val nosql: JudgeNoSqlSpecMessage? = null,
     /**
      * 스페셜 저지의 채점 코드 (#452). `comparison` 이 `CHECKER` 일 때만 실린다.
      *
@@ -53,6 +56,7 @@ data class JudgeJobMessage(
             submission: Submission,
             problem: Problem,
             sqlSpec: ProblemSqlSpec? = null,
+            noSqlSpec: ProblemNoSqlSpec? = null,
         ): JudgeJobMessage {
             val limits = problem.limitsFor(submission.runtimeId)
             return JudgeJobMessage(
@@ -67,6 +71,7 @@ data class JudgeJobMessage(
                 comparison = problem.outputComparison,
                 epsilon = problem.floatEpsilon,
                 sql = sqlSpec?.let(JudgeSqlSpecMessage::from),
+                nosql = noSqlSpec?.let(JudgeNoSqlSpecMessage::from),
                 checker = problem.checkerSource
                     ?.takeIf { problem.outputComparison == OutputComparison.CHECKER },
             )

@@ -2,7 +2,7 @@
 
 import { ALL_DIFFICULTIES, CATEGORY_LABELS, SELECTABLE_KINDS, difficultyLabel } from "@/entities/problem";
 import type { Difficulty, ProblemVerification, SqlSpec, Testcase } from "@/entities/problem";
-import { BLANK_SQL_SPEC, EMPTY_TESTCASE } from "../model/values";
+import { BLANK_NOSQL_SPEC, BLANK_SQL_SPEC, EMPTY_TESTCASE } from "../model/values";
 import type { ProblemFormValues } from "../model/values";
 import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import { ProblemMetaFields } from "./ProblemMetaFields";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { AllowedRuntimeEditor } from "./AllowedRuntimeEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
+import { NoSqlSpecEditor } from "./NoSqlSpecEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
 import { Alert, Button, Card, CheckboxField, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
@@ -92,6 +93,7 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
     keys.some((key) => drafted.has(key)) ? "AI 초안 — 확인하세요" : undefined;
 
   const isSql = values.problemKind === "JUDGE_SQL";
+  const isNoSql = values.problemKind === "JUDGE_NOSQL";
 
   /**
    * 채점 방식을 바꾸면 **그 유형의 자료만 남긴다** (#60).
@@ -103,7 +105,8 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
       ...previous,
       problemKind: nextKind,
       sqlSpec: nextKind === "JUDGE_SQL" ? (previous.sqlSpec ?? BLANK_SQL_SPEC) : null,
-      testcases: nextKind === "JUDGE_SQL" ? [] : previous.testcases,
+      nosqlSpec: nextKind === "JUDGE_NOSQL" ? (previous.nosqlSpec ?? BLANK_NOSQL_SPEC) : null,
+      testcases: nextKind === "JUDGE_SQL" || nextKind === "JUDGE_NOSQL" ? [] : previous.testcases,
     }));
 
   const updateTestcase = (index: number, patch: Partial<Testcase>) =>
@@ -221,6 +224,13 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
       {isSql ? (
         <FormSection title="SQL 스키마와 정답" required defaultOpen={open}>
           <SqlSpecEditor value={values.sqlSpec ?? BLANK_SQL_SPEC} onChange={(spec) => update("sqlSpec", spec)} />
+        </FormSection>
+      ) : isNoSql ? (
+        <FormSection title="NoSQL 시드와 정답" required defaultOpen={open}>
+          <NoSqlSpecEditor
+            value={values.nosqlSpec ?? BLANK_NOSQL_SPEC}
+            onChange={(spec) => update("nosqlSpec", spec)}
+          />
         </FormSection>
       ) : (
       <FormSection

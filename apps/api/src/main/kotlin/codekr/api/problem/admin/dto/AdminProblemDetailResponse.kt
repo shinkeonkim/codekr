@@ -8,6 +8,7 @@ import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.ProblemNoSqlSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.tag.dto.ProblemTagResponse
 
@@ -20,6 +21,7 @@ data class AdminProblemDetailResponse(
     val problemKind: ProblemKind,
     /** SQL 유형이 아니면 null (#60). */
     val sqlSpec: SqlSpecResponse? = null,
+    val nosqlSpec: NoSqlSpecResponse? = null,
     /** 편집 화면이 지금 붙어 있는 사람을 그대로 보여야 한다 (#236). */
     val setters: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
     val reviewers: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
@@ -62,6 +64,7 @@ data class AdminProblemDetailResponse(
             problem: Problem,
             verification: VerificationResponse? = null,
             sqlSpec: ProblemSqlSpec? = null,
+            noSqlSpec: ProblemNoSqlSpec? = null,
             tags: List<ProblemTagResponse> = emptyList(),
             credits: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
         ) = AdminProblemDetailResponse(
@@ -71,6 +74,7 @@ data class AdminProblemDetailResponse(
             category = problem.category,
             problemKind = problem.problemKind,
             sqlSpec = sqlSpec?.let(SqlSpecResponse::from),
+            nosqlSpec = noSqlSpec?.let(NoSqlSpecResponse::from),
             setters = credits.filter { it.role == codekr.api.problem.credit.CreditRole.SETTER },
             reviewers = credits.filter { it.role == codekr.api.problem.credit.CreditRole.REVIEWER },
             sourceLabel = problem.sourceLabel,

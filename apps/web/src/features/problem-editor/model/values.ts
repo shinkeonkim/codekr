@@ -6,6 +6,7 @@ import type {
   ProblemRuntimeLimit,
   ProblemSolution,
   ProblemTemplate,
+  NoSqlSpec,
   SqlSpec,
   Testcase,
 } from "@/entities/problem";
@@ -24,6 +25,8 @@ export interface ProblemFormValues {
   problemKind: string;
   /** SQL 유형일 때만 보낸다 (#60). */
   sqlSpec: SqlSpec | null;
+  /** NoSQL 유형일 때만 보낸다 (#455). */
+  nosqlSpec: NoSqlSpec | null;
   /** 비워 둘 수 있다 (#195) — 그때 `difficultyState` 가 뜻을 갖는다. */
   difficulty: Difficulty | null;
   difficultyState: DifficultyState;
@@ -57,6 +60,14 @@ export const EMPTY_TESTCASE: Testcase = { seq: 1, input: "", expectedOutput: "",
 
 // 행 순서 무시가 기본이다 — 문제가 정렬을 요구하지 않는데 순서를 비교하면
 // 맞는 답이 틀린 것으로 나온다.
+export const BLANK_NOSQL_SPEC: NoSqlSpec = {
+  seedCommands: null,
+  answerCommands: "",
+  verifyCommands: "",
+  // 기본은 순서를 지킨다 (#455) — 정렬 집합·리스트에서 순서는 자료의 일부다.
+  ignoreOrder: false,
+};
+
 export const BLANK_SQL_SPEC: SqlSpec = {
   schemaSql: "",
   answerSql: "",
@@ -73,6 +84,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     category: problem.category,
     problemKind: problem.problemKind,
     sqlSpec: problem.sqlSpec,
+    nosqlSpec: problem.nosqlSpec ?? null,
     difficulty: problem.difficulty,
     difficultyState: problem.difficultyState ?? "UNRATED",
     description: problem.description,
@@ -101,6 +113,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   category: "ALGORITHM",
   problemKind: "JUDGE_STDIO",
   sqlSpec: null,
+  nosqlSpec: null,
   // 새 문제의 기본은 **미평가**다 (#195). 브론즈로 두면 "아직 안 정했다" 와
   // "쉽다" 가 구분되지 않는다 — 등록은 쉬워지지만 거짓 정보가 섞인다.
   difficulty: null,
