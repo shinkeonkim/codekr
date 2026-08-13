@@ -82,6 +82,12 @@ abstract class IntegrationTestBase {
             """,
         ).update()
         jdbcClient.sql("DELETE FROM badges WHERE code NOT LIKE 'CATEGORY_10_%' AND code NOT IN ('FIRST_ACCEPT','STREAK_7','STREAK_30','FIRST_SOLVER')").update()
+        // 규칙도 마이그레이션이 넣은 것이다 (#202) — 시험이 넣은 것만 걷고 스위치를 되돌린다.
+        jdbcClient.sql(
+            "DELETE FROM badge_rules WHERE rule_key NOT IN ('FIRST_ACCEPT','FIRST_SOLVER','CATEGORY_10','STREAK_7','STREAK_30')",
+        ).update()
+        jdbcClient.sql("UPDATE badge_rules SET enabled = true").update()
+        jdbcClient.sql("TRUNCATE badge_awards_log").update()
         badgeCatalog.invalidate()
     }
 

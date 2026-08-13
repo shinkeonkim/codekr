@@ -2,7 +2,9 @@ package codekr.api.submission.service
 
 import codekr.api.activity.service.ActivityRecorder
 import codekr.api.queue.message.JudgeEventMessage
-import codekr.api.ranking.badge.BadgeAwarder
+import codekr.api.ranking.badge.BadgeEvent
+import codekr.api.ranking.badge.BadgeEventType
+import codekr.api.ranking.badge.BadgeRuleEngine
 import codekr.api.problem.repository.ProblemStatsSyncRepository
 import codekr.api.ranking.service.ScoreRecorder
 import codekr.api.rejudge.service.RejudgeCompletion
@@ -28,7 +30,7 @@ class JudgeResultRecorder(
     private val activityRecorder: ActivityRecorder,
     private val scoreRecorder: ScoreRecorder,
     private val problemStatsSync: ProblemStatsSyncRepository,
-    private val badgeAwarder: BadgeAwarder,
+    private val badgeRuleEngine: BadgeRuleEngine,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -61,7 +63,15 @@ class JudgeResultRecorder(
                     scoreDelta = scoreRecorder.record(submission.userId, submission.problemId)
                     // 뱃지는 점수를 기록한 뒤에 확인한다 — '최초 해결자'가 점수 표를 본다 (#58).
                     if (submission.verdict == Verdict.ACCEPTED) {
-                        badgeAwarder.onAccepted(submission.userId, submission.problemId)
+                        badgeRuleEngine.handle(
+                            BadgeEvent(
+                                BadgeEventType.PROBLEM_ACCEPTED,
+                                submission.userId,
+                                submission.problemId,
+                            ),
+                        )
+                        // 스트릭은 활동 집계가 갱신된 뒤에 본다 (#200 §3).
+                        badgeRuleEngine.handle(BadgeEvent(BadgeEventType.STREAK_UPDATED, submission.userId))
                     }
                 }
                 // 재채점이었으면 판정이 바뀌었는지 보고 알린다 (#107).
