@@ -28,9 +28,18 @@ export MYSQL_HOME=/work
 
 mkdir -p "$DATADIR"
 
+# 기동에 실패하면 **왜 실패했는지 보여준다.** 로그를 컨테이너 안에만 두면 화면에는
+# 빈 출력만 남고, 그것은 "쿼리가 아무 결과도 내지 않았다" 와 구분되지 않는다.
+die() {
+    echo "mysqld 를 띄우지 못했습니다: $1" >&2
+    tail -30 /work/.my.log >&2 2>/dev/null || true
+    exit 1
+}
+
 # --initialize-insecure: root 에 비밀번호가 없다. 네트워크가 없고 컨테이너와 함께
 # 사라지는 인스턴스라 비밀번호는 지킬 것이 아니라 기동을 늦추는 것이다.
-mysqld --initialize-insecure --datadir="$DATADIR" --user="$(id -un)" >/work/.my.log 2>&1
+mysqld --initialize-insecure --datadir="$DATADIR" --user="$(id -un)" >/work/.my.log 2>&1 \
+    || die "초기화 실패"
 
 # --skip-networking : 유닉스 소켓만. 네트워크는 이미 꺼져 있지만 한 겹만 믿지 않는다
 # --secure-file-priv=NULL : `INTO OUTFILE`·`LOAD DATA INFILE` 자체를 끈다
@@ -40,10 +49,15 @@ mysqld --datadir="$DATADIR" --socket="$SOCK" --pid-file=/work/my.pid \
     --skip-networking --secure-file-priv=NULL --local-infile=0 \
     --max-execution-time="${CODEKR_SQL_TIMEOUT_MS:-5000}" >>/work/.my.log 2>&1 &
 
+ready=false
 for _ in $(seq 1 150); do
-    mysqladmin --socket="$SOCK" -u root ping >/dev/null 2>&1 && break
+    if mysqladmin --socket="$SOCK" -u root ping >/dev/null 2>&1; then
+        ready=true
+        break
+    fi
     sleep 0.2
 done
+[ "$ready" = true ] || die "기동을 기다리다 지쳤습니다"
 
 root_sql() { mysql --socket="$SOCK" -u root "$@"; }
 
