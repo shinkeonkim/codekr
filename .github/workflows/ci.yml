@@ -217,7 +217,7 @@ jobs:
           go test -c -o /tmp/selftest.test ./internal/selftest/
           go test -c -o /tmp/sandbox.test  ./internal/sandbox/
 
-      - name: "--self-test 7개"
+      - name: "--self-test 9개"
         working-directory: apps/executor
         env:
           CODEKR_SANDBOX_TEST: "1"
@@ -237,7 +237,9 @@ jobs:
           # 초록으로 보인다 — 그것이 가장 나쁜 결과다.
           passed=$(grep -c '^    --- PASS' /tmp/selftest.log || true)
           echo "통과한 검사: ${passed}개"
-          test "$passed" -eq 7
+          # 숫자를 박아 두는 이유: 검사를 늘렸는데 이 줄을 잊으면 새 검사가 돌았는지
+          # 아무도 확인하지 않는다. 셸 검사 둘을 더해 9개다 (#456).
+          test "$passed" -eq 9
 
       - name: 채점 흐름 · seccomp · SQL · 재매핑
         working-directory: apps/executor/internal/sandbox
