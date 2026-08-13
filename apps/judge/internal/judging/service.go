@@ -49,9 +49,10 @@ type Service struct {
 func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Service {
 	return &Service{
 		kinds: map[string]Kind{
-			contract.KindJudgeStdio: NewStdioJudge(executor, log),
-			contract.KindJudgeSQL:   NewSqlJudge(executor, log),
-			contract.KindJudgeNoSQL: NewNoSqlJudge(executor, log),
+			contract.KindJudgeStdio:       NewStdioJudge(executor, log),
+			contract.KindJudgeSQL:         NewSqlJudge(executor, log),
+			contract.KindJudgeNoSQL:       NewNoSqlJudge(executor, log),
+			contract.KindJudgeInteractive: NewInteractiveJudge(executor, log),
 		},
 		events: events,
 		log:    log,

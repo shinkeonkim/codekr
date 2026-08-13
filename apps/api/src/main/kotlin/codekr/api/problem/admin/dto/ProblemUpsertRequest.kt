@@ -153,6 +153,14 @@ data class ProblemUpsertRequest(
     @field:Valid
     val testcaseGroups: List<TestcaseGroupRequest> = emptyList(),
 
+    /**
+     * 인터랙티브 문제에서 대화를 주관하는 코드 (#474).
+     *
+     * **사용자에게 내려가지 않는다** — 정답의 일부다 (#452 의 채점 코드와 같은 규칙).
+     */
+    @field:Size(max = 100_000)
+    val interactorSource: String? = null,
+
     /** 런타임별 실행 제한 오버라이드 (#97). 적지 않은 런타임은 위 기본 제한을 쓴다. */
     @field:Valid
     val runtimeLimits: List<RuntimeLimitRequest> = emptyList(),

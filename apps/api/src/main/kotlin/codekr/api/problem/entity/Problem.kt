@@ -287,6 +287,14 @@ class Problem(
      * **사용자에게 절대 내려가지 않는다.** 정답의 일부나 판정 방식이 들어간다 —
      * 문제 상세에도, 오류 메시지에도 나가지 않는다.
      */
+    /**
+     * 인터랙티브 문제에서 **대화를 주관하는 출제자의 코드** (#474).
+     *
+     * 채점 코드(#452)와 같은 규칙으로 다룬다 — **사용자에게 절대 내려가지 않는다.**
+     */
+    @Column(name = "interactor_source", columnDefinition = "text")
+    var interactorSource: String? = null
+
     @Column(name = "checker_source", columnDefinition = "text")
     var checkerSource: String? = null
 

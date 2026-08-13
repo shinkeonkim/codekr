@@ -182,8 +182,10 @@ const (
 	KindJudgeStdio = "JUDGE_STDIO"
 	KindJudgeSQL   = "JUDGE_SQL"
 	KindJudgeNoSQL = "JUDGE_NOSQL"
-	KindQuiz       = "QUIZ"
-	KindManual     = "MANUAL"
+	// KindJudgeInteractive 는 **도는 중에 주고받는** 문제다 (#474).
+	KindJudgeInteractive = "JUDGE_INTERACTIVE"
+	KindQuiz             = "QUIZ"
+	KindManual           = "MANUAL"
 )
 
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.
@@ -227,7 +229,15 @@ type JudgeJob struct {
 		비어 있으면 채점하지 않는다 — 견줄 기대값도 없고 물어볼 코드도 없는 상태라,
 		그것은 **오답이 아니라 출제자의 실수**다.
 	*/
-	Checker string `json:"checker,omitempty"`
+	/*
+		Interactor 는 인터랙티브 문제에서 **대화를 주관하는 출제자의 코드**다 (#474).
+
+		#452 의 채점 코드와 다른 점은 **언제 도는가**다 — 그쪽은 끝난 뒤 출력을 받아
+		판정하고, 이쪽은 제출과 동시에 돌며 주고받는다. 판정을 종료 코드로 말하는
+		규약은 같고(0 정답 · 1 오답), 거기에 **3 = 교착**이 더해진다.
+	*/
+	Interactor string `json:"interactor,omitempty"`
+	Checker    string `json:"checker,omitempty"`
 	// NoSQL 은 KindJudgeNoSQL 일 때만 실린다 (#455).
 	NoSQL *JudgeNoSQLSpec `json:"nosql,omitempty"`
 }

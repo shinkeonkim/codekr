@@ -364,6 +364,42 @@ runtimes:
       -- 여기에 SELECT 문을 작성하세요.
       SELECT 1 + 2;
 
+  # ── 인터랙티브 ─────────────────────────────────────────────────────────────
+  # 채점 코드와 **도는 중에 주고받는** 문제 (#474). 스페셜 저지(#452)는 끝난 뒤 출력을
+  # 받아 판정하지만, 여기서는 둘이 동시에 돌며 서로에게 쓴다.
+  #
+  # **파이썬으로 시작한다.** 둘이 같은 컨테이너 안에서 동시에 돌아야 하는데 컨테이너
+  # 이미지는 제출 언어의 것이다 — 자바 이미지에는 파이썬이 없다. 컨테이너 둘을 파이프로
+  # 잇는 것은 실행기의 실행 모델(한 번에 하나)을 바꾸는 일이라 따로 둔다.
+  # #394 가 아희·엄랭 전용 문제로 같은 방식(언어를 묶는 것)의 전례를 만들었다.
+  #
+  # 제출을 `python3 -u`(버퍼 없음)로 돌린다 — flush 를 잊는 것이 이 유형에서 가장 흔한
+  # 오답 원인이고, **사용자 잘못이지만 사용자가 알기 어렵다.**
+  - id: "interactive:python3.13"
+    label: "Python 3.13 (인터랙티브)"
+    monacoLanguage: "python"
+    problemKind: "JUDGE_INTERACTIVE"
+    image: "python:3.13-alpine"
+    digest: "sha256:540c7d91f98ff6880174c40e99067bf5941eb54d818a7a5e094d188b196a934d"
+    sourceFile: "main.py"
+    harness: "interactive"
+    run: ["sh", "run-interactive.sh"]
+    template: |
+      import sys
+
+      # 물을 때마다 flush 하세요. 안 하면 상대에게 영원히 닿지 않습니다.
+      low, high = 1, 100
+      while True:
+          mid = (low + high) // 2
+          print(mid, flush=True)
+          answer = sys.stdin.readline().strip()
+          if answer == "correct":
+              break
+          if answer == "higher":
+              low = mid + 1
+          else:
+              high = mid - 1
+
   # ── NoSQL ─────────────────────────────────────────────────────────────────
   # NoSQL 문제 (#455). **채점 모델이 SQL 과 다르다** — 제출이 쿼리 하나가 아니라
   # 명령의 연속이고, 남는 것은 결과 집합이 아니라 상태다. 그래서 유형이 따로 있다.

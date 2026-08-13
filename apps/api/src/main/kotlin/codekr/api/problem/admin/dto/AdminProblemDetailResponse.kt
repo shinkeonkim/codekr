@@ -36,6 +36,8 @@ data class AdminProblemDetailResponse(
     val files: List<ProblemFileResponse> = emptyList(),
     /** 부분 점수 묶음 (#473). 비면 묶음이 없는 문제다. */
     val testcaseGroups: List<TestcaseGroupResponse> = emptyList(),
+    /** 어드민에게만 간다 (#474) — 고치려면 지금 무엇이 들어 있는지 보여야 한다. */
+    val interactorSource: String? = null,
     /** 편집 화면이 지금 붙어 있는 사람을 그대로 보여야 한다 (#236). */
     val setters: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
     val reviewers: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
@@ -94,6 +96,7 @@ data class AdminProblemDetailResponse(
             canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
             testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),
+            interactorSource = problem.interactorSource,
             setters = credits.filter { it.role == codekr.api.problem.credit.CreditRole.SETTER },
             reviewers = credits.filter { it.role == codekr.api.problem.credit.CreditRole.REVIEWER },
             sourceLabel = problem.sourceLabel,

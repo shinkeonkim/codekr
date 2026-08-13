@@ -28,11 +28,18 @@ const MariaDB = "mariadb"
 // 출력 형식은 같게 낸다: 채점기가 무엇이 돌았는지 몰라도 되게 하기 위함이다.
 const Redis = "redis"
 
+// Interactive 는 인터랙티브 문제의 하네스다 (#474).
+//
+// **도는 중에 주고받는다** — 스페셜 저지(#452)가 끝난 뒤 판정하는 것과 다르다.
+// 파이프 둘을 파서 채점 코드와 제출을 서로 물린다.
+const Interactive = "interactive"
+
 // scripts 는 하네스 이름 → 작업 디렉터리에 쓸 파일 이름이다.
 var scripts = map[string]string{
-	SQL:     "run-sql.sh",
-	MariaDB: "run-mariadb.sh",
-	Redis:   "run-redis.sh",
+	SQL:         "run-sql.sh",
+	MariaDB:     "run-mariadb.sh",
+	Redis:       "run-redis.sh",
+	Interactive: "run-interactive.sh",
 }
 
 // Files 는 그 하네스가 작업 디렉터리에 풀어야 할 파일들이다.

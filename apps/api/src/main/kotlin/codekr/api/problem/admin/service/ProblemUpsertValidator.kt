@@ -119,8 +119,25 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         }
     }
 
+    /**
+     * 인터랙티브 문제에는 **대화를 주관할 코드가 있어야 한다** (#474).
+     *
+     * 없으면 아무도 못 푸는 문제가 된다 — 제출이 무엇을 물어도 답할 것이 없다.
+     * #452 가 채점 코드에서 한 판단과 같다.
+     */
+    private fun validateInteractor(request: ProblemUpsertRequest) {
+        val hasInteractor = !request.interactorSource.isNullOrBlank()
+        if (request.problemKind == ProblemKind.JUDGE_INTERACTIVE && !hasInteractor) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "인터랙티브 문제에는 채점 코드가 필요합니다.")
+        }
+        if (request.problemKind != ProblemKind.JUDGE_INTERACTIVE && hasInteractor) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "인터랙티브 문제가 아닌데 채점 코드가 실려 있습니다.")
+        }
+    }
+
     fun validate(request: ProblemUpsertRequest) {
         validateSqlDatabase(request)
+        validateInteractor(request)
         validateNoSqlProduct(request)
 
         // 채점기 구현도 스펙 테이블도 없는 유형으로는 문제를 만들 수 없다 (#59).
