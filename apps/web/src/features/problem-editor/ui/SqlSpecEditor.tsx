@@ -1,7 +1,7 @@
 "use client";
 
 import type { SqlSpec } from "@/entities/problem";
-import { Card, CheckboxField, Field, Textarea } from "@/shared/ui";
+import { CheckboxField, Field, Textarea } from "@/shared/ui";
 
 /**
  * SQL 문제의 스키마와 정답 쿼리 (#60).
@@ -20,10 +20,9 @@ export function SqlSpecEditor({
     onChange({ ...value, [key]: next });
 
   return (
-    <Card className="space-y-4 p-5">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-sm font-semibold text-ink">SQL 스펙</h2>
-        <p className="mt-1 text-xs text-ink-muted">
+                <p className="mt-1 text-xs text-ink-muted">
           문제마다 새 PostgreSQL 이 뜨고, 제출 쿼리는 읽기 전용 권한으로 실행됩니다.
         </p>
       </div>
@@ -68,6 +67,6 @@ export function SqlSpecEditor({
           </>
         }
       />
-    </Card>
+    </div>
   );
 }

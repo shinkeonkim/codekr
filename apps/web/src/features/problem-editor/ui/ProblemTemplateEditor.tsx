@@ -3,7 +3,7 @@
 import { problemApi } from "@/entities/problem";
 import type { ProblemTemplate, Runtime } from "@/entities/problem";
 import { useEffect, useState } from "react";
-import { Button, Card, Select, Textarea } from "@/shared/ui";
+import { Button, Select, Textarea } from "@/shared/ui";
 
 interface Props {
   templates: ProblemTemplate[];
@@ -41,11 +41,10 @@ export function ProblemTemplateEditor({ templates, onChange }: Props) {
   const remove = (runtimeId: string) => onChange(templates.filter((it) => it.runtimeId !== runtimeId));
 
   return (
-    <Card className="space-y-4 p-5">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-ink">언어별 초기 코드</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">
+                    <p className="mt-0.5 text-xs text-ink-muted">
             지정하지 않은 언어는 기본 템플릿이 제공됩니다.
           </p>
         </div>
@@ -93,6 +92,6 @@ export function ProblemTemplateEditor({ templates, onChange }: Props) {
           />
         </div>
       ))}
-    </Card>
+    </div>
   );
 }
