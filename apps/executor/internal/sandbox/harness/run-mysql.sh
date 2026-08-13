@@ -43,8 +43,11 @@ die() {
 
 # --initialize-insecure: root 에 비밀번호가 없다. 네트워크가 없고 컨테이너와 함께
 # 사라지는 인스턴스라 비밀번호는 지킬 것이 아니라 기동을 늦추는 것이다.
-mysqld --initialize-insecure --datadir="$DATADIR" --user="$(id -un)" >/work/.my.log 2>&1 \
-    || die "초기화 실패"
+# **`--user` 를 주지 않는다.** 그 옵션은 root 로 뜬 mysqld 가 권한을 내려놓기 위한
+# 것인데, 우리는 처음부터 그 계정으로 돈다. 주면 mysqld 가 `initgroups`·`setgid` 를
+# 부르고, 능력을 모두 뗀 샌드박스(특히 user namespace 재매핑 아래)에서는 그것이
+# 실패해 디렉터리조차 만들지 못한다.
+mysqld --initialize-insecure --datadir="$DATADIR" >/work/.my.log 2>&1 || die "초기화 실패"
 
 # --skip-networking : 유닉스 소켓만. 네트워크는 이미 꺼져 있지만 한 겹만 믿지 않는다
 # --secure-file-priv=NULL : `INTO OUTFILE`·`LOAD DATA INFILE` 자체를 끈다
