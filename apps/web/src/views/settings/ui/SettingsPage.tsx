@@ -5,6 +5,7 @@ import type { SubmissionVisibility } from "@/entities/submission";
 import { userApi } from "@/entities/user";
 import type { UserSettings } from "@/entities/user";
 import { AvatarEditor } from "@/features/avatar-editor";
+import { EmailVerificationCard } from "@/features/email-verification";
 import { BioEditor } from "@/features/profile-bio";
 import { useAuth } from "@/features/auth";
 import { RequireAuth } from "@/features/auth";
@@ -61,6 +62,9 @@ function SettingsView() {
       </header>
 
       {error ? <Alert>{error}</Alert> : null}
+
+      {/* 확인이 끝났으면 아무것도 그리지 않는다 (#233). 맨 위인 이유는 할 일이기 때문이다. */}
+      <EmailVerificationCard />
 
       <Card className="space-y-3 p-5">
         <div>

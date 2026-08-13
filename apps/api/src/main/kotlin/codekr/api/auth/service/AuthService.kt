@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class AuthService(
+    private val emailVerificationService: codekr.api.auth.email.EmailVerificationService,
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val tokenProvider: JwtTokenProvider,
@@ -35,6 +36,9 @@ class AuthService(
                 nickname = request.nickname,
             ),
         )
+        // **가입이 메일 때문에 실패하면 안 된다.** 발송 실패는 MailSender 안에서
+        // 삼켜지고, 여기서는 토큰 발급까지만 한다 (#233).
+        emailVerificationService.send(user.id, user.email)
         return issueTokens(user)
     }
 

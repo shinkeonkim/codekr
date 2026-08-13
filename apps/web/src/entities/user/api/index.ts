@@ -90,6 +90,14 @@ export const userApi = {
   forceWithdraw: (id: number, reason: string) =>
     request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", auth: true, query: { reason } }),
 
+  /** 인증 링크를 확인한다 (#233). **로그인이 필요 없다** — 토큰 자체가 본인 확인이다. */
+  verifyEmail: (token: string) =>
+    request<void>("/api/v1/auth/email/verify", { method: "POST", body: { token } }),
+
+  /** 인증 메일을 다시 받는다. 쿨다운과 하루 상한이 걸린다. */
+  resendVerification: () =>
+    request<void>("/api/v1/auth/email/verification", { method: "POST", auth: true }),
+
   /** 내 프로필에서 남에게 보이는 값 (#310). 설정(내가 보는 값)과 나눈다. */
   updateProfile: (body: { bio?: string }) =>
     request<{ bio: string | null }>("/api/v1/users/me/profile", { method: "PATCH", auth: true, body }),

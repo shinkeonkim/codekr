@@ -76,6 +76,15 @@ class User(
      */
     var bio: String? = null,
 
+    /**
+     * 이메일을 확인한 시각 (#233). null 이면 아직 확인하지 않은 것이다.
+     *
+     * **기존 계정은 인증된 것으로 본다** (마이그레이션에서 가입 시각을 넣는다) —
+     * 전부 미인증으로 두면 인증 요구를 켜는 순간 지금 쓰고 있는 사람들이 다 막힌다.
+     */
+    @Column(name = "email_verified_at")
+    var emailVerifiedAt: Instant? = null,
+
 
 ) : BaseTimeEntity() {
 
@@ -127,6 +136,10 @@ class User(
         avatarKey = null
         // **가장 개인적인 내용이 들어갈 곳**이다. 탈퇴가 지울 것에 반드시 들어간다.
         bio = null
+    }
+
+    fun verifyEmail(now: Instant) {
+        if (emailVerifiedAt == null) emailVerifiedAt = now
     }
 
     fun has(role: UserRole): Boolean = role in roleSet

@@ -21,6 +21,13 @@ data class UserResponse(
      * 대신할 수는 있지만, 그러려면 자기 닉네임으로 자기를 다시 조회해야 한다.
      */
     val bio: String?,
+    /**
+     * 이메일을 확인했는가 (#233).
+     *
+     * **화면이 안내를 띄울지 정하는 값**이라 시각이 아니라 참·거짓으로 내린다 —
+     * 언제 확인했는지는 사용자에게 쓸모가 없다.
+     */
+    val emailVerified: Boolean,
 ) {
     companion object {
         fun from(user: User) = UserResponse(
@@ -31,6 +38,7 @@ data class UserResponse(
             user.isAdmin,
             AvatarService.urlOf(user.avatarKey),
             user.bio,
+            user.emailVerifiedAt != null,
         )
     }
 }
