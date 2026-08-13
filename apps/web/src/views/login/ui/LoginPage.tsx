@@ -14,6 +14,8 @@ export function LoginPage() {
   return (
     <RequireGuest>
     <AuthForm
+      // #261 은 로그인에 그림을 두지 않기로 했었다. #461 이 뒤집은 이유는 AuthForm 에 적었다.
+      mascot="login"
       title="로그인"
       description="코드.kr 계정으로 문제를 풀고 채점 결과를 확인하세요."
       submitLabel="로그인"

@@ -1,5 +1,7 @@
 # 코드.kr (codekr)
 
+<img src="docs/images/readme-welcome.webp" alt="" width="520">
+
 알고리즘 · 자료구조 · SQL · 네트워크 · 프로그래밍 언어 · 운영체제 · 시스템 설계 등
 다양한 코딩 테스트 문제를 제공하는 오픈소스 문제 풀이 플랫폼.
 

@@ -32,6 +32,11 @@ const CHARACTERS = {
   serverError: { src: "/brand/state-server-error.webp", width: 460, height: 671 },
   forbidden: { src: "/brand/state-forbidden.webp", width: 460, height: 372 },
   welcome: { src: "/brand/state-welcome.webp", width: 460, height: 473 },
+  /**
+   * 로그인 화면 (#461). 가입의 `welcome` 과 나란히 놓고 보면 **손을 흔드는 쪽이 이쪽**이다 —
+   * 가입은 처음 온 사람, 이쪽은 돌아온 사람이다.
+   */
+  login: { src: "/brand/state-login.webp", width: 460, height: 404 },
   goodbye: { src: "/brand/state-goodbye.webp", width: 460, height: 427 },
   award: { src: "/brand/state-award.webp", width: 460, height: 347 },
   study: { src: "/brand/state-study.webp", width: 520, height: 333 },
