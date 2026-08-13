@@ -30,7 +30,14 @@ class RankingController(private val rankingService: RankingService) {
         @RequestParam(defaultValue = "ALL_TIME") period: RankingPeriod,
         @RequestParam(defaultValue = "0") @Min(0) page: Int,
         @RequestParam(defaultValue = "50") @Min(1) @Max(100) size: Int,
-    ): PageResponse<RankingEntry> = rankingService.page(metric, period, page, size)
+        /**
+         * 그 소속 사람들만 (#399).
+         *
+         * **공개다.** 소속 랭킹은 그 학교 사람만 보는 것이 아니다 — 전체 순위표가
+         * 공개인 것과 같은 이유다(#207).
+         */
+        @RequestParam(required = false) affiliationId: Long?,
+    ): PageResponse<RankingEntry> = rankingService.page(metric, period, page, size, affiliationId)
 
     /**
      * 지표 목록. **화면이 지표를 하드코딩하지 않게 서버가 알려준다** —
