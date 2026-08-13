@@ -3,7 +3,7 @@
 import { ProblemStatsSummary, RuntimeLimitNotice, useProblem } from "@/entities/problem";
 import type { ProblemDetail } from "@/entities/problem";
 import { TagChips } from "@/entities/tag";
-import { Button, Card, EmptyState, Markdown } from "@/shared/ui";
+import { Button, Card, CardTitle, EmptyState, Markdown } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
 import { use } from "react";
@@ -50,7 +50,7 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
 
       {problem.examples.length > 0 ? (
         <Card className="space-y-4 p-5">
-          <h2 className="text-sm font-semibold text-ink">예제</h2>
+          <CardTitle>예제</CardTitle>
           {problem.examples.map((example) => (
             <div key={example.seq} className="grid gap-2 sm:grid-cols-2">
               <ExampleBlock title={`입력 ${example.seq}`} body={example.input} />
@@ -76,7 +76,7 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
 function Section({ title, children }: { title: string; children: string }) {
   return (
     <div>
-      <h2 className="mb-1.5 text-sm font-semibold text-ink">{title}</h2>
+      <CardTitle className="mb-1.5">{title}</CardTitle>
       <div className="prose-kr text-sm text-ink-muted">
         <Markdown source={children} />
       </div>

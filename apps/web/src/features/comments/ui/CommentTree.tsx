@@ -5,7 +5,7 @@ import type { Comment } from "@/entities/post";
 import { lastId, mergeComments } from "../model/merge";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { Alert, Button, useToast } from "@/shared/ui";
+import { Alert, Button, CardTitle, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CommentForm } from "./CommentForm";
@@ -111,7 +111,7 @@ export function CommentTree({ postId }: { postId: number }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-ink">댓글 {total}개</h2>
+      <CardTitle>댓글 {total}개</CardTitle>
 
       {/* 비로그인에는 입력창 대신 안내를 보여준다 (#113 과 같은 결). */}
       {user ? (

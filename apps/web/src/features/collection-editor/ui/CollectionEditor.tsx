@@ -5,7 +5,7 @@ import type { CollectionVisibility } from "@/entities/collection";
 import { ProblemPicker, TierBadge } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
-import { Alert, Button, Card, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, Field, Input, Select, Textarea, useToast } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -134,7 +134,7 @@ export function CollectionEditor({
       </Card>
 
       <Card className="space-y-4 p-5">
-        <h2 className="text-sm font-semibold text-ink">담은 문제 {values.problems.length}개</h2>
+        <CardTitle>담은 문제 {values.problems.length}개</CardTitle>
         <ProblemPicker pickedIds={values.problems.map((it) => it.id)} onPick={pick} />
 
         {values.problems.length === 0 ? (

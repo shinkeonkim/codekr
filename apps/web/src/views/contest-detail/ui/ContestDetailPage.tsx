@@ -5,7 +5,7 @@ import type { ContestDetail, Scoreboard as ScoreboardData } from "@/entities/con
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Alert, Button, Card, EmptyState, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, EmptyState, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 import { ContestBoard } from "./ContestBoard";
@@ -132,7 +132,7 @@ function ProblemList({ contest }: { contest: ContestDetail }) {
 
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold text-ink">문제</h2>
+      <CardTitle>문제</CardTitle>
       <Card className="divide-y divide-border p-0">
         {contest.problems.map((problem) => (
           <Link

@@ -5,7 +5,7 @@ import type { ContestNotice, ContestQuestion } from "@/entities/contest";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Alert, Button, Card, CheckboxField, Markdown, Textarea, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, CheckboxField, Markdown, Textarea, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 /**
@@ -42,7 +42,7 @@ export function ContestBoard({ slug, registered }: { slug: string; registered: b
   return (
     <div className="space-y-5">
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-ink">공지 {notices.length}건</h2>
+        <CardTitle>공지 {notices.length}건</CardTitle>
         {notices.length === 0 ? (
           <p className="text-xs text-ink-muted">아직 공지가 없습니다.</p>
         ) : (
@@ -59,7 +59,7 @@ export function ContestBoard({ slug, registered }: { slug: string; registered: b
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-ink">질의</h2>
+        <CardTitle>질의</CardTitle>
 
         {/* 참가자만 묻는다. 등록하지 않은 사람은 문제도 볼 수 없다. */}
         {user && registered ? (

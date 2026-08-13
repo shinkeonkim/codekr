@@ -3,7 +3,7 @@
 import { userApi } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
-import { Alert, Button, Card, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, useToast } from "@/shared/ui";
 import { useState } from "react";
 
 /**
@@ -35,7 +35,7 @@ export function EmailVerificationCard() {
   return (
     <Card className="space-y-3 p-5">
       <div>
-        <h2 className="text-sm font-semibold text-ink">이메일 확인</h2>
+        <CardTitle>이메일 확인</CardTitle>
         <p className="mt-1 text-xs text-ink-muted">
           가입할 때 <span className="text-ink">{user.email}</span> 로 보낸 링크를 누르면 끝납니다.
         </p>

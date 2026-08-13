@@ -3,7 +3,7 @@
 import { tagApi } from "@/entities/tag";
 import type { ProblemTag, Tag } from "@/entities/tag";
 import { ApiError } from "@/shared/api";
-import { Button, Card, useToast } from "@/shared/ui";
+import { Button, Card, CardTitle, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 /**
@@ -44,7 +44,7 @@ export function ProblemTagEditor({ problemId, initial }: { problemId: number; in
   return (
     <Card className="space-y-3 p-5">
       <div>
-        <h2 className="text-sm font-semibold text-ink">알고리즘 분류</h2>
+        <CardTitle>알고리즘 분류</CardTitle>
         <p className="mt-1 text-xs leading-relaxed text-ink-muted">
           어떤 기법으로 푸는 문제인지 고릅니다. 카테고리(무엇에 대한 문제인가)와는 다른
           축입니다. 푸는 사람 화면에서는 접혀 있다가 펼쳤을 때만 보입니다.

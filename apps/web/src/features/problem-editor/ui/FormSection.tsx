@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Card } from "@/shared/ui";
+import { Badge, Card, CardTitle } from "@/shared/ui";
 import type { ReactNode } from "react";
 
 /**
@@ -35,7 +35,7 @@ export function FormSection({
     <Card className="p-0">
       <details open={defaultOpen} className="group">
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 p-5">
-          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+          <CardTitle>{title}</CardTitle>
           {required ? <Badge tone="warn">공개에 필요</Badge> : <Badge tone="muted">선택</Badge>}
           {description ? (
             <span className="w-full text-xs text-ink-muted sm:w-auto">{description}</span>
