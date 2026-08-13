@@ -103,6 +103,15 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
 
     /** 랭킹·활동 재계산 (#177, #105). 되돌릴 수 있어 사유를 요구하지 않는다. */
     RECOMPUTE("재계산", requiresReason = false),
+
+    /**
+     * 지문에서 초안 만들기 (#230).
+     *
+     * 아무것도 바꾸지 않는데 기록에 남기는 이유: **바깥으로 나가고 돈이 드는 호출**이다.
+     * 나중에 "누가 몇 번 불렀나" 를 물을 자리가 있어야 한다. 사유는 요구하지 않는다 —
+     * 되돌릴 것이 없고, 매번 적게 하면 "확인" 같은 값만 쌓인다.
+     */
+    PROBLEM_DRAFT("문제 초안 만들기", requiresReason = false),
 }
 
 enum class AuditTargetType { USER }

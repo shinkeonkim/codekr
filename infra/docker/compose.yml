@@ -86,6 +86,10 @@ services:
       CODEKR_MAIL_USERNAME: ${CODEKR_MAIL_USERNAME:-}
       CODEKR_MAIL_PASSWORD: ${CODEKR_MAIL_PASSWORD:-}
       CODEKR_MAIL_FROM: ${CODEKR_MAIL_FROM:-no-reply@xn--hy1by51c.kr}
+      # 문제 초안 만들기 (#230). **비면 그 기능이 없다** — 부르면 404 다.
+      CODEKR_DRAFT_BASE_URL: ${CODEKR_DRAFT_BASE_URL:-https://api.openai.com/v1}
+      CODEKR_DRAFT_API_KEY: ${CODEKR_DRAFT_API_KEY:-}
+      CODEKR_DRAFT_MODEL: ${CODEKR_DRAFT_MODEL:-gpt-4o-mini}
       CODEKR_SITE_URL: ${CODEKR_SITE_URL:-http://localhost:13000}
       # 오브젝트 스토리지 (#115). 운영은 S3 호환, 로컬은 MinIO — **같은 코드 경로**다.
       CODEKR_STORAGE_ENDPOINT: http://storage:9000

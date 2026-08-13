@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { CreditFields } from "./CreditFields";
+import { DraftFromStatement } from "./DraftFromStatement";
 import { ProblemDescriptionFields } from "./ProblemDescriptionFields";
 import { FormSection } from "./FormSection";
 import { ProblemMetaFields } from "./ProblemMetaFields";
@@ -56,6 +57,38 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
 
   const update = <K extends keyof ProblemFormValues>(key: K, value: ProblemFormValues[K]) =>
     setValues((previous) => ({ ...previous, [key]: value }));
+
+  /**
+   * AI 가 채운 칸 (#230).
+   *
+   * **사람이 쓴 것과 구분되지 않으면 검토가 형식이 된다.** 구획 제목 옆에 뱃지를
+   * 달아, 저장을 누르기 전에 어디를 봐야 하는지 보이게 한다.
+   *
+   * 사람이 그 칸을 손대면 표시가 사라진다 — 검토를 마쳤다는 뜻이다.
+   */
+  const [drafted, setDrafted] = useState<Set<keyof ProblemFormValues>>(new Set());
+
+  const fillFromDraft = (
+    patch: Partial<ProblemFormValues>,
+    filled: (keyof ProblemFormValues)[],
+  ) => {
+    setValues((previous) => ({ ...previous, ...patch }));
+    setDrafted(new Set(filled));
+  };
+
+  const touched = <K extends keyof ProblemFormValues>(key: K, value: ProblemFormValues[K]) => {
+    update(key, value);
+    setDrafted((previous) => {
+      if (!previous.has(key)) return previous;
+      const next = new Set(previous);
+      next.delete(key);
+      return next;
+    });
+  };
+
+  /** 이 구획에 아직 검토하지 않은 초안이 있는가. */
+  const draftBadge = (...keys: (keyof ProblemFormValues)[]) =>
+    keys.some((key) => drafted.has(key)) ? "AI 초안 — 확인하세요" : undefined;
 
   const isSql = values.problemKind === "JUDGE_SQL";
 
@@ -125,12 +158,41 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
 
         `defaultOpen` 이 등록·수정의 유일한 차이다 — 나머지는 같은 컴포넌트다.
       */}
-      <FormSection title="기본 정보" required defaultOpen={open}>
-        <ProblemMetaFields values={values} onChange={update} onChangeKind={changeKind} />
+      {/*
+        지문에서 초안 만들기 (#230). **등록할 때만 보인다** — 이미 있는 문제를
+        고치는 중에 초안을 덮어쓰면 사람이 쓴 것을 잃는다.
+
+        키가 없으면 서버가 404 를 주고, 그때는 실패를 알리고 끝이다. 이 구획을 열지
+        않아도 아래 칸들을 손으로 채우는 길은 그대로다.
+      */}
+      {open ? (
+        <FormSection
+          title="지문에서 초안 만들기"
+          defaultOpen={false}
+          description="붙여 넣으면 아래 칸을 채운다 — 저장은 사람이 한다 (#230)"
+        >
+          <DraftFromStatement onFill={fillFromDraft} />
+        </FormSection>
+      ) : null}
+
+      <FormSection
+        title="기본 정보"
+        required
+        defaultOpen={open}
+        description={draftBadge("title", "category", "timeLimitMs", "memoryLimitMb")}
+      >
+        <ProblemMetaFields values={values} onChange={touched} onChangeKind={changeKind} />
       </FormSection>
 
-      <FormSection title="지문" required defaultOpen={open} description="문제 설명과 입출력 형식">
-        <ProblemDescriptionFields values={values} onChange={update} />
+      <FormSection
+        title="지문"
+        required
+        defaultOpen={open}
+        description={
+          draftBadge("description", "inputDescription", "outputDescription") ?? "문제 설명과 입출력 형식"
+        }
+      >
+        <ProblemDescriptionFields values={values} onChange={touched} />
       </FormSection>
 
       <FormSection
@@ -160,7 +222,12 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
           <SqlSpecEditor value={values.sqlSpec ?? BLANK_SQL_SPEC} onChange={(spec) => update("sqlSpec", spec)} />
         </FormSection>
       ) : (
-      <FormSection title="테스트케이스" required defaultOpen={open} description="공개(예제)와 비공개">
+      <FormSection
+        title="테스트케이스"
+        required
+        defaultOpen={open}
+        description={draftBadge("testcases") ?? "공개(예제)와 비공개"}
+      >
         <div className="flex items-center justify-end">
           <Button type="button" variant="secondary" onClick={addTestcase}>
             추가

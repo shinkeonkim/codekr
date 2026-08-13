@@ -78,6 +78,12 @@ codekr:
     from: ${CODEKR_MAIL_FROM:no-reply@xn--hy1by51c.kr}
     # 인증 링크가 가리킬 곳. 메일은 서버가 만들므로 주소를 스스로 알아야 한다.
     site-url: ${CODEKR_SITE_URL:http://localhost:13000}
+  # 문제 초안 만들기 (#230). **키가 없으면 기능이 없다** — 부르면 404 다.
+  # 저장소(#115)·메일(#233)과 같은 규칙이라, 안 켜도 서비스는 그대로 돈다.
+  problem-draft:
+    base-url: ${CODEKR_DRAFT_BASE_URL:https://api.openai.com/v1}
+    api-key: ${CODEKR_DRAFT_API_KEY:}
+    model: ${CODEKR_DRAFT_MODEL:gpt-4o-mini}
   jwt:
     secret: ${CODEKR_JWT_SECRET:local-development-only-secret-change-me-please-32b}
     access-ttl-seconds: ${CODEKR_JWT_ACCESS_TTL_SECONDS:3600}
