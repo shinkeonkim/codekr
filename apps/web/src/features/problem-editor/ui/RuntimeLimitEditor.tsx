@@ -2,7 +2,7 @@
 
 import { problemApi } from "@/entities/problem";
 import type { ProblemRuntimeLimit, Runtime } from "@/entities/problem";
-import { Button, Card, Input, Select } from "@/shared/ui";
+import { Button, Input, Select } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -58,11 +58,10 @@ export function RuntimeLimitEditor({
     onChange(limits.filter((it) => it.runtimeId !== runtimeId));
 
   return (
-    <Card className="space-y-4 p-5">
+    <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-ink">언어별 실행 제한</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">
+                    <p className="mt-0.5 text-xs text-ink-muted">
             지정하지 않은 언어는 문제 기본 제한({baseTimeLimitMs}ms · {baseMemoryLimitMb}MB)을 씁니다.
           </p>
         </div>
@@ -131,6 +130,6 @@ export function RuntimeLimitEditor({
           ))}
         </ul>
       )}
-    </Card>
+    </div>
   );
 }

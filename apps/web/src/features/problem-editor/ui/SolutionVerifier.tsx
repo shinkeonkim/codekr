@@ -6,7 +6,7 @@ import { STATUS_LABELS, VERDICT_LABELS, verdictTone } from "@/entities/submissio
 import { ApiError } from "@/shared/api";
 import { formatMemory } from "@/shared/lib";
 import { useEffect, useState } from "react";
-import { Alert, Badge, Button, Card, Select, Textarea } from "@/shared/ui";
+import { Alert, Badge, Button, Select, Textarea } from "@/shared/ui";
 
 interface Props {
   problemId: number | null;
@@ -69,11 +69,10 @@ export function SolutionVerifier({ problemId, solution, verification, onChange }
   };
 
   return (
-    <Card className="space-y-4 p-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-ink">정답 코드 (선택)</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">
+                    <p className="mt-0.5 text-xs text-ink-muted">
             등록하면 공개 전에 전체 테스트케이스를 검증할 수 있습니다. 사용자에게는 노출되지 않습니다.
           </p>
         </div>
@@ -123,7 +122,7 @@ export function SolutionVerifier({ problemId, solution, verification, onChange }
       </div>
 
       {latest ? <VerificationResult verification={latest} /> : null}
-    </Card>
+    </div>
   );
 }
 

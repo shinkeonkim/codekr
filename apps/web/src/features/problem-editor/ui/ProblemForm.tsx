@@ -8,7 +8,9 @@ import { ApiError } from "@/shared/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { CreditFields } from "./CreditFields";
 import { ProblemDescriptionFields } from "./ProblemDescriptionFields";
+import { FormSection } from "./FormSection";
 import { ProblemMetaFields } from "./ProblemMetaFields";
 import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
@@ -25,7 +27,27 @@ interface Props {
   verification?: ProblemVerification | null;
 }
 
+/**
+ * 문제 폼 (#127, #337).
+ *
+ * **일곱 덩어리를 한 화면에서 채운다.** 구획으로 나누되 탭이 아니라 접이식이다 —
+ * 이유는 `FormSection` 에 있다.
+ *
+ * **등록과 수정의 껍데기만 다르다** (#337): 처음 만들 때는 순서가 도움이 되므로 전부
+ * 펴 두고, 고칠 때는 방해가 되므로 접어서 목차로 쓴다. **구획 컴포넌트와 검증·저장은
+ * 한 벌이다** — 갈라지면 "등록에서는 되는데 수정에서는 안 되는" 것이 생긴다.
+ */
 export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verification }: Props) {
+  /*
+    **등록과 수정의 유일한 차이** (#337).
+
+    처음 만들 때는 순서가 도움이 되므로 전부 펴 두고, 고칠 때는 방해가 되므로 접어서
+    목차로 쓴다 — 고치려는 한 구획만 열면 된다. `problemId` 가 있으면 수정이다.
+
+    구획 컴포넌트와 검증·저장은 **한 벌**이다. 갈라지면 "등록에서는 되는데 수정에서는
+    안 되는" 것이 생긴다.
+  */
+  const open = problemId === undefined;
   const toast = useToast();
   const router = useRouter();
   const [values, setValues] = useState(initial);
@@ -97,20 +119,49 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
     <form className="space-y-4" onSubmit={handleSubmit}>
       {error ? <Alert>{error}</Alert> : null}
 
-      <ProblemMetaFields values={values} onChange={update} onChangeKind={changeKind} />
+      {/*
+        구획은 **유형에 따라 사라진다** (#337). SQL 문제에 테스트케이스 칸을 그리면
+        채워도 쓰이지 않는 값을 받게 된다.
 
-      <ProblemDescriptionFields values={values} onChange={update} />
+        `defaultOpen` 이 등록·수정의 유일한 차이다 — 나머지는 같은 컴포넌트다.
+      */}
+      <FormSection title="기본 정보" required defaultOpen={open}>
+        <ProblemMetaFields values={values} onChange={update} onChangeKind={changeKind} />
+      </FormSection>
+
+      <FormSection title="지문" required defaultOpen={open} description="문제 설명과 입출력 형식">
+        <ProblemDescriptionFields values={values} onChange={update} />
+      </FormSection>
+
+      <FormSection
+        title="출제 정보"
+        defaultOpen={open}
+        description="누가 만들고 어디서 왔는지 (#236)"
+      >
+        <CreditFields
+          setters={values.setters}
+          reviewers={values.reviewers}
+          sourceLabel={values.sourceLabel}
+          sourceUrl={values.sourceUrl}
+          onChange={(patch: Record<string, unknown>) => {
+            for (const [key, next] of Object.entries(patch)) {
+              update(key as keyof typeof values, next as never);
+            }
+          }}
+        />
+      </FormSection>
 
       {/*
         유형별 입력 묶음 (#59, #60). 채점 대상이 유형마다 다르다 —
         stdin/stdout 은 테스트케이스, SQL 은 스키마와 정답 쿼리다.
       */}
       {isSql ? (
-        <SqlSpecEditor value={values.sqlSpec ?? BLANK_SQL_SPEC} onChange={(spec) => update("sqlSpec", spec)} />
+        <FormSection title="SQL 스키마와 정답" required defaultOpen={open}>
+          <SqlSpecEditor value={values.sqlSpec ?? BLANK_SQL_SPEC} onChange={(spec) => update("sqlSpec", spec)} />
+        </FormSection>
       ) : (
-      <Card className="space-y-4 p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">테스트케이스</h2>
+      <FormSection title="테스트케이스" required defaultOpen={open} description="공개(예제)와 비공개">
+        <div className="flex items-center justify-end">
           <Button type="button" variant="secondary" onClick={addTestcase}>
             추가
           </Button>
@@ -156,27 +207,33 @@ export function ProblemForm({ initial, submitLabel, onSubmit, problemId, verific
             </div>
           </div>
         ))}
-      </Card>
+      </FormSection>
       )}
 
+      <FormSection title="언어별 제한" defaultOpen={open} description="비우면 기본 제한을 쓴다">
       <RuntimeLimitEditor
         limits={values.runtimeLimits}
         baseTimeLimitMs={values.timeLimitMs}
         baseMemoryLimitMb={values.memoryLimitMb}
         onChange={(runtimeLimits) => update("runtimeLimits", runtimeLimits)}
       />
+      </FormSection>
 
+      <FormSection title="초기 코드" defaultOpen={open} description="언어마다 처음 보이는 코드">
       <ProblemTemplateEditor
         templates={values.templates}
         onChange={(templates) => update("templates", templates)}
       />
+      </FormSection>
 
+      <FormSection title="정답 코드와 검증" defaultOpen={open} description="사람이 아니라 기계가 확인한다 (#39)">
       <SolutionVerifier
         problemId={problemId ?? null}
         solution={values.solution}
         verification={verification ?? null}
         onChange={(solution) => update("solution", solution)}
       />
+      </FormSection>
 
       <div className="flex items-center gap-3">
         <CheckboxField
