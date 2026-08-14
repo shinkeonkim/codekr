@@ -78,9 +78,9 @@ data class ProblemUpsertRequest(
     @field:Valid
     val sqlSpec: SqlSpecRequest? = null,
 
-    /** NoSQL 유형일 때만 싣는다 (#455). */
+    /** Redis 유형일 때만 싣는다 (#455). */
     @field:Valid
-    val nosqlSpec: NoSqlSpecRequest? = null,
+    val redisSpec: RedisSpecRequest? = null,
 
     /**
      * 난이도 (#195). **비워 둘 수 있다** — 실제 난이도는 사람들이 풀어 봐야 아는 값이라,

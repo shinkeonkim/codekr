@@ -375,8 +375,8 @@ runtimes:
       -- 여기에 SELECT 문을 작성하세요.
       SELECT 1 + 2;
 
-  # ── NoSQL ─────────────────────────────────────────────────────────────────
-  # NoSQL 문제 (#455). **채점 모델이 SQL 과 다르다** — 제출이 쿼리 하나가 아니라
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  # Redis 문제 (#455). **채점 모델이 SQL 과 다르다** — 제출이 쿼리 하나가 아니라
   # 명령의 연속이고, 남는 것은 결과 집합이 아니라 상태다. 그래서 유형이 따로 있다.
   #
   # **우리가 큐로 쓰는 Redis 와 절대 닿지 않는다** (ADR-0002). 하네스가 `--port 0` 으로
@@ -385,10 +385,10 @@ runtimes:
   #
   # Redis 부터인 이유: 기동이 가장 싸고(실측 0.4초) 명령이 단순하다. 채점 모델을
   # 먼저 세우고 MongoDB 를 얹는 편이 안전하다.
-  - id: "nosql:redis7"
+  - id: "redis:7"
     label: "Redis 7"
     monacoLanguage: "redis"
-    problemKind: "JUDGE_NOSQL"
+    problemKind: "JUDGE_REDIS"
     image: "redis:7-alpine"
     digest: "sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2"
     sourceFile: "commands.redis"

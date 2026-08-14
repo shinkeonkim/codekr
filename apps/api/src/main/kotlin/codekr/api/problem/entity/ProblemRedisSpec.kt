@@ -6,7 +6,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 
 /**
- * NoSQL 문제의 스펙 (#455).
+ * Redis 문제의 스펙 (#455).
  *
  * **정답을 결과가 아니라 상태로 본다.** 제출이 명령의 연속이면 마지막 명령의 출력은
  * 문제가 묻는 것의 일부일 뿐이다 — `LPUSH` 가 돌려주는 길이는 정답과 상관이 없다.
@@ -14,8 +14,8 @@ import jakarta.persistence.Table
  * 돌려 그 출력을 견준다.
  */
 @Entity
-@Table(name = "problem_nosql_specs")
-class ProblemNoSqlSpec(
+@Table(name = "problem_redis_specs")
+class ProblemRedisSpec(
     @Id
     @Column(name = "problem_id")
     val problemId: Long,

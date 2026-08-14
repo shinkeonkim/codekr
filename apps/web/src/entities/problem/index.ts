@@ -33,7 +33,7 @@ export type {
   ProblemTemplate,
   ProblemVerification,
   Runtime,
-  NoSqlSpec,
+  RedisSpec,
   SqlSpec,
   Testcase,
   TestcaseVisibility,

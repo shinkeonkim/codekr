@@ -12,12 +12,12 @@ import (
 func noSQLJob(commands string, ignoreOrder bool) contract.JudgeJob {
 	return contract.JudgeJob{
 		SubmissionID:  7,
-		Kind:          contract.KindJudgeNoSQL,
-		RuntimeID:     defaultNoSQLRuntimeID,
+		Kind:          contract.KindJudgeRedis,
+		RuntimeID:     defaultRedisRuntimeID,
 		SourceCode:    commands,
 		TimeLimitMs:   10000,
 		MemoryLimitMb: 512,
-		NoSQL: &contract.JudgeNoSQLSpec{
+		Redis: &contract.JudgeRedisSpec{
 			Seed:        "ZADD scores 10 kim",
 			Answer:      "ZINCRBY scores 5 kim",
 			Verify:      "ZRANGE scores 0 -1 WITHSCORES",
@@ -26,7 +26,7 @@ func noSQLJob(commands string, ignoreOrder bool) contract.JudgeJob {
 	}
 }
 
-func TestNoSqlJudgeAcceptsMatchingState(t *testing.T) {
+func TestRedisJudgeAcceptsMatchingState(t *testing.T) {
 	sink := &recordingSink{}
 	executor := &stubExecutor{results: []contract.ExecResult{
 		{Status: contract.StatusOK, Stdout: harnessOutput("kim\n15", "kim\n15")},
@@ -40,7 +40,7 @@ func TestNoSqlJudgeAcceptsMatchingState(t *testing.T) {
 }
 
 // **남는 것은 결과가 아니라 상태다.** 명령이 돌았어도 상태가 다르면 오답이다.
-func TestNoSqlJudgeRejectsDifferentState(t *testing.T) {
+func TestRedisJudgeRejectsDifferentState(t *testing.T) {
 	sink := &recordingSink{}
 	executor := &stubExecutor{results: []contract.ExecResult{
 		{Status: contract.StatusOK, Stdout: harnessOutput("kim\n15", "kim\n60")},
@@ -58,7 +58,7 @@ func TestNoSqlJudgeRejectsDifferentState(t *testing.T) {
 
 SQL 의 행 순서와 반대다 — 정렬 집합·리스트에서 순서가 다르면 다른 상태다.
 */
-func TestNoSqlJudgeKeepsOrderByDefault(t *testing.T) {
+func TestRedisJudgeKeepsOrderByDefault(t *testing.T) {
 	sink := &recordingSink{}
 	executor := &stubExecutor{results: []contract.ExecResult{
 		{Status: contract.StatusOK, Stdout: harnessOutput("a\nb", "b\na")},
@@ -71,7 +71,7 @@ func TestNoSqlJudgeKeepsOrderByDefault(t *testing.T) {
 	}
 }
 
-func TestNoSqlJudgeIgnoresOrderWhenAsked(t *testing.T) {
+func TestRedisJudgeIgnoresOrderWhenAsked(t *testing.T) {
 	sink := &recordingSink{}
 	executor := &stubExecutor{results: []contract.ExecResult{
 		{Status: contract.StatusOK, Stdout: harnessOutput("a\nb", "b\na")},
@@ -85,7 +85,7 @@ func TestNoSqlJudgeIgnoresOrderWhenAsked(t *testing.T) {
 }
 
 // 막힌 명령은 오답이 아니라 **무엇이 막혔는지 보여야 한다.**
-func TestNoSqlJudgeReportsBlockedCommandAsCompileError(t *testing.T) {
+func TestRedisJudgeReportsBlockedCommandAsCompileError(t *testing.T) {
 	sink := &recordingSink{}
 	executor := &stubExecutor{results: []contract.ExecResult{
 		{
@@ -103,30 +103,30 @@ func TestNoSqlJudgeReportsBlockedCommandAsCompileError(t *testing.T) {
 	}
 }
 
-func TestNoSqlJudgeSendsSpecFilesToExecutor(t *testing.T) {
+func TestRedisJudgeSendsSpecFilesToExecutor(t *testing.T) {
 	captured := &capturingExecutor{result: contract.ExecResult{
 		Status: contract.StatusOK, Stdout: harnessOutput("1", "1"),
 	}}
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 
-	NewNoSqlJudge(captured, log).Judge(context.Background(), noSQLJob("GET k", false), func(contract.Event) {})
+	NewRedisJudge(captured, log).Judge(context.Background(), noSQLJob("GET k", false), func(contract.Event) {})
 
 	for _, name := range []string{"answer.redis", "verify.redis", "seed.redis"} {
 		if captured.job.ExtraFiles[name] == "" {
 			t.Fatalf("%s 를 실어야 합니다: %+v", name, captured.job.ExtraFiles)
 		}
 	}
-	if captured.job.RuntimeID != defaultNoSQLRuntimeID {
-		t.Fatalf("NoSQL 런타임으로 보내야 합니다: %s", captured.job.RuntimeID)
+	if captured.job.RuntimeID != defaultRedisRuntimeID {
+		t.Fatalf("Redis 런타임으로 보내야 합니다: %s", captured.job.RuntimeID)
 	}
 }
 
 // 스펙 없이 들어온 작업을 짐작해 채점하지 않는다 — 그것은 출제자의 실수다.
-func TestNoSqlJudgeRefusesJobWithoutSpec(t *testing.T) {
+func TestRedisJudgeRefusesJobWithoutSpec(t *testing.T) {
 	sink := &recordingSink{}
 	executor := &stubExecutor{results: []contract.ExecResult{{Status: contract.StatusOK}}}
 	job := noSQLJob("GET k", false)
-	job.NoSQL = nil
+	job.Redis = nil
 
 	newTestService(executor, sink).Judge(context.Background(), job)
 

@@ -51,7 +51,7 @@ abstract class IntegrationTestBase {
                      contest_registrations, contest_problems, contests,
                      submission_testcase_results, submissions, problem_runtime_limits,
                      problem_sql_specs,
-                     problem_nosql_specs,
+                     problem_redis_specs,
                      problem_templates, problem_testcases, problems,
                      notifications, admin_audit_logs, rejudge_batches, user_daily_activity,
                      problem_allowed_runtimes, problem_harnesses,

@@ -666,18 +666,19 @@ fun detail(...)
 - **엄랭은 한 줄에 두 수를 읽지 못한다.** 그래서 엄랭 문제는 입력이 하나다 —
   언어가 못 하는 것을 문제가 요구하지 않는다
 
-### NoSQL 문제 (#455)
+### Redis 문제 (#455)
 
-`problemKind: JUDGE_NOSQL` 과 `nosql:redis7` 런타임이 있다. 시드에 전용 문제가 하나
+`problemKind: JUDGE_REDIS` 와 `redis:7` 런타임이 있다. **유형이 곧 제품이다** — SQL 처럼
+"제품을 고르는" 자리가 없다. Redis 와 MongoDB 는 질의 언어가 아예 달라서 한 유형에 담으면
+스펙이 어느 제품의 것인지 알 수 없다. 다른 제품은 #527 에서 본다. 시드에 전용 문제가 하나
 있다 (`17-redis-stock-restock`).
 
-- **스펙이 다르다**: `nosqlSpec` 은 `seedCommands`(선택) · `answerCommands` ·
+- **스펙이 다르다**: `redisSpec` 은 `seedCommands`(선택) · `answerCommands` ·
   `verifyCommands` · `ignoreOrder` 다
 - **`verifyCommands` 는 비워 둘 수 없다.** 명령의 연속에는 견줄 결과 집합이 없다 —
   이것이 없으면 무엇을 정답으로 볼지가 없다
 - **순서는 기본으로 지킨다.** SQL 의 행 순서와 반대다 — 정렬 집합·리스트에서 순서는
   자료의 일부다
-- **어느 제품인지 적어야 한다** (#454 와 같은 규칙). 시드와 정답이 그 제품의 명령이다
 - 테스트케이스는 없어도 된다 — 채점 대상이 끝난 뒤의 상태다
 
 ### SQL 문제의 데이터베이스 (#454)

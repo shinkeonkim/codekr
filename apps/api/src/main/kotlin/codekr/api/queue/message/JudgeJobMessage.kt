@@ -3,7 +3,7 @@ package codekr.api.queue.message
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
-import codekr.api.problem.entity.ProblemNoSqlSpec
+import codekr.api.problem.entity.ProblemRedisSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.submission.entity.Submission
 
@@ -36,8 +36,8 @@ data class JudgeJobMessage(
      * 쓰이지 않는 필드가 공통 계약에 쌓이면 어느 조합이 유효한지 알 수 없게 된다.
      */
     val sql: JudgeSqlSpecMessage? = null,
-    /** NoSQL 유형일 때만 실린다 (#455). */
-    val nosql: JudgeNoSqlSpecMessage? = null,
+    /** Redis 유형일 때만 실린다 (#455). */
+    val redis: JudgeRedisSpecMessage? = null,
     /**
      * 함수형 유형일 때만 실린다 (#447, #421).
      *
@@ -64,7 +64,7 @@ data class JudgeJobMessage(
             submission: Submission,
             problem: Problem,
             sqlSpec: ProblemSqlSpec? = null,
-            noSqlSpec: ProblemNoSqlSpec? = null,
+            redisSpec: ProblemRedisSpec? = null,
         ): JudgeJobMessage {
             val limits = problem.limitsFor(submission.runtimeId)
             return JudgeJobMessage(
@@ -83,7 +83,7 @@ data class JudgeJobMessage(
                     ProblemKind.JUDGE_FUNCTION -> problem.harnessFor(submission.runtimeId)
                     else -> null
                 },
-                nosql = noSqlSpec?.let(JudgeNoSqlSpecMessage::from),
+                redis = redisSpec?.let(JudgeRedisSpecMessage::from),
                 checker = problem.checkerSource
                     ?.takeIf { problem.outputComparison == OutputComparison.CHECKER },
             )

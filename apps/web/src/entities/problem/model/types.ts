@@ -156,7 +156,7 @@ export interface ProblemVerification {
 export type ProblemKind =
   | "JUDGE_STDIO"
   | "JUDGE_SQL"
-  | "JUDGE_NOSQL"
+  | "JUDGE_REDIS"
   | "JUDGE_FUNCTION"
   | "QUIZ"
   | "MANUAL";
@@ -203,7 +203,7 @@ export const PROBLEM_SORTS: { value: ProblemSort; label: string }[] = [
 export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_STDIO: "코드 실행 (stdin/stdout)",
   JUDGE_SQL: "SQL",
-  JUDGE_NOSQL: "NoSQL",
+  JUDGE_REDIS: "Redis",
   // 하네스가 입출력을 맡고 사용자는 함수만 쓴다 (#421).
   JUDGE_FUNCTION: "함수 구현",
 };
@@ -229,12 +229,12 @@ export interface SqlSpec {
 }
 
 /**
- * NoSQL 문제의 스펙 (#455).
+ * Redis 문제의 스펙 (#455).
  *
  * **정답은 결과가 아니라 상태다.** 제출이 명령의 연속이라 마지막 명령의 출력은 문제가
  * 묻는 것의 일부일 뿐이다 — 그래서 끝난 뒤의 상태를 읽는 명령으로 견준다.
  */
-export interface NoSqlSpec {
+export interface RedisSpec {
   /** 시작 상태를 만드는 명령. 없어도 된다. */
   seedCommands: string | null;
   answerCommands: string;
@@ -270,8 +270,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   problemKind: ProblemKind;
   /** SQL 유형이 아니면 null (#60). */
   sqlSpec: SqlSpec | null;
-  /** NoSQL 유형이 아니면 null (#455). */
-  nosqlSpec: NoSqlSpec | null;
+  /** Redis 유형이 아니면 null (#455). */
+  redisSpec: RedisSpec | null;
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;

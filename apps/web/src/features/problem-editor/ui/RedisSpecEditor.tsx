@@ -1,22 +1,22 @@
 "use client";
 
-import type { NoSqlSpec } from "@/entities/problem";
+import type { RedisSpec } from "@/entities/problem";
 import { CheckboxField, Field, Textarea } from "@/shared/ui";
 
 /**
- * NoSQL 문제의 시드·정답·확인 명령 (#455).
+ * Redis 문제의 시드·정답·확인 명령 (#455).
  *
  * **정답을 결과가 아니라 상태로 받는다.** 제출이 명령의 연속이면 마지막 명령의 출력은
  * 문제가 묻는 것의 일부일 뿐이다 — `LPUSH` 가 돌려주는 길이는 정답과 상관이 없다.
  */
-export function NoSqlSpecEditor({
+export function RedisSpecEditor({
   value,
   onChange,
 }: {
-  value: NoSqlSpec;
-  onChange: (next: NoSqlSpec) => void;
+  value: RedisSpec;
+  onChange: (next: RedisSpec) => void;
 }) {
-  const update = <K extends keyof NoSqlSpec>(key: K, next: NoSqlSpec[K]) =>
+  const update = <K extends keyof RedisSpec>(key: K, next: RedisSpec[K]) =>
     onChange({ ...value, [key]: next });
 
   return (

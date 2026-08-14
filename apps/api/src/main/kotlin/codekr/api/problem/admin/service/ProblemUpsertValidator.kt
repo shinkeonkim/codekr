@@ -128,21 +128,21 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
     }
 
     /**
-     * NoSQL 문제도 어느 제품인지 정한다 (#455).
+     * Redis 문제도 어느 제품인지 정한다 (#455).
      *
      * SQL 과 같은 이유다 — 시드와 정답이 제품의 명령으로 쓰여 있으므로, 다른 제품으로
      * 제출되면 **출제자의 시드가 먼저 깨진다.**
      */
-    private fun validateNoSqlProduct(request: ProblemUpsertRequest) {
-        if (request.problemKind != ProblemKind.JUDGE_NOSQL) return
+    private fun validateRedisProduct(request: ProblemUpsertRequest) {
+        if (request.problemKind != ProblemKind.JUDGE_REDIS) return
 
         val products = request.allowedRuntimeIds.filter {
-            runtimeRegistry.exists(it) && runtimeRegistry.require(it).problemKind == ProblemKind.JUDGE_NOSQL
+            runtimeRegistry.exists(it) && runtimeRegistry.require(it).problemKind == ProblemKind.JUDGE_REDIS
         }
         if (products.size != 1) {
             throw ApiException(
                 ErrorCode.VALIDATION_ERROR,
-                "NoSQL 문제는 어느 제품으로 푸는지 하나만 골라야 합니다. " +
+                "Redis 문제는 어느 제품으로 푸는지 하나만 골라야 합니다. " +
                     "고른 것: ${products.ifEmpty { listOf("없음") }.joinToString()}",
             )
         }
@@ -158,7 +158,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
 
     fun validate(request: ProblemUpsertRequest) {
         validateSqlDatabase(request)
-        validateNoSqlProduct(request)
+        validateRedisProduct(request)
 
         // 채점기 구현도 스펙 테이블도 없는 유형으로는 문제를 만들 수 없다 (#59).
         // 허용하면 채점되지 않는 문제가 만들어지고, 그 사실은 누가 제출한 뒤에야 드러난다.
@@ -176,15 +176,15 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "SQL 문제가 아닌데 SQL 스펙이 실려 있습니다.")
         }
         validateHarnesses(request)
-        // NoSQL 도 같은 규칙이다 (#455). 스펙이 없으면 무엇을 정답으로 볼지가 없다.
-        if (request.problemKind == ProblemKind.JUDGE_NOSQL && request.nosqlSpec == null) {
+        // Redis 도 같은 규칙이다 (#455). 스펙이 없으면 무엇을 정답으로 볼지가 없다.
+        if (request.problemKind == ProblemKind.JUDGE_REDIS && request.redisSpec == null) {
             throw ApiException(
                 ErrorCode.VALIDATION_ERROR,
-                "NoSQL 문제에는 정답 명령과 상태를 읽는 명령이 필요합니다.",
+                "Redis 문제에는 정답 명령과 상태를 읽는 명령이 필요합니다.",
             )
         }
-        if (request.problemKind != ProblemKind.JUDGE_NOSQL && request.nosqlSpec != null) {
-            throw ApiException(ErrorCode.VALIDATION_ERROR, "NoSQL 문제가 아닌데 NoSQL 스펙이 실려 있습니다.")
+        if (request.problemKind != ProblemKind.JUDGE_REDIS && request.redisSpec != null) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "Redis 문제가 아닌데 Redis 스펙이 실려 있습니다.")
         }
         /*
           쓰기를 열었는데 상태를 읽는 쿼리가 없으면 (#453) 채점은 **조용히** 결과 집합

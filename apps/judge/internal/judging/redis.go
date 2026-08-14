@@ -7,11 +7,11 @@ import (
 	contract "github.com/shinkeonkim/codekr/libs/gocontract"
 )
 
-// NoSQL 실행 환경 (#455). 이 값이 없던 시절의 작업은 없다 — 유형과 함께 생겼다.
-const defaultNoSQLRuntimeID = "nosql:redis7"
+// Redis 실행 환경 (#455). 이 값이 없던 시절의 작업은 없다 — 유형과 함께 생겼다.
+const defaultRedisRuntimeID = "redis:7"
 
 /*
-NoSqlJudge 는 NoSQL 문제를 채점한다 (#455).
+RedisJudge 는 Redis 문제를 채점한다 (#455).
 
 **SQL 과 채점 모델이 다르다.** 제출이 명령의 연속이라 남는 것은 결과가 아니라 상태다.
 그래서 정답 명령을 돌린 인스턴스와 제출을 돌린 인스턴스에서 **같은 확인 명령**을 돌려
@@ -20,23 +20,23 @@ NoSqlJudge 는 NoSQL 문제를 채점한다 (#455).
 바꾸지 않은 것: 하네스의 출력 형식과 비교 함수다. 어느 제품이든 `--- codekr:expected` /
 `--- codekr:actual` 로 나뉜 줄을 내므로, **채점기는 무엇이 돌았는지 몰라도 된다.**
 */
-type NoSqlJudge struct {
+type RedisJudge struct {
 	executor ExecutorClient
 	log      *slog.Logger
 }
 
-// NewNoSqlJudge 는 NoSQL 채점기를 만든다.
-func NewNoSqlJudge(executor ExecutorClient, log *slog.Logger) *NoSqlJudge {
-	return &NoSqlJudge{executor: executor, log: log}
+// NewRedisJudge 는 Redis 채점기를 만든다.
+func NewRedisJudge(executor ExecutorClient, log *slog.Logger) *RedisJudge {
+	return &RedisJudge{executor: executor, log: log}
 }
 
 // Judge 는 제출 명령을 한 번 실행하고 끝난 뒤의 상태를 정답과 비교한다.
-func (j *NoSqlJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emitter) Outcome {
+func (j *RedisJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emitter) Outcome {
 	emit(contract.Event{Type: contract.EventJudging, SubmissionID: job.SubmissionID, TotalCount: 1})
 
-	if job.NoSQL == nil {
-		// 스펙 없이 NoSQL 문제가 큐에 들어왔다. 짐작해 채점하지 않는다.
-		j.log.Error("NoSQL 문제인데 스펙이 없습니다", "submissionId", job.SubmissionID)
+	if job.Redis == nil {
+		// 스펙 없이 Redis 문제가 큐에 들어왔다. 짐작해 채점하지 않는다.
+		j.log.Error("Redis 문제인데 스펙이 없습니다", "submissionId", job.SubmissionID)
 		return Outcome{Summary: Summary{Verdict: contract.VerdictSystemError, TotalCount: 1}}
 	}
 
@@ -45,14 +45,14 @@ func (j *NoSqlJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emit
 		SourceCode:    job.SourceCode,
 		TimeLimitMs:   job.TimeLimitMs,
 		MemoryLimitMb: job.MemoryLimitMb,
-		ExtraFiles:    noSQLFiles(job.NoSQL),
+		ExtraFiles:    redisFiles(job.Redis),
 	})
 	if err != nil {
 		j.log.Error("실행 요청 실패", "submissionId", job.SubmissionID, "error", err)
 		result = contract.ExecResult{Status: contract.StatusSystemError, Stderr: err.Error()}
 	}
 
-	verdict, detail := j.verdictOf(result, job.NoSQL.IgnoreOrder)
+	verdict, detail := j.verdictOf(result, job.Redis.IgnoreOrder)
 	emit(contract.Event{
 		Type:          contract.EventTestcase,
 		SubmissionID:  job.SubmissionID,
@@ -79,7 +79,7 @@ func (j *NoSqlJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emit
 	return Outcome{Summary: summary}
 }
 
-func (j *NoSqlJudge) verdictOf(
+func (j *RedisJudge) verdictOf(
 	result contract.ExecResult,
 	ignoreOrder bool,
 ) (verdict contract.Verdict, detail string) {
@@ -104,12 +104,12 @@ func (j *NoSqlJudge) verdictOf(
 }
 
 /*
-noSQLFiles 는 하네스가 읽을 파일을 만든다 (#455).
+redisFiles 는 하네스가 읽을 파일을 만든다 (#455).
 
 이름이 `.redis` 인 것은 지금 제품이 Redis 하나이기 때문이 아니라, **하네스가 제품마다
 하나씩**이기 때문이다 — MongoDB 를 얹으면 그쪽 하네스가 자기 이름으로 읽는다.
 */
-func noSQLFiles(spec *contract.JudgeNoSQLSpec) map[string]string {
+func redisFiles(spec *contract.JudgeRedisSpec) map[string]string {
 	files := map[string]string{
 		"answer.redis": spec.Answer,
 		"verify.redis": spec.Verify,
@@ -122,7 +122,7 @@ func noSQLFiles(spec *contract.JudgeNoSQLSpec) map[string]string {
 
 func noSQLRuntimeOf(job contract.JudgeJob) string {
 	if job.RuntimeID == "" {
-		return defaultNoSQLRuntimeID
+		return defaultRedisRuntimeID
 	}
 	return job.RuntimeID
 }

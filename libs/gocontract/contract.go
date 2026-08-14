@@ -169,7 +169,7 @@ const (
 	KindJudgeSQL   = "JUDGE_SQL"
 	// KindJudgeFunction 은 **함수만 구현하는 문제**다 (#421). 하네스가 입출력을 맡는다.
 	KindJudgeFunction = "JUDGE_FUNCTION"
-	KindJudgeNoSQL    = "JUDGE_NOSQL"
+	KindJudgeRedis    = "JUDGE_REDIS"
 	KindQuiz          = "QUIZ"
 	KindManual        = "MANUAL"
 )
@@ -216,18 +216,18 @@ type JudgeJob struct {
 		그것은 **오답이 아니라 출제자의 실수**다.
 	*/
 	Checker string `json:"checker,omitempty"`
-	// NoSQL 은 KindJudgeNoSQL 일 때만 실린다 (#455).
-	NoSQL *JudgeNoSQLSpec `json:"nosql,omitempty"`
+	// Redis 는 KindJudgeRedis 일 때만 실린다 (#455).
+	Redis *JudgeRedisSpec `json:"redis,omitempty"`
 }
 
 /*
-JudgeNoSQLSpec 은 NoSQL 문제의 채점 자료다 (#455).
+JudgeRedisSpec 은 Redis 문제의 채점 자료다 (#455).
 
 **채점 모델이 SQL 과 다르다.** SQL 은 쿼리 하나를 던져 결과 집합을 받지만, 제출이
 **명령의 연속**이면 남는 것은 결과가 아니라 **상태**다. 그래서 여기서는 상태를 견주는
 것이 예외가 아니라 **기본**이다 — `Verify` 가 선택이 아닌 이유다.
 */
-type JudgeNoSQLSpec struct {
+type JudgeRedisSpec struct {
 	// Seed 는 시작 상태를 만드는 명령이다. 관리자로 넣는다. 문제가 소유한다.
 	Seed string `json:"seed,omitempty"`
 	// Answer 는 정답 명령의 연속이다. 기대 상태를 만든다.

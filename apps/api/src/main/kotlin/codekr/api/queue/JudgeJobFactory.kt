@@ -2,7 +2,7 @@ package codekr.api.queue
 
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
-import codekr.api.problem.repository.ProblemNoSqlSpecRepository
+import codekr.api.problem.repository.ProblemRedisSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.submission.entity.Submission
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component
 @Component
 class JudgeJobFactory(
     private val sqlSpecRepository: ProblemSqlSpecRepository,
-    private val noSqlSpecRepository: ProblemNoSqlSpecRepository,
+    private val redisSpecRepository: ProblemRedisSpecRepository,
 ) {
 
     fun of(submission: Submission, problem: Problem): JudgeJobMessage = JudgeJobMessage.of(
@@ -28,8 +28,8 @@ class JudgeJobFactory(
             ProblemKind.JUDGE_SQL -> sqlSpecRepository.findById(problem.id).orElse(null)
             else -> null
         },
-        noSqlSpec = when (problem.problemKind) {
-            ProblemKind.JUDGE_NOSQL -> noSqlSpecRepository.findById(problem.id).orElse(null)
+        redisSpec = when (problem.problemKind) {
+            ProblemKind.JUDGE_REDIS -> redisSpecRepository.findById(problem.id).orElse(null)
             else -> null
         },
     )
