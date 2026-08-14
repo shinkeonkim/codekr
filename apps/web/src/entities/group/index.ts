@@ -4,5 +4,5 @@ export type {
   GroupDetail,
   GroupInvitePreview,
   GroupMember,
-  GroupSummary,
+  GroupSummary, OpenGroupSummary,
 } from "./model/types";

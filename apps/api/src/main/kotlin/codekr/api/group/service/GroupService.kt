@@ -1,17 +1,20 @@
 package codekr.api.group.service
 
+import codekr.api.common.dto.PageResponse
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.group.dto.GroupDetail
 import codekr.api.group.dto.GroupMemberView
 import codekr.api.group.dto.GroupRequest
 import codekr.api.group.dto.GroupSummary
+import codekr.api.group.dto.OpenGroupSummary
 import codekr.api.group.entity.GROUP_MEMBER_LIMIT
 import codekr.api.group.entity.Group
 import codekr.api.group.entity.GroupMember
 import codekr.api.group.repository.GroupMemberRepository
 import codekr.api.group.repository.GroupRepository
 import codekr.api.user.repository.UserRepository
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -34,6 +37,28 @@ class GroupService(
         members.findByUserIdOrderByJoinedAtAsc(userId)
             .mapNotNull { groups.findByIdAndDeletedAtIsNull(it.groupId) }
             .map { GroupSummary(it.id, it.name, members.countByGroupId(it.id), it.ownerId == userId) }
+
+    /**
+     * 공개 가입을 켜 둔 그룹을 둘러본다 (#554).
+     *
+     * **로그인이 필요하다.** 들어가려면 어차피 로그인해야 하고, 이 목록은 그룹 이름과
+     * 소개를 드러내므로 아무에게나 열 이유가 없다.
+     */
+    fun openGroups(userId: Long, pageable: Pageable): PageResponse<OpenGroupSummary> {
+        val page = groups.findByOpenJoinIsTrueAndDeletedAtIsNullOrderByIdDesc(pageable)
+        return PageResponse.from(
+            page.map { group ->
+                OpenGroupSummary(
+                    id = group.id,
+                    name = group.name,
+                    description = group.description,
+                    memberCount = members.countByGroupId(group.id),
+                    memberLimit = GROUP_MEMBER_LIMIT,
+                    member = members.existsByGroupIdAndUserId(group.id, userId),
+                )
+            },
+        )
+    }
 
     @Transactional
     fun create(userId: Long, request: GroupRequest): GroupDetail {

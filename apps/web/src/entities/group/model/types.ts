@@ -47,3 +47,18 @@ export interface AdminGroupRow {
   openJoin: boolean;
   createdAt: string;
 }
+
+/**
+ * 둘러보기에 나오는 공개 그룹 (#554).
+ *
+ * `GroupSummary` 와 나눈 이유: 저기는 **내 그룹**이라 `owner` 가 뜻이 있는데,
+ * 여기는 아직 들지 않은 그룹이라 그 자리에 필요한 것이 **이미 들었는가**이다.
+ */
+export interface OpenGroupSummary {
+  id: number;
+  name: string;
+  description: string;
+  memberCount: number;
+  memberLimit: number;
+  member: boolean;
+}
