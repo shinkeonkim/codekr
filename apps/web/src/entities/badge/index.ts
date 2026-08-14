@@ -4,5 +4,6 @@ export type {
   BadgeDefinition,
   BadgeDryRun,
   BadgeRule,
+  BadgeRuleUpsert,
   BadgeVocabulary,
 } from "./api";
