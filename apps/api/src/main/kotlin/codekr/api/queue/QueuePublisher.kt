@@ -52,11 +52,14 @@ class QueuePublisher(
         timeLimitMs: Int,
         memoryLimitMb: Int,
         waitTimeout: Duration,
+        extraFiles: Map<String, String> = emptyMap(),
     ): ExecResultMessage {
         val jobId = UUID.randomUUID().toString().replace("-", "")
         val replyStream = QueueKeys.REPLY_STREAM_PREFIX + jobId
 
-        val job = ExecJobMessage(jobId, runtimeId, sourceCode, stdin, timeLimitMs, memoryLimitMb, replyStream)
+        val job = ExecJobMessage(
+            jobId, runtimeId, sourceCode, stdin, timeLimitMs, memoryLimitMb, replyStream, extraFiles,
+        )
         add(QueueKeys.EXEC_STREAM, objectMapper.writeValueAsString(job))
 
         return try {

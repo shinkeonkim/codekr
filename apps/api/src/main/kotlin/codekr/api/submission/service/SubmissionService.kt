@@ -9,6 +9,7 @@ import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemRepository
+import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.problem.service.ProblemService
 import codekr.api.queue.JudgeJobFactory
 import codekr.api.queue.QueuePublisher
@@ -53,6 +54,7 @@ class SubmissionService(
     private val properties: SubmissionProperties,
     private val viewRecorder: SubmissionViewRecorder,
     private val problemFileRepository: ProblemFileRepository,
+    private val sqlSpecRepository: ProblemSqlSpecRepository,
 ) {
 
     /** 임의 입력으로 1회 실행한다. 채점하지 않으므로 제출 이력을 남기지 않는다. */
@@ -73,6 +75,7 @@ class SubmissionService(
                 timeLimitMs = limits.timeLimitMs,
                 memoryLimitMb = limits.memoryLimitMb,
                 waitTimeout = Duration.ofSeconds(RUN_WAIT_SECONDS),
+                extraFiles = RunFiles.of(problem.problemKind, sqlSpecRepository.findById(problem.id).orElse(null)),
             ),
         )
     }

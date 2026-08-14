@@ -9,6 +9,7 @@ import {
 import type { RunResult, SubmissionVisibility } from "@/entities/submission";
 import { userApi } from "@/entities/user";
 import { useAuth } from "@/features/auth";
+import { SqlResultTable } from "@/features/sql-result";
 import { ApiError } from "@/shared/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -276,13 +277,18 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
           value={stdin}
           onChange={(event) => setStdin(event.target.value)}
         />
-        {runResult ? <RunResultView result={runResult} /> : null}
+        {runResult ? (
+          <RunResultView result={runResult} isSql={problem.problemKind === "JUDGE_SQL"} />
+        ) : null}
       </Card>
     </div>
   );
 }
 
-function RunResultView({ result }: { result: RunResult }) {
+function RunResultView({ result, isSql }: { result: RunResult; isSql: boolean }) {
+  // SQL 은 결과가 표다 (#525). 표로 읽히지 않으면(INSERT·UPDATE 처럼 결과 집합이
+  // 없으면) 지금까지처럼 글자 그대로 보인다.
+  const sqlTable = isSql ? <SqlResultTable stdout={result.stdout} /> : null;
   return (
     <div className="space-y-2 pt-2">
       <div className="flex items-center gap-2 text-xs text-ink-muted">
@@ -292,7 +298,7 @@ function RunResultView({ result }: { result: RunResult }) {
           <span className="text-warn">· 출력이 잘렸습니다</span>
         ) : null}
       </div>
-      <OutputBlock title="표준 출력" body={result.stdout} />
+      {sqlTable ?? <OutputBlock title="표준 출력" body={result.stdout} />}
       {result.stderr ? (
         <OutputBlock title="표준 에러" body={result.stderr} tone="danger" />
       ) : null}
