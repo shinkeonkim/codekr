@@ -5,6 +5,7 @@ import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemRedisSpec
 import codekr.api.problem.entity.ProblemSqlSpec
+import codekr.api.problem.entity.ProblemTestcaseGroup
 import codekr.api.submission.entity.Submission
 
 data class JudgeJobMessage(
@@ -28,6 +29,12 @@ data class JudgeJobMessage(
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
     val testcases: List<JudgeTestcaseMessage>,
+    /**
+     * 부분 점수 묶음 (#473). 비면 지금까지처럼 전부 아니면 전무다.
+     *
+     * **채점기가 DB 를 읽지 않는다** (ADR-0004) — 묶음과 점수도 실려 간다.
+     */
+    val groups: List<JudgeTestcaseGroupMessage> = emptyList(),
     /**
      * 출력 비교 방식 (#279). **없으면 EXACT 다** — 이 필드가 없던 시절에 큐에 들어간
      * 작업이 남아 있을 수 있고, 그것들은 전부 정확 일치였다. 채점기(Go)도 같게 읽는다.
@@ -69,6 +76,7 @@ data class JudgeJobMessage(
         fun of(
             submission: Submission,
             problem: Problem,
+            groups: List<ProblemTestcaseGroup> = emptyList(),
             sqlSpec: ProblemSqlSpec? = null,
             redisSpec: ProblemRedisSpec? = null,
         ): JudgeJobMessage {
@@ -83,6 +91,7 @@ data class JudgeJobMessage(
                 timeLimitMs = limits.timeLimitMs,
                 memoryLimitMb = limits.memoryLimitMb,
                 testcases = problem.testcases.map(JudgeTestcaseMessage::from),
+                groups = groups.map(JudgeTestcaseGroupMessage::from),
                 comparison = problem.outputComparison,
                 epsilon = problem.floatEpsilon,
                 sql = sqlSpec?.let(JudgeSqlSpecMessage::from),

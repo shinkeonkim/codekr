@@ -21,6 +21,9 @@ data class SubmissionDetailResponse(
     val totalCount: Int,
     val maxRuntimeMs: Int,
     val maxMemoryKb: Int,
+    /** 부분 점수 (#473). 묶음이 없는 문제에서는 null 이다 — **0 점과 다르다.** */
+    val score: Int? = null,
+    val maxScore: Int? = null,
     val compileError: String?,
     val visibility: SubmissionVisibility,
     /** 볼 권한이 없으면 null 이다. 필드를 비우는 것이 아니라 값 자체를 내리지 않는다. */
@@ -57,6 +60,8 @@ data class SubmissionDetailResponse(
             totalCount = submission.totalCount,
             maxRuntimeMs = submission.maxRuntimeMs,
             maxMemoryKb = submission.maxMemoryKb,
+            score = submission.score,
+            maxScore = submission.maxScore,
             compileError = submission.compileError,
             visibility = submission.visibility,
             sourceCode = submission.sourceCode.takeIf { sourceVisible },

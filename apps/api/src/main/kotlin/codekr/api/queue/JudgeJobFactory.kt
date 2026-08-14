@@ -3,6 +3,7 @@ package codekr.api.queue
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.repository.ProblemRedisSpecRepository
+import codekr.api.problem.repository.ProblemTestcaseGroupRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.submission.entity.Submission
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class JudgeJobFactory(
+    private val groupRepository: ProblemTestcaseGroupRepository,
     private val sqlSpecRepository: ProblemSqlSpecRepository,
     private val redisSpecRepository: ProblemRedisSpecRepository,
 ) {
@@ -24,6 +26,8 @@ class JudgeJobFactory(
     fun of(submission: Submission, problem: Problem): JudgeJobMessage = JudgeJobMessage.of(
         submission = submission,
         problem = problem,
+        // 부분 점수 묶음 (#473). 없으면 빈 목록이고 채점은 지금까지와 같다.
+        groups = groupRepository.findByProblemIdOrderByGroupNo(problem.id),
         sqlSpec = when (problem.problemKind) {
             ProblemKind.JUDGE_SQL -> sqlSpecRepository.findById(problem.id).orElse(null)
             else -> null

@@ -17,6 +17,13 @@ data class JudgeEventMessage(
     val maxMemoryKb: Int = 0,
     val compileError: String? = null,
     val stderrExcerpt: String? = null,
+    /**
+     * 부분 점수 (#473). 묶음이 없는 문제에서는 0 이다.
+     *
+     * **이 값이 없던 시절의 작업이 남아 있을 수 있다** — 기본값이 0 인 이유다.
+     */
+    val score: Int = 0,
+    val maxScore: Int = 0,
 ) {
     /** 알 수 없는 판정 값이 오면 인프라 문제로 본다 — 조용히 무시하지 않는다. */
     fun verdictOrSystemError(): Verdict =
@@ -29,6 +36,8 @@ data class JudgeEventMessage(
         maxRuntimeMs = maxRuntimeMs,
         maxMemoryKb = maxMemoryKb,
         compileError = compileError,
+        score = score.takeIf { maxScore > 0 },
+        maxScore = maxScore.takeIf { it > 0 },
     )
 
     companion object {

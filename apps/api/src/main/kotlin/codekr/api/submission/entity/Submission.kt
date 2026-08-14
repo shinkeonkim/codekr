@@ -63,6 +63,19 @@ class Submission(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0
 
+    /**
+     * 부분 점수 (#473). 묶음이 없는 문제에서는 null 이다 — **0 점과 다르다.**
+     *
+     * **랭킹에는 반영되지 않는다** (#57). 만점만 "풀었다" 로 본다.
+     */
+    @Column(name = "score")
+    var score: Int? = null
+        protected set
+
+    @Column(name = "max_score")
+    var maxScore: Int? = null
+        protected set
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: SubmissionStatus = SubmissionStatus.PENDING
@@ -139,6 +152,8 @@ class Submission(
         totalCount = result.totalCount
         maxRuntimeMs = result.maxRuntimeMs
         maxMemoryKb = result.maxMemoryKb
+        score = result.score
+        maxScore = result.maxScore
         compileError = result.compileError?.takeIf { it.isNotBlank() }
     }
 
