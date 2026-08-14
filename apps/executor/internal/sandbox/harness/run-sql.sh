@@ -98,25 +98,37 @@ if [ -f /work/verify.sql ]; then
         psql -q -v ON_ERROR_STOP=1 -U postgres -d expected -f /work/answer.sql >>/work/.pg.log 2>&1
     fi
     echo "--- codekr:expected"
-    psql -tA -F'|' -v ON_ERROR_STOP=1 -U postgres -d expected -f /work/verify.sql
+    psql --csv -t -P null='∅' -v ON_ERROR_STOP=1 -U postgres -d expected -f /work/verify.sql
     echo "--- codekr:actual"
     # **제출은 solver 로 돈다.** 그리고 actual 에만 붙으므로 기대 상태를 건드릴 수 없다.
     #
     # **stderr 는 로그로 보내지 않는다** — 제출이 막혔을 때 사용자에게 보일 것이 그것뿐이다.
     psql -q -v ON_ERROR_STOP=1 -U solver -d actual -f /work/query.sql >>/work/.pg.log
-    psql -tA -F'|' -v ON_ERROR_STOP=1 -U postgres -d actual -f /work/verify.sql
+    psql --csv -t -P null='∅' -v ON_ERROR_STOP=1 -U postgres -d actual -f /work/verify.sql
     exit 0
 fi
 
 if [ -f /work/answer.sql ]; then
     echo "--- codekr:expected"
-    psql -tA -F'|' -v ON_ERROR_STOP=1 -U postgres -d postgres -f /work/answer.sql
+    psql --csv -t -P null='∅' -v ON_ERROR_STOP=1 -U postgres -d postgres -f /work/answer.sql
     echo "--- codekr:actual"
     # 채점이다. **형식을 바꾸지 않는다** — 기대와 실제를 문자열로 견주므로, 여기서
     # 머리글을 붙이면 판정이 통째로 달라진다.
-    psql -tA -F'|' -v ON_ERROR_STOP=1 -U solver -d postgres -f /work/query.sql
+    psql --csv -t -P null='∅' -v ON_ERROR_STOP=1 -U solver -d postgres -f /work/query.sql
     exit 0
 fi
+
+# 채점용 출력도 CSV 다 (#532).
+#
+# 전에는 `-tA -F'|'` 였는데 **값에 `|` 가 있으면 구분자와 구분되지 않았다** —
+# `2|a|b||부산` 이 `a|b` 인지 `a`,`b` 인지 알 방법이 없어 판정이 틀릴 수 있었다.
+# 실행 쪽(#525)이 이미 CSV 로 옮겨 놓았는데 채점만 남아 있었다.
+#
+# `-t` 로 열 이름은 빼 둔다. 비교 대상은 값이고, 열 이름까지 견주는 것은
+# 문제별 옵션으로 정할 일이다 (기획서 §8.1).
+#
+# NULL 은 `∅` 로 적는다 — CSV 에는 NULL 이 없어 그대로 두면 "값이 없다" 와
+# "빈 글자" 가 같아지고, 그 둘이 같으면 채점이 틀린다.
 
 # **사람이 보는 실행이다** (#525). 정답도 검사 쿼리도 없으면 견줄 상대가 없다 —
 # 채점이 아니라 사용자가 시험 삼아 돌려 본 것이다.
