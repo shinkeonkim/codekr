@@ -133,6 +133,35 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
      * SQL 과 같은 이유다 — 시드와 정답이 제품의 명령으로 쓰여 있으므로, 다른 제품으로
      * 제출되면 **출제자의 시드가 먼저 깨진다.**
      */
+    private fun validateMongoProduct(request: ProblemUpsertRequest) {
+        if (request.problemKind != ProblemKind.JUDGE_MONGODB) return
+
+        val products = request.allowedRuntimeIds.filter {
+            runtimeRegistry.exists(it) && runtimeRegistry.require(it).problemKind == ProblemKind.JUDGE_MONGODB
+        }
+        if (products.size != 1) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "MongoDB 문제는 어느 제품으로 푸는지 하나만 골라야 합니다. " +
+                    "고른 것: ${products.ifEmpty { listOf("없음") }.joinToString()}",
+            )
+        }
+        /*
+          **기동 시간을 시간 제한에 넣어 준다** (#454 가 SQL 에서 낸 규칙).
+
+          mongod 는 Redis 보다 훨씬 느리게 뜬다(실측 수 초). 그것을 빼고 제한을 잡으면
+          제출이 아무리 빨라도 시간 초과가 나고, 출제자는 자기 문제가 왜 안 되는지 모른다.
+        */
+        val startupMs = runtimeRegistry.require(products.single()).startupMs
+        if (startupMs > 0 && request.timeLimitMs < startupMs + SQL_QUERY_BUDGET_MS) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "MongoDB 는 뜨는 데만 ${startupMs}ms 가 걸립니다. " +
+                    "시간 제한을 ${startupMs + SQL_QUERY_BUDGET_MS}ms 이상으로 잡으십시오.",
+            )
+        }
+    }
+
     private fun validateRedisProduct(request: ProblemUpsertRequest) {
         if (request.problemKind != ProblemKind.JUDGE_REDIS) return
 
@@ -176,6 +205,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         validateSqlDatabase(request)
         validateInteractor(request)
         validateRedisProduct(request)
+        validateMongoProduct(request)
 
         // 채점기 구현도 스펙 테이블도 없는 유형으로는 문제를 만들 수 없다 (#59).
         // 허용하면 채점되지 않는 문제가 만들어지고, 그 사실은 누가 제출한 뒤에야 드러난다.
@@ -202,6 +232,16 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         }
         if (request.problemKind != ProblemKind.JUDGE_REDIS && request.redisSpec != null) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "Redis 문제가 아닌데 Redis 스펙이 실려 있습니다.")
+        }
+        // MongoDB 도 같은 규칙이다 (#527).
+        if (request.problemKind == ProblemKind.JUDGE_MONGODB && request.mongoSpec == null) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "MongoDB 문제에는 정답 스크립트와 끝난 뒤를 읽는 스크립트가 필요합니다.",
+            )
+        }
+        if (request.problemKind != ProblemKind.JUDGE_MONGODB && request.mongoSpec != null) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "MongoDB 문제가 아닌데 MongoDB 스펙이 실려 있습니다.")
         }
         /*
           쓰기를 열었는데 상태를 읽는 쿼리가 없으면 (#453) 채점은 **조용히** 결과 집합

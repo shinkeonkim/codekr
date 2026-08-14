@@ -3,6 +3,7 @@ package codekr.api.queue.message
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.ProblemMongoSpec
 import codekr.api.problem.entity.ProblemRedisSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.problem.entity.ProblemTestcaseGroup
@@ -51,6 +52,8 @@ data class JudgeJobMessage(
     val sql: JudgeSqlSpecMessage? = null,
     /** Redis 유형일 때만 실린다 (#455). */
     val redis: JudgeRedisSpecMessage? = null,
+    /** MongoDB 문제일 때만 실린다 (#527). */
+    val mongo: JudgeMongoSpecMessage? = null,
     /**
      * 함수형 유형일 때만 실린다 (#447, #421).
      *
@@ -85,6 +88,7 @@ data class JudgeJobMessage(
             groups: List<ProblemTestcaseGroup> = emptyList(),
             sqlSpec: ProblemSqlSpec? = null,
             redisSpec: ProblemRedisSpec? = null,
+            mongoSpec: ProblemMongoSpec? = null,
         ): JudgeJobMessage {
             val limits = problem.limitsFor(submission.runtimeId)
             return JudgeJobMessage(
@@ -106,6 +110,7 @@ data class JudgeJobMessage(
                     else -> null
                 },
                 redis = redisSpec?.let(JudgeRedisSpecMessage::from),
+                mongo = mongoSpec?.let(JudgeMongoSpecMessage::from),
                 interactor = problem.interactorSource
                     ?.takeIf { problem.problemKind == ProblemKind.JUDGE_INTERACTIVE },
                 checker = problem.checkerSource

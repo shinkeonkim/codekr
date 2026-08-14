@@ -47,6 +47,17 @@ enum class ProblemKind(
     JUDGE_REDIS("Redis", ready = true, needsTestcases = false, supportsSolutionVerification = false),
 
     /**
+     * 격리 MongoDB 에서 스크립트를 돌려 **끝난 뒤를 확인 스크립트로 읽는다** (#527).
+     *
+     * Redis 와 나눈 이유: **질의 언어가 아예 다르다.** #454 가 SQL 에 MariaDB 를
+     * 더할 때는 런타임만 얹으면 됐지만(같은 언어) 여기는 스펙 표부터 갈린다.
+     *
+     * 이름을 좁게 둔다 — #455 가 "NoSQL" 이라는 넓은 이름 때문에 **낼 수 없는 문제를
+     * 낼 수 있다고 읽히던 것**을 겪었다.
+     */
+    JUDGE_MONGODB("MongoDB", ready = true, needsTestcases = false, supportsSolutionVerification = false),
+
+    /**
      * 함수만 구현하는 문제 (#421). **하네스가 입출력을 맡는다.**
      *
      * 사용자에게는 함수 껍데기만 보이고, 보이지 않는 하네스가 입력을 읽어 그 함수를

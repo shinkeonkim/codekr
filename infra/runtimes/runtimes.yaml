@@ -438,6 +438,32 @@ runtimes:
       # 여기에 명령을 한 줄에 하나씩 쓰세요.
       INCRBY sum 3
 
+  # MongoDB (#527).
+  #
+  # **Redis 와 유형을 나눴다.** 질의 언어가 아예 다르기 때문이다 — #454 가 SQL 에
+  # MariaDB 를 더할 때는 런타임만 얹으면 됐지만(같은 언어) 여기는 스펙 표부터 갈린다.
+  #
+  # **기동이 비싸다.** Redis 가 0.4초인 자리에서 mongod 는 수 초가 걸린다. 그래서
+  # 하네스가 서버를 하나만 띄우고 **데이터베이스로** 기대/실제를 나눈다 — Redis 는
+  # ACL 이 번호 DB 를 못 갈라 서버를 둘 띄웠지만, MongoDB 의 권한은 DB 단위다.
+  - id: "mongodb:7"
+    label: "MongoDB 7"
+    # Monaco 가 mongosh 를 모른다. 스크립트가 자바스크립트이므로 그것으로 강조한다.
+    monacoLanguage: "javascript"
+    problemKind: "JUDGE_MONGODB"
+    image: "mongo:7"
+    digest: ""
+    sourceFile: "query.mongo"
+    harness: "mongo"
+    run: ["sh", "run-mongo.sh"]
+    # **샌드박스 안에서 재야 한다.** 하네스만 따로 돌리면 2.6초인데, 샌드박스를 지나면
+    # 10초를 넘겼다(실측 10.4초) — mongosh 를 네 번 띄우는 값이 그만큼 크다.
+    # 넉넉히 12초로 잡는다. 짧게 잡으면 제출이 아무리 빨라도 시간 초과가 난다.
+    startupMs: 12000
+    template: |
+      // 여기에 mongosh 스크립트를 쓰세요.
+      db.stocks.updateOne({ sku: "A-1" }, { $inc: { qty: 5 } });
+
   # ── 난해한 언어 (#394) ─────────────────────────────────────────────────────
   #
   # **문제를 푸는 방법이 아니라 언어 자체가 놀이인 쪽**이다. 하나라도 있으면 같은

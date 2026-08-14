@@ -18,10 +18,12 @@ import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemFile
+import codekr.api.problem.entity.ProblemMongoSpec
 import codekr.api.problem.entity.ProblemRedisSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemTestcaseGroupRepository
+import codekr.api.problem.repository.ProblemMongoSpecRepository
 import codekr.api.problem.repository.ProblemRedisSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.problem.repository.ProblemRepository
@@ -42,6 +44,7 @@ class AdminProblemService(
     private val tagService: TagService,
     private val sqlSpecRepository: ProblemSqlSpecRepository,
     private val redisSpecRepository: ProblemRedisSpecRepository,
+    private val mongoSpecRepository: ProblemMongoSpecRepository,
     private val fileRepository: ProblemFileRepository,
     private val groupRepository: ProblemTestcaseGroupRepository,
     private val scoreResyncService: ProblemScoreResyncService,
@@ -61,6 +64,7 @@ class AdminProblemService(
             verificationService.findLatest(problem),
             sqlSpecRepository.findById(id).orElse(null),
             redisSpecRepository.findById(id).orElse(null),
+            mongoSpecRepository.findById(id).orElse(null),
             fileRepository.findByProblemIdOrderBySeq(id),
             groupRepository.findByProblemIdOrderByGroupNo(id),
             tagService.tagsOf(id),
@@ -130,6 +134,22 @@ class AdminProblemService(
         return existing
     }
 
+    /** MongoDB 스펙을 넣거나 지운다 (#527). Redis 와 같은 이유로 유형을 바꾸면 지운다. */
+    private fun upsertMongoSpec(problemId: Long, request: ProblemUpsertRequest): ProblemMongoSpec? {
+        val spec = request.mongoSpec ?: run {
+            mongoSpecRepository.deleteById(problemId)
+            return null
+        }
+        val existing = mongoSpecRepository.findById(problemId).orElse(null)
+            ?: return mongoSpecRepository.save(spec.toEntity(problemId))
+
+        existing.seedScript = spec.seedScript?.ifBlank { null }
+        existing.answerScript = spec.answerScript
+        existing.verifyScript = spec.verifyScript
+        existing.ignoreOrder = spec.ignoreOrder
+        return existing
+    }
+
     @Transactional
     fun create(request: ProblemUpsertRequest, createdBy: Long): ProblemCreatedResponse {
         if (problemRepository.existsBySlugAndDeletedAtIsNull(request.slug)) {
@@ -172,6 +192,7 @@ class AdminProblemService(
         val saved = problemRepository.save(problem)
         request.sqlSpec?.let { sqlSpecRepository.save(it.toEntity(saved.id)) }
         request.redisSpec?.let { redisSpecRepository.save(it.toEntity(saved.id)) }
+        request.mongoSpec?.let { mongoSpecRepository.save(it.toEntity(saved.id)) }
         replaceFiles(saved.id, request)
         replaceTestcaseGroups(saved.id, request)
         creditService.replace(saved.id, request.setterIds, request.reviewerIds)
@@ -243,6 +264,7 @@ class AdminProblemService(
             verificationService.findLatest(problem),
             upsertSqlSpec(problem.id, request),
             upsertRedisSpec(problem.id, request),
+            upsertMongoSpec(problem.id, request),
             fileRepository.findByProblemIdOrderBySeq(problem.id),
             groupRepository.findByProblemIdOrderByGroupNo(problem.id),
             tagService.tagsOf(problem.id),

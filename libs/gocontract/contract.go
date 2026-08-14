@@ -196,6 +196,13 @@ const (
 	// KindJudgeFunction 은 **함수만 구현하는 문제**다 (#421). 하네스가 입출력을 맡는다.
 	KindJudgeFunction = "JUDGE_FUNCTION"
 	KindJudgeRedis    = "JUDGE_REDIS"
+	// KindJudgeMongo 는 MongoDB 문제다 (#527).
+	//
+	// **Redis 와 유형을 나눈 이유**: 질의 언어가 아예 다르다. #454 가 SQL 에 MariaDB 를
+	// 더할 때는 런타임만 얹으면 됐지만(같은 언어), 여기는 스펙 표부터 다르다.
+	// 이름을 좁게 두는 것은 #455 에서 배운 것이다 — 넓은 이름("NoSQL")은 낼 수 없는
+	// 문제를 낼 수 있다고 읽히게 한다.
+	KindJudgeMongo = "JUDGE_MONGODB"
 	// KindJudgeInteractive 는 **도는 중에 주고받는** 문제다 (#474).
 	KindJudgeInteractive = "JUDGE_INTERACTIVE"
 	KindQuiz             = "QUIZ"
@@ -264,6 +271,30 @@ type JudgeJob struct {
 	Checker    string `json:"checker,omitempty"`
 	// Redis 은 KindJudgeRedis 일 때만 실린다 (#455).
 	Redis *JudgeRedisSpec `json:"redis,omitempty"`
+	// Mongo 는 KindJudgeMongo 일 때만 실린다 (#527).
+	Mongo *JudgeMongoSpec `json:"mongo,omitempty"`
+}
+
+/*
+JudgeMongoSpec 은 MongoDB 문제의 채점 자료다 (#527).
+
+**모양은 Redis 와 같다** — 시드로 시작 상태를 만들고, 정답 스크립트를 돌리고, 확인
+스크립트로 끝난 뒤를 읽는다. 표를 따로 둔 이유는 그 안에 담기는 것이 다르기 때문이다:
+여기는 `mongosh` 스크립트이고 저기는 redis 명령이다.
+
+**"결과 집합" 과 "끝난 뒤의 상태" 를 따로 두지 않는다.** 확인 스크립트가 `find` 를
+찍으면 결과 집합이 되고 컬렉션을 세면 상태가 된다 — 한 가지 장치로 둘 다 된다.
+*/
+type JudgeMongoSpec struct {
+	// Seed 는 시작 상태를 만드는 스크립트. 비어 있을 수 있다.
+	Seed string `json:"seed,omitempty"`
+	// Answer 는 정답 스크립트. 기대 상태를 만든다.
+	Answer string `json:"answer"`
+	// Verify 는 끝난 뒤를 읽는 스크립트. **선택이 아니다** — 이것이 없으면 무엇을
+	// 정답으로 볼지가 없다.
+	Verify string `json:"verify"`
+	// IgnoreOrder 는 줄 순서를 무시할지. 기본은 무시하지 않는다.
+	IgnoreOrder bool `json:"ignoreOrder,omitempty"`
 }
 
 /*

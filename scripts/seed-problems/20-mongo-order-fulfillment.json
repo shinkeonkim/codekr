@@ -1,0 +1,29 @@
+{
+  "slug": "mongo-order-fulfillment",
+  "title": "주문 처리하고 품절 표시하기 (MongoDB)",
+  "category": "ALGORITHM",
+  "difficulty": "SILVER_5",
+  "problemKind": "JUDGE_MONGODB",
+  "allowedRuntimeIds": [
+    "mongodb:7"
+  ],
+  "description": "**MongoDB 로 푸는 문제입니다.**\n\n`orders` 컬렉션에 주문이 들어 있습니다. `mongosh` 스크립트를 써서 아래 상태를 만드세요.\n\n| sku | qty | status | 해야 할 일 |\n|---|---|---|---|\n| `A-1` | 3 | `pending` | 보냈다고 표시한다 (`shipped`) |\n| `B-2` | 0 | `pending` | 수량이 0 이므로 품절로 표시한다 (`soldout`) |\n| `C-3` | 7 | `shipped` | 그대로 둔다 |\n\n**수량이 0 인 것은 보낼 수 없습니다.** 그것만 `soldout` 이고 나머지 `pending` 은 `shipped` 가 됩니다.\n\n채점은 끝난 뒤의 컬렉션 상태로 합니다 — 무엇을 출력하든 상관없습니다.",
+  "inputDescription": "표준 입력은 없습니다. 위의 세 문서가 `orders` 에 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 25000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "mongoSpec": {
+    "seedScript": "db.orders.insertMany([\n  { sku: \"A-1\", qty: 3, status: \"pending\" },\n  { sku: \"B-2\", qty: 0, status: \"pending\" },\n  { sku: \"C-3\", qty: 7, status: \"shipped\" },\n]);",
+    "answerScript": "db.orders.updateMany({ status: \"pending\", qty: { $gt: 0 } }, { $set: { status: \"shipped\" } });\ndb.orders.updateMany({ status: \"pending\", qty: 0 }, { $set: { status: \"soldout\" } });",
+    "verifyScript": "db.orders.find({}, { _id: 0 }).sort({ sku: 1 }).forEach(printjson);",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "mongodb:7",
+      "sourceCode": "// 여기에 mongosh 스크립트를 쓰세요.\n"
+    }
+  ]
+}

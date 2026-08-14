@@ -677,6 +677,11 @@ fun detail(...)
 스펙이 어느 제품의 것인지 알 수 없다. 다른 제품은 #527 에서 본다. 시드에 전용 문제가 하나
 있다 (`17-redis-stock-restock`).
 
+MongoDB 도 같은 모양이다 (#527). `problemKind: JUDGE_MONGODB` 와 `mongodb:7` 런타임,
+`mongoSpec` 은 `seedScript`(선택) · `answerScript` · `verifyScript` · `ignoreOrder` 다.
+**유형을 나눈 이유는 질의 언어가 다르기 때문**이다 — SQL 이 MariaDB 를 런타임만으로
+더할 수 있었던 것과 다르다.
+
 - **스펙이 다르다**: `redisSpec` 은 `seedCommands`(선택) · `answerCommands` ·
   `verifyCommands` · `ignoreOrder` 다
 - **`verifyCommands` 는 비워 둘 수 없다.** 명령의 연속에는 견줄 결과 집합이 없다 —

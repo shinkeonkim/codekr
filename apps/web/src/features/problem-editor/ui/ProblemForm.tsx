@@ -13,6 +13,7 @@ import type {
   Testcase,
 } from "@/entities/problem";
 import {
+  BLANK_MONGO_SPEC,
   BLANK_REDIS_SPEC,
   BLANK_SQL_SPEC,
   EMPTY_TESTCASE,
@@ -31,6 +32,7 @@ import { ProblemTemplateEditor } from "./ProblemTemplateEditor";
 import { AllowedRuntimeEditor } from "./AllowedRuntimeEditor";
 import { HarnessEditor } from "./HarnessEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
+import { MongoSpecEditor } from "./MongoSpecEditor";
 import { RedisSpecEditor } from "./RedisSpecEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
@@ -142,6 +144,7 @@ export function ProblemForm({
   // 함수형은 허용 언어를 따로 고르지 않는다 — 하네스가 그것을 정한다 (#446).
   const isFunction = values.problemKind === "JUDGE_FUNCTION";
   const isRedis = values.problemKind === "JUDGE_REDIS";
+  const isMongo = values.problemKind === "JUDGE_MONGODB";
 
   /**
    * 채점 방식을 바꾸면 **그 유형의 자료만 남긴다** (#60).
@@ -158,8 +161,13 @@ export function ProblemForm({
         nextKind === "JUDGE_REDIS"
           ? (previous.redisSpec ?? BLANK_REDIS_SPEC)
           : null,
+      mongoSpec:
+        nextKind === "JUDGE_MONGODB"
+          ? (previous.mongoSpec ?? BLANK_MONGO_SPEC)
+          : null,
+      // 테스트케이스로 채점하지 않는 유형은 그 칸을 비운다 (#455, #527).
       testcases:
-        nextKind === "JUDGE_SQL" || nextKind === "JUDGE_REDIS"
+        nextKind === "JUDGE_SQL" || nextKind === "JUDGE_REDIS" || nextKind === "JUDGE_MONGODB"
           ? []
           : previous.testcases,
     }));
@@ -305,6 +313,13 @@ export function ProblemForm({
           <RedisSpecEditor
             value={values.redisSpec ?? BLANK_REDIS_SPEC}
             onChange={(spec) => update("redisSpec", spec)}
+          />
+        </FormSection>
+      ) : isMongo ? (
+        <FormSection title="MongoDB 시드와 정답" required defaultOpen={open}>
+          <MongoSpecEditor
+            value={values.mongoSpec ?? BLANK_MONGO_SPEC}
+            onChange={(spec) => update("mongoSpec", spec)}
           />
         </FormSection>
       ) : (

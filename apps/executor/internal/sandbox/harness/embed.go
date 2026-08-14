@@ -28,6 +28,12 @@ const MariaDB = "mariadb"
 // 출력 형식은 같게 낸다: 채점기가 무엇이 돌았는지 몰라도 되게 하기 위함이다.
 const Redis = "redis"
 
+// Mongo 는 MongoDB 문제의 하네스다 (#527).
+//
+// **채점 모델은 Redis 와 같고 언어가 다르다.** `mongosh` 는 자바스크립트를 먹고
+// redis-cli 는 명령 줄을 먹으므로 한 파일에 담을 수 없다 — 그래서 하네스가 따로다.
+const Mongo = "mongo"
+
 // Interactive 는 인터랙티브 문제의 하네스다 (#474).
 //
 // **도는 중에 주고받는다** — 스페셜 저지(#452)가 끝난 뒤 판정하는 것과 다르다.
@@ -39,6 +45,7 @@ var scripts = map[string]string{
 	SQL:         "run-sql.sh",
 	MariaDB:     "run-mariadb.sh",
 	Redis:       "run-redis.sh",
+	Mongo:       "run-mongo.sh",
 	Interactive: "run-interactive.sh",
 }
 

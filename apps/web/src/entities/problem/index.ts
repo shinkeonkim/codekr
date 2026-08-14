@@ -35,6 +35,7 @@ export type {
   ProblemTemplate,
   ProblemVerification,
   Runtime,
+  MongoSpec,
   RedisSpec,
   SqlSpec,
   Testcase,

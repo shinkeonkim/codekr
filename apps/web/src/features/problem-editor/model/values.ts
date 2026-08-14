@@ -6,6 +6,7 @@ import type {
   ProblemRuntimeLimit,
   ProblemSolution,
   ProblemTemplate,
+  MongoSpec,
   RedisSpec,
   SqlSpec,
   Testcase,
@@ -27,6 +28,7 @@ export interface ProblemFormValues {
   sqlSpec: SqlSpec | null;
   /** Redis 유형일 때만 보낸다 (#455). */
   redisSpec: RedisSpec | null;
+  mongoSpec: MongoSpec | null;
   /** 비워 둘 수 있다 (#195) — 그때 `difficultyState` 가 뜻을 갖는다. */
   difficulty: Difficulty | null;
   difficultyState: DifficultyState;
@@ -75,6 +77,14 @@ export const BLANK_REDIS_SPEC: RedisSpec = {
   ignoreOrder: false,
 };
 
+/** MongoDB 도 기본은 순서를 지킨다 (#527) — Redis 와 같은 판단이다. */
+export const BLANK_MONGO_SPEC: MongoSpec = {
+  seedScript: null,
+  answerScript: "",
+  verifyScript: "",
+  ignoreOrder: false,
+};
+
 export const BLANK_SQL_SPEC: SqlSpec = {
   schemaSql: "",
   answerSql: "",
@@ -92,6 +102,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     problemKind: problem.problemKind,
     sqlSpec: problem.sqlSpec,
     redisSpec: problem.redisSpec ?? null,
+    mongoSpec: problem.mongoSpec ?? null,
     difficulty: problem.difficulty,
     difficultyState: problem.difficultyState ?? "UNRATED",
     description: problem.description,
@@ -128,6 +139,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   problemKind: "JUDGE_STDIO",
   sqlSpec: null,
   redisSpec: null,
+  mongoSpec: null,
   // 새 문제의 기본은 **미평가**다 (#195). 브론즈로 두면 "아직 안 정했다" 와
   // "쉽다" 가 구분되지 않는다 — 등록은 쉬워지지만 거짓 정보가 섞인다.
   difficulty: null,

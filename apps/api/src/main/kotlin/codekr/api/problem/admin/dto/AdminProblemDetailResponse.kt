@@ -11,6 +11,7 @@ import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.dto.ProblemFileResponse
 import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemTestcaseGroup
+import codekr.api.problem.entity.ProblemMongoSpec
 import codekr.api.problem.entity.ProblemRedisSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.tag.dto.ProblemTagResponse
@@ -25,6 +26,7 @@ data class AdminProblemDetailResponse(
     /** SQL 유형이 아니면 null (#60). */
     val sqlSpec: SqlSpecResponse? = null,
     val redisSpec: RedisSpecResponse? = null,
+    val mongoSpec: MongoSpecResponse? = null,
     /**
      * 정답 코드 검증(#39)을 할 수 있는 유형인가 (#495).
      *
@@ -87,6 +89,7 @@ data class AdminProblemDetailResponse(
             verification: VerificationResponse? = null,
             sqlSpec: ProblemSqlSpec? = null,
             redisSpec: ProblemRedisSpec? = null,
+            mongoSpec: ProblemMongoSpec? = null,
             files: List<ProblemFile> = emptyList(),
             testcaseGroups: List<ProblemTestcaseGroup> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
@@ -99,6 +102,7 @@ data class AdminProblemDetailResponse(
             problemKind = problem.problemKind,
             sqlSpec = sqlSpec?.let(SqlSpecResponse::from),
             redisSpec = redisSpec?.let(RedisSpecResponse::from),
+            mongoSpec = mongoSpec?.let(MongoSpecResponse::from),
             canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
             testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),
