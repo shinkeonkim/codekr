@@ -2,6 +2,7 @@ package codekr.api.contest.service
 
 import codekr.api.contest.entity.ContestStatus
 import codekr.api.scaling.dto.ExecutorScaleState
+import codekr.api.contest.entity.ContestRegistrationStatus
 import codekr.api.contest.repository.ContestRegistrationRepository
 import codekr.api.contest.repository.ContestRepository
 import codekr.api.scaling.service.ExecutorScaleService
@@ -47,7 +48,7 @@ class ContestPrescaler(
         // 이미 떠 있는 것을 무시하고 잘못된 수로 덮어쓴다.
         if (status.state != ExecutorScaleState.OK) return
 
-        val needed = upcoming.sumOf { targetFor(registrationRepository.countByIdContestId(it.id)) }
+        val needed = upcoming.sumOf { targetFor(registrationRepository.countByIdContestIdAndStatus(it.id, ContestRegistrationStatus.APPROVED)) }
         // **줄이지 않는다.** 이미 더 많이 떠 있다면 그럴 이유가 있는 것이다.
         if (needed <= status.desiredReplicas) return
 
@@ -57,7 +58,7 @@ class ContestPrescaler(
             status.desiredReplicas,
             target,
             upcoming.size,
-            upcoming.sumOf { registrationRepository.countByIdContestId(it.id) },
+            upcoming.sumOf { registrationRepository.countByIdContestIdAndStatus(it.id, ContestRegistrationStatus.APPROVED) },
         )
         // 사람이 아니라 스케줄러가 한 일이다. 기록의 행위자는 0 으로 남는다.
         runCatching { scaleService.scale(actorId = 0, key = EXECUTOR, replicas = target) }

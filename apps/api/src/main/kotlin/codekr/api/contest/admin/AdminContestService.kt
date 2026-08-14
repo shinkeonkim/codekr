@@ -60,6 +60,7 @@ class AdminContestService(
             ),
         )
         contest.visibility = request.visibility
+        contest.requiresApproval = request.requiresApproval
         replaceProblems(contest.id, request)
         return responseOf(contest, Instant.now())
     }
@@ -98,6 +99,7 @@ class AdminContestService(
             submissionCooldownSeconds = request.submissionCooldownSeconds
             registrationOpenDuring = request.registrationOpenDuring
             visibility = request.visibility
+            requiresApproval = request.requiresApproval
         }
         replaceProblems(contest.id, request)
         return responseOf(contest, Instant.now())

@@ -49,6 +49,8 @@ data class ContestDetailResponse(
     val description: String,
     val freezeAt: Instant?,
     val registered: Boolean,
+    /** 신청은 했는데 아직 승인 전인가 (#466). 화면이 "심사 중" 을 말한다. */
+    val pendingApproval: Boolean = false,
     val canRegister: Boolean,
     /**
      * 문제 목록. **시작 전에는 비어 있다** — 참가자도 볼 수 없다 (#61 완료 조건).

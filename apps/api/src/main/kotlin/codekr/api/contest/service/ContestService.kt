@@ -9,6 +9,7 @@ import codekr.api.contest.dto.ContestSummaryResponse
 import codekr.api.contest.entity.Contest
 import codekr.api.contest.entity.ContestRegistration
 import codekr.api.contest.entity.ContestRegistrationId
+import codekr.api.contest.entity.ContestRegistrationStatus
 import codekr.api.contest.entity.ContestStatus
 import codekr.api.contest.entity.ContestVisibility
 import codekr.api.contest.repository.ContestProblemRepository
@@ -68,6 +69,8 @@ class ContestService(
             description = contest.description,
             freezeAt = contest.freezeAt,
             registered = registered,
+            // 신청은 했는데 아직 승인 전인가 (#466). 화면이 "심사 중" 을 말한다.
+            pendingApproval = viewerId != null && !registered && hasApplied(contest.id, viewerId),
             canRegister = viewerId != null && !registered && contest.canRegisterAt(now),
             problems = problemsFor(contest, registered, now),
         )
@@ -82,7 +85,16 @@ class ContestService(
         // 이미 등록했으면 아무 일도 없다 — 두 번 눌러도 오류가 아니어야 한다.
         val id = ContestRegistrationId(contest.id, userId)
         if (!registrationRepository.existsById(id)) {
-            registrationRepository.save(ContestRegistration(id))
+            /*
+                승인이 필요한 대회면 **신청까지만** 된다 (#466).
+
+                기본은 승인이다 — 지금까지의 대회가 전부 그렇고, 기본을 대기로 두면
+                그 대회들이 전부 막힌다.
+            */
+            val registration = ContestRegistration(id).apply {
+                if (contest.requiresApproval) status = ContestRegistrationStatus.PENDING
+            }
+            registrationRepository.save(registration)
         }
     }
 
@@ -121,8 +133,25 @@ class ContestService(
     private fun summaryOf(contest: Contest, now: Instant) =
         ContestSummaryResponse.of(contest, now, registrationRepository.countByIdContestId(contest.id))
 
-    private fun isRegistered(contestId: Long, userId: Long) =
+    /**
+     * 참가자인가 (#466).
+     *
+     * **"등록했다" 가 아니라 "승인됐다" 이다.** 승인이 필요한 대회에서는 신청만 한
+     * 사람이 생기고, 그 사람은 아직 참가자가 아니다 — 문제도 못 보고 제출도 못 한다.
+     *
+     * 이 판정을 쓰는 곳이 넷이다(상세·제출·질의·순위표). **한 곳에 두지 않으면
+     * 한 군데만 고쳐도 "화면에는 참가자인데 제출은 막히는" 상태가 생긴다.**
+     */
+    fun isParticipant(contestId: Long, userId: Long): Boolean =
+        registrationRepository.findById(ContestRegistrationId(contestId, userId))
+            .map { it.approved }
+            .orElse(false)
+
+    /** 신청은 했는가 (승인 여부와 무관). 화면이 "심사 중" 을 말하는 데 쓴다. */
+    fun hasApplied(contestId: Long, userId: Long): Boolean =
         registrationRepository.existsById(ContestRegistrationId(contestId, userId))
+
+    private fun isRegistered(contestId: Long, userId: Long) = isParticipant(contestId, userId)
 
     private fun requirePublic(slug: String): Contest {
         val contest = contestRepository.findBySlugAndDeletedAtIsNull(slug)

@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional
 class ContestBoardService(
     private val contestRepository: ContestRepository,
     private val registrationRepository: ContestRegistrationRepository,
+    private val contestService: codekr.api.contest.service.ContestService,
     private val contestProblemRepository: ContestProblemRepository,
     private val noticeRepository: ContestNoticeRepository,
     private val questionRepository: ContestQuestionRepository,
@@ -91,8 +92,9 @@ class ContestBoardService(
     fun ask(slug: String, principal: AuthPrincipal, request: QuestionRequest): QuestionResponse {
         val contest = require(slug)
         // 참가자만 묻는다. 등록하지 않은 사람은 문제도 볼 수 없다 (#61).
-        if (!registrationRepository.existsById(ContestRegistrationId(contest.id, principal.userId))) {
-            throw ApiException(ErrorCode.VALIDATION_ERROR, "참가 등록을 먼저 해야 합니다.")
+        // 승인 전에는 묻지도 못한다 (#466) — 문제를 볼 수 없으므로 물을 것도 없다.
+        if (!contestService.isParticipant(contest.id, principal.userId)) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "참가 승인 뒤에 질문할 수 있습니다.")
         }
         questionRepository.save(
             ContestQuestion(contest.id, request.problemId, principal.userId, request.body),

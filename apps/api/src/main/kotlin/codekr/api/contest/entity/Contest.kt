@@ -69,6 +69,16 @@ class Contest(
     var visibility: ContestVisibility = ContestVisibility.PUBLIC
 
     /**
+     * 참가에 승인이 필요한가 (#466).
+     *
+     * **공개 범위(#465)와 직교한다.** 그쪽은 *누가 보는가*, 이쪽은 *누가 내는가* 다 —
+     * "비공개 + 자동 승인"(링크만 있으면 참가)과 "공개 + 승인 필요"(누구나 보지만
+     * 심사)가 각각 쓸모가 있다.
+     */
+    @Column(name = "requires_approval", nullable = false)
+    var requiresApproval: Boolean = false
+
+    /**
      * 최종 순위를 공개한 시각 (#86).
      *
      * **자동이 아니라 어드민의 행위다.** 종료와 동시에 자동 공개하면, 종료 직후 발견된
