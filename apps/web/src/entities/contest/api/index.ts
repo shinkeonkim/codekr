@@ -14,6 +14,17 @@ export const contestApi = {
     request<Page<ContestSummary>>(`/api/v1/contests?page=${page}&size=${size}`),
 
   /**
+   * 내가 신청한 대회 (#546).
+   *
+   * **비공개 대회를 다시 찾는 유일한 길이다** — 목록에 안 뜨므로 주소를 잃으면
+   * 여기 말고는 돌아올 곳이 없다.
+   */
+  registered: (page = 0, size = 20) =>
+    request<Page<ContestSummary>>(`/api/v1/contests/registered?page=${page}&size=${size}`, {
+      auth: true,
+    }),
+
+  /**
    * 상세. 로그인 여부에 따라 내용이 다르다 — 참가자에게만 문제가 보인다.
    *
    * `auth: true` 는 **토큰이 있으면 싣는다**는 뜻이지 로그인을 요구하는 것이 아니다.

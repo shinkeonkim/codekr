@@ -24,6 +24,13 @@ export interface ContestSummary {
   participantCount: number;
   /** 순위가 동결돼 있는가 (#86). 화면이 크게 알려야 한다. */
   frozen: boolean;
+  /**
+   * 보는 사람의 신청 상태 (#546). 전체 목록에서는 `null` 이다.
+   *
+   * 승인이 필요한 대회에서는 신청만 한 사람이 생긴다 (#466) — 그 사람에게
+   * **기다리는 중이라는 것**을 말해 줘야 한다.
+   */
+  registrationStatus?: "PENDING" | "APPROVED" | null;
 }
 
 export interface ContestProblem {
