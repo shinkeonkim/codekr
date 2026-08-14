@@ -47,6 +47,24 @@ data class MailProperties(
 }
 
 /**
+ * 한 통을 보낸 결과 (#524).
+ *
+ * **밖으로 예외를 내보내지 않는 것과, 결과를 감추는 것은 다르다.** 가입은 메일이
+ * 실패해도 끝나야 하지만(그 판단은 그대로다), **어드민이 손으로 다시 보낼 때**는
+ * 갔는지 아닌지를 알아야 한다 — 모르면 될 때까지 다시 누르는 수밖에 없다.
+ */
+enum class MailOutcome {
+    /** 발송 서버가 받아 갔다. 받는 쪽 사서함에 닿았는지까지는 알 수 없다. */
+    SENT,
+
+    /** 메일 설정이 없다. 로컬에서는 정상이고, 본문은 로그에 남는다. */
+    SKIPPED,
+
+    /** 붙지 못했거나 거절당했다. 원인은 로그에 있다 — 응답에 싣지 않는다. */
+    FAILED,
+}
+
+/**
  * 메일 한 통 (#233, #355).
  *
  * **직접 MTA 를 운영하지 않는다.** 발송 서비스의 SMTP 엔드포인트에 붙는다 — 스팸
@@ -115,10 +133,10 @@ class MailSender(private val properties: MailProperties) {
      * 설정이 없으면 **본문을 로그로 찍는다.** 로컬 개발에서 인증 링크를 확인하는 길이
      * 그것뿐이고, 그러지 않으면 로컬에서는 인증 흐름을 아예 시험할 수 없다.
      */
-    fun send(to: String, subject: String, body: String) {
+    fun send(to: String, subject: String, body: String): MailOutcome {
         val sender = delegate ?: run {
             log.info("메일 설정이 없어 보내지 않습니다. to={} subject={}\n{}", to, subject, body)
-            return
+            return MailOutcome.SKIPPED
         }
         try {
             sender.send(
@@ -129,6 +147,7 @@ class MailSender(private val properties: MailProperties) {
                     setText(body)
                 },
             )
+            return MailOutcome.SENT
         } catch (e: Exception) {
             /*
               **스택트레이스를 통째로 남기지 않는다** (#355).
@@ -138,6 +157,7 @@ class MailSender(private val properties: MailProperties) {
               한번 찍힌 것은 되돌릴 수 없다.
             */
             log.error("메일 발송 실패 to={} subject={} 원인={}", to, subject, scrub(e))
+            return MailOutcome.FAILED
         }
     }
 

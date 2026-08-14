@@ -31,7 +31,12 @@ class EmailVerificationService(
      * 여기서는 토큰 발급까지만 책임진다.
      */
     @Transactional
-    fun send(userId: Long, email: String, enforceCooldown: Boolean = false, forAddress: String? = null) {
+    fun send(
+        userId: Long,
+        email: String,
+        enforceCooldown: Boolean = false,
+        forAddress: String? = null,
+    ): MailOutcome {
         val now = clock.instant()
 
         if (enforceCooldown) {
@@ -54,7 +59,7 @@ class EmailVerificationService(
         repository.save(EmailVerification(userId, hash(token), now.plus(TTL), forAddress))
 
         val link = "${properties.siteUrl}/verify-email?token=$token"
-        mailSender.send(
+        return mailSender.send(
             to = email,
             subject = "[코드.kr] 이메일 주소를 확인해 주세요",
             body = """

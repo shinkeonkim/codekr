@@ -118,6 +118,24 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
     /** 정지 해제 (#224). 되돌리는 쪽이라 사유를 요구하지 않는다. */
     LIFT_SUSPENSION("정지 해제", requiresReason = false),
 
+    /**
+     * 인증 메일 다시 보내기 (#524). 사유를 요구하지 않는다 — 아무것도 바꾸지 않고,
+     * 매번 적게 하면 "요청함" 같은 값만 쌓인다.
+     *
+     * 그래도 남기는 이유는 **발송이 곧 비용이고 평판**이기 때문이다. 어드민은 사용자의
+     * 한도(60초·하루 5통) 밖에 있으므로, 몇 번 눌렀는지가 어딘가에는 남아야 한다.
+     */
+    EMAIL_VERIFICATION_RESEND("인증 메일 재발송", requiresReason = false),
+
+    /**
+     * 강제 인증 (#524). **사유가 필수다.**
+     *
+     * "확인했다" 를 **확인 없이** 표시하는 일이다 — #233 이 인증을 넣은 이유가 "주소가
+     * 진짜인지 모른다" 였는데 이것은 그 확인을 건너뛴다. 나중에 그 계정의 주소를 믿을
+     * 수 있는지 물으면, 이 사유가 유일한 답이다.
+     */
+    EMAIL_VERIFY_FORCED("강제 인증", requiresReason = true),
+
     /** 랭킹·활동 재계산 (#177, #105). 되돌릴 수 있어 사유를 요구하지 않는다. */
     RECOMPUTE("재계산", requiresReason = false),
 
