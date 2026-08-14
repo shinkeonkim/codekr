@@ -11,7 +11,11 @@ import { Card, CardTitle } from "@/shared/ui";
  * 문제는 두 곳에 센다. 숨기지 않고 그대로 둔다. 억지로 맞추면 "기타" 같은 칸이 생기는데,
  * 그것은 분류가 아니라 분류하지 않았다는 뜻이라 읽는 사람을 헷갈리게 한다.
  */
-export function SolvedByTagView({ solvedByTag }: { solvedByTag: SolvedByTag[] }) {
+export function SolvedByTagView({
+  solvedByTag,
+}: {
+  solvedByTag: SolvedByTag[];
+}) {
   if (solvedByTag.length === 0) return null;
   const max = Math.max(...solvedByTag.map((it) => it.solved));
 
