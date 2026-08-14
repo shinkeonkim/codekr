@@ -98,6 +98,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["SUPERUSER"],
   },
   {
+    href: "/admin/problem-reports",
+    label: "오류 신고",
+    description: "사용자가 알린 지문·데이터 문제",
+    // 문제를 고치는 일이라 문제 출제자가 본다 (#478).
+    roles: ["PROBLEM_SETTER"],
+  },
+  {
     href: "/admin/operations",
     label: "운영 작업",
     description: "랭킹·활동 집계 재계산",
