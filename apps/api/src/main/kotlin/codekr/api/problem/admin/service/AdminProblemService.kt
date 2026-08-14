@@ -214,7 +214,8 @@ class AdminProblemService(
         problem.addTestcases(request.testcases.map(TestcaseRequest::toEntity))
         problem.addTemplates(request.templates.map(TemplateRequest::toEntity))
         problem.addRuntimeLimits(request.runtimeLimits.map(RuntimeLimitRequest::toEntity))
-        // 허용 목록은 통째로 교체한다 (#419). 소프트 삭제가 없으므로 flush 순서를 타지 않는다.
+        // 허용 목록과 하네스는 **차이만** 반영한다 (#419, #446). 통째로 갈아 끼우면
+        // 유니크 제약에 걸린다 — 소프트 삭제가 없어도 flush 순서를 탄다 (#560).
         problem.replaceAllowedRuntimes(request.allowedRuntimeIds)
         problem.replaceHarnesses(request.harnesses)
         problem.checkerSource = request.checkerSource?.takeIf { it.isNotBlank() }
