@@ -20,10 +20,17 @@ step() { printf '\033[36m==>\033[0m %s\n' "$1"; }
 json() { python3 -c "import json,sys; print(json.load(sys.stdin)$1)"; }
 
 step "1. 회원가입"
-TOKEN=$(curl -s -X POST "${API}/api/v1/auth/signup" -H 'Content-Type: application/json' \
-  -d "{\"email\":\"${EMAIL}\",\"password\":\"${PASSWORD}\",\"nickname\":\"스모크$(date +%s)\"}" \
-  | json '["accessToken"]') || fail "회원가입 실패"
-pass "가입 및 토큰 발급"
+# **필수 약관 동의가 가입에 필요하다** (#235). id 를 박아 두지 않고 그때그때 읽는다 —
+# 시드가 바뀌면 번호도 바뀌고, 박아 두면 이 스크립트가 또 조용히 깨진다.
+AGREED=$(curl -s "${API}/api/v1/terms" \
+  | python3 -c "import json,sys; print(json.dumps([t['id'] for t in json.load(sys.stdin) if t['required']]))") \
+  || fail "약관 목록을 읽지 못했습니다"
+SIGNUP=$(curl -s -X POST "${API}/api/v1/auth/signup" -H 'Content-Type: application/json' \
+  -d "{\"email\":\"${EMAIL}\",\"password\":\"${PASSWORD}\",\"nickname\":\"스모크$(date +%s)\",\"agreedTermIds\":${AGREED}}")
+# **실패하면 서버가 말한 이유를 그대로 보인다.** 예전에는 `KeyError: 'accessToken'` 만
+# 나와서, 무엇이 모자란지 응답을 직접 열어 보기 전에는 알 수 없었다.
+TOKEN=$(echo "${SIGNUP}" | json '["accessToken"]' 2>/dev/null) || fail "회원가입 실패: ${SIGNUP}"
+pass "가입 및 토큰 발급 (동의한 필수 약관 ${AGREED})"
 
 step "2. 문제 목록 조회"
 COUNT=$(curl -s "${API}/api/v1/problems" | json '["totalElements"]')
@@ -60,11 +67,32 @@ await_verdict() {
   fail "채점이 제한 시간 안에 끝나지 않았습니다"
 }
 
-submit() {
-  curl -s -X POST "${API}/api/v1/problems/two-sum/submissions" \
-    -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
-    -d "{\"runtimeId\":\"python:3.12\",\"sourceCode\":\"$1\"}" | json '["submissionId"]'
+# **같은 사람이 같은 문제를 30초에 한 번만 낼 수 있다** (#189). 이 스크립트는 한 문제에
+# 여러 번 내므로 그 제한에 걸린다 — 서버가 옳고 스크립트가 기다려야 한다.
+#
+# 서버가 남은 초를 알려 주므로 그것을 읽어 그만큼 자고 다시 낸다. 고정된 초를 자면
+# 제한이 바뀔 때 또 깨진다.
+#
+# 제출하는 곳이 넷이라 **한 곳에 모았다.** 따로 쓰면 이번처럼 한 곳만 고쳐진다.
+post_submission() {
+  local slug="$1" runtime="$2" source="$3" body remaining
+  for _ in 1 2; do
+    body=$(curl -s -X POST "${API}/api/v1/problems/${slug}/submissions" \
+      -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+      -d "{\"runtimeId\":\"${runtime}\",\"sourceCode\":\"${source}\"}")
+    if echo "${body}" | grep -q '"submissionId"'; then
+      echo "${body}" | json '["submissionId"]'
+      return 0
+    fi
+    echo "${body}" | grep -q 'SUBMISSION_TOO_FREQUENT' || fail "제출 실패(${slug}): ${body}"
+    remaining=$(echo "${body}" | python3 -c "import json,re,sys; print(re.search(r'(\d+)초 뒤', json.load(sys.stdin)['message']).group(1))")
+    printf '     제출 간격 제한 — %s초 기다립니다\n' "${remaining}" >&2
+    sleep "$((remaining + 1))"
+  done
+  fail "제출 간격 제한이 풀리지 않았습니다: ${slug}"
 }
+
+submit() { post_submission "two-sum" "python:3.12" "$1"; }
 
 step "5. 정답 제출"
 VERDICT=$(await_verdict "$(submit "${SOLUTION}")")
@@ -103,11 +131,7 @@ SUFFIX=$(date +%s)
 create_timed_problem "limit-generous-${SUFFIX}" 5000
 create_timed_problem "limit-tight-${SUFFIX}" 500
 
-submit_to() {
-  curl -s -X POST "${API}/api/v1/problems/$1/submissions" \
-    -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
-    -d "{\"runtimeId\":\"python:3.12\",\"sourceCode\":\"${SLEEPY}\"}" | json '["submissionId"]'
-}
+submit_to() { post_submission "$1" "python:3.12" "${SLEEPY}"; }
 
 VERDICT=$(await_verdict "$(submit_to "limit-generous-${SUFFIX}")")
 [[ "${VERDICT}" == "ACCEPTED" ]] || fail "여유 있는 제한(5000ms)에서 통과해야 합니다: ${VERDICT}"
@@ -130,11 +154,7 @@ status=$(curl -s -o /tmp/codekr-smoke-problem.json -w '%{http_code}' -X POST "${
        \"runtimeLimits\":[{\"runtimeId\":\"python:3.12\",\"timeLimitMs\":5000,\"memoryLimitMb\":256}]}")
 [[ "${status}" == "201" ]] || fail "언어별 제한 문제 생성 실패(${status}): $(cat /tmp/codekr-smoke-problem.json)"
 
-submit_with_runtime() {
-  curl -s -X POST "${API}/api/v1/problems/${PER_LANG_SLUG}/submissions" \
-    -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
-    -d "{\"runtimeId\":\"$1\",\"sourceCode\":\"${SLEEPY}\"}" | json '["submissionId"]'
-}
+submit_with_runtime() { post_submission "${PER_LANG_SLUG}" "$1" "${SLEEPY}"; }
 
 VERDICT=$(await_verdict "$(submit_with_runtime "python:3.12")")
 [[ "${VERDICT}" == "ACCEPTED" ]] || fail "오버라이드된 런타임(5000ms)에서 통과해야 합니다: ${VERDICT}"
@@ -160,14 +180,26 @@ status=$(curl -s -o /tmp/codekr-smoke-problem.json -w '%{http_code}' -X POST "${
 PRIO_ID=$(json '["id"]' < /tmp/codekr-smoke-problem.json)
 
 # 낮은 등급으로 큐를 채운다.
+#
+# **문제를 열여섯 개 만들어 하나씩 낸다.** 한 문제에 열여섯 번 내면 제출 간격 제한
+# (#189)에 걸리는데, 그 제한을 기다리며 내면 30초에 하나씩 들어가서 **큐가 막히지
+# 않는다** — 막힌 큐를 앞지르는지 보는 것이 이 단계의 전부다. 제한은 사람과 문제의
+# 짝마다이므로, 문제를 나누면 한 사람이 한 번에 다 낼 수 있다.
+create_low_problem() {
+  local slug="$1" status
+  status=$(curl -s -o /tmp/codekr-smoke-problem.json -w '%{http_code}' -X POST "${API}/api/v1/admin/problems" \
+    -H "Authorization: Bearer ${ADMIN_TOKEN}" -H 'Content-Type: application/json' \
+    -d "{\"slug\":\"${slug}\",\"title\":\"큐 채우기\",\"category\":\"ALGORITHM\",
+         \"difficulty\":\"BRONZE_5\",\"description\":\"스모크 전용\",\"timeLimitMs\":5000,
+         \"memoryLimitMb\":256,\"published\":true,\"judgePriority\":\"LOW\",
+         \"testcases\":[{\"seq\":1,\"input\":\"\",\"expectedOutput\":\"done\\n\",\"visibility\":\"HIDDEN\"}]}")
+  [[ "${status}" == "201" ]] || fail "큐 채우기 문제 생성 실패(${status}): $(cat /tmp/codekr-smoke-problem.json)"
+}
+
 LOW_IDS=()
-for _ in $(seq 1 16); do
-  body=$(curl -s -X POST "${API}/api/v1/problems/${PRIO_SLUG}/submissions" \
-    -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
-    -d "{\"runtimeId\":\"python:3.12\",\"sourceCode\":\"${SLOW}\"}")
-  id=$(echo "${body}" | json '["submissionId"]' 2>/dev/null) \
-    || fail "낮은 등급 제출에 실패했습니다: ${body}"
-  LOW_IDS+=("${id}")
+for i in $(seq 1 16); do
+  create_low_problem "prio-fill-${SUFFIX}-${i}"
+  LOW_IDS+=("$(post_submission "prio-fill-${SUFFIX}-${i}" "python:3.12" "${SLOW}")")
 done
 
 # 그 뒤에 어드민 검증(최상위)을 넣는다.
