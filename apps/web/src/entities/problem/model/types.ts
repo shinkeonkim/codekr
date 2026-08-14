@@ -159,6 +159,7 @@ export type ProblemKind =
   | "JUDGE_STDIO"
   | "JUDGE_SQL"
   | "JUDGE_REDIS"
+  | "JUDGE_MONGODB"
   | "JUDGE_FUNCTION"
   | "QUIZ"
   | "MANUAL";
@@ -206,6 +207,7 @@ export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_STDIO: "코드 실행 (stdin/stdout)",
   JUDGE_SQL: "SQL",
   JUDGE_REDIS: "Redis",
+  JUDGE_MONGODB: "MongoDB",
   // 하네스가 입출력을 맡고 사용자는 함수만 쓴다 (#421).
   JUDGE_FUNCTION: "함수 구현",
 };
@@ -243,6 +245,22 @@ export interface RedisSpec {
   /** 끝난 뒤의 상태를 읽는 명령. **SQL 과 달리 선택이 아니다.** */
   verifyCommands: string;
   /** 기본은 순서를 지킨다 — 정렬 집합·리스트에서 순서는 자료의 일부다. */
+  ignoreOrder: boolean;
+}
+
+/**
+ * MongoDB 문제의 스펙 (#527).
+ *
+ * **모양은 Redis 와 같고 담기는 것이 다르다** — 여기는 `mongosh` 스크립트다.
+ * 확인 스크립트가 `find` 를 찍으면 결과 집합이 되고 컬렉션을 세면 상태가 된다.
+ */
+export interface MongoSpec {
+  /** 시작 상태를 만드는 스크립트. 없어도 된다. */
+  seedScript: string | null;
+  answerScript: string;
+  /** 끝난 뒤를 읽는 스크립트. **선택이 아니다.** */
+  verifyScript: string;
+  /** 기본은 순서를 지킨다 — Redis 와 같은 판단이다. */
   ignoreOrder: boolean;
 }
 
@@ -288,6 +306,7 @@ export interface AdminProblemDetail extends ProblemSummary {
   sqlSpec: SqlSpec | null;
   /** Redis 유형이 아니면 null (#455). */
   redisSpec: RedisSpec | null;
+  mongoSpec: MongoSpec | null;
   /** 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495). */
   canVerifySolution?: boolean;
   description: string;

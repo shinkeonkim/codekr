@@ -55,6 +55,7 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 			contract.KindJudgeFunction:    NewStdioJudge(executor, log),
 			contract.KindJudgeSQL:         NewSqlJudge(executor, log),
 			contract.KindJudgeRedis:       NewRedisJudge(executor, log),
+			contract.KindJudgeMongo:       NewMongoJudge(executor, log),
 			contract.KindJudgeInteractive: NewInteractiveJudge(executor, log),
 		},
 		events: events,
