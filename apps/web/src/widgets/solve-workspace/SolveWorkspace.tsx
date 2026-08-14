@@ -23,9 +23,16 @@ interface Props {
   problem: ProblemDetail;
   /** 고른 실행 환경을 바깥에 알린다. 머리말이 그 언어의 제한을 보여주기 위함이다 (#97). */
   onRuntimeChange?: (runtime: Runtime) => void;
+  /**
+   * 대회 안에서 푸는 중이면 그 대회 (#541).
+   *
+   * **있으면 제출이 대회 경로로 간다.** 평소 경로로 새면 대회 큐(#62)가 아니라 평소
+   * 큐로 가고, 순위표에도 잡히지 않는다 — 서버가 경로를 나눈 이유가 그것이다.
+   */
+  contest?: { slug: string };
 }
 
-export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
+export function SolveWorkspace({ problem, onRuntimeChange, contest }: Props) {
   const router = useRouter();
   // 컴파일 오류에서 돌아온 링크가 어느 파일인지 알려 준다 (#498).
   const searchParams = useSearchParams();
@@ -154,12 +161,16 @@ export function SolveWorkspace({ problem, onRuntimeChange }: Props) {
     setError(null);
     setRunResult(null);
     try {
-      const { submissionId } = await submissionApi.submit(problem.slug, {
+      const body = {
         runtimeId: runtime.id,
         // 파일이 여럿이면 그쪽이 소스다 (#457). 고칠 수 없는 파일은 보내지 않는다.
         ...(hasFiles ? { files: multi.payload } : { sourceCode: source }),
         visibility,
-      });
+      };
+      // **대회면 대회 경로로 간다** (#541). 평소 경로로 새면 대회 큐에 안 들어간다.
+      const { submissionId } = contest
+        ? await submissionApi.submitToContest(contest.slug, problem.slug, body)
+        : await submissionApi.submit(problem.slug, body);
       router.push(`/submissions/${submissionId}`);
     } catch (caught) {
       setError(

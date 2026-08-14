@@ -42,6 +42,28 @@ export const submissionApi = {
       },
     ),
 
+  /**
+   * 대회에 낸다 (#62, #541).
+   *
+   * **경로가 평소와 다르다.** 같은 경로에 대회 여부를 실어 보내면 대회가 아닌 척
+   * 제출해 평소 큐로 보내는 길이 생긴다 — 서버가 그 이유로 경로를 나눠 두었는데
+   * 화면이 그 경로를 부르지 않아 대회에 제출할 방법이 아예 없었다.
+   */
+  submitToContest: (
+    contestSlug: string,
+    problemSlug: string,
+    body: {
+      runtimeId: string;
+      sourceCode?: string;
+      files?: { name: string; sourceCode: string }[];
+      visibility?: SubmissionVisibility;
+    },
+  ) =>
+    request<{ submissionId: number; status: string }>(
+      `/api/v1/contests/${encodeURIComponent(contestSlug)}/problems/${encodeURIComponent(problemSlug)}/submissions`,
+      { method: "POST", body, auth: true },
+    ),
+
   detail: (id: number) =>
     request<SubmissionDetail>(`/api/v1/submissions/${id}`, { auth: true }),
 
