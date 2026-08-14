@@ -52,9 +52,10 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 			contract.KindJudgeStdio: NewStdioJudge(executor, log),
 			// **함수형도 stdout 을 비교한다** (#447). 다른 것은 하네스가 입출력을
 			// 맡는다는 것뿐이라, 채점 방식을 새로 만들지 않는다.
-			contract.KindJudgeFunction: NewStdioJudge(executor, log),
-			contract.KindJudgeSQL:      NewSqlJudge(executor, log),
-			contract.KindJudgeRedis:    NewRedisJudge(executor, log),
+			contract.KindJudgeFunction:    NewStdioJudge(executor, log),
+			contract.KindJudgeSQL:         NewSqlJudge(executor, log),
+			contract.KindJudgeRedis:       NewRedisJudge(executor, log),
+			contract.KindJudgeInteractive: NewInteractiveJudge(executor, log),
 		},
 		events: events,
 		log:    log,

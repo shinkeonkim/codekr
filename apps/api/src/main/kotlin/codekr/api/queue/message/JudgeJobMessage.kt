@@ -65,6 +65,12 @@ data class JudgeJobMessage(
      * **채점기가 DB 를 읽지 않는다**(ADR-0004) — 판정에 필요한 것은 전부 실려 간다.
      */
     val checker: String? = null,
+    /**
+     * 인터랙티브 문제의 채점 코드 (#474).
+     *
+     * **채점기가 DB 를 읽지 않는다** (ADR-0004) — 판정에 필요한 것은 전부 실려 간다.
+     */
+    val interactor: String? = null,
 ) {
     companion object {
         /**
@@ -100,6 +106,8 @@ data class JudgeJobMessage(
                     else -> null
                 },
                 redis = redisSpec?.let(JudgeRedisSpecMessage::from),
+                interactor = problem.interactorSource
+                    ?.takeIf { problem.problemKind == ProblemKind.JUDGE_INTERACTIVE },
                 checker = problem.checkerSource
                     ?.takeIf { problem.outputComparison == OutputComparison.CHECKER },
             )
