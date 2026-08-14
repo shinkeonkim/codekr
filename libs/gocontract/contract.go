@@ -263,7 +263,7 @@ type JudgeJob struct {
 	Interactor string `json:"interactor,omitempty"`
 	Checker    string `json:"checker,omitempty"`
 	// Redis 은 KindJudgeRedis 일 때만 실린다 (#455).
-	Redis *JudgeRedisSpec `json:"nosql,omitempty"`
+	Redis *JudgeRedisSpec `json:"redis,omitempty"`
 }
 
 /*

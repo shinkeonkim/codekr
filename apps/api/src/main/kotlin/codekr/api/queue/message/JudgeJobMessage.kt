@@ -50,7 +50,7 @@ data class JudgeJobMessage(
      */
     val sql: JudgeSqlSpecMessage? = null,
     /** Redis 유형일 때만 실린다 (#455). */
-    val nosql: JudgeRedisSpecMessage? = null,
+    val redis: JudgeRedisSpecMessage? = null,
     /**
      * 함수형 유형일 때만 실린다 (#447, #421).
      *
@@ -105,7 +105,7 @@ data class JudgeJobMessage(
                     ProblemKind.JUDGE_FUNCTION -> problem.harnessFor(submission.runtimeId)
                     else -> null
                 },
-                nosql = redisSpec?.let(JudgeRedisSpecMessage::from),
+                redis = redisSpec?.let(JudgeRedisSpecMessage::from),
                 interactor = problem.interactorSource
                     ?.takeIf { problem.problemKind == ProblemKind.JUDGE_INTERACTIVE },
                 checker = problem.checkerSource

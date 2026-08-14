@@ -5,7 +5,7 @@
 -- 아니라 **답에 이르는 길을 설계하는 것**이다.
 ALTER TABLE problems DROP CONSTRAINT IF EXISTS problems_problem_kind_check;
 ALTER TABLE problems ADD CONSTRAINT problems_problem_kind_check
-    CHECK (problem_kind IN ('JUDGE_STDIO', 'JUDGE_SQL', 'JUDGE_NOSQL', 'JUDGE_INTERACTIVE',
+    CHECK (problem_kind IN ('JUDGE_STDIO', 'JUDGE_SQL', 'JUDGE_REDIS', 'JUDGE_INTERACTIVE',
                             'JUDGE_FUNCTION', 'QUIZ', 'MANUAL'));
 
 -- 대화를 주관하는 출제자의 코드. **사용자에게 절대 내려가지 않는다** — 정답의 일부다
