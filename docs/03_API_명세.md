@@ -855,6 +855,8 @@ POST /api/v1/admin/problems/imports/preview   (같은 형식. 읽기만 한다)
 
 - **zip 과 맨 JSON 을 모두 받는다** (#537). 맨 JSON 은 "테스트케이스 파일이 없는 묶음"
   이다. 무엇인지는 **매직 바이트**로 가른다 — 이름과 `Content-Type` 은 믿지 않는다
+- **SQL 스키마는 묶음 안의 파일로 온다** (#561). `problem.json` 의 `sqlSchemaFile` 이
+  가리키는 파일을 읽어 `sqlSpec.schemaSql` 로 채운다. 그래서 **SQL 문제는 zip 이 필요하다**
 - **언제나 초안**으로 들어온다. 묶음이 `published: true` 라 적어도 덮는다
 - **폼과 같은 검증**을 지난다. **모르는 키가 있으면 거절한다** — 조용히 버리면
   적은 사람은 들어갔다고 믿는다
@@ -871,7 +873,7 @@ POST /api/v1/admin/problems/imports/preview   (같은 형식. 읽기만 한다)
   "slug": "a-plus-b", "title": "A + B",
   "category": "ALGORITHM", "problemKind": "JUDGE_STDIO", "difficulty": "BRONZE_5",
   "timeLimitMs": 2000, "memoryLimitMb": 256,
-  "testcaseCount": 6, "testcaseSource": "INLINE", "templateCount": 1,
+  "testcaseCount": 6, "testcaseSource": "INLINE", "needsTestcases": true, "templateCount": 1,
   "publishedInBundle": true,
   "violations": []
 }
@@ -879,6 +881,8 @@ POST /api/v1/admin/problems/imports/preview   (같은 형식. 읽기만 한다)
 
 - `publishedInBundle` 은 **덮기 전의 값**이다. 적혀 있어도 초안으로 들어간다는 것을
   화면이 말해 줘야 한다
+- `needsTestcases` 는 그 유형이 테스트케이스로 채점되는지다 (#561). SQL·Redis 은
+  `false` 이고 **0개가 정상**이다 — 화면이 유형 이름을 나열하지 않게 서버가 알려 준다
 - `violations` 는 **던지지 않고 모아서** 준다. 첫 번째에서 멈추면 고치고 다시 올리기를
   반복하게 된다. 비어 있지 않으면 저장은 실패한다
 - **저장과 같은 경로를 지난다** — 미리보기를 통과한 것은 저장도 통과한다
