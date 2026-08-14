@@ -54,7 +54,10 @@ export function SideNav({ open, onClose }: { open: boolean; onClose: () => void 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-header lg:hidden">
+    // `z-drawer` 는 툴팁(`z-tooltip`)보다 위다 (#578). `z-header` 였을 때는 기여
+    // 그래프 툴팁·`Select` 목록·멘션 목록이 **패널을 뚫고** 그려졌다 — `aria-modal`
+    // 로 "지금 이것만 다룬다" 고 해 놓고 화면이 그 약속을 안 지켰다.
+    <div className="fixed inset-0 z-drawer lg:hidden">
       {/* 바깥을 눌러 닫는다. 키보드 사용자에게는 Esc 가 같은 일을 하므로 초점을 주지 않는다. */}
       <button
         type="button"

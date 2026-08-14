@@ -29,6 +29,15 @@ export function ToastViewport() {
       duration={OVERLAY.toastDurationMs}
       offset={OVERLAY.toastOffset}
       mobileOffset={OVERLAY.toastOffset}
+      /*
+        **층도 우리가 정한다** (#578). sonner 는 자기 스타일시트에 `z-index:999999999`
+        를 박아 두는데, 그 값이 크다는 이유로 결과가 맞는 것과 **층 표(#134)가 그것을
+        정했다는 것**은 다른 이야기다. 표를 고쳐도 sonner 는 따라오지 않는다.
+
+        `style` 은 sonner 가 `[data-sonner-toaster]` 에 인라인으로 싣는다 — 그래서
+        주입된 스타일시트를 이긴다.
+      */
+      style={{ zIndex: "var(--z-index-toast)" }}
       // 모양은 우리 것이다. 색은 토큰에서 오므로 라이트·다크가 함께 따라온다.
       toastOptions={{
         unstyled: true,
