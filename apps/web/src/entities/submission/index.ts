@@ -16,5 +16,7 @@ export type {
   TestcaseResult,
   Verdict,
 } from "./model/types";
+export { parseSqlResult, SQL_NULL } from "./model/sqlResult";
+export type { SqlResultTable as SqlResultTableData } from "./model/sqlResult";
 export { SubmissionResult } from "./ui/SubmissionResult";
 export { VerdictMascot } from "./ui/VerdictMascot";

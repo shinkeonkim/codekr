@@ -112,5 +112,21 @@ if [ -f /work/answer.sql ]; then
     echo "--- codekr:expected"
     psql -tA -F'|' -v ON_ERROR_STOP=1 -U postgres -d postgres -f /work/answer.sql
     echo "--- codekr:actual"
+    # 채점이다. **형식을 바꾸지 않는다** — 기대와 실제를 문자열로 견주므로, 여기서
+    # 머리글을 붙이면 판정이 통째로 달라진다.
+    psql -tA -F'|' -v ON_ERROR_STOP=1 -U solver -d postgres -f /work/query.sql
+    exit 0
 fi
-psql -tA -F'|' -v ON_ERROR_STOP=1 -U solver -d postgres -f /work/query.sql
+
+# **사람이 보는 실행이다** (#525). 정답도 검사 쿼리도 없으면 견줄 상대가 없다 —
+# 채점이 아니라 사용자가 시험 삼아 돌려 본 것이다.
+#
+# 그래서 CSV 로 낸다:
+#   - **열 이름이 온다.** `-t` 는 튜플만 내놓아서, 첫 칸이 무엇인지 알 방법이 없었다
+#   - **값에 든 구분자가 깨지지 않는다.** `-F'|'` 는 값 안의 `|` 와 구분되지 않는다
+#
+# NULL 은 `∅` 로 적는다. **CSV 에는 NULL 이 없다** — psql 은 NULL 과 빈 문자열을 둘 다
+# 빈 칸으로 내놓아서, 그대로 두면 "값이 없다" 와 "빈 글자" 가 화면에서 같아진다.
+# 값이 실제로 `∅` 인 경우는 구분하지 못한다. 그것까지 가르려면 형식을 CSV 밖으로
+# 옮겨야 하고, 그 값은 여기서 치르는 비용보다 작다.
+psql --csv -P null='∅' -v ON_ERROR_STOP=1 -U solver -d postgres -f /work/query.sql
