@@ -86,11 +86,14 @@ class MongoProblemIntegrationTest : IntegrationTestBase() {
     fun `기동 시간을 못 채우는 시간 제한은 거절한다`() {
         // mongod 는 뜨는 데만 수 초가 걸린다. 그것을 빼고 제한을 잡으면 제출이 아무리
         // 빨라도 시간 초과가 나고, 출제자는 자기 문제가 왜 안 되는지 모른다.
+        //
+        // 하한은 `startupMs + SQL_QUERY_BUDGET_MS` 다. 실측으로 startupMs 를 12초로
+        // 올렸으므로(#527) 13초 미만은 거절된다 — 이 시험의 본문이 25초를 쓰는 이유다.
         mockMvc.perform(
             post("/api/v1/admin/problems")
                 .header("Authorization", "Bearer $adminToken")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(body("mongo-too-tight").replace("\"timeLimitMs\": 10000", "\"timeLimitMs\": 2000")),
+                .content(body("mongo-too-tight").replace("\"timeLimitMs\": 25000", "\"timeLimitMs\": 2000")),
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.message").value(containsString("뜨는 데만")))
@@ -132,7 +135,7 @@ class MongoProblemIntegrationTest : IntegrationTestBase() {
           "category": "ALGORITHM", "problemKind": "JUDGE_MONGODB", "difficulty": "SILVER_5",
           "description": "주문을 처리하세요.", "published": $published,
           "allowedRuntimeIds": ["mongodb:7"],
-          "timeLimitMs": 10000, "memoryLimitMb": 512,
+          "timeLimitMs": 25000, "memoryLimitMb": 512,
           "mongoSpec": {
             "seedScript": "$SEED",
             "answerScript": "$ANSWER",
