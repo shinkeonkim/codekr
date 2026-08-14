@@ -4,6 +4,7 @@ import { adminContestApi } from "@/entities/contest";
 import type { ContestUpsert } from "@/entities/contest";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input, Textarea, useToast } from "@/shared/ui";
+import { ContestApplicantsPanel } from "./ContestApplicantsPanel";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -18,6 +19,8 @@ const BLANK: ContestUpsert = {
   submissionCooldownSeconds: 20,
   // 기본은 공개다 (#465). 기본을 바꾸면 이 판 이후에 만든 대회만 조용히 숨는다.
   visibility: "PUBLIC",
+  // 기본은 승인 없이 참가다 (#466). 켜면 운영자가 한 명씩 승인해야 한다.
+  requiresApproval: false,
 };
 
 /**
@@ -48,6 +51,7 @@ export function AdminContestFormPage({ id }: { id?: number }) {
           freezeMinutes: contest.freezeMinutes,
           submissionCooldownSeconds: contest.submissionCooldownSeconds,
           visibility: contest.visibility,
+          requiresApproval: contest.requiresApproval,
         }),
       )
       .catch(() => setError("대회를 불러오지 못했습니다."));
@@ -145,6 +149,30 @@ export function AdminContestFormPage({ id }: { id?: number }) {
             주소를 아는 사람은 들어옵니다. 문제와 순위표는 시작 시각·참가 여부가 막습니다.
           </p>
         ) : null}
+        {/*
+          승인을 켜는 자리 (#466). **화면에 없어서 켤 수조차 없었다** (#543).
+          켜면 신청자 목록이 대회 상세에 뜬다.
+        */}
+        <Field label="참가 승인">
+          <div className="flex gap-2">
+            {([false, true] as const).map((each) => (
+              <Button
+                key={String(each)}
+                variant={values.requiresApproval === each ? "primary" : "secondary"}
+                className="px-3 py-1 text-xs"
+                onClick={() => update("requiresApproval", each)}
+              >
+                {each ? "승인해야 참가" : "신청하면 바로 참가"}
+              </Button>
+            ))}
+          </div>
+        </Field>
+        {values.requiresApproval ? (
+          <p className="text-xs text-ink-muted">
+            신청한 사람은 <span className="text-ink">승인할 때까지 참가자가 아닙니다</span> —
+            문제도 못 보고 제출도 못 합니다. 대회 상세에서 신청자를 승인하십시오.
+          </p>
+        ) : null}
         <Field label="설명">
           <Textarea
             rows={4}
@@ -156,6 +184,9 @@ export function AdminContestFormPage({ id }: { id?: number }) {
           저장
         </Button>
       </Card>
+
+      {/* 만들기 전에는 신청자가 있을 수 없다. */}
+      {id ? <ContestApplicantsPanel contestId={id} requiresApproval={values.requiresApproval} /> : null}
     </div>
   );
 }
