@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BANNER_HEIGHT, BANNER_WIDTH, BrandBanner } from "./BrandBanner";
+import { BrandBanner, bannerRatio } from "./BrandBanner";
 import type { BrandBannerName } from "./BrandBanner";
 
 /** 한 장이 머무는 시간. 짧으면 읽는 도중에 바뀌고, 길면 두 번째 장을 아무도 못 본다. */
@@ -53,8 +53,12 @@ export function BrandSlideshow({
       {/*
         높이를 비율로 먼저 잡는다. 장이 전부 겹쳐 떠 있어서 이것이 없으면 높이가 0 이 되고,
         그림이 도착하는 순간 아래 목록이 통째로 밀린다.
+
+        **첫 장의 비율로 잡는다** (#518). 배너마다 비율이 달라질 수 있게 되면서 하나를
+        골라야 했는데, 첫 장이 먼저 보이는 장이라 그것을 기준으로 삼는 것이 덜 튄다.
+        비율이 다른 그림을 섞으면 `object-cover` 가 잘라 낸다.
       */}
-      <div className="relative" style={{ aspectRatio: `${BANNER_WIDTH} / ${BANNER_HEIGHT}` }}>
+      <div className="relative" style={{ aspectRatio: bannerRatio(names[0]) }}>
         {names.map((name, index) => (
           <BrandBanner
             key={name}

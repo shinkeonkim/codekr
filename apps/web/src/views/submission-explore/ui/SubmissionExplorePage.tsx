@@ -6,7 +6,7 @@ import { BrandSlideshow } from "@/shared/ui";
 import { Suspense } from "react";
 
 /** 슬라이드에 쓸 그림. 순서가 곧 보이는 순서다. */
-const BANNERS = ["submissionsCoding", "submissionsReview"] as const;
+const BANNERS = ["submissionsCoding", "submissionsReview", "submissionsSolved"] as const;
 
 export function SubmissionExplorePage() {
   return (
