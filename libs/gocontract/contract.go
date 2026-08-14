@@ -137,6 +137,18 @@ type ExecJob struct {
 		비어 있으면 지금까지처럼 사용자 코드 하나를 그대로 돌린다.
 	*/
 	HarnessSource string `json:"harnessSource,omitempty"`
+	/*
+		SourceFiles 는 **사용자가 쓴 파일들**이다 (#457).
+
+		`SourceCode` 와 나눠 둔 이유: 둘은 주인이 다르다. 하나는 제출이고 하나는 문제가
+		소유하는 자료(`ExtraFiles`)이며, 섞으면 "이 파일을 사용자가 고칠 수 있는가" 를
+		실행기가 알 수 없게 된다.
+
+		비어 있으면 지금까지처럼 `SourceCode` 하나를 `SourceFile` 이름으로 놓는다.
+		차 있으면 그 파일들을 놓고, **진입점(`SourceFile`)도 그 안에 있어야 한다** —
+		없으면 무엇을 컴파일·실행할지가 없다.
+	*/
+	SourceFiles map[string]string `json:"sourceFiles,omitempty"`
 }
 
 // ExecResult 는 실행기가 응답 스트림으로 돌려주는 결과다.
@@ -179,12 +191,14 @@ type JudgeJob struct {
 	SubmissionID int64 `json:"submissionId"`
 	ProblemID    int64 `json:"problemId"`
 	// 빈 값이면 KindJudgeStdio 다. KindOf 로 읽는다.
-	Kind          string          `json:"kind"`
-	RuntimeID     string          `json:"runtimeId"`
-	SourceCode    string          `json:"sourceCode"`
-	TimeLimitMs   int             `json:"timeLimitMs"`
-	MemoryLimitMb int             `json:"memoryLimitMb"`
-	Testcases     []JudgeTestcase `json:"testcases"`
+	Kind       string `json:"kind"`
+	RuntimeID  string `json:"runtimeId"`
+	SourceCode string `json:"sourceCode"`
+	// SourceFiles 는 여러 파일로 낸 제출이다 (#457). 비면 SourceCode 하나다.
+	SourceFiles   map[string]string `json:"sourceFiles,omitempty"`
+	TimeLimitMs   int               `json:"timeLimitMs"`
+	MemoryLimitMb int               `json:"memoryLimitMb"`
+	Testcases     []JudgeTestcase   `json:"testcases"`
 	// Comparison 은 출력 비교 방식 (#279). 빈 값이면 CompareExact 다 —
 	// 이 필드가 없던 시절에 큐에 들어간 작업이 남아 있을 수 있고, 전부 정확 일치였다.
 	Comparison string `json:"comparison,omitempty"`
