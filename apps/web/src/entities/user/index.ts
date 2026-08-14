@@ -1,4 +1,5 @@
 export { userApi } from "./api";
+export { hasRole, reachableRoles } from "./model/roles";
 export type {
   AdminEmailVerificationResult,
   AdminAuditLog,

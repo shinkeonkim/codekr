@@ -2,10 +2,11 @@
 
 import { contestApi } from "@/entities/contest";
 import type { ContestNotice, ContestQuestion } from "@/entities/contest";
+import { hasRole } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
-import { Alert, Button, Card, CardTitle, CheckboxField, Markdown, Textarea, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, CheckboxField, ConfirmDialog, Markdown, Textarea, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 
 /**
@@ -16,6 +17,8 @@ import { useEffect, useState } from "react";
  */
 export function ContestBoard({ slug, registered }: { slug: string; registered: boolean }) {
   const { user, isAdmin } = useAuth();
+  // 대회 관리자만 공지를 지운다 (#544). `isAdmin` 으로는 CONTEST_MANAGER 를 못 잡는다.
+  const canManage = hasRole(user?.roles, "CONTEST_MANAGER");
   const toast = useToast();
   const [notices, setNotices] = useState<ContestNotice[]>([]);
   const [questions, setQuestions] = useState<ContestQuestion[]>([]);
@@ -27,6 +30,16 @@ export function ContestBoard({ slug, registered }: { slug: string; registered: b
   };
 
   useEffect(load, [slug]);
+
+  const removeNotice = async (noticeId: number) => {
+    try {
+      await contestApi.deleteNotice(slug, noticeId);
+      toast.success("공지를 지웠습니다.");
+      load();
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "지우지 못했습니다.");
+    }
+  };
 
   const ask = async () => {
     try {
@@ -51,6 +64,19 @@ export function ContestBoard({ slug, registered }: { slug: string; registered: b
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium text-ink">{notice.title}</span>
                 <span className="text-xs text-ink-muted">{formatDateTime(notice.createdAt)}</span>
+                {canManage ? (
+                  <ConfirmDialog
+                    title="공지를 지웁니다"
+                    description="참가자에게 더 이상 보이지 않습니다."
+                    confirmLabel="지우기"
+                    trigger={
+                      <Button variant="secondary" className="ml-auto px-2 py-1 text-xs">
+                        삭제
+                      </Button>
+                    }
+                    onConfirm={() => removeNotice(notice.id)}
+                  />
+                ) : null}
               </div>
               <Markdown source={notice.body} />
             </Card>
