@@ -20,6 +20,14 @@ import java.time.Instant
 enum class CreditRole(val label: String) {
     SETTER("출제"),
     REVIEWER("검수"),
+
+    /**
+     * 오류를 찾아 문제를 고치게 한 사람 (#478).
+     *
+     * **어드민이 정하지 않는다.** 신고가 받아들여질 때 붙는다 — 그래서 편집 화면의
+     * 출제·검수 목록과 달리, 문제를 저장해도 지워지지 않아야 한다.
+     */
+    CONTRIBUTOR("기여"),
 }
 
 @Embeddable
@@ -47,4 +55,12 @@ interface ProblemCreditRepository : JpaRepository<ProblemCredit, ProblemCreditId
     fun findByIdProblemId(problemId: Long): List<ProblemCredit>
 
     fun deleteByIdProblemId(problemId: Long)
+
+    /**
+     * 어드민이 고르는 역할만 지운다 (#478).
+     *
+     * 기여자(#478)는 신고가 받아들여질 때 붙는 것이라, 문제를 저장할 때마다 통째로
+     * 지우면 **고친 사람의 이름이 다음 편집에서 사라진다.**
+     */
+    fun deleteByIdProblemIdAndIdRoleIn(problemId: Long, roles: Collection<CreditRole>)
 }
