@@ -15,7 +15,10 @@ export interface ImportWarning {
 export function importWarnings(preview: ProblemImportPreview): ImportWarning[] {
   const warnings: ImportWarning[] = [];
 
-  if (preview.testcaseCount === 0) {
+  // **유형 이름을 여기서 나열하지 않는다.** SQL 은 정답 쿼리로, Redis 은 끝난 뒤의
+  // 상태로 채점하므로 테스트케이스가 0개인 것이 정상이다 (#561). 그 목록을 화면이
+  // 따로 들면 유형이 늘 때 빠뜨린다 — 서버가 `needsTestcases` 로 알려 준다.
+  if (preview.needsTestcases && preview.testcaseCount === 0) {
     // 막지는 않는다. 테스트케이스를 나중에 붙이는 순서도 있기 때문이다.
     warnings.push({
       blocking: false,

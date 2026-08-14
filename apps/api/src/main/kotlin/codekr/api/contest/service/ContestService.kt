@@ -56,8 +56,19 @@ class ContestService(
     fun findRegistered(userId: Long, pageable: Pageable): PageResponse<ContestSummaryResponse> {
         val now = Instant.now()
         val page = contestRepository.findRegistered(userId, ContestStatus.DRAFT, pageable)
-        return PageResponse.from(page.map { summaryOf(it, now) })
+        // **신청 상태를 함께 싣는다** (#546). 승인이 필요한 대회에서는 신청만 한 사람이
+        // 생기는데(#466), 그 사람이 자기가 기다리는 중인지 알 방법이 없었다.
+        return PageResponse.from(
+            page.map { contest ->
+                summaryOf(contest, now).withRegistrationStatus(registrationStatusOf(contest.id, userId))
+            },
+        )
     }
+
+    private fun registrationStatusOf(contestId: Long, userId: Long): ContestRegistrationStatus? =
+        registrationRepository.findById(ContestRegistrationId(contestId, userId))
+            .map { it.status }
+            .orElse(null)
 
     fun findDetail(slug: String, viewerId: Long?): ContestDetailResponse {
         val now = Instant.now()

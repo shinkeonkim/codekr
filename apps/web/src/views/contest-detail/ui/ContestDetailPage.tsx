@@ -102,7 +102,7 @@ function DetailView({ slug }: { slug: string }) {
         <Alert>참가 등록되어 있습니다.</Alert>
       ) : null}
 
-      <ProblemList contest={contest} />
+      <ProblemList contest={contest} slug={slug} />
 
       <ContestBoard slug={slug} registered={contest.registered} />
 
@@ -118,7 +118,7 @@ function DetailView({ slug }: { slug: string }) {
   );
 }
 
-function ProblemList({ contest }: { contest: ContestDetail }) {
+function ProblemList({ contest, slug }: { contest: ContestDetail; slug: string }) {
   if (contest.problems.length === 0) {
     // 왜 비어 있는지 말해 준다. 그냥 비어 있으면 고장으로 보인다.
     const reason =
@@ -134,10 +134,15 @@ function ProblemList({ contest }: { contest: ContestDetail }) {
     <section className="space-y-2">
       <CardTitle>문제</CardTitle>
       <Card className="divide-y divide-border p-0">
+        {/*
+          **대회 주소로 잇는다** (#541). 평소 문제 주소로 이으면 거기서 낸 제출이
+          평소 큐로 가고 순위표에 잡히지 않는다 — 서버가 경로를 나눈 이유(#62)가
+          화면에서 지켜지지 않았다.
+        */}
         {contest.problems.map((problem) => (
           <Link
             key={problem.slug}
-            href={`/problems/${problem.id}`}
+            href={`/contests/${encodeURIComponent(slug)}/problems/${encodeURIComponent(problem.slug)}`}
             className="flex items-center gap-3 px-5 py-3 transition hover:bg-surface-muted"
           >
             <span className="w-6 font-semibold text-ink-muted">{problem.label}</span>

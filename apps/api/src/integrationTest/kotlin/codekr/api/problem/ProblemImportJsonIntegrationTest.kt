@@ -118,18 +118,18 @@ class ProblemImportJsonIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `SQL 시드는 조립 없이 올릴 수 없다`() {
+    fun `SQL 시드는 맨 JSON 으로 올릴 수 없다`() {
         /*
-          SQL 시드 일곱 개는 `sqlSchemaFile` 로 스키마를 **별도 파일**에 두고,
-          seed-problems.sh 가 보내기 전에 sqlSpec.schemaSql 로 조립한다 (#313).
+          SQL 시드 일곱 개는 `sqlSchemaFile` 로 스키마를 **별도 파일**에 둔다 (#313).
+          맨 JSON 에는 그 파일이 딸려 오지 않으므로 여전히 올릴 수 없다.
 
-          그대로 올리면 **스키마 없는 SQL 문제**가 될 뻔한 자리다. 지금은 거절된다 —
-          schemaSql 이 없다는 것이 먼저 걸리기 때문이고, 그것이 모르는 키를 지적하는
-          것보다 정확한 메시지다.
+          다만 #561 이후로는 **왜 안 되는지**를 말한다 — zip 으로 묶으라는 뜻이
+          메시지에 담겨야 사람이 다음 수를 안다. 묶어서 올리는 경로는
+          ProblemImportSqlIntegrationTest 가 확인한다.
         */
         post("/imports", seedFile("08-sql-seoul-members.json"))
             .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.message").value(containsString("schemaSql")))
+            .andExpect(jsonPath("$.message").value(containsString("zip")))
     }
 
     private fun post(path: String, body: ByteArray) = mockMvc.perform(

@@ -61,8 +61,13 @@ func TestLiveSQLComparesAgainstAnswerQuery(t *testing.T) {
 	if contract.NormalizeSQLRows(expected, true) != contract.NormalizeSQLRows(actual, true) {
 		t.Fatalf("같은 쿼리인데 결과가 다릅니다.\n정답=%q\n제출=%q", expected, actual)
 	}
-	if !strings.Contains(expected, "서울|2") {
+	// **CSV 다** (#532). 전에는 `서울|2` 였는데, 값에 `|` 가 있으면 구분자와 구분되지
+	// 않아 판정이 틀릴 수 있었다. psql 은 감쌀 필요가 없는 값은 그대로 낸다.
+	if !strings.Contains(expected, "서울,2") {
 		t.Fatalf("시드 데이터가 반영되지 않았습니다: %q", expected)
+	}
+	if strings.Contains(expected, "서울|2") {
+		t.Fatalf("아직 옛 파이프 형식으로 나옵니다: %q", expected)
 	}
 }
 

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import tools.jackson.databind.DeserializationFeature
 import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.node.ObjectNode
 
 /**
  * 묶음 파일로 문제를 만든다 (#479, #537).
@@ -38,6 +39,11 @@ class ProblemImportService(
     private val objectMapper: ObjectMapper,
     private val validator: Validator,
 ) {
+
+    private companion object {
+        /** 시드가 쓰던 키 그대로다 (#313). 서버는 이것을 sqlSpec.schemaSql 로 푼다. */
+        const val SCHEMA_FILE_KEY = "sqlSchemaFile"
+    }
 
     @Transactional
     fun import(file: MultipartFile, createdBy: Long): ProblemCreatedResponse {
@@ -73,6 +79,7 @@ class ProblemImportService(
             timeLimitMs = read.request.timeLimitMs,
             memoryLimitMb = read.request.memoryLimitMb,
             testcaseCount = read.request.testcases.size,
+            needsTestcases = read.request.problemKind.needsTestcases,
             testcaseSource = read.testcaseSource,
             templateCount = read.request.templates.size,
             publishedInBundle = read.publishedInBundle,
@@ -92,7 +99,7 @@ class ProblemImportService(
         if (file.isEmpty) throw ApiException(ErrorCode.VALIDATION_ERROR, "빈 파일입니다.")
 
         val content = file.inputStream.use(ProblemArchive::read)
-        val meta = parse(content.meta)
+        val meta = parse(resolveSchemaFile(content))
         val fromFiles = content.testcases.map { (seq, pair) ->
             TestcaseRequest(seq = seq, input = pair.first, expectedOutput = pair.second)
         }
@@ -113,6 +120,64 @@ class ProblemImportService(
             // 덮기 **전의** 값이다. 화면이 "적혀 있지만 초안으로 들어간다"를 말해야 한다.
             publishedInBundle = meta.published,
         )
+    }
+
+    /**
+     * SQL 스키마를 묶음 안의 파일에서 끌어온다 (#561).
+     *
+     * ## 왜 파일인가
+     *
+     * `scripts/seed-problems` 의 SQL 문제 일곱 개가 이미 그렇게 하고 있다 —
+     * 다섯 문제가 **같은 스키마를 공유**하고, 여러 줄 SQL 은 JSON 문자열 안에서 읽을 수
+     * 없기 때문이다 (#313). 그것은 묶음이 테스트케이스를 파일로 뺀 이유와 똑같다.
+     *
+     * 그래서 형식을 새로 만들지 않고 **이미 있는 규칙을 한 자리 더 적용**한다.
+     * `sqlSchemaFile` 은 시드가 쓰던 키 그대로다.
+     *
+     * ## 둘 다 적으면 거절한다
+     *
+     * 테스트케이스는 "파일이 이긴다" 지만 그쪽은 파일을 **넣기만** 하면 되는 것이고,
+     * 여기는 `sqlSchemaFile` 을 **손으로 적어야** 한다. 손으로 적은 것 둘이 어긋나면
+     * 어느 쪽이 뜻인지 우리가 정할 일이 아니다.
+     */
+    private fun resolveSchemaFile(content: ProblemArchive.Content): String {
+        val root = objectMapper.readTree(content.meta) as? ObjectNode
+            ?: throw ApiException(ErrorCode.VALIDATION_ERROR, "problem.json 이 객체가 아닙니다.")
+        val schemaFile = root.remove(SCHEMA_FILE_KEY)?.takeIf { !it.isNull }?.asString()
+
+        if (schemaFile != null) {
+            val spec = root.get("sqlSpec") as? ObjectNode
+                ?: throw ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "$SCHEMA_FILE_KEY 이 있는데 sqlSpec 이 없습니다.",
+                )
+            if (spec.hasNonNull("schemaSql")) {
+                throw ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "$SCHEMA_FILE_KEY 과 sqlSpec.schemaSql 이 둘 다 있습니다. 하나만 적으십시오.",
+                )
+            }
+            val schema = content.extras[schemaFile] ?: throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                if (content.source == ProblemArchive.Source.JSON) {
+                    "$SCHEMA_FILE_KEY 은 묶음(zip) 안의 파일을 가리킵니다. 맨 JSON 으로는 읽을 수 없습니다: $schemaFile"
+                } else {
+                    "묶음에 $schemaFile 이 없습니다."
+                },
+            )
+            spec.put("schemaSql", schema)
+        }
+
+        // **아무도 안 가리키는 파일은 거절한다.** 조용히 버리면 출제자는 자기가 넣은
+        // 것이 들어갔다고 믿는다 — zip 의 "모르는 파일" 규칙 그대로다.
+        val unused = content.extras.keys - setOfNotNull(schemaFile)
+        if (unused.isNotEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "묶음에 모르는 파일이 있습니다: ${unused.sorted().joinToString()}",
+            )
+        }
+        return root.toString()
     }
 
     private fun violationsOf(request: ProblemUpsertRequest): List<String> =

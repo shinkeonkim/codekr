@@ -1,14 +1,18 @@
 package codekr.api.group.controller
 
 import codekr.api.auth.security.AuthPrincipal
+import codekr.api.common.dto.PageResponse
 import codekr.api.config.security.AuthenticatedApi
 import codekr.api.group.dto.GroupDetail
 import codekr.api.group.dto.GroupInvitePreview
 import codekr.api.group.dto.GroupRequest
 import codekr.api.group.dto.GroupSummary
+import codekr.api.group.dto.OpenGroupSummary
 import codekr.api.group.service.GroupMembershipService
 import codekr.api.group.service.GroupService
 import jakarta.validation.Valid
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -79,6 +83,19 @@ class GroupController(
     @PostMapping("/invites/{token}/join")
     fun joinByInvite(@PathVariable token: String, principal: AuthPrincipal): Map<String, Long> =
         mapOf("groupId" to membershipService.joinByInvite(token, principal.userId))
+
+    /**
+     * 공개 가입을 켜 둔 그룹을 둘러본다 (#554).
+     *
+     * **이 조회가 없어서 `openJoin` 이 죽은 설정이었다.** 들어가는 문은 있었는데
+     * 그 문이 어디 있는지 찾을 길이 없었다 — 목록은 내 그룹만 줬다.
+     */
+    @AuthenticatedApi
+    @GetMapping("/open")
+    fun openGroups(
+        @PageableDefault(size = 20) pageable: Pageable,
+        principal: AuthPrincipal,
+    ): PageResponse<OpenGroupSummary> = groupService.openGroups(principal.userId, pageable)
 
     /** 공개 가입. 방장이 켜 두었을 때만 열린다. */
     @AuthenticatedApi

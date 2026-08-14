@@ -1,9 +1,11 @@
 "use client";
 
 import { adminContestApi } from "@/entities/contest";
-import type { ContestUpsert } from "@/entities/contest";
+import type { AdminContest, ContestUpsert } from "@/entities/contest";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input, Textarea, useToast } from "@/shared/ui";
+import { ContestAdminPanels } from "./ContestAdminPanels";
+import { ContestPolicyFields } from "./ContestPolicyFields";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -18,6 +20,8 @@ const BLANK: ContestUpsert = {
   submissionCooldownSeconds: 20,
   // 기본은 공개다 (#465). 기본을 바꾸면 이 판 이후에 만든 대회만 조용히 숨는다.
   visibility: "PUBLIC",
+  // 기본은 승인 없이 참가다 (#466). 켜면 운영자가 한 명씩 승인해야 한다.
+  requiresApproval: false,
 };
 
 /**
@@ -30,6 +34,8 @@ export function AdminContestFormPage({ id }: { id?: number }) {
   const router = useRouter();
   const toast = useToast();
   const [values, setValues] = useState<ContestUpsert>(BLANK);
+  /** 운영 패널이 쓰는 서버 상태. 폼 값과 달리 동결·문제 목록까지 들고 있다. */
+  const [contest, setContest] = useState<AdminContest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -37,7 +43,8 @@ export function AdminContestFormPage({ id }: { id?: number }) {
     if (!id) return;
     adminContestApi
       .detail(id)
-      .then((contest) =>
+      .then((contest) => {
+        setContest(contest);
         setValues({
           slug: contest.slug,
           title: contest.title,
@@ -48,8 +55,9 @@ export function AdminContestFormPage({ id }: { id?: number }) {
           freezeMinutes: contest.freezeMinutes,
           submissionCooldownSeconds: contest.submissionCooldownSeconds,
           visibility: contest.visibility,
-        }),
-      )
+          requiresApproval: contest.requiresApproval,
+        });
+      })
       .catch(() => setError("대회를 불러오지 못했습니다."));
   }, [id]);
 
@@ -121,30 +129,7 @@ export function AdminContestFormPage({ id }: { id?: number }) {
             />
           </Field>
         </div>
-        {/*
-          **`status` 와 다른 값이다** (#465). 그쪽은 "준비 중인가", 이쪽은 "누가 보는가" 다.
-          목록에 없는 대회도 주소를 알면 들어온다 — 비밀이 아니라는 것을 화면이 말한다.
-        */}
-        <Field label="공개 범위">
-          <div className="flex gap-2">
-            {(["PUBLIC", "UNLISTED"] as const).map((each) => (
-              <Button
-                key={each}
-                variant={values.visibility === each ? "primary" : "secondary"}
-                className="px-3 py-1 text-xs"
-                onClick={() => update("visibility", each)}
-              >
-                {each === "PUBLIC" ? "누구나 보기" : "링크가 있는 사람만"}
-              </Button>
-            ))}
-          </div>
-        </Field>
-        {values.visibility === "UNLISTED" ? (
-          <p className="text-xs text-ink-muted">
-            목록과 검색에는 나오지 않습니다. <span className="text-ink">비밀은 아닙니다</span> —
-            주소를 아는 사람은 들어옵니다. 문제와 순위표는 시작 시각·참가 여부가 막습니다.
-          </p>
-        ) : null}
+        <ContestPolicyFields values={values} update={update} />
         <Field label="설명">
           <Textarea
             rows={4}
@@ -156,6 +141,15 @@ export function AdminContestFormPage({ id }: { id?: number }) {
           저장
         </Button>
       </Card>
+
+      {/* 만들기 전에는 신청자도 운영할 것도 감사할 것도 없다. */}
+      {contest ? (
+        <ContestAdminPanels
+          contest={contest}
+          requiresApproval={values.requiresApproval}
+          onChanged={setContest}
+        />
+      ) : null}
     </div>
   );
 }

@@ -322,6 +322,8 @@ export interface ProblemImportPreview {
   timeLimitMs: number;
   memoryLimitMb: number;
   testcaseCount: number;
+  /** 이 유형이 테스트케이스로 채점되는가 (#561). SQL·Redis 은 0개가 정상이다. */
+  needsTestcases: boolean;
   testcaseSource: "FILES" | "INLINE" | "NONE";
   templateCount: number;
   publishedInBundle: boolean;

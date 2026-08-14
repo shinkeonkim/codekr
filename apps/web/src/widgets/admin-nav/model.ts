@@ -1,3 +1,4 @@
+import { reachableRoles } from "@/entities/user";
 import type { UserRole } from "@/entities/user";
 
 /**
@@ -98,6 +99,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["SUPERUSER"],
   },
   {
+    href: "/admin/problem-reports",
+    label: "오류 신고",
+    description: "사용자가 알린 지문·데이터 문제",
+    // 문제를 고치는 일이라 문제 출제자가 본다 (#478).
+    roles: ["PROBLEM_SETTER"],
+  },
+  {
     href: "/admin/operations",
     label: "운영 작업",
     description: "랭킹·활동 집계 재계산",
@@ -106,19 +114,8 @@ export const ADMIN_NAV: AdminNavItem[] = [
   },
 ];
 
-/**
- * 역할 위계 (#103). 서버의 `RoleHierarchy` 와 같은 모양이다.
- *
- * 화면이 이것을 아는 이유는 **감출지 말지를 정하기 위해서**다. 권한 판단은 서버가 한다.
- */
-const IMPLIES: Partial<Record<UserRole, UserRole[]>> = {
-  SUPERUSER: ["ADMIN", "PROBLEM_SETTER", "CONTEST_MANAGER", "BOARD_MANAGER"],
-  ADMIN: ["PROBLEM_SETTER", "CONTEST_MANAGER", "BOARD_MANAGER"],
-};
-
 export function visibleNav(roles: UserRole[]): AdminNavItem[] {
-  const reachable = new Set<UserRole>(roles);
-  roles.forEach((role) => IMPLIES[role]?.forEach((implied) => reachable.add(implied)));
-
+  // 위계는 `entities/user` 가 안다 (#544) — 보는 곳이 여기 하나가 아니라 두 벌이 되면 갈라진다.
+  const reachable = reachableRoles(roles);
   return ADMIN_NAV.filter((item) => !item.roles || item.roles.some((role) => reachable.has(role)));
 }

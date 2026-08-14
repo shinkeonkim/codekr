@@ -7,6 +7,7 @@ import { Avatar } from "@/entities/user";
 import { useAuth } from "@/features/auth";
 import type { Page } from "@/shared/api";
 import { formatDateTime } from "@/shared/lib";
+import { ProblemReportDialog } from "@/features/problem-report";
 import { Button, Card, CardTitle, EmptyState, Pagination } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
@@ -85,6 +86,13 @@ export function ProblemQuestionsPage({ params }: { params: Promise<{ slug: strin
           />
         ) : null}
       </div>
+
+      {/*
+        신고는 질문 아래, 눈에 덜 띄는 자리다 (#548). 앞에 두면 푸는 방법을 묻는
+        사람이 신고를 누른다 — 그러면 질문 백 개 사이에 신고 하나가 묻히는 것과
+        반대 방향으로 같은 문제가 생긴다.
+      */}
+      <ProblemReportDialog slug={problem.slug} />
     </div>
   );
 }

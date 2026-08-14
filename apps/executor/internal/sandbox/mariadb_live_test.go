@@ -101,8 +101,15 @@ func TestLiveMariaDBProducesTheSameShapeAsPostgres(t *testing.T) {
 	if contract.NormalizeSQLRows(expected, true) != contract.NormalizeSQLRows(actual, true) {
 		t.Fatalf("같은 쿼리인데 결과가 다릅니다.\n정답=%q\n제출=%q", expected, actual)
 	}
-	if !strings.Contains(expected, "서울|2") {
-		t.Fatalf("PostgreSQL 판과 같은 구분자여야 합니다: %q", expected)
+	/*
+	  **PostgreSQL 판과 같은 형식이어야 한다** — 채점기는 DB 를 모른다.
+
+	  둘 다 CSV 다 (#532). 다만 감싸는 방식은 다를 수 있다: psql 은 필요할 때만
+	  감싸고, 이쪽은 awk 가 모든 칸을 감싼다. **채점기는 CSV 로 읽으므로 그 차이가
+	  판정에 닿지 않는다** — 그래서 여기서도 정규화한 뒤 견준다.
+	*/
+	if contract.NormalizeSQLRows(expected, true) != contract.NormalizeSQLRows("\"서울\",\"2\"\n\"부산\",\"1\"\n", true) {
+		t.Fatalf("PostgreSQL 판과 같은 형식이어야 합니다: %q", expected)
 	}
 }
 

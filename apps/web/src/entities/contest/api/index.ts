@@ -14,6 +14,17 @@ export const contestApi = {
     request<Page<ContestSummary>>(`/api/v1/contests?page=${page}&size=${size}`),
 
   /**
+   * 내가 신청한 대회 (#546).
+   *
+   * **비공개 대회를 다시 찾는 유일한 길이다** — 목록에 안 뜨므로 주소를 잃으면
+   * 여기 말고는 돌아올 곳이 없다.
+   */
+  registered: (page = 0, size = 20) =>
+    request<Page<ContestSummary>>(`/api/v1/contests/registered?page=${page}&size=${size}`, {
+      auth: true,
+    }),
+
+  /**
    * 상세. 로그인 여부에 따라 내용이 다르다 — 참가자에게만 문제가 보인다.
    *
    * `auth: true` 는 **토큰이 있으면 싣는다**는 뜻이지 로그인을 요구하는 것이 아니다.
@@ -59,6 +70,17 @@ export const contestApi = {
       auth: true,
     }),
 
+  /**
+   * 공지를 지운다 (#544). 대회 관리자만.
+   *
+   * 대회 중 공지는 참가자 전원이 본다 — **오타 하나가 크다.**
+   */
+  deleteNotice: (slug: string, noticeId: number) =>
+    request<void>(`/api/v1/contests/${encodeURIComponent(slug)}/notices/${noticeId}`, {
+      method: "DELETE",
+      auth: true,
+    }),
+
   answer: (slug: string, questionId: number, body: { answer: string; public: boolean }) =>
     request<void>(
       `/api/v1/contests/${encodeURIComponent(slug)}/questions/${questionId}/answer`,
@@ -82,6 +104,12 @@ export interface AdminContest {
   freezeMinutes: number;
   submissionCooldownSeconds: number;
   visibility: ContestVisibility;
+  requiresApproval: boolean;
+  /** 지금 순위가 동결돼 있는가 (#86). */
+  frozen: boolean;
+  /** 최종 순위를 공개한 시각. `null` 이면 아직 안 풀었다 (#544). */
+  unfrozenAt: string | null;
+  problems: AdminContestProblem[];
 }
 
 export interface ContestUpsert {
@@ -93,6 +121,44 @@ export interface ContestUpsert {
   freezeMinutes: number;
   submissionCooldownSeconds: number;
   visibility: ContestVisibility;
+  /**
+   * 신청을 승인해야 참가되는가 (#466).
+   *
+   * **켤 수는 있는데 승인할 화면이 없었다** (#543) — 신청한 사람은 영원히 대기했다.
+   */
+  requiresApproval: boolean;
+}
+
+/** 대회에 붙인 문제 (#544). `excluded` 면 순위 계산에서 빠진다. */
+export interface AdminContestProblem {
+  problemId: number;
+  label: string;
+  slug: string;
+  title: string;
+  seq: number;
+  score: number;
+  excluded: boolean;
+}
+
+/**
+ * 같은 주소에서 제출한 계정들 (#148, #545).
+ *
+ * **겹쳤다는 것이 곧 부정이 아니다.** 같은 집·같은 학교·같은 카페면 주소가 겹친다 —
+ * 화면이 사실만 보이고 판단은 사람이 한다.
+ */
+export interface SharedAddress {
+  ip: string;
+  accountCount: number;
+  /** 쉼표로 이어진 닉네임. 서버가 그렇게 준다. */
+  nicknames: string;
+}
+
+/** 승인을 기다리는 신청자 (#466, #543). */
+export interface PendingApplicant {
+  userId: number;
+  nickname: string;
+  handle: string;
+  appliedAt: string;
 }
 
 /**
@@ -118,5 +184,50 @@ export const adminContestApi = {
       method: "PUT",
       auth: true,
       query: { status },
+    }),
+
+  /** 최종 순위 공개 (#86, #544). **끝난 뒤에만** 되고 다시 얼릴 수 없다. */
+  unfreeze: (id: number) =>
+    request<AdminContest>(`/api/v1/admin/contests/${id}/unfreeze`, { method: "POST", auth: true }),
+
+  /** 문제를 대회에서 빼거나 되돌린다 (#544). 순위 계산에서 빠진다. */
+  excludeProblem: (id: number, problemId: number, excluded: boolean) =>
+    request<AdminContest>(`/api/v1/admin/contests/${id}/problems/${problemId}/exclusion`, {
+      method: "PUT",
+      auth: true,
+      query: { excluded: String(excluded) },
+    }),
+
+  /** **준비 중인 대회만** 지워진다 — 서버가 그 밖을 거절한다 (제출 이력이 딸려 있다). */
+  remove: (id: number) =>
+    request<void>(`/api/v1/admin/contests/${id}`, { method: "DELETE", auth: true }),
+
+  /**
+   * 같은 주소에서 제출한 계정들 (#148, #545).
+   *
+   * **서버가 이미 좁혀 준다** — 계정이 둘 이상 겹치는 주소만 온다.
+   * 전체 목록을 내리면 그것은 감사가 아니라 감시다.
+   */
+  sharedAddresses: (id: number) =>
+    request<SharedAddress[]>(`/api/v1/admin/contests/${id}/audit/shared-addresses`, { auth: true }),
+
+  /** 승인을 기다리는 신청자 (#543). 승인이 꺼진 대회에서는 늘 비어 있다. */
+  applicants: (id: number) =>
+    request<PendingApplicant[]>(`/api/v1/admin/contests/${id}/applicants`, { auth: true }),
+
+  approve: (id: number, userId: number) =>
+    request<void>(`/api/v1/admin/contests/${id}/applicants/${userId}/approval`, {
+      method: "POST",
+      auth: true,
+    }),
+
+  /**
+   * 거절한다. **사유가 필수다** — 서버가 신청 행을 지우므로 그것이 유일한 설명이다.
+   */
+  reject: (id: number, userId: number, reason: string) =>
+    request<void>(`/api/v1/admin/contests/${id}/applicants/${userId}`, {
+      method: "DELETE",
+      auth: true,
+      query: { reason },
     }),
 };
