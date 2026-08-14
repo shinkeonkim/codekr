@@ -111,8 +111,9 @@ export function BrandSlideshow({
 
         **첫 장의 비율로 잡는다** (#518). 비율이 다른 그림은 `object-cover` 가 잘라 낸다.
       */}
+      {/* **틀은 여기가 갖는다** (#523) — 장마다 테두리를 주면 옆으로 밀릴 때 그 선이 지나간다. */}
       <div
-        className="group relative overflow-hidden"
+        className="group relative overflow-hidden rounded-card border border-border"
         style={{ aspectRatio: bannerRatio(names[0]) }}
       >
         <div
@@ -125,6 +126,7 @@ export function BrandSlideshow({
               name={name}
               // 첫 장만 미리 받는다. 나머지는 10초 뒤에 필요하다.
               priority={index === (loop ? 1 : 0)}
+              framed={false}
               className="h-full w-full shrink-0 object-cover"
             />
           ))}
