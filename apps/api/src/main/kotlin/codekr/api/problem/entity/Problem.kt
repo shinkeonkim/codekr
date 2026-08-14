@@ -201,11 +201,20 @@ class Problem(
     fun harnessFor(runtimeId: String): String? =
         harnesses.firstOrNull { it.runtimeId == runtimeId }?.source
 
+    /**
+     * 하네스를 갈아 끼운다 (#446).
+     *
+     * **남는 런타임의 행은 그대로 두고 내용만 고친다.** 지웠다 다시 넣으면
+     * [replaceAllowedRuntimes] 와 같은 이유로 유니크 제약에 걸린다 (#560).
+     */
     fun replaceHarnesses(sources: Map<String, String>) {
-        harnesses.clear()
-        sources.filterValues { it.isNotBlank() }.toSortedMap().forEach { (runtimeId, source) ->
-            harnesses.add(ProblemHarness(runtimeId, source).also { it.assignTo(this) })
-        }
+        val wanted = sources.filterValues { it.isNotBlank() }.toSortedMap()
+        harnesses.removeIf { it.runtimeId !in wanted.keys }
+        harnesses.forEach { it.source = wanted.getValue(it.runtimeId) }
+        wanted.filterKeys { runtimeId -> harnesses.none { it.runtimeId == runtimeId } }
+            .forEach { (runtimeId, source) ->
+                harnesses.add(ProblemHarness(runtimeId, source).also { it.assignTo(this) })
+            }
     }
 
     /** 이 런타임으로 풀 수 있는가 (#419, #446). 허용 목록이 비어 있으면 무엇이든 좋다. */
@@ -221,9 +230,23 @@ class Problem(
         else -> allowedRuntimes.any { it.runtimeId == runtimeId }
     }
 
+    /**
+     * 허용 목록을 갈아 끼운다 (#419).
+     *
+     * **남는 것은 건드리지 않는다.** `clear()` 로 비우고 같은 `runtime_id` 를 다시 넣으면
+     * `uq_problem_allowed_runtimes` 에 걸린다 (#560) — Hibernate 가 한 flush 안에서
+     * **INSERT 를 DELETE 보다 먼저** 내보내기 때문이다. 지운 행의 DELETE 가 나가기 전에
+     * 같은 키의 INSERT 가 먼저 도착한다.
+     *
+     * 테스트케이스는 사이에 `flush()` 를 껴서 같은 함정을 피했는데(부분 유니크 인덱스),
+     * 여기서는 **애초에 지우지 않는 편**이 낫다. 허용 목록은 기록이 아니라 지금의
+     * 규칙이라, 값이 그대로면 행도 그대로인 것이 맞다.
+     */
     fun replaceAllowedRuntimes(runtimeIds: List<String>) {
-        allowedRuntimes.clear()
-        runtimeIds.distinct().forEach { allowedRuntimes.add(ProblemAllowedRuntime(it).also { r -> r.assignTo(this) }) }
+        val wanted = runtimeIds.distinct()
+        allowedRuntimes.removeIf { it.runtimeId !in wanted }
+        wanted.filter { runtimeId -> allowedRuntimes.none { it.runtimeId == runtimeId } }
+            .forEach { allowedRuntimes.add(ProblemAllowedRuntime(it).also { r -> r.assignTo(this) }) }
     }
 
     /** 런타임별 초기 코드. 문제에 지정된 값이 없으면 호출자가 런타임 기본 템플릿을 쓴다. */
