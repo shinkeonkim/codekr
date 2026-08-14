@@ -119,6 +119,23 @@ jobs:
           CHANGED_SANDBOX: ${{ steps.filter.outputs.sandbox }}
         run: .github/scripts/decide-scope.sh
 
+  migration-versions:
+    name: Flyway 버전 겹침
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # **main 을 같이 봐야 해서 얕은 체크아웃으로는 안 된다** (#519). 겹침은 브랜치
+      # 안에서는 안 보이고 합쳐진 뒤에야 생기므로, 비교 대상인 main 이 있어야 한다.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main --depth=1
+      # 판정은 스크립트에 있다 — 손으로도 돌려 볼 수 있게 (decide-scope.sh 와 같은 결).
+      - run: .github/scripts/check-migration-versions.sh
+        env:
+          BASE_REF: origin/main
+
   api-test:
     name: api 단위 테스트
     needs: changes
@@ -365,7 +382,7 @@ jobs:
     name: 이번 실행에서 무엇이 돌았나
     # **끝에 항상 남긴다** (#317). 옵션을 잘못 줘서 아무것도 안 돌았는데 초록인 상태가
     # 가장 나쁜 결과다 (#248 이 겪은 것). 그것이 요약에 그대로 보이게 한다.
-    needs: [changes, api-test, api-integration-test, go-check, sandbox-live, web-check, images]
+    needs: [changes, migration-versions, api-test, api-integration-test, go-check, sandbox-live, web-check, images]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -373,6 +390,7 @@ jobs:
         env:
           SCOPE: ${{ github.event_name == 'workflow_dispatch' && format('변경된 것만={0} api={1} web={2} go={3} sandbox={4}', inputs.changed_only, inputs.api, inputs.web, inputs.go, inputs.sandbox) || '(자동)' }}
           IMAGES: ${{ needs.images.result }}
+          MIGRATIONS: ${{ needs.migration-versions.result }}
           API: ${{ needs.api-test.result }}
           API_IT: ${{ needs.api-integration-test.result }}
           GO: ${{ needs.go-check.result }}
@@ -386,6 +404,7 @@ jobs:
             echo
             echo "| 잡 | 결과 |"
             echo "|---|---|"
+            echo "| Flyway 버전 겹침 | ${MIGRATIONS} |"
             echo "| api 단위 | ${API} |"
             echo "| api 통합 | ${API_IT} |"
             echo "| go | ${GO} |"
