@@ -63,6 +63,9 @@ class AdminBadgeRuleController(private val service: AdminBadgeRuleService) {
         service.create(request)
 
     @AdminApi(UserRole.SUPERUSER)
+    /**
+     * 고친다. **좁히면 자격을 잃은 사람에게서 뱃지를 거둔다** (#558) — 거두면서 알린다.
+     */
     @PutMapping("/{ruleKey}")
     fun update(
         @PathVariable ruleKey: String,
@@ -114,4 +117,11 @@ data class BadgeDryRunResponse(
     val sampled: Int,
     /** 지정한 사람이 받는가. 지정하지 않았으면 null. */
     val matchesUser: Boolean?,
+    /**
+     * 저장하면 **뱃지를 잃을** 사람 수 (#558).
+     *
+     * [matched] 와 달리 표본이 아니라 **지금 그 뱃지를 가진 사람 전부**를 본다 —
+     * 실제로 거둘 대상이므로 어림잡으면 안 된다.
+     */
+    val losing: Int = 0,
 )

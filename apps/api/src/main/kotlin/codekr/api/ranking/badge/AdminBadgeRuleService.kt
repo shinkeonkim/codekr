@@ -2,6 +2,8 @@ package codekr.api.ranking.badge
 
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.notification.entity.NotificationCategory
+import codekr.api.notification.service.NotificationService
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -13,6 +15,8 @@ class AdminBadgeRuleService(
     private val jdbcClient: JdbcClient,
     private val objectMapper: ObjectMapper,
     private val measures: BadgeMeasures,
+    private val badges: BadgeRepository,
+    private val notifications: NotificationService,
 ) {
 
     fun vocabulary() = BadgeVocabulary(
@@ -56,6 +60,9 @@ class AdminBadgeRuleService(
             matched = matched,
             sampled = sample.size,
             matchesUser = userId?.let { evaluate(request, it) },
+            // **몇 명이 잃는지도 함께 본다** (#558). 저장하면 실제로 거두므로,
+            // 그 수를 저장 전에 알 수 있어야 한다.
+            losing = losingHolders(request).size,
         )
     }
 
@@ -94,7 +101,50 @@ class AdminBadgeRuleService(
             .param("groupBy", request.groupBy)
             .param("code", request.code)
             .update()
+        revokeFromDisqualified(request)
         return findOne(ruleKey)
+    }
+
+    /**
+     * 규칙을 좁혔을 때 자격을 잃은 사람에게서 뱃지를 거둔다 (#558).
+     *
+     * **#41 의 "회수하지 않는다" 를 뒤집는 자리다.** 원래 반대 근거가 "회수하면 화면에서
+     * 뱃지가 사라지는데 사용자는 그 이유를 알 길이 없다" 였으므로, **알림이 이 결정의
+     * 전제다** — 거두면서 알리지 않으면 뒤집을 이유가 없어진다.
+     *
+     * 재채점으로 정답이 뒤집힌 경우는 여기로 오지 않는다. 그쪽은 사용자가 아무것도
+     * 안 했는데 사라지는 것이라 성격이 다르고, 그 판단은 그대로 둔다.
+     */
+    private fun revokeFromDisqualified(request: BadgeRuleUpsertRequest) {
+        val losing = losingHolders(request)
+        if (losing.isEmpty()) return
+
+        losing.forEach { userId ->
+            badges.revoke(userId, request.code)
+            logAward(userId, request, matched = false)
+        }
+        notifications.notifyAll(
+            losing,
+            NotificationCategory.BADGE,
+            "뱃지 조건이 바뀌어 하나를 거뒀습니다",
+            "받을 조건이 좁아지면서 더 이상 해당하지 않게 되었습니다. 다시 조건을 채우면 돌아옵니다.",
+        )
+    }
+
+    /** 지금 그 뱃지를 가졌는데 새 규칙으로는 해당하지 않는 사람들. */
+    private fun losingHolders(request: BadgeRuleUpsertRequest): List<Long> =
+        badges.holdersOf(request.code).filterNot { evaluate(request, it) }
+
+    /** 회수도 기록에 남긴다 — 수여만 남기면 사라진 이유를 나중에 찾을 수 없다. */
+    private fun logAward(userId: Long, request: BadgeRuleUpsertRequest, matched: Boolean) {
+        jdbcClient.sql(
+            "INSERT INTO badge_awards_log (user_id, rule_key, code, matched) VALUES (:u, :r, :c, :m)",
+        )
+            .param("u", userId)
+            .param("r", request.ruleKey)
+            .param("c", request.code)
+            .param("m", matched)
+            .update()
     }
 
     @Transactional
