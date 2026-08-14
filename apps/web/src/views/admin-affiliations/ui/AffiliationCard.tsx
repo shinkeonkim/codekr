@@ -60,7 +60,7 @@ export function AffiliationCard({
   };
 
   return (
-    <Card className="space-y-3">
+    <Card className="space-y-3 p-5">
       <div className="flex items-center gap-2">
         <span className="font-semibold text-ink">{affiliation.name}</span>
         <Badge tone="muted">{affiliation.kindLabel}</Badge>
@@ -86,12 +86,18 @@ export function AffiliationCard({
         {affiliation.domains.map((each) => (
           <span
             key={each.id}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs text-ink-muted"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border py-1 pl-2 pr-1 text-xs text-ink-muted"
           >
             @{each.domain}
             <ConfirmDialog
               trigger={
-                <button type="button" className="text-ink-muted hover:text-ink" aria-label={`${each.domain} 떼기`}>
+                // 글자 하나짜리 단추라 그냥 두면 **주소에 붙어 있고 누를 자리도 좁다.**
+                // 안쪽 여백으로 떼어 놓으면 간격과 누를 넓이가 같이 해결된다.
+                <button
+                  type="button"
+                  className="rounded px-1 leading-none text-ink-muted transition hover:bg-surface-muted hover:text-ink"
+                  aria-label={`${each.domain} 떼기`}
+                >
                   ×
                 </button>
               }

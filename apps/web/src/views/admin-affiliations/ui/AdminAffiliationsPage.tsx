@@ -60,7 +60,12 @@ export function AdminAffiliationsPage() {
         </p>
       </div>
 
-      <Card className="space-y-3">
+      {/*
+        `Card` 는 여백을 스스로 갖지 않는다 (#291 3단계) — 쓰는 쪽이 준다. 이 화면의 두
+        상자만 그것을 빠뜨려서 **글자와 입력칸이 테두리에 붙어 있었다** (#580). 값은
+        다른 어드민 화면과 같은 `p-5` 다.
+      */}
+      <Card className="space-y-3 p-5">
         <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
           <Field label="이름">
             <Input
