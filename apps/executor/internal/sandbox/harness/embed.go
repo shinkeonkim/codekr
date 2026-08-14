@@ -12,12 +12,20 @@ import (
 //go:embed *.sh
 var files embed.FS
 
-// SQL 은 런타임 정의가 harness 로 고르는 이름이다.
+// SQL 은 런타임 정의가 harness 로 고르는 이름이다 (PostgreSQL).
 const SQL = "sql"
+
+// MariaDB 는 MariaDB 문제의 하네스다 (#454).
+//
+// **DB 마다 스크립트가 하나씩 필요하다.** 초기화 방식·클라이언트·권한 모델·출력 형식이
+// 전부 다르기 때문이다. 바뀌지 않는 것은 주고받는 파일 이름과 출력 형식뿐이고,
+// 그래서 채점기는 어느 DB 였는지 모른 채 결과를 견줄 수 있다.
+const MariaDB = "mariadb"
 
 // scripts 는 하네스 이름 → 작업 디렉터리에 쓸 파일 이름이다.
 var scripts = map[string]string{
-	SQL: "run-sql.sh",
+	SQL:     "run-sql.sh",
+	MariaDB: "run-mariadb.sh",
 }
 
 // Files 는 그 하네스가 작업 디렉터리에 풀어야 할 파일들이다.

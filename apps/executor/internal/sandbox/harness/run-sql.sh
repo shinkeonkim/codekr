@@ -101,7 +101,9 @@ if [ -f /work/verify.sql ]; then
     psql -tA -F'|' -v ON_ERROR_STOP=1 -U postgres -d expected -f /work/verify.sql
     echo "--- codekr:actual"
     # **제출은 solver 로 돈다.** 그리고 actual 에만 붙으므로 기대 상태를 건드릴 수 없다.
-    psql -q -v ON_ERROR_STOP=1 -U solver -d actual -f /work/query.sql >>/work/.pg.log 2>&1
+    #
+    # **stderr 는 로그로 보내지 않는다** — 제출이 막혔을 때 사용자에게 보일 것이 그것뿐이다.
+    psql -q -v ON_ERROR_STOP=1 -U solver -d actual -f /work/query.sql >>/work/.pg.log
     psql -tA -F'|' -v ON_ERROR_STOP=1 -U postgres -d actual -f /work/verify.sql
     exit 0
 fi

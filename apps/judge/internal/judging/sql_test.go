@@ -13,7 +13,7 @@ func sqlJob(query string, ignoreRowOrder bool) contract.JudgeJob {
 	return contract.JudgeJob{
 		SubmissionID:  1,
 		Kind:          contract.KindJudgeSQL,
-		RuntimeID:     sqlRuntimeID,
+		RuntimeID:     defaultSQLRuntimeID,
 		SourceCode:    query,
 		TimeLimitMs:   10000,
 		MemoryLimitMb: 512,
@@ -140,7 +140,7 @@ func TestSqlJudgeSendsSchemaAndAnswerToExecutor(t *testing.T) {
 	if captured.job.ExtraFiles["schema.sql"] == "" || captured.job.ExtraFiles["answer.sql"] == "" {
 		t.Fatalf("스키마와 정답 쿼리를 실어야 합니다: %+v", captured.job.ExtraFiles)
 	}
-	if captured.job.RuntimeID != sqlRuntimeID {
+	if captured.job.RuntimeID != defaultSQLRuntimeID {
 		t.Fatalf("SQL 런타임으로 보내야 합니다: %s", captured.job.RuntimeID)
 	}
 }
@@ -193,5 +193,42 @@ func TestSqlJudgeKeepsReadOnlyByDefault(t *testing.T) {
 		if _, ok := captured.job.ExtraFiles[name]; ok {
 			t.Fatalf("%s 가 실리면 안 됩니다: %+v", name, captured.job.ExtraFiles)
 		}
+	}
+}
+
+/*
+어느 DB 로 풀지는 제출이 고른다 (#454).
+
+전에는 채점기가 `sql:postgres16` 을 박아 보냈다. 그러면 MariaDB 로 낸 제출도 PostgreSQL
+에서 돌아 **문법이 맞는데 틀린 답**이 된다.
+*/
+func TestSqlJudgeSendsSubmittedDatabase(t *testing.T) {
+	captured := &capturingExecutor{result: contract.ExecResult{
+		Status: contract.StatusOK, Stdout: harnessOutput("1", "1"),
+	}}
+	job := sqlJob("SELECT 1;", true)
+	job.RuntimeID = "sql:mariadb11"
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	NewSqlJudge(captured, log).Judge(context.Background(), job, func(contract.Event) {})
+
+	if captured.job.RuntimeID != "sql:mariadb11" {
+		t.Fatalf("제출이 고른 DB 로 보내야 합니다: %s", captured.job.RuntimeID)
+	}
+}
+
+// 이 값이 없던 시절의 작업은 PostgreSQL 이다 — 그때는 그것 하나뿐이었다.
+func TestSqlJudgeFallsBackToPostgresForOldJobs(t *testing.T) {
+	captured := &capturingExecutor{result: contract.ExecResult{
+		Status: contract.StatusOK, Stdout: harnessOutput("1", "1"),
+	}}
+	job := sqlJob("SELECT 1;", true)
+	job.RuntimeID = ""
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	NewSqlJudge(captured, log).Judge(context.Background(), job, func(contract.Event) {})
+
+	if captured.job.RuntimeID != defaultSQLRuntimeID {
+		t.Fatalf("옛 작업은 PostgreSQL 로 돌아야 합니다: %s", captured.job.RuntimeID)
 	}
 }

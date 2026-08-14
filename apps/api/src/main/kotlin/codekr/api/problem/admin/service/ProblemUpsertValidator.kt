@@ -18,6 +18,11 @@ import org.springframework.stereotype.Component
 @Component
 class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
 
+    private companion object {
+        /** 기동을 빼고 쿼리에 남겨 둘 최소 시간 (#454). */
+        const val SQL_QUERY_BUDGET_MS = 1000
+    }
+
     /**
      * 함수형 문제의 하네스 (#446).
      *
@@ -83,7 +88,47 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         }
     }
 
+    /**
+     * SQL 문제는 **어느 DB 인지 정해야 한다** (#454).
+     *
+     * SQL 런타임이 둘이 된 순간, "비워 두면 전부 허용"(#419)은 SQL 문제에서 뜻이 달라졌다 —
+     * PostgreSQL 문법으로 쓴 스키마·정답 쿼리가 MariaDB 제출에서도 돌게 된다. 그러면
+     * **출제자의 스키마가 먼저 깨져** 제출자는 자기 잘못이 아닌 SYSTEM_ERROR 를 받는다.
+     *
+     * 그래서 **문제 하나에 DB 하나**다. 같은 질문을 두 DB 로 내고 싶으면 문제를 둘 만든다 —
+     * 스키마도 정답도 지문도 어차피 갈라지기 때문이다.
+     */
+    private fun validateSqlDatabase(request: ProblemUpsertRequest) {
+        if (request.problemKind != ProblemKind.JUDGE_SQL) return
+
+        val databases = request.allowedRuntimeIds.filter {
+            runtimeRegistry.exists(it) && runtimeRegistry.require(it).problemKind == ProblemKind.JUDGE_SQL
+        }
+        if (databases.size != 1) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "SQL 문제는 어느 데이터베이스로 푸는지 하나만 골라야 합니다. " +
+                    "고른 것: ${databases.ifEmpty { listOf("없음") }.joinToString()}",
+            )
+        }
+
+        /*
+          **기동 시간도 문제의 시간 제한 안에서 흐른다.** 제한은 컨테이너 전체에 걸리기
+          때문이다. MariaDB 는 뜨는 데만 3초 넘게 쓰므로, 2초 제한을 준 문제는 어떤 쿼리를
+          내도 시간 초과가 된다 — 출제자는 그 이유를 짐작할 방법이 없다.
+        */
+        val startupMs = runtimeRegistry.require(databases.single()).startupMs
+        if (startupMs > 0 && request.timeLimitMs < startupMs + SQL_QUERY_BUDGET_MS) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "이 데이터베이스는 뜨는 데만 ${startupMs}ms 를 씁니다. " +
+                    "시간 제한을 ${startupMs + SQL_QUERY_BUDGET_MS}ms 이상으로 두세요.",
+            )
+        }
+    }
+
     fun validate(request: ProblemUpsertRequest) {
+        validateSqlDatabase(request)
 
         // 채점기 구현도 스펙 테이블도 없는 유형으로는 문제를 만들 수 없다 (#59).
         // 허용하면 채점되지 않는 문제가 만들어지고, 그 사실은 누가 제출한 뒤에야 드러난다.

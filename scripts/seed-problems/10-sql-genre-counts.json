@@ -3,6 +3,9 @@
   "title": "장르별 장서 수",
   "category": "SQL",
   "difficulty": "BRONZE_3",
+  "allowedRuntimeIds": [
+    "sql:postgres16"
+  ],
   "problemKind": "JUDGE_SQL",
   "description": "장서를 장르별로 묶어 몇 권씩 있는지 세세요.\n\n[표 구조]\n  members(id, name, city, joined_on)\n  books(id, title, genre, price)\n  loans(id, member_id, book_id, loaned_on, returned_on)\n\nloans.returned_on 이 비어 있으면(NULL) 아직 반납하지 않은 것입니다.\n",
   "inputDescription": "주어지는 것은 위의 세 표입니다. 표준 입력은 없습니다.",

@@ -53,11 +53,13 @@ class RuntimeKindIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `SQL 유형을 물으면 SQL 런타임만 나온다`() {
+        // **SQL 은 하나가 아니다** (#454). 방언이 있으므로 DB 마다 런타임이 하나씩이고,
+        // 어느 것으로 푸는지는 문제가 정한다(#419 의 허용 목록).
         mockMvc.perform(get("/api/v1/runtimes").param("problemKind", "JUDGE_SQL"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.length()").value(1))
-            .andExpect(jsonPath("$[0].id").value("sql:postgres16"))
-            .andExpect(jsonPath("$[0].monacoLanguage").value("sql"))
+            .andExpect(jsonPath("$[?(@.id == 'sql:postgres16')]").isNotEmpty)
+            .andExpect(jsonPath("$[?(@.id == 'sql:mariadb11')]").isNotEmpty)
+            .andExpect(jsonPath("$[?(@.monacoLanguage != 'sql')]").isEmpty)
     }
 
     @Test

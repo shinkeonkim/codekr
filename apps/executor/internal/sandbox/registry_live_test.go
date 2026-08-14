@@ -36,10 +36,12 @@ func TestLiveEveryRegisteredRuntimeSolvesSumOfTwo(t *testing.T) {
 				Compile:    definition.Compile,
 				Run:        definition.Run,
 				// 러너와 같은 값을 넘긴다 — 여기서 빠뜨리면 시험이 실제 실행과 달라진다.
-				Harness:          definition.Harness,
-				User:             definition.User,
-				TimeLimitMs:      5000,
-				MemoryLimitMb:    512,
+				Harness: definition.Harness,
+				User:    definition.User,
+				// **하네스 런타임은 DB 를 띄우고 시작한다** (#454). 제한은 컨테이너
+				// 전체에 걸리므로 기동도 그 안이다 — MySQL 은 그것만 3초다.
+				TimeLimitMs:      timeLimitFor(definition),
+				MemoryLimitMb:    memoryLimitFor(definition),
 				CompileTimeoutMs: 60000,
 				MaxOutputBytes:   65536,
 			})
@@ -52,6 +54,20 @@ func TestLiveEveryRegisteredRuntimeSolvesSumOfTwo(t *testing.T) {
 			}
 		})
 	}
+}
+
+func timeLimitFor(definition runtimes.Definition) int {
+	if definition.Harness != "" {
+		return 30000
+	}
+	return 5000
+}
+
+func memoryLimitFor(definition runtimes.Definition) int {
+	if definition.Harness != "" {
+		return 1024
+	}
+	return 512
 }
 
 // loadSharedRegistry 는 api 와 공유하는 실제 정의 파일을 읽는다 — 테스트 전용 사본을 두지 않는다.
