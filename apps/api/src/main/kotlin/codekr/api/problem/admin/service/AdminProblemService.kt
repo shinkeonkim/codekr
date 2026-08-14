@@ -17,8 +17,10 @@ import codekr.api.tag.service.TagService
 import codekr.api.problem.entity.DifficultyState
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemRedisSpec
 import codekr.api.problem.entity.ProblemSqlSpec
+import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemRedisSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.problem.repository.ProblemRepository
@@ -39,6 +41,7 @@ class AdminProblemService(
     private val tagService: TagService,
     private val sqlSpecRepository: ProblemSqlSpecRepository,
     private val redisSpecRepository: ProblemRedisSpecRepository,
+    private val fileRepository: ProblemFileRepository,
     private val scoreResyncService: ProblemScoreResyncService,
     private val validator: ProblemUpsertValidator,
 ) {
@@ -56,6 +59,7 @@ class AdminProblemService(
             verificationService.findLatest(problem),
             sqlSpecRepository.findById(id).orElse(null),
             redisSpecRepository.findById(id).orElse(null),
+            fileRepository.findByProblemIdOrderBySeq(id),
             tagService.tagsOf(id),
         )
     }
@@ -80,6 +84,21 @@ class AdminProblemService(
         existing.verifySql = spec.verifySql?.ifBlank { null }
         existing.allowWrite = spec.allowWrite
         return existing
+    }
+
+    /**
+     * 파일 목록을 다시 쓴다 (#457).
+     *
+     * **통째로 갈아 끼운다.** 이름이 바뀌면 그것은 다른 파일이고, 무엇이 무엇의 개정인지
+     * 를 서버가 짐작하면 순서와 시작 코드가 어긋난 채로 남는다. 지난 제출은 자기가 낸
+     * 파일을 그대로 들고 있으므로(#457 의 `source_files`) 영향을 받지 않는다.
+     */
+    private fun replaceFiles(problemId: Long, request: ProblemUpsertRequest): List<ProblemFile> {
+        fileRepository.deleteByProblemId(problemId)
+        if (request.files.isEmpty()) return emptyList()
+        return fileRepository.saveAll(
+            request.files.mapIndexed { index, file -> file.toEntity(problemId, index + 1) },
+        )
     }
 
     /** Redis 스펙을 넣거나 지운다 (#455). SQL 과 같은 이유로 유형을 바꾸면 지운다. */
@@ -137,6 +156,7 @@ class AdminProblemService(
         val saved = problemRepository.save(problem)
         request.sqlSpec?.let { sqlSpecRepository.save(it.toEntity(saved.id)) }
         request.redisSpec?.let { redisSpecRepository.save(it.toEntity(saved.id)) }
+        replaceFiles(saved.id, request)
         creditService.replace(saved.id, request.setterIds, request.reviewerIds)
         return ProblemCreatedResponse(saved.id, saved.slug)
     }
@@ -182,6 +202,7 @@ class AdminProblemService(
         problem.replaceHarnesses(request.harnesses)
         problem.checkerSource = request.checkerSource?.takeIf { it.isNotBlank() }
         problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
+        replaceFiles(problem.id, request)
 
         /*
             바뀐 난이도·공개 여부를 이미 맞힌 사람들의 점수에 반영한다 (#194).
@@ -202,6 +223,7 @@ class AdminProblemService(
             verificationService.findLatest(problem),
             upsertSqlSpec(problem.id, request),
             upsertRedisSpec(problem.id, request),
+            fileRepository.findByProblemIdOrderBySeq(problem.id),
             tagService.tagsOf(problem.id),
             creditService.creditsOf(problem.id),
         )

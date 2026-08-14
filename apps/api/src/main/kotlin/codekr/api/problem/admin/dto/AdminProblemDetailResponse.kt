@@ -8,6 +8,8 @@ import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.dto.ProblemFileResponse
+import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemRedisSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.tag.dto.ProblemTagResponse
@@ -22,6 +24,8 @@ data class AdminProblemDetailResponse(
     /** SQL 유형이 아니면 null (#60). */
     val sqlSpec: SqlSpecResponse? = null,
     val redisSpec: RedisSpecResponse? = null,
+    /** 여러 파일을 완성하는 문제의 파일 목록 (#457). 비면 파일 하나짜리다. */
+    val files: List<ProblemFileResponse> = emptyList(),
     /** 편집 화면이 지금 붙어 있는 사람을 그대로 보여야 한다 (#236). */
     val setters: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
     val reviewers: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
@@ -71,6 +75,7 @@ data class AdminProblemDetailResponse(
             verification: VerificationResponse? = null,
             sqlSpec: ProblemSqlSpec? = null,
             redisSpec: ProblemRedisSpec? = null,
+            files: List<ProblemFile> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
             credits: List<codekr.api.problem.dto.ProblemCreditResponse> = emptyList(),
         ) = AdminProblemDetailResponse(
@@ -81,6 +86,7 @@ data class AdminProblemDetailResponse(
             problemKind = problem.problemKind,
             sqlSpec = sqlSpec?.let(SqlSpecResponse::from),
             redisSpec = redisSpec?.let(RedisSpecResponse::from),
+            files = files.map(ProblemFileResponse::from),
             setters = credits.filter { it.role == codekr.api.problem.credit.CreditRole.SETTER },
             reviewers = credits.filter { it.role == codekr.api.problem.credit.CreditRole.REVIEWER },
             sourceLabel = problem.sourceLabel,

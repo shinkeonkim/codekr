@@ -6,6 +6,7 @@ import codekr.api.problem.entity.ExecutionLimits
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemJudgePriority
 import codekr.api.problem.entity.OutputComparison
+import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemKind
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMax
@@ -142,6 +143,14 @@ data class ProblemUpsertRequest(
 
     val templates: List<TemplateRequest> = emptyList(),
 
+    /**
+     * 여러 파일을 완성하는 문제의 파일 목록 (#457). 비면 파일 하나짜리 문제다.
+     *
+     * 순서가 뜻을 갖는다 — **첫 파일이 진입점**이고, 화면의 탭 차례이기도 하다.
+     */
+    @field:Valid
+    val files: List<ProblemFileRequest> = emptyList(),
+
     /** 런타임별 실행 제한 오버라이드 (#97). 적지 않은 런타임은 위 기본 제한을 쓴다. */
     @field:Valid
     val runtimeLimits: List<RuntimeLimitRequest> = emptyList(),
@@ -150,3 +159,32 @@ data class ProblemUpsertRequest(
     @field:Valid
     val solution: SolutionRequest? = null,
 )
+
+/**
+ * 여러 파일을 완성하는 문제의 파일 하나 (#457).
+ *
+ * **런타임마다 목록이 다르다.** 같은 문제라도 자바는 `Main.java`·`Helper.java` 이고
+ * 파이썬은 `main.py`·`helper.py` 다.
+ */
+data class ProblemFileRequest(
+    @field:NotBlank(message = "실행 환경은 필수입니다.")
+    val runtimeId: String,
+
+    @field:NotBlank(message = "파일 이름은 필수입니다.")
+    @field:Size(max = 60)
+    val name: String,
+
+    val template: String = "",
+
+    /** 거짓이면 제출에 실리지 않고 서버가 시작 코드를 그대로 쓴다. */
+    val editable: Boolean = true,
+) {
+    fun toEntity(problemId: Long, seq: Int) = ProblemFile(
+        problemId = problemId,
+        runtimeId = runtimeId,
+        seq = seq,
+        name = name,
+        template = template,
+        editable = editable,
+    )
+}
