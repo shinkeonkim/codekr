@@ -41,10 +41,18 @@ export function BrandBanner({
   name,
   /** 화면에 처음부터 보이는 자리면 켠다. 늦게 오면 아래 목록이 통째로 밀린다. */
   priority = false,
+  /**
+   * 테두리와 둥근 모서리를 **이 그림에** 줄지 (#523).
+   *
+   * **슬라이드쇼는 끈다.** 거기서는 장들이 한 줄로 늘어서 옆으로 밀리는데, 장마다
+   * 테두리를 주면 **테두리가 지나가는 것이 보인다.** 틀은 바깥이 갖는다.
+   */
+  framed = true,
   className = "",
 }: {
   name: BrandBannerName;
   priority?: boolean;
+  framed?: boolean;
   className?: string;
 }) {
   const banner = BANNERS[name];
@@ -57,7 +65,7 @@ export function BrandBanner({
       height={banner.height}
       priority={priority}
       sizes="(max-width: 1152px) 100vw, 1152px"
-      className={`w-full rounded-card border border-border ${className}`}
+      className={`w-full ${framed ? "rounded-card border border-border" : ""} ${className}`}
     />
   );
 }
