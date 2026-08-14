@@ -159,6 +159,30 @@ services:
       retries: 20
     networks: [codekr]
 
+  judge-contest:
+    build:
+      context: *build-context
+      dockerfile: apps/judge/Dockerfile
+    container_name: codekr-judge-contest
+    environment:
+      CODEKR_REDIS_ADDR: redis:6379
+      CODEKR_HTTP_ADDR: ":8082"
+      # 대회 제출만 읽는다 (#62). 일반 큐와 워커를 나눠야 대회가 밀리지 않는다.
+      CODEKR_JUDGE_LANE: contest
+      JUDGE_CONCURRENCY: ${JUDGE_CONCURRENCY:-4}
+      JUDGE_EXEC_TIMEOUT_MS: ${JUDGE_EXEC_TIMEOUT_MS:-60000}
+    ports:
+      - "${JUDGE_CONTEST_HOST_PORT:-18083}:8082"
+    depends_on:
+      redis: { condition: service_healthy }
+      executor: { condition: service_started }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [codekr]
+
   web:
     build:
       context: *build-context
