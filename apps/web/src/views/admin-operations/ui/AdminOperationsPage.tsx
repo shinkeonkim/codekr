@@ -5,6 +5,7 @@ import { DATA_RESET_CONFIRMATION, adminDataApi } from "@/entities/admin-data";
 import { rankingApi } from "@/entities/ranking";
 import { retentionApi } from "@/entities/retention";
 import { RejudgePanel } from "@/features/rejudge";
+import { StatsDriftPanel } from "@/features/stats-drift";
 import { TagAdminPanel } from "@/features/tag-admin";
 import { useToast } from "@/shared/ui";
 import { OperationCard } from "./OperationCard";
@@ -122,6 +123,13 @@ export function AdminOperationsPage() {
           배열에 억지로 끼우면 그 배열이 무엇이든 담는 것이 되어 형태가 사라진다.
         */}
         <RejudgePanel onError={toast.error} />
+
+        {/*
+          통계 어긋남도 카드 밖이다 (#551). `Operation` 은 "인자 하나 + 실행" 인데
+          이것은 **어느 문제가 얼마나 다른지 보여 주는 것**이 일의 절반이라
+          결과가 한 줄로 줄지 않는다.
+        */}
+        <StatsDriftPanel onError={toast.error} />
 
         {/* 태그는 어드민만 만든다 (#232). 만드는 자리도 어드민에 있어야 한다. */}
         <TagAdminPanel />
