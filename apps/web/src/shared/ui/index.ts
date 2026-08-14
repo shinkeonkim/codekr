@@ -47,4 +47,5 @@ export {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
+export { BarChart, LineChart } from "./chart";
 export { Tooltip } from "./tooltip";
