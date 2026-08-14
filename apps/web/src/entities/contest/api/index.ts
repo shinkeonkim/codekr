@@ -93,6 +93,7 @@ export interface AdminContest {
   freezeMinutes: number;
   submissionCooldownSeconds: number;
   visibility: ContestVisibility;
+  requiresApproval: boolean;
 }
 
 export interface ContestUpsert {
@@ -104,6 +105,20 @@ export interface ContestUpsert {
   freezeMinutes: number;
   submissionCooldownSeconds: number;
   visibility: ContestVisibility;
+  /**
+   * 신청을 승인해야 참가되는가 (#466).
+   *
+   * **켤 수는 있는데 승인할 화면이 없었다** (#543) — 신청한 사람은 영원히 대기했다.
+   */
+  requiresApproval: boolean;
+}
+
+/** 승인을 기다리는 신청자 (#466, #543). */
+export interface PendingApplicant {
+  userId: number;
+  nickname: string;
+  handle: string;
+  appliedAt: string;
 }
 
 /**
@@ -129,5 +144,25 @@ export const adminContestApi = {
       method: "PUT",
       auth: true,
       query: { status },
+    }),
+
+  /** 승인을 기다리는 신청자 (#543). 승인이 꺼진 대회에서는 늘 비어 있다. */
+  applicants: (id: number) =>
+    request<PendingApplicant[]>(`/api/v1/admin/contests/${id}/applicants`, { auth: true }),
+
+  approve: (id: number, userId: number) =>
+    request<void>(`/api/v1/admin/contests/${id}/applicants/${userId}/approval`, {
+      method: "POST",
+      auth: true,
+    }),
+
+  /**
+   * 거절한다. **사유가 필수다** — 서버가 신청 행을 지우므로 그것이 유일한 설명이다.
+   */
+  reject: (id: number, userId: number, reason: string) =>
+    request<void>(`/api/v1/admin/contests/${id}/applicants/${userId}`, {
+      method: "DELETE",
+      auth: true,
+      query: { reason },
     }),
 };
