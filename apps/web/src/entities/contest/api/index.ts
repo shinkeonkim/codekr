@@ -129,6 +129,19 @@ export interface AdminContestProblem {
   excluded: boolean;
 }
 
+/**
+ * 같은 주소에서 제출한 계정들 (#148, #545).
+ *
+ * **겹쳤다는 것이 곧 부정이 아니다.** 같은 집·같은 학교·같은 카페면 주소가 겹친다 —
+ * 화면이 사실만 보이고 판단은 사람이 한다.
+ */
+export interface SharedAddress {
+  ip: string;
+  accountCount: number;
+  /** 쉼표로 이어진 닉네임. 서버가 그렇게 준다. */
+  nicknames: string;
+}
+
 /** 승인을 기다리는 신청자 (#466, #543). */
 export interface PendingApplicant {
   userId: number;
@@ -177,6 +190,15 @@ export const adminContestApi = {
   /** **준비 중인 대회만** 지워진다 — 서버가 그 밖을 거절한다 (제출 이력이 딸려 있다). */
   remove: (id: number) =>
     request<void>(`/api/v1/admin/contests/${id}`, { method: "DELETE", auth: true }),
+
+  /**
+   * 같은 주소에서 제출한 계정들 (#148, #545).
+   *
+   * **서버가 이미 좁혀 준다** — 계정이 둘 이상 겹치는 주소만 온다.
+   * 전체 목록을 내리면 그것은 감사가 아니라 감시다.
+   */
+  sharedAddresses: (id: number) =>
+    request<SharedAddress[]>(`/api/v1/admin/contests/${id}/audit/shared-addresses`, { auth: true }),
 
   /** 승인을 기다리는 신청자 (#543). 승인이 꺼진 대회에서는 늘 비어 있다. */
   applicants: (id: number) =>
