@@ -7,6 +7,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import jakarta.validation.ConstraintViolationException
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpMediaTypeNotSupportedException
@@ -27,6 +29,43 @@ class GlobalExceptionHandler {
     fun handleValidation(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         val fieldErrors = e.bindingResult.fieldErrors.map {
             FieldErrorResponse(it.field, it.defaultMessage ?: "올바르지 않은 값입니다.")
+        }
+        val code = ErrorCode.VALIDATION_ERROR
+        return ResponseEntity.status(code.status).body(ErrorResponse(code.name, code.message, fieldErrors))
+    }
+
+    /**
+     * 질의 인자의 **값**이 범위를 벗어날 때 (#550).
+     *
+     * `@Min`·`@Max` 를 단 인자는 위반하면 `HandlerMethodValidationException` 이 되는데,
+     * 여기서 받지 않아 **500 으로 나갔다.** 타입이 틀린 것(#132)은 400 인데 값이 틀린
+     * 것은 500 인 상태였다 — 같은 종류의 잘못이 다른 답을 받고 있었다.
+     *
+     * 실제로 운영의 `/api/v1/rankings?size=99999` 가 500 이다. 사용자에게는 우리 잘못
+     * 으로 보이고, 로그에는 고칠 것 없는 오류가 쌓인다.
+     */
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolation(e: ConstraintViolationException): ResponseEntity<ErrorResponse> {
+        // `@Validated` 를 단 컨트롤러는 이쪽으로 온다 (AOP 가 먼저 잡는다).
+        val fieldErrors = e.constraintViolations.map { violation ->
+            FieldErrorResponse(
+                violation.propertyPath.last().name ?: "",
+                violation.message ?: "올바르지 않은 값입니다.",
+            )
+        }
+        val code = ErrorCode.VALIDATION_ERROR
+        return ResponseEntity.status(code.status).body(ErrorResponse(code.name, code.message, fieldErrors))
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleParameterValidation(e: HandlerMethodValidationException): ResponseEntity<ErrorResponse> {
+        val fieldErrors = e.parameterValidationResults.flatMap { result ->
+            result.resolvableErrors.map { error ->
+                FieldErrorResponse(
+                    result.methodParameter.parameterName ?: "",
+                    error.defaultMessage ?: "올바르지 않은 값입니다.",
+                )
+            }
         }
         val code = ErrorCode.VALIDATION_ERROR
         return ResponseEntity.status(code.status).body(ErrorResponse(code.name, code.message, fieldErrors))

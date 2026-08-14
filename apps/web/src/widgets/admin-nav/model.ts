@@ -27,6 +27,14 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["PROBLEM_SETTER"],
   },
   {
+    href: "/admin/stats",
+    label: "통계",
+    description: "제출·가입 추세와 판정 분포",
+    // 읽기만 하지만 아무나 볼 것은 아니다 — 가입 추세와 채점 실패율은 우리가 얼마나
+    // 아픈지를 그대로 드러낸다 (#550).
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/queues",
     label: "큐 모니터링",
     description: "채점 적체와 실행기 수",
