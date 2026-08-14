@@ -25,6 +25,7 @@ export type {
   ProblemDetail,
   ProblemExample,
   ProblemFile,
+  ProblemImportPreview,
   ProblemKind,
   ProblemRuntimeLimit,
   ProblemSolution,

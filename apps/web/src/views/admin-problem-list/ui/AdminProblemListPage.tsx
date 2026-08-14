@@ -38,10 +38,19 @@ export function AdminProblemListPage() {
   return (
     <div className="space-y-4">
       {/* 구획 이동은 사이드바가 한다 (#179). 제목 옆에 또 두면 내비가 두 벌이 된다. */}
-      <div className="flex items-center gap-3">
+      {/* 좁은 화면에서 버튼 둘이 제목을 밀어내지 않게 접는다 (#484). */}
+      <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-ink">문제 관리</h1>
+        {/*
+          만드는 방법이 둘이다. 폼(#13)은 테스트케이스가 몇 개일 때, 묶음(#479·#538)은
+          수백 개일 때다. 묶음을 보조 버튼으로 둔 것은 지금 대부분이 폼이기 때문이고,
+          테스트케이스가 많은 문제가 늘면 순서가 뒤집힐 수 있다.
+        */}
+        <Button asChild variant="secondary">
+          <Link href="/admin/problems/import" className="ml-auto">묶음 올리기</Link>
+        </Button>
         <Button asChild>
-          <Link href="/admin/problems/new" className="ml-auto">문제 등록</Link>
+          <Link href="/admin/problems/new">문제 등록</Link>
         </Button>
       </div>
 
