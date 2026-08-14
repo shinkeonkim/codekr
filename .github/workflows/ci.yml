@@ -87,6 +87,12 @@ jobs:
             exit 1
           fi
 
+      # **지문에 값을 적는 것의 위험은 하나다** (#526): 시드가 바뀌면 지문이 거짓이 된다.
+      # 값이 없는 것보다 나쁘다 — 없으면 실행해 보면 되지만, 틀린 값은 사람을 잘못된
+      # 곳으로 데려간다. 사람이 눈으로 맞춰 보는 것에 기대지 않는다.
+      - name: SQL 문제 지문의 예시 데이터가 시드와 맞는지
+        run: python3 scripts/check-sql-samples.py
+
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest
