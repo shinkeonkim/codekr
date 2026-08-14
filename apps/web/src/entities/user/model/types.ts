@@ -141,6 +141,13 @@ export interface AdminUserSummary {
    * 또 정지시킨다.
    */
   suspendedScopes: string[];
+  /**
+   * 이메일을 확인한 시각. 안 했으면 `null` (#524).
+   *
+   * 인증을 안 한 사람은 글도 댓글도 못 쓴다 (#233). 목록에서 보이지 않으면
+   * "왜 못 쓰나" 를 물어보기 전에는 아무도 모른다.
+   */
+  emailVerifiedAt: string | null;
 }
 
 /** 한 사람의 상태를 한 화면에서 (#223). */
@@ -207,4 +214,13 @@ export interface UserEmail {
   id: number;
   email: string;
   verifiedAt: string;
+}
+
+/** 어드민이 인증에 손댄 결과 (#524). `message` 는 서버가 만든다. */
+export interface AdminEmailVerificationResult {
+  userId: number;
+  emailVerifiedAt: string | null;
+  /** 메일을 보낸 경우에만 있다. 강제 인증은 보내지 않는다. */
+  mail: "SENT" | "SKIPPED" | "FAILED" | null;
+  message: string;
 }

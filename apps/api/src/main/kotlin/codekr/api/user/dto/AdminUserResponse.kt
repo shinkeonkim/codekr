@@ -26,6 +26,13 @@ data class AdminUserSummaryResponse(
      * 사람을 또 정지시킨다.
      */
     val suspendedScopes: List<String> = emptyList(),
+    /**
+     * 이메일을 확인한 시각. 안 했으면 `null` (#524).
+     *
+     * **목록에서 보여야 한다.** 인증을 안 한 사람은 글도 댓글도 못 쓰는데(#233), 상세를
+     * 하나씩 열어 봐야 안다면 "왜 못 쓰나" 를 물어보기 전에는 아무도 모른다.
+     */
+    val emailVerifiedAt: Instant? = null,
 ) {
     companion object {
         fun from(user: User, suspendedScopes: List<String> = emptyList()) = AdminUserSummaryResponse(
@@ -36,6 +43,7 @@ data class AdminUserSummaryResponse(
             createdAt = user.createdAt,
             withdrawnAt = user.withdrawnAt,
             suspendedScopes = suspendedScopes,
+            emailVerifiedAt = user.emailVerifiedAt,
         )
     }
 }
@@ -60,4 +68,6 @@ data class AdminUserDetailResponse(
     val lastSubmittedAt: Instant?,
     /** 지금 걸려 있는 정지들 (#224). 여기서 바로 풀 수 있어야 한다. */
     val suspensions: List<SuspensionResponse> = emptyList(),
+    /** 이메일을 확인한 시각. 안 했으면 `null` (#524). */
+    val emailVerifiedAt: Instant? = null,
 )

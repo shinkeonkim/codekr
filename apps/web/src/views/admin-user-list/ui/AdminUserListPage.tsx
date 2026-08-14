@@ -158,6 +158,10 @@ export function AdminUserListPage() {
                     <Badge tone="danger">탈퇴</Badge>
                   ) : row.suspendedScopes.length > 0 ? (
                     <Badge tone="danger">{row.suspendedScopes.join("·")} 제한</Badge>
+                  ) : row.emailVerifiedAt === null ? (
+                    // 인증을 안 하면 글도 댓글도 못 쓴다 (#233, #524). 정지와 다른
+                    // 이유로 막힌 상태라 색도 다르다 — 이쪽은 우리가 도울 수 있다.
+                    <Badge tone="warn">이메일 미인증</Badge>
                   ) : (
                     <Badge tone="ok">활동</Badge>
                   ),

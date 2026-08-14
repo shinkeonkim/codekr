@@ -2,6 +2,7 @@ import { ApiError, apiUrl, request, tokenStore } from "@/shared/api";
 import type { Page } from "@/shared/api";
 import type {
   AdminAuditLog,
+  AdminEmailVerificationResult,
   AdminUserDetail,
   AdminUserSummary,
   Suspension,
@@ -150,6 +151,30 @@ export const userApi = {
   /** 내 프로필에서 남에게 보이는 값 (#310). 설정(내가 보는 값)과 나눈다. */
   updateProfile: (body: { bio?: string; displayName?: string }) =>
     request<{ bio: string | null; displayName: string; handle: string }>("/api/v1/users/me/profile", { method: "PATCH", auth: true, body }),
+
+  /**
+   * 인증 메일을 다시 보낸다 (#524).
+   *
+   * **사용자의 한도(60초·하루 5통) 밖이다** — 어드민은 그 한도 때문에 막힌 사람을
+   * 돕는 자리다. 응답의 `mail` 이 실제로 갔는지를 말한다.
+   */
+  resendEmailVerification: (id: number) =>
+    request<AdminEmailVerificationResult>(`/api/v1/admin/users/${id}/email-verification/resend`, {
+      method: "POST",
+      auth: true,
+    }),
+
+  /**
+   * 확인 없이 인증 처리한다 (#524). **최고 관리자만**, 사유가 필수다.
+   *
+   * "확인했다" 를 확인 없이 표시하는 일이라 기록에 남는다 (#225).
+   */
+  forceVerifyEmail: (id: number, reason: string) =>
+    request<AdminEmailVerificationResult>(`/api/v1/admin/users/${id}/email-verification`, {
+      method: "POST",
+      auth: true,
+      body: { reason },
+    }),
 
   /** 어드민이 소개를 지운다 (#310). 신고 기능이 없어도 지울 길은 있어야 한다. */
   clearBio: (id: number, reason: string) =>

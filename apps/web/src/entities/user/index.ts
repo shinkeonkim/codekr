@@ -1,5 +1,6 @@
 export { userApi } from "./api";
 export type {
+  AdminEmailVerificationResult,
   AdminAuditLog,
   AdminUserDetail,
   AdminUserSummary,

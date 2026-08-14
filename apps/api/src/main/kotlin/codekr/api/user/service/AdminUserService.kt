@@ -74,6 +74,7 @@ class AdminUserService(
             submissionCount = activity.submissionCount,
             lastSubmittedAt = activity.lastSubmittedAt,
             suspensions = suspensionRepository.findActive(id, clock.instant()).map(SuspensionResponse::of),
+            emailVerifiedAt = user.emailVerifiedAt,
         )
     }
 }

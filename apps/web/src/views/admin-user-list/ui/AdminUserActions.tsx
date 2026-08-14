@@ -2,6 +2,7 @@
 
 import { userApi } from "@/entities/user";
 import type { AdminUserSummary } from "@/entities/user";
+import { EmailVerificationActions } from "@/features/admin-email-verification";
 import { ActiveSuspensions, SuspendForm } from "@/features/admin-suspension";
 import { useAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
@@ -98,6 +99,16 @@ export function AdminUserActions({
       >
         소개 지우기
       </Button>
+
+      {/* 인증이 막혀 글을 못 쓰는 사람을 여기서 풀어 준다 (#524). */}
+      <EmailVerificationActions
+        userId={target.id}
+        verifiedAt={target.emailVerifiedAt}
+        canForce={isSuperuser}
+        reason={reason}
+        onDone={onDone}
+        onError={onError}
+      />
 
       <SuspendForm
         userId={target.id}
