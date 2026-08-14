@@ -842,20 +842,47 @@ POST /api/v1/problems/{slug}/difficulty-vote   {"level": 12}
 - 반영에 필요한 표 수는 설정이다 (`codekr.difficulty-vote.min-votes`, 기본 3). 지금은
   사용자도 문제도 적어 **문턱을 높이면 아무도 못 쓰는 상태**가 된다
 
-### 문제 데이터 업로드 (#479)
+### 문제 데이터 업로드 (#479, #537)
 
 ```
-POST /api/v1/admin/problems/imports   (multipart/form-data)
+POST /api/v1/admin/problems/imports           (multipart/form-data, file=zip 또는 json)
+POST /api/v1/admin/problems/imports/preview   (같은 형식. 읽기만 한다)
 ```
 
 테스트케이스가 백 개를 넘으면 폼으로는 못 만든다. 묶음은 `problem.json` +
 `testcases` 아래의 `{seq}.in`·`{seq}.out` 이고, **JSON 은 시드 파일과 같은 형식**이다.
 자세한 것은 `docs/13_문제_묶음_형식.md` 에 있다.
 
+- **zip 과 맨 JSON 을 모두 받는다** (#537). 맨 JSON 은 "테스트케이스 파일이 없는 묶음"
+  이다. 무엇인지는 **매직 바이트**로 가른다 — 이름과 `Content-Type` 은 믿지 않는다
 - **언제나 초안**으로 들어온다. 묶음이 `published: true` 라 적어도 덮는다
-- **폼과 같은 검증**을 지난다
-- 압축 폭탄(64MB·5000파일 상한)과 경로 탈출을 막는다. **푸는 동안** 재고, 넘으면 중단한다
+- **폼과 같은 검증**을 지난다. **모르는 키가 있으면 거절한다** — 조용히 버리면
+  적은 사람은 들어갔다고 믿는다
+- 압축 폭탄(64MB·5000파일 상한)과 경로 탈출을 막는다. **푸는 동안** 재고, 넘으면 중단한다.
+  맨 JSON 은 풀 것이 없으므로 **읽는 동안** 같은 크기에서 끊는다
 - 업로드한 파일은 **어디에도 저장하지 않는다** — 풀어서 옮기고 끝낸다
+
+`/preview` 는 **아무것도 만들지 않는다.** 파일을 고르자마자 만들면 잘못 만든 묶음이
+문제 번호를 하나 먹고 지워야 할 것으로 남는다 (#204).
+
+```json
+{
+  "source": "JSON",
+  "slug": "a-plus-b", "title": "A + B",
+  "category": "ALGORITHM", "problemKind": "JUDGE_STDIO", "difficulty": "BRONZE_5",
+  "timeLimitMs": 2000, "memoryLimitMb": 256,
+  "testcaseCount": 6, "testcaseSource": "INLINE", "templateCount": 1,
+  "publishedInBundle": true,
+  "violations": []
+}
+```
+
+- `publishedInBundle` 은 **덮기 전의 값**이다. 적혀 있어도 초안으로 들어간다는 것을
+  화면이 말해 줘야 한다
+- `violations` 는 **던지지 않고 모아서** 준다. 첫 번째에서 멈추면 고치고 다시 올리기를
+  반복하게 된다. 비어 있지 않으면 저장은 실패한다
+- **저장과 같은 경로를 지난다** — 미리보기를 통과한 것은 저장도 통과한다
+- 미리보기 뒤 저장은 **파일을 다시 올린다.** 서버가 들고 있지 않는다
 
 ### 프로필 배지 (#475)
 
