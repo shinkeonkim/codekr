@@ -93,6 +93,12 @@ jobs:
       - name: SQL 문제 지문의 예시 데이터가 시드와 맞는지
         run: python3 scripts/check-sql-samples.py
 
+      # **배지가 기능이 들어온 날부터 계속 404 였다** (#475). 엔드포인트는 일부러
+      # `/api` 밖에 두었는데 인그레스는 `/api`·`/ws` 만 API 로 보낸다 — 코드도 차트도
+      # 각자 맞았고 **둘 사이가 비어 있었다.** 로컬에서는 API 를 직접 불러 드러나지 않는다.
+      - name: API 가 여는 경로가 인그레스에 있는지
+        run: python3 scripts/check-ingress-paths.py
+
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest
