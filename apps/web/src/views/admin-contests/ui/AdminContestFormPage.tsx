@@ -1,10 +1,11 @@
 "use client";
 
 import { adminContestApi } from "@/entities/contest";
-import type { ContestUpsert } from "@/entities/contest";
+import type { AdminContest, ContestUpsert } from "@/entities/contest";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input, Textarea, useToast } from "@/shared/ui";
 import { ContestApplicantsPanel } from "./ContestApplicantsPanel";
+import { ContestOperationsPanel } from "./ContestOperationsPanel";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -33,6 +34,8 @@ export function AdminContestFormPage({ id }: { id?: number }) {
   const router = useRouter();
   const toast = useToast();
   const [values, setValues] = useState<ContestUpsert>(BLANK);
+  /** 운영 패널이 쓰는 서버 상태. 폼 값과 달리 동결·문제 목록까지 들고 있다. */
+  const [contest, setContest] = useState<AdminContest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -40,7 +43,8 @@ export function AdminContestFormPage({ id }: { id?: number }) {
     if (!id) return;
     adminContestApi
       .detail(id)
-      .then((contest) =>
+      .then((contest) => {
+        setContest(contest);
         setValues({
           slug: contest.slug,
           title: contest.title,
@@ -52,8 +56,8 @@ export function AdminContestFormPage({ id }: { id?: number }) {
           submissionCooldownSeconds: contest.submissionCooldownSeconds,
           visibility: contest.visibility,
           requiresApproval: contest.requiresApproval,
-        }),
-      )
+        });
+      })
       .catch(() => setError("대회를 불러오지 못했습니다."));
   }, [id]);
 
@@ -185,8 +189,9 @@ export function AdminContestFormPage({ id }: { id?: number }) {
         </Button>
       </Card>
 
-      {/* 만들기 전에는 신청자가 있을 수 없다. */}
+      {/* 만들기 전에는 신청자도 운영할 것도 없다. */}
       {id ? <ContestApplicantsPanel contestId={id} requiresApproval={values.requiresApproval} /> : null}
+      {contest ? <ContestOperationsPanel contest={contest} onChanged={setContest} /> : null}
     </div>
   );
 }

@@ -12,4 +12,4 @@ export type {
   ScoreboardProblem,
   ScoreboardRow,
 } from "./model/types";
-export type { AdminContest, ContestUpsert, ContestVisibility, PendingApplicant } from "./api";
+export type { AdminContest, ContestUpsert, ContestVisibility, PendingApplicant, AdminContestProblem } from "./api";

@@ -70,6 +70,17 @@ export const contestApi = {
       auth: true,
     }),
 
+  /**
+   * 공지를 지운다 (#544). 대회 관리자만.
+   *
+   * 대회 중 공지는 참가자 전원이 본다 — **오타 하나가 크다.**
+   */
+  deleteNotice: (slug: string, noticeId: number) =>
+    request<void>(`/api/v1/contests/${encodeURIComponent(slug)}/notices/${noticeId}`, {
+      method: "DELETE",
+      auth: true,
+    }),
+
   answer: (slug: string, questionId: number, body: { answer: string; public: boolean }) =>
     request<void>(
       `/api/v1/contests/${encodeURIComponent(slug)}/questions/${questionId}/answer`,
@@ -94,6 +105,11 @@ export interface AdminContest {
   submissionCooldownSeconds: number;
   visibility: ContestVisibility;
   requiresApproval: boolean;
+  /** 지금 순위가 동결돼 있는가 (#86). */
+  frozen: boolean;
+  /** 최종 순위를 공개한 시각. `null` 이면 아직 안 풀었다 (#544). */
+  unfrozenAt: string | null;
+  problems: AdminContestProblem[];
 }
 
 export interface ContestUpsert {
@@ -111,6 +127,17 @@ export interface ContestUpsert {
    * **켤 수는 있는데 승인할 화면이 없었다** (#543) — 신청한 사람은 영원히 대기했다.
    */
   requiresApproval: boolean;
+}
+
+/** 대회에 붙인 문제 (#544). `excluded` 면 순위 계산에서 빠진다. */
+export interface AdminContestProblem {
+  problemId: number;
+  label: string;
+  slug: string;
+  title: string;
+  seq: number;
+  score: number;
+  excluded: boolean;
 }
 
 /** 승인을 기다리는 신청자 (#466, #543). */
@@ -145,6 +172,22 @@ export const adminContestApi = {
       auth: true,
       query: { status },
     }),
+
+  /** 최종 순위 공개 (#86, #544). **끝난 뒤에만** 되고 다시 얼릴 수 없다. */
+  unfreeze: (id: number) =>
+    request<AdminContest>(`/api/v1/admin/contests/${id}/unfreeze`, { method: "POST", auth: true }),
+
+  /** 문제를 대회에서 빼거나 되돌린다 (#544). 순위 계산에서 빠진다. */
+  excludeProblem: (id: number, problemId: number, excluded: boolean) =>
+    request<AdminContest>(`/api/v1/admin/contests/${id}/problems/${problemId}/exclusion`, {
+      method: "PUT",
+      auth: true,
+      query: { excluded: String(excluded) },
+    }),
+
+  /** **준비 중인 대회만** 지워진다 — 서버가 그 밖을 거절한다 (제출 이력이 딸려 있다). */
+  remove: (id: number) =>
+    request<void>(`/api/v1/admin/contests/${id}`, { method: "DELETE", auth: true }),
 
   /** 승인을 기다리는 신청자 (#543). 승인이 꺼진 대회에서는 늘 비어 있다. */
   applicants: (id: number) =>
