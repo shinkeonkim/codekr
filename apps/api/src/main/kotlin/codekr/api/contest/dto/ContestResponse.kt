@@ -1,6 +1,7 @@
 package codekr.api.contest.dto
 
 import codekr.api.contest.entity.Contest
+import codekr.api.contest.entity.ContestVisibility
 import codekr.api.contest.entity.ContestPhase
 import java.time.Instant
 
@@ -15,12 +16,22 @@ data class ContestSummaryResponse(
     val participantCount: Int,
     /** 순위가 동결돼 있는가 (#86). 화면이 크게 알려야 한다. */
     val frozen: Boolean,
+    /**
+     * 공개 범위 (#465).
+     *
+     * **화면이 "목록에 없는 대회" 라고 말해야 한다** — 링크를 받은 사람은 자기가 어디에
+     * 들어왔는지 알아야 하고, 색인에서 빼는 판단(#278)도 이 값을 본다.
+     */
+    val visibility: ContestVisibility,
+    val visibilityLabel: String,
 ) {
     companion object {
         fun of(contest: Contest, now: Instant, participantCount: Int): ContestSummaryResponse {
             val phase = contest.phaseAt(now)
             return ContestSummaryResponse(
                 slug = contest.slug,
+                visibility = contest.visibility,
+                visibilityLabel = contest.visibility.label,
                 title = contest.title,
                 startsAt = contest.startsAt,
                 endsAt = contest.endsAt,

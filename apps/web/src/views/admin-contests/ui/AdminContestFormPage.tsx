@@ -16,6 +16,8 @@ const BLANK: ContestUpsert = {
   // 기본값은 서버와 같다 (#86, #189) — 화면이 다른 값을 권하면 두 곳이 갈린다.
   freezeMinutes: 30,
   submissionCooldownSeconds: 20,
+  // 기본은 공개다 (#465). 기본을 바꾸면 이 판 이후에 만든 대회만 조용히 숨는다.
+  visibility: "PUBLIC",
 };
 
 /**
@@ -45,6 +47,7 @@ export function AdminContestFormPage({ id }: { id?: number }) {
           endsAt: contest.endsAt.slice(0, 16),
           freezeMinutes: contest.freezeMinutes,
           submissionCooldownSeconds: contest.submissionCooldownSeconds,
+          visibility: contest.visibility,
         }),
       )
       .catch(() => setError("대회를 불러오지 못했습니다."));
@@ -118,6 +121,30 @@ export function AdminContestFormPage({ id }: { id?: number }) {
             />
           </Field>
         </div>
+        {/*
+          **`status` 와 다른 값이다** (#465). 그쪽은 "준비 중인가", 이쪽은 "누가 보는가" 다.
+          목록에 없는 대회도 주소를 알면 들어온다 — 비밀이 아니라는 것을 화면이 말한다.
+        */}
+        <Field label="공개 범위">
+          <div className="flex gap-2">
+            {(["PUBLIC", "UNLISTED"] as const).map((each) => (
+              <Button
+                key={each}
+                variant={values.visibility === each ? "primary" : "secondary"}
+                className="px-3 py-1 text-xs"
+                onClick={() => update("visibility", each)}
+              >
+                {each === "PUBLIC" ? "누구나 보기" : "링크가 있는 사람만"}
+              </Button>
+            ))}
+          </div>
+        </Field>
+        {values.visibility === "UNLISTED" ? (
+          <p className="text-xs text-ink-muted">
+            목록과 검색에는 나오지 않습니다. <span className="text-ink">비밀은 아닙니다</span> —
+            주소를 아는 사람은 들어옵니다. 문제와 순위표는 시작 시각·참가 여부가 막습니다.
+          </p>
+        ) : null}
         <Field label="설명">
           <Textarea
             rows={4}
