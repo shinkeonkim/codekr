@@ -77,8 +77,8 @@ class SubmissionService(
     fun submit(slug: String, userId: Long, request: SubmitRequest): SubmitResponse {
         val problem = problemService.requirePublished(slug)
         validate(problem, request.runtimeId, request.sourceCode)
-        // SQL 문제의 채점 대상은 테스트케이스가 아니라 정답 쿼리다 (#60).
-        if (problem.problemKind != ProblemKind.JUDGE_SQL && problem.testcases.isEmpty()) {
+        // 유형마다 채점 대상이 다르다 — SQL 은 정답 쿼리, Redis 는 끝난 뒤의 상태다 (#60, #455).
+        if (problem.problemKind.needsTestcases && problem.testcases.isEmpty()) {
             throw ApiException(ErrorCode.TESTCASE_REQUIRED)
         }
 

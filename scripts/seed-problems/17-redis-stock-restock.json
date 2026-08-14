@@ -1,0 +1,29 @@
+{
+  "slug": "redis-stock-restock",
+  "title": "재고 채우고 품절 지우기 (Redis)",
+  "category": "ALGORITHM",
+  "difficulty": "SILVER_5",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n창고의 재고가 해시로 들어 있습니다. 명령을 써서 아래 상태를 만드세요.\n\n| 키 | 지금 | 해야 할 일 |\n|---|---|---|\n| `stock:apple` | `count 10` | 그대로 둔다 |\n| `stock:banana` | `count 3` | 5 를 채운다 |\n| `stock:cherry` | `count 7` | **키를 지운다** (단종) |\n\n**채점은 명령의 출력이 아니라 끝난 뒤의 상태를 봅니다.** `HINCRBY` 가 무엇을 돌려주든 상관없고, 남은 값이 맞아야 합니다. 그래서 같은 상태에 이르는 다른 풀이도 정답입니다.\n\n쓸 수 있는 것은 **데이터 명령**입니다 — `CONFIG`·`EVAL`·`FLUSHALL`·`KEYS` 같은 운영·스크립트 명령은 막혀 있습니다. 한 줄에 명령 하나를 쓰고, `#` 으로 시작하는 줄은 주석으로 무시됩니다.",
+  "inputDescription": "표준 입력은 없습니다. 위의 세 키가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "HSET stock:apple count 10\nHSET stock:banana count 3\nHSET stock:cherry count 7",
+    "answerCommands": "HINCRBY stock:banana count 5\nDEL stock:cherry",
+    "verifyCommands": "HGET stock:apple count\nHGET stock:banana count\nEXISTS stock:cherry",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

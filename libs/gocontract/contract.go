@@ -169,6 +169,7 @@ const (
 	KindJudgeSQL   = "JUDGE_SQL"
 	// KindJudgeFunction 은 **함수만 구현하는 문제**다 (#421). 하네스가 입출력을 맡는다.
 	KindJudgeFunction = "JUDGE_FUNCTION"
+	KindJudgeRedis    = "JUDGE_REDIS"
 	KindQuiz          = "QUIZ"
 	KindManual        = "MANUAL"
 )
@@ -215,6 +216,29 @@ type JudgeJob struct {
 		그것은 **오답이 아니라 출제자의 실수**다.
 	*/
 	Checker string `json:"checker,omitempty"`
+	// Redis 는 KindJudgeRedis 일 때만 실린다 (#455).
+	Redis *JudgeRedisSpec `json:"redis,omitempty"`
+}
+
+/*
+JudgeRedisSpec 은 Redis 문제의 채점 자료다 (#455).
+
+**채점 모델이 SQL 과 다르다.** SQL 은 쿼리 하나를 던져 결과 집합을 받지만, 제출이
+**명령의 연속**이면 남는 것은 결과가 아니라 **상태**다. 그래서 여기서는 상태를 견주는
+것이 예외가 아니라 **기본**이다 — `Verify` 가 선택이 아닌 이유다.
+*/
+type JudgeRedisSpec struct {
+	// Seed 는 시작 상태를 만드는 명령이다. 관리자로 넣는다. 문제가 소유한다.
+	Seed string `json:"seed,omitempty"`
+	// Answer 는 정답 명령의 연속이다. 기대 상태를 만든다.
+	Answer string `json:"answer"`
+	// Verify 는 **끝난 뒤의 상태를 읽는 명령**이다. 양쪽에서 같은 것을 돌려 견준다.
+	Verify string `json:"verify"`
+	// IgnoreOrder 가 참이면 줄 순서를 맞추지 않고 비교한다.
+	//
+	// 기본을 참으로 두지 않는 이유: Redis 의 정렬 집합·리스트는 **순서가 자료의 일부**다.
+	// SQL 의 행 순서와 반대다.
+	IgnoreOrder bool `json:"ignoreOrder,omitempty"`
 }
 
 // 출력 비교 방식 (#279, ADR-0010).

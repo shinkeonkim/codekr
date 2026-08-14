@@ -2,6 +2,7 @@ package codekr.api.queue
 
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.repository.ProblemRedisSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.queue.message.JudgeJobMessage
 import codekr.api.submission.entity.Submission
@@ -15,13 +16,20 @@ import org.springframework.stereotype.Component
  * 잘못 채점된다.
  */
 @Component
-class JudgeJobFactory(private val sqlSpecRepository: ProblemSqlSpecRepository) {
+class JudgeJobFactory(
+    private val sqlSpecRepository: ProblemSqlSpecRepository,
+    private val redisSpecRepository: ProblemRedisSpecRepository,
+) {
 
     fun of(submission: Submission, problem: Problem): JudgeJobMessage = JudgeJobMessage.of(
         submission = submission,
         problem = problem,
         sqlSpec = when (problem.problemKind) {
             ProblemKind.JUDGE_SQL -> sqlSpecRepository.findById(problem.id).orElse(null)
+            else -> null
+        },
+        redisSpec = when (problem.problemKind) {
+            ProblemKind.JUDGE_REDIS -> redisSpecRepository.findById(problem.id).orElse(null)
             else -> null
         },
     )
