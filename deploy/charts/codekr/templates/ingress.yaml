@@ -21,6 +21,16 @@ spec:
               service:
                 name: codekr-api
                 port: { name: http }
+          # **프로필 배지는 `/api` 밖에 산다** (#475). 남의 README 에 박히는 주소라
+          # 짧아야 하고, 우리가 `/api/v1` 을 v2 로 옮길 때 따라 움직이면 안 되기
+          # 때문이다. 그런데 여기에 규칙이 없어서 **그 주소는 웹으로 갔고, 기능이
+          # 들어온 날부터 계속 404 였다.**
+          - path: /badge
+            pathType: Prefix
+            backend:
+              service:
+                name: codekr-api
+                port: { name: http }
           - path: /ws
             pathType: Prefix
             backend:
