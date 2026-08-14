@@ -24,6 +24,7 @@ export type {
   ProblemCredit,
   ProblemDetail,
   ProblemExample,
+  ProblemFile,
   ProblemKind,
   ProblemRuntimeLimit,
   ProblemSolution,
