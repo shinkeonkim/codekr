@@ -25,7 +25,7 @@ func TestLiveSandboxHardening(t *testing.T) {
 	if err != nil {
 		t.Fatalf("런타임 정의 로드 실패: %v", err)
 	}
-	probe, err := selftest.ProbeFrom(registry, os.Getenv("CODEKR_RUNTIME_REGISTRY"))
+	probes, err := selftest.Probes(registry, os.Getenv("CODEKR_RUNTIME_REGISTRY"))
 	if err != nil {
 		t.Fatalf("검사용 런타임을 찾지 못했습니다: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestLiveSandboxHardening(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = box.Close() })
 
-	for _, result := range selftest.Run(context.Background(), box, probe) {
+	for _, result := range selftest.Run(context.Background(), box, probes) {
 		t.Run(result.Name, func(t *testing.T) {
 			if !result.Passed() {
 				t.Error(result.Err)

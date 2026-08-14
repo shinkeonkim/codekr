@@ -133,17 +133,20 @@ func runSelfTest(
 	registryPrefix string,
 	log *slog.Logger,
 ) int {
-	probe, err := selftest.ProbeFrom(registry, registryPrefix)
+	// 검사마다 런타임이 다를 수 있다 (#456) — 셸 검사는 셸 이미지로 돌아야 뜻이 있다.
+	probes, err := selftest.Probes(registry, registryPrefix)
 	if err != nil {
 		log.Error("검사용 런타임을 찾지 못했습니다", "error", err)
 		return 1
 	}
-	log.Info("샌드박스 방어 검증 시작", "runtime", selftest.ProbeRuntimeID, "image", probe.Image)
+	for id, probe := range probes {
+		log.Info("샌드박스 방어 검증 시작", "runtime", id, "image", probe.Image)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	if selftest.Report(os.Stdout, selftest.Run(ctx, box, probe)) {
+	if selftest.Report(os.Stdout, selftest.Run(ctx, box, probes)) {
 		log.Error("샌드박스 방어 검증 실패 — 이 노드에 배포하면 안 됩니다")
 		return 1
 	}
