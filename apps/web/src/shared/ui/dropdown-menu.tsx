@@ -29,7 +29,10 @@ export function DropdownMenuContent({
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         className={cn(
-          "z-50 min-w-40 overflow-hidden rounded-card border border-border bg-surface p-1 shadow-lg",
+          // `z-tooltip` 인 이유는 `Select` 와 같다 — 자기를 연 것(헤더) 위에는 떠야 하고,
+          // 드로어(`z-drawer`) 아래여야 한다 (#578). 전에는 숫자를 직접 적어서 층
+          // 표(#134) 밖에 있었다 — 표를 고쳐도 이 한 줄만 따라오지 않는다.
+          "z-tooltip min-w-40 overflow-hidden rounded-card border border-border bg-surface p-1 shadow-lg",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
           "data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-1",
           className,
