@@ -10,6 +10,7 @@ import { MyAffiliationsCard } from "@/features/my-affiliations";
 import { TermAgreementsCard } from "@/features/terms";
 import { BioEditor, DisplayNameEditor } from "@/features/profile-bio";
 import { useAuth } from "@/features/auth";
+import { BadgeSnippet } from "@/features/profile-badge";
 import { RequireAuth } from "@/features/auth";
 import { ThemePicker, applyAccountTheme, fromServer } from "@/features/theme";
 import { WithdrawalCard } from "./WithdrawalCard";
@@ -144,6 +145,13 @@ function SettingsView() {
 
       {/* 소속은 그 주소에 붙는다 (#398). 그래서 주소 카드 바로 아래다. */}
       <MyAffiliationsCard />
+
+      {/*
+        README 에 붙이는 배지 (#475, #547). **프로필이 아니라 여기다** — 프로필은 남이
+        보러 오는 자리이고, 이것은 내가 한 번 복사해 가는 도구다. 자기 프로필에만
+        보이는 칸을 두면 내가 보는 프로필과 남이 보는 프로필이 달라진다.
+      */}
+      {user?.handle ? <BadgeSnippet handle={user.handle} /> : null}
 
       {/* 내가 무엇에 동의했는지 확인할 수 있어야 한다 (#235). */}
       <TermAgreementsCard />
