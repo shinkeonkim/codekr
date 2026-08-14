@@ -8,7 +8,7 @@ import { AvatarEditor } from "@/features/avatar-editor";
 import { EmailAddressesCard, EmailVerificationCard } from "@/features/email-verification";
 import { MyAffiliationsCard } from "@/features/my-affiliations";
 import { TermAgreementsCard } from "@/features/terms";
-import { BioEditor, DisplayNameEditor } from "@/features/profile-bio";
+import { ProfileEditor } from "@/features/profile-bio";
 import { useAuth } from "@/features/auth";
 import { BadgeSnippet } from "@/features/profile-badge";
 import { RequireAuth } from "@/features/auth";
@@ -86,16 +86,18 @@ function SettingsView() {
             onChange={() => refresh()}
           />
           {/*
-            소개도 아바타와 같은 성격이다 (#310) — 본인이 쓰고, 남에게 보인다.
-            같은 카드에 두어 "남에게 보이는 것" 이 한자리에 모이게 한다.
+            이름과 소개는 아바타와 같은 성격이다 (#307, #310) — 본인이 쓰고, 남에게
+            보인다. 같은 카드에 두어 "남에게 보이는 것" 이 한자리에 모이게 한다.
+
+            **저장 단추는 그 둘에 하나다** (#581). 아바타는 고르는 즉시 올라가므로
+            여기에 묶지 않는다 — 파일을 고르는 일과 글자를 고치는 일은 손짓이 다르다.
           */}
-          {/* 이름은 바꿀 수 있고 주소는 그대로다 (#307). */}
-          <DisplayNameEditor
+          <ProfileEditor
             displayName={user.nickname}
             handle={user.handle}
+            bio={user.bio}
             onChange={() => refresh()}
           />
-          <BioEditor bio={user.bio} onChange={() => refresh()} />
           </>
         ) : null}
       </Card>

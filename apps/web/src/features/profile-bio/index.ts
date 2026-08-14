@@ -1,2 +1,1 @@
-export { BioEditor } from "./ui/BioEditor";
-export { DisplayNameEditor } from "./ui/DisplayNameEditor";
+export { ProfileEditor } from "./ui/ProfileEditor";
