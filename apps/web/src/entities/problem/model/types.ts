@@ -305,3 +305,25 @@ export interface AdminProblemDetail extends ProblemSummary {
   /** 지금 붙어 있는 알고리즘 분류 (#232). */
   tags: ProblemTag[];
 }
+
+/**
+ * 묶음을 저장하기 전에 무엇이 들어올지 (#537).
+ *
+ * `publishedInBundle` 은 **덮기 전의 값**이다 — 적혀 있어도 초안으로 들어간다.
+ * `violations` 가 비어 있지 않으면 저장은 실패한다.
+ */
+export interface ProblemImportPreview {
+  source: "ZIP" | "JSON";
+  slug: string;
+  title: string;
+  category: ProblemCategory;
+  problemKind: ProblemKind;
+  difficulty: Difficulty | null;
+  timeLimitMs: number;
+  memoryLimitMb: number;
+  testcaseCount: number;
+  testcaseSource: "FILES" | "INLINE" | "NONE";
+  templateCount: number;
+  publishedInBundle: boolean;
+  violations: string[];
+}
