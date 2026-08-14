@@ -7,7 +7,6 @@ import { SkillTierBadge } from "@/entities/ranking";
 import { Avatar, userApi } from "@/entities/user";
 import type { UserProfile } from "@/entities/user";
 import { useAuth } from "@/features/auth";
-import { BadgeSnippet } from "@/features/profile-badge";
 import { ScoreHistoryChart } from "@/features/score-history";
 import { SubmissionExplorer } from "@/features/submission-explorer";
 import { ApiError } from "@/shared/api";
@@ -165,13 +164,6 @@ function ProfileView({ nickname }: { nickname: string }) {
         </Card>
       ) : null}
 
-      {/*
-        배지는 **자기 프로필에서만** 권한다 (#475). 남의 프로필에서 복사를 권하면
-        남의 것을 내 README 에 붙이라는 말처럼 읽힌다.
-      */}
-      {user?.handle === profile.handle ? (
-        <BadgeSnippet handle={profile.handle} />
-      ) : null}
 
       <section className="space-y-3">
         <CardTitle>최근 제출</CardTitle>
