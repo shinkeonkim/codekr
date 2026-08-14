@@ -154,3 +154,44 @@ func (c *capturingExecutor) Run(_ context.Context, job contract.ExecJob) (contra
 	c.job = job
 	return c.result, nil
 }
+
+/*
+상태를 묻는 문제 (#453).
+
+**신호는 파일이다.** 검사 쿼리가 실리지 않으면 하네스는 데이터베이스를 하나만 만들고,
+`UPDATE` 는 결과 집합이 비어 있으니 **아무 답이나 통과한다.**
+*/
+func TestSqlJudgeSendsVerifyAndWriteFlag(t *testing.T) {
+	captured := &capturingExecutor{result: contract.ExecResult{
+		Status: contract.StatusOK, Stdout: harnessOutput("1", "1"),
+	}}
+	job := sqlJob("UPDATE t SET x = 1;", true)
+	job.SQL.Verify = "SELECT x FROM t ORDER BY x;"
+	job.SQL.AllowWrite = true
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	NewSqlJudge(captured, log).Judge(context.Background(), job, func(contract.Event) {})
+
+	if captured.job.ExtraFiles["verify.sql"] != "SELECT x FROM t ORDER BY x;" {
+		t.Fatalf("검사 쿼리를 실어야 합니다: %+v", captured.job.ExtraFiles)
+	}
+	if _, ok := captured.job.ExtraFiles["allow-write"]; !ok {
+		t.Fatalf("쓰기를 여는 신호가 없습니다: %+v", captured.job.ExtraFiles)
+	}
+}
+
+// 지금 있는 SELECT 문제가 조용히 쓰기 가능해지면 안 된다.
+func TestSqlJudgeKeepsReadOnlyByDefault(t *testing.T) {
+	captured := &capturingExecutor{result: contract.ExecResult{
+		Status: contract.StatusOK, Stdout: harnessOutput("1", "1"),
+	}}
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	NewSqlJudge(captured, log).Judge(context.Background(), sqlJob("SELECT x FROM t;", true), func(contract.Event) {})
+
+	for _, name := range []string{"verify.sql", "allow-write"} {
+		if _, ok := captured.job.ExtraFiles[name]; ok {
+			t.Fatalf("%s 가 실리면 안 됩니다: %+v", name, captured.job.ExtraFiles)
+		}
+	}
+}

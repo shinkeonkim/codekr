@@ -23,7 +23,7 @@ export function SqlSpecEditor({
     <div className="space-y-4">
       <div>
                 <p className="mt-1 text-xs text-ink-muted">
-          문제마다 새 PostgreSQL 이 뜨고, 제출 쿼리는 읽기 전용 권한으로 실행됩니다.
+          문제마다 새 PostgreSQL 이 뜨고, 제출 쿼리는 기본적으로 읽기 전용 권한으로 실행됩니다.
         </p>
       </div>
 
@@ -51,6 +51,38 @@ export function SqlSpecEditor({
       <p className="text-xs text-ink-muted">
         채점할 때 이 쿼리를 먼저 돌려 기대 결과를 만듭니다. 시드를 고치면 기대 결과도 따라갑니다.
       </p>
+
+      <Field label="끝난 뒤의 상태를 읽는 쿼리 (선택)">
+        <Textarea
+          rows={4}
+          className="font-mono text-xs"
+          value={value.verifySql ?? ""}
+          onChange={(event) => update("verifySql", event.target.value || null)}
+          placeholder="SELECT id, city FROM members ORDER BY id;"
+        />
+      </Field>
+      <p className="text-xs text-ink-muted">
+        {/* INSERT·UPDATE·CREATE TABLE 은 결과 집합이 없다 — 바뀌는 것은 DB 의 상태다. */}
+        비워 두면 제출 쿼리의 <b>결과 집합</b>을 견줍니다. 채우면 정답 스크립트를 돌린 DB 와
+        제출을 돌린 DB 에서 각각 이 쿼리를 돌려 <b>끝난 뒤의 상태</b>를 견줍니다 —
+        <code>INSERT</code>·<code>UPDATE</code>·<code>CREATE TABLE</code> 문제에 필요합니다.
+      </p>
+
+      <CheckboxField
+        className="text-xs"
+        checked={value.allowWrite}
+        onCheckedChange={(next) => update("allowWrite", next)}
+        label={
+          <>
+            제출이 데이터를 바꿀 수 있습니다.
+            <span className="block font-normal text-ink-muted">
+              {/* 문자열 필터가 아니라 권한으로 연다 — 필터는 우회되지만 권한은 아니다. */}
+              켜면 제출 롤에 쓰기 권한을 줍니다. 위의 상태를 읽는 쿼리가 있어야 켤 수 있습니다 —
+              없으면 채점이 조용히 결과 집합 비교로 돌아가 아무 답이나 통과합니다.
+            </span>
+          </>
+        }
+      />
 
       <CheckboxField
         className="text-xs"
