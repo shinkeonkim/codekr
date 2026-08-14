@@ -43,6 +43,12 @@ data class JudgeJobMessage(
      * 코드를 돌리면 출력이 없고, 그것은 "틀렸다" 가 아니라 우리 잘못이다.
      */
     val harness: String? = null,
+    /**
+     * 스페셜 저지의 채점 코드 (#452). `comparison` 이 `CHECKER` 일 때만 실린다.
+     *
+     * **채점기가 DB 를 읽지 않는다**(ADR-0004) — 판정에 필요한 것은 전부 실려 간다.
+     */
+    val checker: String? = null,
 ) {
     companion object {
         /**
@@ -73,6 +79,8 @@ data class JudgeJobMessage(
                     ProblemKind.JUDGE_FUNCTION -> problem.harnessFor(submission.runtimeId)
                     else -> null
                 },
+                checker = problem.checkerSource
+                    ?.takeIf { problem.outputComparison == OutputComparison.CHECKER },
             )
         }
     }
