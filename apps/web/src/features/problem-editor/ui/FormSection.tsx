@@ -36,13 +36,23 @@ export function FormSection({
       <details open={defaultOpen} className="group">
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 p-5">
           <CardTitle>{title}</CardTitle>
-          {required ? <Badge tone="warn">공개에 필요</Badge> : <Badge tone="muted">선택</Badge>}
+          {required ? (
+            <Badge tone="warn">공개에 필요</Badge>
+          ) : (
+            <Badge tone="muted">선택</Badge>
+          )}
           {description ? (
-            <span className="w-full text-xs text-ink-muted sm:w-auto">{description}</span>
+            <span className="w-full text-xs text-ink-muted sm:w-auto">
+              {description}
+            </span>
           ) : null}
           {/* 접힘 표시. 화살표만으로도 여닫는 것임을 알 수 있다. */}
-          <span className="ml-auto text-xs text-ink-muted group-open:hidden">펼치기 ▾</span>
-          <span className="ml-auto hidden text-xs text-ink-muted group-open:inline">접기 ▴</span>
+          <span className="ml-auto text-xs text-ink-muted group-open:hidden">
+            펼치기 ▾
+          </span>
+          <span className="ml-auto hidden text-xs text-ink-muted group-open:inline">
+            접기 ▴
+          </span>
         </summary>
         <div className="space-y-4 border-t border-border p-5">{children}</div>
       </details>

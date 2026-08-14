@@ -18,7 +18,10 @@ export function ProblemDescriptionFields({
   onChange,
 }: {
   values: ProblemFormValues;
-  onChange: <K extends keyof ProblemFormValues>(key: K, value: ProblemFormValues[K]) => void;
+  onChange: <K extends keyof ProblemFormValues>(
+    key: K,
+    value: ProblemFormValues[K],
+  ) => void;
 }) {
   const update = onChange;
   const [preview, setPreview] = useState(false);
@@ -30,7 +33,9 @@ export function ProblemDescriptionFields({
           rows={8}
           value={values.description}
           onChange={(event) => update("description", event.target.value)}
-          placeholder={"마크다운으로 씁니다.\n\n**굵게**, 목록, 그리고 표 구조는 코드 블록으로:\n\n```\nmembers(id, name, city)\n```"}
+          placeholder={
+            "마크다운으로 씁니다.\n\n**굵게**, 목록, 그리고 표 구조는 코드 블록으로:\n\n```\nmembers(id, name, city)\n```"
+          }
           required
         />
       </Field>
@@ -46,12 +51,19 @@ export function ProblemDescriptionFields({
           <Textarea
             rows={3}
             value={values.outputDescription}
-            onChange={(event) => update("outputDescription", event.target.value)}
+            onChange={(event) =>
+              update("outputDescription", event.target.value)
+            }
           />
         </Field>
       </div>
 
-      <Button type="button" variant="secondary" className="px-3 py-1 text-xs" onClick={() => setPreview((it) => !it)}>
+      <Button
+        type="button"
+        variant="secondary"
+        className="px-3 py-1 text-xs"
+        onClick={() => setPreview((it) => !it)}
+      >
         {preview ? "미리보기 닫기" : "미리보기"}
       </Button>
       {preview ? (

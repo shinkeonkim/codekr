@@ -24,6 +24,13 @@ data class AdminProblemDetailResponse(
     /** SQL 유형이 아니면 null (#60). */
     val sqlSpec: SqlSpecResponse? = null,
     val redisSpec: RedisSpecResponse? = null,
+    /**
+     * 정답 코드 검증(#39)을 할 수 있는 유형인가 (#495).
+     *
+     * **화면이 유형 이름을 나열하지 않게** 서버가 말한다 — 유형이 하나 늘 때마다 화면을
+     * 고쳐야 하면 언젠가 빠뜨리고, 그러면 누를 수 있는데 눌리지 않는 버튼이 남는다.
+     */
+    val canVerifySolution: Boolean = true,
     /** 여러 파일을 완성하는 문제의 파일 목록 (#457). 비면 파일 하나짜리다. */
     val files: List<ProblemFileResponse> = emptyList(),
     /** 편집 화면이 지금 붙어 있는 사람을 그대로 보여야 한다 (#236). */
@@ -86,6 +93,7 @@ data class AdminProblemDetailResponse(
             problemKind = problem.problemKind,
             sqlSpec = sqlSpec?.let(SqlSpecResponse::from),
             redisSpec = redisSpec?.let(RedisSpecResponse::from),
+            canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
             setters = credits.filter { it.role == codekr.api.problem.credit.CreditRole.SETTER },
             reviewers = credits.filter { it.role == codekr.api.problem.credit.CreditRole.REVIEWER },

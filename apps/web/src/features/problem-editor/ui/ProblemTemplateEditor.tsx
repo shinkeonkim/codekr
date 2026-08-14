@@ -21,30 +21,44 @@ export function ProblemTemplateEditor({ templates, onChange }: Props) {
   const [selected, setSelected] = useState("");
 
   useEffect(() => {
-    problemApi.runtimes().then(setRuntimes).catch(() => setRuntimes([]));
+    problemApi
+      .runtimes()
+      .then(setRuntimes)
+      .catch(() => setRuntimes([]));
   }, []);
 
-  const available = runtimes.filter((runtime) => !templates.some((it) => it.runtimeId === runtime.id));
-  const labelOf = (runtimeId: string) => runtimes.find((it) => it.id === runtimeId)?.label ?? runtimeId;
+  const available = runtimes.filter(
+    (runtime) => !templates.some((it) => it.runtimeId === runtime.id),
+  );
+  const labelOf = (runtimeId: string) =>
+    runtimes.find((it) => it.id === runtimeId)?.label ?? runtimeId;
 
   const add = () => {
     const runtime = runtimes.find((it) => it.id === selected) ?? available[0];
     if (!runtime) return;
     // 새로 추가할 때는 런타임 기본 템플릿에서 출발하는 편이 편집하기 쉽다.
-    onChange([...templates, { runtimeId: runtime.id, sourceCode: runtime.template }]);
+    onChange([
+      ...templates,
+      { runtimeId: runtime.id, sourceCode: runtime.template },
+    ]);
     setSelected("");
   };
 
   const update = (runtimeId: string, sourceCode: string) =>
-    onChange(templates.map((it) => (it.runtimeId === runtimeId ? { ...it, sourceCode } : it)));
+    onChange(
+      templates.map((it) =>
+        it.runtimeId === runtimeId ? { ...it, sourceCode } : it,
+      ),
+    );
 
-  const remove = (runtimeId: string) => onChange(templates.filter((it) => it.runtimeId !== runtimeId));
+  const remove = (runtimeId: string) =>
+    onChange(templates.filter((it) => it.runtimeId !== runtimeId));
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <div>
-                    <p className="mt-0.5 text-xs text-ink-muted">
+          <p className="mt-0.5 text-xs text-ink-muted">
             지정하지 않은 언어는 기본 템플릿이 제공됩니다.
           </p>
         </div>
@@ -61,7 +75,12 @@ export function ProblemTemplateEditor({ templates, onChange }: Props) {
             </option>
           ))}
         </Select>
-        <Button type="button" variant="secondary" onClick={add} disabled={available.length === 0}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={add}
+          disabled={available.length === 0}
+        >
           추가
         </Button>
       </div>
@@ -73,9 +92,14 @@ export function ProblemTemplateEditor({ templates, onChange }: Props) {
       ) : null}
 
       {templates.map((template) => (
-        <div key={template.runtimeId} className="space-y-2 rounded-lg border border-border p-4">
+        <div
+          key={template.runtimeId}
+          className="space-y-2 rounded-lg border border-border p-4"
+        >
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-ink">{labelOf(template.runtimeId)}</span>
+            <span className="text-sm font-medium text-ink">
+              {labelOf(template.runtimeId)}
+            </span>
             <Button
               type="button"
               variant="danger"

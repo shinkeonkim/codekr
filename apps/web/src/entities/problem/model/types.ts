@@ -288,6 +288,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   sqlSpec: SqlSpec | null;
   /** Redis 유형이 아니면 null (#455). */
   redisSpec: RedisSpec | null;
+  /** 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495). */
+  canVerifySolution?: boolean;
   description: string;
   inputDescription: string | null;
   outputDescription: string | null;

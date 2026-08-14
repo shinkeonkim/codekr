@@ -22,9 +22,9 @@ export function RedisSpecEditor({
   return (
     <div className="space-y-4">
       <p className="text-xs text-ink-muted">
-        문제마다 새 Redis 가 두 개 뜹니다 — 정답을 돌릴 것과 제출을 돌릴 것. 제출은 데이터
-        명령만 쓸 수 있고 <code>CONFIG</code>·<code>EVAL</code>·<code>FLUSHALL</code> 같은
-        것은 막혀 있습니다.
+        문제마다 새 Redis 가 두 개 뜹니다 — 정답을 돌릴 것과 제출을 돌릴 것.
+        제출은 데이터 명령만 쓸 수 있고 <code>CONFIG</code>·<code>EVAL</code>·
+        <code>FLUSHALL</code> 같은 것은 막혀 있습니다.
       </p>
 
       <Field label="시드 명령 (선택)">
@@ -32,7 +32,9 @@ export function RedisSpecEditor({
           rows={6}
           className="font-mono text-xs"
           value={value.seedCommands ?? ""}
-          onChange={(event) => update("seedCommands", event.target.value || null)}
+          onChange={(event) =>
+            update("seedCommands", event.target.value || null)
+          }
           placeholder={"ZADD scores 10 kim\nZADD scores 30 lee"}
         />
       </Field>
@@ -60,9 +62,9 @@ export function RedisSpecEditor({
       </Field>
       <p className="text-xs text-ink-muted">
         {/* 명령의 연속에는 견줄 결과 집합이 없다 — 이것이 없으면 무엇을 정답으로 볼지가 없다. */}
-        정답 명령을 돌린 쪽과 제출을 돌린 쪽에서 <b>각각 이 명령</b>을 돌려 그 출력을
-        견줍니다. SQL 과 달리 <b>비워 둘 수 없습니다</b> — 명령의 연속에는 견줄 결과
-        집합이 없기 때문입니다.
+        정답 명령을 돌린 쪽과 제출을 돌린 쪽에서 <b>각각 이 명령</b>을 돌려 그
+        출력을 견줍니다. SQL 과 달리 <b>비워 둘 수 없습니다</b> — 명령의
+        연속에는 견줄 결과 집합이 없기 때문입니다.
       </p>
 
       <CheckboxField
@@ -74,8 +76,9 @@ export function RedisSpecEditor({
             줄 순서를 무시하고 비교합니다.
             <span className="block font-normal text-ink-muted">
               {/* SQL 의 행 순서와 반대다. 정렬 집합·리스트에서 순서는 자료의 일부다. */}
-              기본은 <b>순서를 지킵니다</b> — 정렬 집합·리스트에서 순서는 자료의 일부라,
-              무시하면 정렬이 틀린 답도 통과합니다. 집합(SET)처럼 순서가 없는 자료만 켜세요.
+              기본은 <b>순서를 지킵니다</b> — 정렬 집합·리스트에서 순서는 자료의
+              일부라, 무시하면 정렬이 틀린 답도 통과합니다. 집합(SET)처럼 순서가
+              없는 자료만 켜세요.
             </span>
           </>
         }
