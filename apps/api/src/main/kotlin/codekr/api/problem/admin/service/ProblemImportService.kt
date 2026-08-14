@@ -3,16 +3,18 @@ package codekr.api.problem.admin.service
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.problem.admin.dto.ProblemCreatedResponse
+import codekr.api.problem.admin.dto.ProblemImportPreview
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
 import codekr.api.problem.admin.dto.TestcaseRequest
 import jakarta.validation.Validator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
+import tools.jackson.databind.DeserializationFeature
 import tools.jackson.databind.ObjectMapper
 
 /**
- * 묶음 파일로 문제를 만든다 (#479).
+ * 묶음 파일로 문제를 만든다 (#479, #537).
  *
  * **테스트케이스가 백 개를 넘으면 폼으로는 못 만든다.** 시드 문제는 이미 JSON 으로
  * 만들고 있는데(`scripts/seed-problems` 의 json 파일) 어드민이 그것을 쓸 수 없었다 —
@@ -39,35 +41,101 @@ class ProblemImportService(
 
     @Transactional
     fun import(file: MultipartFile, createdBy: Long): ProblemCreatedResponse {
-        if (file.isEmpty) throw ApiException(ErrorCode.VALIDATION_ERROR, "빈 파일입니다.")
-
-        val content = file.inputStream.use(ProblemArchive::read)
-        val request = parse(content.meta).let { meta ->
-            meta.copy(
-                // 묶음의 테스트케이스가 본문의 것을 **이긴다.** 둘 다 있으면 큰 쪽이
-                // 진짜다 — 파일로 뺀 이유가 그것이기 때문이다.
-                testcases = content.testcases.map { (seq, pair) ->
-                    TestcaseRequest(seq = seq, input = pair.first, expectedOutput = pair.second)
-                }.ifEmpty { meta.testcases },
-                // **언제나 초안이다.** 묶음이 무엇이라 적었든 덮는다.
-                published = false,
-            )
-        }
+        val read = read(file)
 
         // 폼으로 만들 때와 **같은 규칙**을 지난다 (#59, #60, #454, #455).
         // 여기서만 통과하는 길을 두면 그 길로 들어온 문제가 화면에서 고쳐지지 않는다.
-        val violations = validator.validate(request)
+        val violations = violationsOf(read.request)
         if (violations.isNotEmpty()) {
-            throw ApiException(
-                ErrorCode.VALIDATION_ERROR,
-                violations.joinToString { "${it.propertyPath}: ${it.message}" },
-            )
+            throw ApiException(ErrorCode.VALIDATION_ERROR, violations.joinToString())
         }
-        return adminProblemService.create(request, createdBy)
+        return adminProblemService.create(read.request, createdBy)
     }
 
+    /**
+     * 읽기만 하고 **아무것도 만들지 않는다** (#537).
+     *
+     * `import` 와 **같은 [read] 를 지난다.** 여기서만 통과하는 길이 생기면
+     * "미리보기는 됐는데 저장이 실패" 가 나고, 그러면 미리보기를 믿을 수 없게 된다.
+     */
+    fun preview(file: MultipartFile): ProblemImportPreview {
+        val read = read(file)
+        return ProblemImportPreview(
+            source = when (read.source) {
+                ProblemArchive.Source.ZIP -> ProblemImportPreview.BundleSource.ZIP
+                ProblemArchive.Source.JSON -> ProblemImportPreview.BundleSource.JSON
+            },
+            slug = read.request.slug,
+            title = read.request.title,
+            category = read.request.category,
+            problemKind = read.request.problemKind,
+            difficulty = read.request.difficulty,
+            timeLimitMs = read.request.timeLimitMs,
+            memoryLimitMb = read.request.memoryLimitMb,
+            testcaseCount = read.request.testcases.size,
+            testcaseSource = read.testcaseSource,
+            templateCount = read.request.templates.size,
+            publishedInBundle = read.publishedInBundle,
+            // **던지지 않고 모아서 준다.** 첫 번째에서 멈추면 고치고 다시 올리기를 반복한다.
+            violations = violationsOf(read.request),
+        )
+    }
+
+    private data class Read(
+        val request: ProblemUpsertRequest,
+        val source: ProblemArchive.Source,
+        val testcaseSource: ProblemImportPreview.TestcaseSource,
+        val publishedInBundle: Boolean,
+    )
+
+    private fun read(file: MultipartFile): Read {
+        if (file.isEmpty) throw ApiException(ErrorCode.VALIDATION_ERROR, "빈 파일입니다.")
+
+        val content = file.inputStream.use(ProblemArchive::read)
+        val meta = parse(content.meta)
+        val fromFiles = content.testcases.map { (seq, pair) ->
+            TestcaseRequest(seq = seq, input = pair.first, expectedOutput = pair.second)
+        }
+        return Read(
+            request = meta.copy(
+                // 묶음의 테스트케이스가 본문의 것을 **이긴다.** 둘 다 있으면 큰 쪽이
+                // 진짜다 — 파일로 뺀 이유가 그것이기 때문이다.
+                testcases = fromFiles.ifEmpty { meta.testcases },
+                // **언제나 초안이다.** 묶음이 무엇이라 적었든 덮는다.
+                published = false,
+            ),
+            source = content.source,
+            testcaseSource = when {
+                fromFiles.isNotEmpty() -> ProblemImportPreview.TestcaseSource.FILES
+                meta.testcases.isNotEmpty() -> ProblemImportPreview.TestcaseSource.INLINE
+                else -> ProblemImportPreview.TestcaseSource.NONE
+            },
+            // 덮기 **전의** 값이다. 화면이 "적혀 있지만 초안으로 들어간다"를 말해야 한다.
+            publishedInBundle = meta.published,
+        )
+    }
+
+    private fun violationsOf(request: ProblemUpsertRequest): List<String> =
+        validator.validate(request).map { "${it.propertyPath}: ${it.message}" }.sorted()
+
+    /**
+     * **모르는 키는 거절한다** (#537).
+     *
+     * zip 의 "모르는 파일이 있으면 거절한다" 와 같은 이유다 — 조용히 버리면 출제자는
+     * 자기가 적은 것이 들어갔다고 믿는다.
+     *
+     * 실제로 그럴 자리가 있다. `scripts/seed-problems` 의 SQL 문제 일곱 개는
+     * `sqlSchemaFile` 을 쓰는데, 그것은 **시드에서만 쓰는 키**이고
+     * `seed-problems.sh` 가 보내기 전에 `sqlSpec.schemaSql` 로 조립해 없앤다 (#313).
+     * 그 파일을 그대로 올리면 **스키마 없는 SQL 문제**가 될 뻔한 자리다.
+     *
+     * (그 일곱 개는 `schemaSql` 이 없다는 것이 먼저 걸려서 지금도 거절된다.
+     * 이 설정은 **나머지 모르는 키**를 잡는다.)
+     */
     private fun parse(meta: String): ProblemUpsertRequest = try {
-        objectMapper.readValue(meta, ProblemUpsertRequest::class.java)
+        objectMapper.readerFor(ProblemUpsertRequest::class.java)
+            .with(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .readValue(meta)
     } catch (caught: Exception) {
         // 무엇이 잘못됐는지 그대로 전한다 — "잘못된 파일입니다" 로는 고칠 수 없다.
         throw ApiException(ErrorCode.VALIDATION_ERROR, "problem.json 을 읽지 못했습니다: ${caught.message}")

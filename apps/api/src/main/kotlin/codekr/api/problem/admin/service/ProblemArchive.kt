@@ -2,11 +2,12 @@ package codekr.api.problem.admin.service
 
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import java.io.BufferedInputStream
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
 /**
- * 문제 묶음 파일을 푼다 (#479).
+ * 문제 묶음 파일을 푼다 (#479, #537).
  *
  * ## 왜 zip 인가
  *
@@ -20,6 +21,19 @@ import java.util.zip.ZipInputStream
  * testcases/1.in      seq 가 파일 이름이다
  * testcases/1.out
  * ```
+ *
+ * ## 맨 JSON 도 받는다 (#537)
+ *
+ * **우리가 가진 파일은 대부분 zip 이 아니다.** `scripts/seed-problems` 의 18개도,
+ * 스킬(#480~#482)이 내놓는 것도 전부 맨 JSON 이다. 테스트케이스가 세 개인 문제까지
+ * 압축하게 하면 그 단계에서 얻는 것이 없다.
+ *
+ * 형식을 새로 만드는 것이 아니다. 묶음 규칙이 이미 **"묶음에 테스트케이스 파일이 있으면
+ * 그쪽이 이기고, 없으면 `problem.json` 의 `testcases` 를 쓴다"** 이므로,
+ * 맨 JSON 은 **테스트케이스 파일이 없는 묶음**이다.
+ *
+ * **무엇으로 구분하는가 — 매직 바이트다.** 파일 이름과 `Content-Type` 은 올리는 쪽이
+ * 정하는 값이라 믿지 않는다. `.json` 이라 적힌 zip 도, 확장자가 없는 JSON 도 들어온다.
  *
  * ## 압축을 푸는 일은 안전한 작업이 아니다
  *
@@ -47,14 +61,63 @@ object ProblemArchive {
     /** 파일 수 상한. 테스트케이스 하나에 두 개(`.in`/`.out`)이므로 넉넉히 잡는다. */
     private const val MAX_ENTRIES = 5_000
 
+    /** zip 의 첫 네 바이트. 이름과 `Content-Type` 대신 이것으로 본다 (#537). */
+    private val ZIP_MAGIC = byteArrayOf(0x50, 0x4B, 0x03, 0x04)
+
+    /** 무엇으로 들어왔는지. 화면이 "zip 으로 읽었다"를 보여줄 수 있어야 한다. */
+    enum class Source { ZIP, JSON }
+
     data class Content(
         /** `problem.json` 의 내용. */
         val meta: String,
-        /** seq → (입력, 기대 출력). */
+        /** seq → (입력, 기대 출력). 맨 JSON 이면 비어 있다. */
         val testcases: Map<Int, Pair<String, String>>,
+        val source: Source,
     )
 
     fun read(stream: InputStream): Content {
+        val buffered = stream.buffered()
+        return if (looksLikeZip(buffered)) readZip(buffered) else readJson(buffered)
+    }
+
+    /**
+     * 앞 네 바이트만 보고 되돌린다.
+     *
+     * 파일을 다 읽어 놓고 판단하지 않는다 — 그러면 상한을 넘는 파일도 일단 메모리에
+     * 올린 뒤에야 거절하게 된다. 압축 폭탄을 푸는 동안 재는 것과 같은 이유다.
+     */
+    private fun looksLikeZip(stream: BufferedInputStream): Boolean {
+        stream.mark(ZIP_MAGIC.size)
+        val head = ByteArray(ZIP_MAGIC.size)
+        var read = 0
+        while (read < head.size) {
+            val count = stream.read(head, read, head.size - read)
+            if (count < 0) break
+            read += count
+        }
+        stream.reset()
+        return read == head.size && head.contentEquals(ZIP_MAGIC)
+    }
+
+    /**
+     * 맨 JSON. 통째로 `problem.json` 이다.
+     *
+     * **여기에도 상한을 건다.** zip 은 푸는 동안 재지만 맨 JSON 은 풀 것이 없어서
+     * 그 검사를 지나지 않는다. 인라인 `testcases` 를 담은 JSON 은 압축되지 않은 만큼
+     * 오히려 크다.
+     */
+    private fun readJson(stream: InputStream): Content {
+        val body = stream.readNBytes((MAX_TOTAL_BYTES + 1).toInt())
+        if (body.size > MAX_TOTAL_BYTES) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "파일이 너무 큽니다(최대 64MB).")
+        }
+        if (body.isEmpty()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "빈 파일입니다.")
+        }
+        return Content(body.toString(Charsets.UTF_8), emptyMap(), Source.JSON)
+    }
+
+    private fun readZip(stream: InputStream): Content {
         var meta: String? = null
         val inputs = mutableMapOf<Int, String>()
         val outputs = mutableMapOf<Int, String>()
@@ -103,7 +166,11 @@ object ProblemArchive {
             )
         }
 
-        return Content(body, inputs.keys.sorted().associateWith { inputs.getValue(it) to outputs.getValue(it) })
+        return Content(
+            body,
+            inputs.keys.sorted().associateWith { inputs.getValue(it) to outputs.getValue(it) },
+            Source.ZIP,
+        )
     }
 
     /**
