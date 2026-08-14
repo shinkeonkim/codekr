@@ -5,6 +5,7 @@ import type { GroupSummary } from "@/entities/group";
 import { RequireAuth } from "@/features/auth";
 import { ApiError } from "@/shared/api";
 import { Badge, Button, Card, CardTitle, EmptyState, Field, Input, useToast } from "@/shared/ui";
+import { OpenGroupBrowser } from "./OpenGroupBrowser";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -79,6 +80,7 @@ function GroupListView() {
         </p>
       </Card>
 
+      <CardTitle>내 그룹</CardTitle>
       {groups?.length === 0 ? (
         <EmptyState title="아직 든 그룹이 없습니다." />
       ) : (
@@ -94,6 +96,9 @@ function GroupListView() {
           ))}
         </div>
       )}
+
+      {/* 들어갈 문만 만들고 찾을 길을 안 만들면 지금과 달라지는 것이 없다 (#554). */}
+      <OpenGroupBrowser />
     </div>
   );
 }

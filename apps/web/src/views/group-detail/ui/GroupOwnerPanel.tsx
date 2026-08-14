@@ -69,7 +69,17 @@ export function GroupOwnerPanel({
         checked={openJoin}
         onCheckedChange={setOpenJoin}
       />
-      {/* 켜는 것이 선택이어야 한다 — 처음부터 공개면 스팸 가입이 온다 (기획서 5절). */}
+      {/*
+        켜는 것이 선택이어야 한다 — 처음부터 공개면 스팸 가입이 온다 (기획서 5절).
+        켜면 무슨 일이 생기는지 말한다 (#554): 그룹 이름과 소개가 둘러보기 목록에
+        드러난다. 전에는 켜도 아무 일이 없어서 이 말이 필요 없었다.
+      */}
+      {openJoin ? (
+        <p className="text-xs text-ink-muted">
+          그룹 목록의 <span className="text-ink">둘러보기</span>에 이름과 소개가 나오고,
+          로그인한 사람은 초대 없이 들어올 수 있습니다.
+        </p>
+      ) : null}
       <Button onClick={save}>저장</Button>
 
       <div className="space-y-1 border-t border-border pt-3">

@@ -1,7 +1,13 @@
 import { request } from "@/shared/api";
 import type { Page } from "@/shared/api";
 import type { RankingEntry } from "@/entities/ranking";
-import type { AdminGroupRow, GroupDetail, GroupInvitePreview, GroupSummary } from "../model/types";
+import type {
+  AdminGroupRow,
+  GroupDetail,
+  GroupInvitePreview,
+  GroupSummary,
+  OpenGroupSummary,
+} from "../model/types";
 
 /** 그룹 API (#401). **전부 로그인이 필요하다** — 초대 미리보기도 그렇다. */
 export const groupApi = {
@@ -14,6 +20,19 @@ export const groupApi = {
 
   update: (id: number, body: { name: string; description: string; openJoin: boolean }) =>
     request<GroupDetail>(`/api/v1/groups/${id}`, { method: "PATCH", auth: true, body }),
+
+  /**
+   * 공개 가입을 켜 둔 그룹 (#554). **로그인이 필요하다.**
+   *
+   * 이 목록이 없어서 `openJoin` 이 죽은 설정이었다 — 들어가는 문은 있었는데
+   * 그 문이 어디 있는지 찾을 길이 없었다.
+   */
+  open: (page = 0, size = 20) =>
+    request<Page<OpenGroupSummary>>(`/api/v1/groups/open?page=${page}&size=${size}`, { auth: true }),
+
+  /** 공개 가입으로 들어간다 (#554). 방장이 켜 두지 않았으면 서버가 막는다. */
+  joinOpen: (id: number) =>
+    request<{ groupId: number }>(`/api/v1/groups/${id}/members`, { method: "POST", auth: true }),
 
   /** 해산한다. 방장만. 행은 지우지 않는다 (ADR-0007). */
   remove: (id: number) => request<void>(`/api/v1/groups/${id}`, { method: "DELETE", auth: true }),
