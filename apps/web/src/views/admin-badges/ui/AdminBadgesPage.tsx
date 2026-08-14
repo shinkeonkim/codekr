@@ -5,7 +5,8 @@ import type { BadgeDefinition, BadgeRule } from "@/entities/badge";
 import { ApiError } from "@/shared/api";
 import { Badge, Button, Card, CardTitle, EmptyState, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
-import { RuleDryRun } from "./RuleDryRun";
+import { BadgeDefinitionForm } from "./BadgeDefinitionForm";
+import { RuleEditor } from "./RuleEditor";
 
 /**
  * 뱃지 관리 (#201, #203).
@@ -66,7 +67,9 @@ export function AdminBadgesPage() {
         </p>
       </div>
 
-      <RuleDryRun />
+      {/* 만드는 자리가 없어서 코드를 고치지 않고는 뱃지를 늘릴 수 없었다 (#549). */}
+      <BadgeDefinitionForm onCreated={() => setReloadKey((key) => key + 1)} />
+      <RuleEditor rules={rules} badges={definitions} onSaved={() => setReloadKey((key) => key + 1)} />
 
       <section className="space-y-2">
         <CardTitle>규칙</CardTitle>
