@@ -1,19 +1,37 @@
 "use client";
 
-import { ProblemStatsSummary, RuntimeLimitNotice, useProblem } from "@/entities/problem";
+import {
+  ProblemStatsSummary,
+  RuntimeLimitNotice,
+  useProblem,
+} from "@/entities/problem";
 import type { ProblemDetail } from "@/entities/problem";
+import { DifficultyVote } from "@/features/difficulty-vote";
 import { TagChips } from "@/entities/tag";
 import { Button, Card, CardTitle, EmptyState, Markdown } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
 import Link from "next/link";
 import { use } from "react";
 
-export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+export function ProblemDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = use(params);
   const { problem, error } = useProblem(slug);
 
-  if (error) return <EmptyState title={error} description="목록에서 다른 문제를 골라 보세요." />;
-  if (!problem) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
+  if (error)
+    return (
+      <EmptyState
+        title={error}
+        description="목록에서 다른 문제를 골라 보세요."
+      />
+    );
+  if (!problem)
+    return (
+      <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>
+    );
 
   return (
     <div className="space-y-4">
@@ -29,13 +47,19 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
             <TagChips tags={problem.tags} />
           </div>
         </div>
-        <Button asChild><Link href={`/problems/${slug}/solve`}>코드 작성하기</Link></Button>
+        <Button asChild>
+          <Link href={`/problems/${slug}/solve`}>코드 작성하기</Link>
+        </Button>
       </div>
 
       <Card className="space-y-5 p-5">
         <Section title="문제">{problem.description}</Section>
-        {problem.inputDescription ? <Section title="입력">{problem.inputDescription}</Section> : null}
-        {problem.outputDescription ? <Section title="출력">{problem.outputDescription}</Section> : null}
+        {problem.inputDescription ? (
+          <Section title="입력">{problem.inputDescription}</Section>
+        ) : null}
+        {problem.outputDescription ? (
+          <Section title="출력">{problem.outputDescription}</Section>
+        ) : null}
       </Card>
 
       {/*
@@ -46,13 +70,25 @@ export function ProblemDetailPage({ params }: { params: Promise<{ slug: string }
       */}
       <Credits problem={problem} />
 
+      {/*
+        난이도 투표 (#477). **푼 사람에게만 보인다** — 못 푼 사람에게는 자리 자체를
+        그리지 않는다. 눌러 보고 거절당하는 것보다 처음부터 없는 편이 낫다.
+      */}
+      <DifficultyVote slug={slug} />
+
       {problem.examples.length > 0 ? (
         <Card className="space-y-4 p-5">
           <CardTitle>예제</CardTitle>
           {problem.examples.map((example) => (
             <div key={example.seq} className="grid gap-2 sm:grid-cols-2">
-              <ExampleBlock title={`입력 ${example.seq}`} body={example.input} />
-              <ExampleBlock title={`출력 ${example.seq}`} body={example.output} />
+              <ExampleBlock
+                title={`입력 ${example.seq}`}
+                body={example.input}
+              />
+              <ExampleBlock
+                title={`출력 ${example.seq}`}
+                body={example.output}
+              />
             </div>
           ))}
         </Card>
@@ -140,7 +176,10 @@ function Credits({ problem }: { problem: ProblemDetail }) {
 function PersonLink({ nickname }: { nickname: string }) {
   if (nickname === "탈퇴한 사용자") return <span>{nickname}</span>;
   return (
-    <Link href={`/users/${encodeURIComponent(nickname)}`} className="text-brand hover:underline">
+    <Link
+      href={`/users/${encodeURIComponent(nickname)}`}
+      className="text-brand hover:underline"
+    >
       {nickname}
     </Link>
   );
@@ -150,7 +189,9 @@ function ExampleBlock({ title, body }: { title: string; body: string }) {
   return (
     <div>
       <p className="mb-1 text-xs font-medium text-ink-muted">{title}</p>
-      <pre className="overflow-auto rounded-lg bg-surface-muted p-3 text-xs text-ink">{body}</pre>
+      <pre className="overflow-auto rounded-lg bg-surface-muted p-3 text-xs text-ink">
+        {body}
+      </pre>
     </div>
   );
 }
