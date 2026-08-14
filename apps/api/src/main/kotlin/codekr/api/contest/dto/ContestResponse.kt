@@ -3,6 +3,7 @@ package codekr.api.contest.dto
 import codekr.api.contest.entity.Contest
 import codekr.api.contest.entity.ContestVisibility
 import codekr.api.contest.entity.ContestPhase
+import codekr.api.contest.entity.ContestRegistrationStatus
 import java.time.Instant
 
 /** 대회 목록/상세의 공통 부분 (#61). */
@@ -24,7 +25,17 @@ data class ContestSummaryResponse(
      */
     val visibility: ContestVisibility,
     val visibilityLabel: String,
+    /**
+     * 보는 사람의 신청 상태 (#546). 목록에서는 `null` 이다.
+     *
+     * **"내가 신청한 대회" 목록에만 싣는다.** 승인이 필요한 대회에서는 신청만 한
+     * 사람이 생기는데(#466), 그 사람은 자기가 기다리는 중인지 알 방법이 없었다 —
+     * 대회 상세를 하나씩 열어 버튼이 무엇이라 적혀 있는지 봐야 했다.
+     */
+    val registrationStatus: ContestRegistrationStatus? = null,
 ) {
+    fun withRegistrationStatus(status: ContestRegistrationStatus?) = copy(registrationStatus = status)
+
     companion object {
         fun of(contest: Contest, now: Instant, participantCount: Int): ContestSummaryResponse {
             val phase = contest.phaseAt(now)
