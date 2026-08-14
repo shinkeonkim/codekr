@@ -59,13 +59,21 @@ def normalize(value: str) -> str:
 
 
 def statement_rows(description: str) -> list[tuple[str, ...]]:
-    """지문의 마크다운 표에서 값 행만 뽑는다. 머리글과 `…` 줄은 뺀다."""
+    """지문의 마크다운 표에서 값 행만 뽑는다. 머리글과 `…` 줄은 뺀다.
+
+    **값에 든 `|` 는 `\\|` 로 적는다** (마크다운 표의 규칙). 그것을 모르고 그냥
+    자르면 한 칸이 두 칸이 된다 — 채점이 겪은 것과 같은 문제다 (#532).
+    """
     found = []
     for line in description.splitlines():
         line = line.strip()
         if not line.startswith("|") or set(line) <= set("|- "):
             continue
-        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        # 앞에 역슬래시가 없는 `|` 에서만 자른다.
+        cells = [
+            cell.strip().replace("\\|", "|")
+            for cell in re.split(r"(?<!\\)\|", line.strip("|"))
+        ]
         if not cells or cells[0] in {"…", ""} or not cells[0].isdigit():
             continue
         found.append(tuple(cells))

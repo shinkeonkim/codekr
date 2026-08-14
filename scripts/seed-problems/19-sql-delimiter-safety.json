@@ -1,0 +1,22 @@
+{
+  "slug": "sql-delimiter-safety",
+  "title": "구분자가 든 값 고르기",
+  "category": "SQL",
+  "difficulty": "BRONZE_5",
+  "allowedRuntimeIds": [
+    "sql:postgres16"
+  ],
+  "problemKind": "JUDGE_SQL",
+  "description": "곡 목록에서 제목이나 가수 이름에 세로줄(`|`)이 들어간 곡을 찾으세요.\n\n[표 구조]\n  tracks(id, title, artist, note)\n\n[예시 데이터]\n\n| id | title | artist | note |\n|---|---|---|---|\n| 1 | Hello\\|World | 가수 A | 제목에 파이프 |\n| 2 | A, B, and C | 가수 B | 제목에 쉼표 |\n| 3 | She said \"hi\" | 가수 C | 제목에 따옴표 |\n| 4 | 보통 제목 | 가수 D | (NULL) |\n| 5 |  | 가수 E\\|가수 F | 제목이 빈 글자 |\n\n4번의 note 는 값이 아예 없고(`(NULL)` 로 적었습니다), 5번의 title 은 **빈 글자**입니다.\n둘은 다릅니다 — 채점도 그 둘을 가릅니다.",
+  "inputDescription": "주어지는 것은 위의 표 하나입니다. 표준 입력은 없습니다.",
+  "outputDescription": "제목 또는 가수 이름에 '|' 가 든 곡의 id, title, artist 를 출력합니다. 순서는 상관없습니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 256,
+  "published": true,
+  "testcases": [],
+  "sqlSchemaFile": "sql/delimiters.sql",
+  "sqlSpec": {
+    "answerSql": "SELECT id, title, artist FROM tracks WHERE title LIKE '%|%' OR artist LIKE '%|%';",
+    "ignoreRowOrder": true
+  }
+}
