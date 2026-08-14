@@ -13,6 +13,7 @@ function preview(overrides: Partial<ProblemImportPreview> = {}): ProblemImportPr
     timeLimitMs: 2000,
     memoryLimitMb: 256,
     testcaseCount: 6,
+    needsTestcases: true,
     testcaseSource: "INLINE",
     templateCount: 1,
     publishedInBundle: false,
@@ -43,6 +44,14 @@ describe("importWarnings", () => {
     expect(warnings).toHaveLength(1);
     expect(warnings[0].blocking).toBe(false);
     expect(warnings[0].message).toContain("초안");
+  });
+
+  it("SQL 처럼 테스트케이스가 필요 없는 유형은 0개여도 말이 없다", () => {
+    // SQL 은 정답 쿼리로 채점한다 — 0개가 정상이다 (#561).
+    const sql = preview({ problemKind: "JUDGE_SQL", needsTestcases: false, testcaseCount: 0 });
+
+    expect(importWarnings(sql)).toEqual([]);
+    expect(isBlocked(sql)).toBe(false);
   });
 
   it("검증 위반은 저장을 막는다", () => {

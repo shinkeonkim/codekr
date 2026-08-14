@@ -24,6 +24,14 @@ data class ProblemImportPreview(
     val timeLimitMs: Int,
     val memoryLimitMb: Int,
     val testcaseCount: Int,
+    /**
+     * 이 유형이 테스트케이스로 채점되는가 (#455, #561).
+     *
+     * **화면이 유형 이름을 나열하지 않게 한다.** SQL·Redis 은 테스트케이스가 0개인 것이
+     * 정상인데, 그 목록을 화면이 따로 들면 유형이 늘 때 빠뜨린다 — 서버가 이미 같은
+     * 이유로 `ProblemKind.needsTestcases` 를 두고 있다.
+     */
+    val needsTestcases: Boolean,
     /** 테스트케이스를 어디서 가져왔는지. 묶음 파일이 본문의 것을 이긴다는 규칙이 여기서 보인다. */
     val testcaseSource: TestcaseSource,
     val templateCount: Int,

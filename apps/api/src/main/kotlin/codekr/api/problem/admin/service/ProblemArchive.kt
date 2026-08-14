@@ -73,6 +73,15 @@ object ProblemArchive {
         /** seq → (입력, 기대 출력). 맨 JSON 이면 비어 있다. */
         val testcases: Map<Int, Pair<String, String>>,
         val source: Source,
+        /**
+         * 테스트케이스도 `problem.json` 도 아닌 파일들. 경로 → 내용 (#561).
+         *
+         * **여기서 거절하지 않는다.** `problem.json` 이 가리키는 파일인지는 그것을 읽어
+         * 봐야 알 수 있는데, zip 안의 순서는 만든 쪽이 정하므로 스키마 파일이 먼저 나올
+         * 수 있다. 그래서 **모아 두고, 아무도 안 가리키면 그때 거절한다** —
+         * "모르는 파일은 조용히 버리지 않는다" 는 규칙은 그대로다.
+         */
+        val extras: Map<String, String> = emptyMap(),
     )
 
     fun read(stream: InputStream): Content {
@@ -121,6 +130,7 @@ object ProblemArchive {
         var meta: String? = null
         val inputs = mutableMapOf<Int, String>()
         val outputs = mutableMapOf<Int, String>()
+        val extras = mutableMapOf<String, String>()
         var total = 0L
         var entries = 0
 
@@ -146,9 +156,10 @@ object ProblemArchive {
                         inputs[seqOf(name, ".in")] = text
                     name.startsWith(TESTCASE_DIR) && name.endsWith(".out") ->
                         outputs[seqOf(name, ".out")] = text
-                    // 모르는 파일은 **조용히 버리지 않고** 거절한다. 버리면 출제자는
-                    // 자기가 넣은 것이 들어갔다고 믿는다.
-                    else -> throw ApiException(ErrorCode.VALIDATION_ERROR, "묶음에 모르는 파일이 있습니다: $name")
+                    // 나머지는 모아 둔다. `problem.json` 이 가리키는 것일 수 있고
+                    // (SQL 스키마 — #561), 그 판단은 메타를 읽어야 할 수 있다.
+                    // **아무도 안 가리키면 호출자가 거절한다.**
+                    else -> extras[name] = text
                 }
             }
         }
@@ -170,6 +181,7 @@ object ProblemArchive {
             body,
             inputs.keys.sorted().associateWith { inputs.getValue(it) to outputs.getValue(it) },
             Source.ZIP,
+            extras,
         )
     }
 
