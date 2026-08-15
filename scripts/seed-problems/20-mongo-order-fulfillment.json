@@ -1,7 +1,7 @@
 {
   "slug": "mongo-order-fulfillment",
   "title": "주문 처리하고 품절 표시하기 (MongoDB)",
-  "category": "ALGORITHM",
+  "category": "MONGODB",
   "difficulty": "SILVER_5",
   "problemKind": "JUDGE_MONGODB",
   "allowedRuntimeIds": [

@@ -1,7 +1,7 @@
 {
   "slug": "bash-log-levels",
   "title": "로그에서 레벨별 건수 세기",
-  "category": "ALGORITHM",
+  "category": "SHELL",
   "difficulty": "BRONZE_2",
   "allowedRuntimeIds": [
     "bash:5"

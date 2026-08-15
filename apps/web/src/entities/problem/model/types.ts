@@ -6,10 +6,17 @@ import type { SubmissionStatus, TestcaseResult, Verdict } from "@/entities/submi
 
 /** 문제와 그 부속(테스트케이스·초기 코드·정답 코드) 표현. */
 
+/**
+ * 문제의 분야 (#5, #592). **서버의 `ProblemCategory` 와 같은 순서로 둔다** —
+ * 갈라지면 목록에 없는 분야가 화면에서 빈칸이 된다.
+ */
 export type ProblemCategory =
   | "ALGORITHM"
   | "DATA_STRUCTURE"
   | "SQL"
+  | "REDIS"
+  | "MONGODB"
+  | "SHELL"
   | "NETWORK"
   | "LANGUAGE"
   | "OS"
