@@ -68,6 +68,9 @@ containerd-down: ## containerd VM 정지 (#70)
 mirror-runtimes: ## 런타임 이미지를 자체 레지스트리로 미러링 (#96, crane 필요)
 	@bash scripts/mirror-runtimes.sh $(ARGS)
 
+check-runtime-images: ## 자체 빌드 런타임이 레지스트리에 있는지 확인 (#588)
+	@bash scripts/check-runtime-images.sh
+
 verify-storage: ## 오브젝트 스토리지에 실제로 올리고 받는지 확인 (#115, MinIO 필요)
 	cd apps/api && CODEKR_STORAGE_TEST=1 ./gradlew test --tests '*S3ObjectStorageLiveTest*'
 

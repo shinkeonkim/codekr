@@ -61,6 +61,20 @@ CODEKR_IMAGE_BUILDER=nerdctl sudo -E \
 2. `runtimes.yaml` 에 항목을 추가한다.
 3. `CODEKR_SANDBOX_TEST=1 go test ./internal/sandbox/ -run TestLiveEveryRegisteredRuntime` 로
    기본 템플릿이 실제로 컴파일·실행되는지 확인한다.
+4. **운영 레지스트리에 올린다.** `oh-my-homelab` 의
+   `scripts/k8s/codekr_런타임_이미지_빌드.sh` 를 돌린다 — `images/` 를 전부 도므로
+   새로 넣은 것도 함께 만들어진다.
+5. 올라갔는지 확인한다.
+
+   ```
+   CODEKR_RUNTIME_REGISTRY=registry.shinkeonkim.com scripts/check-runtime-images.sh
+   ```
+
+> ⚠️ **4번을 빠뜨려도 아무 데서도 티가 안 난다.** 로컬은 `make build-runtimes` 로 만든
+> 것이 노드에 있어 잘 돌고, CI 는 런타임 매트릭스를 뺀다 — **운영에서 그 언어로 처음
+> 채점할 때** 실행기가 404 를 받고 `SYSTEM_ERROR` 로 끝난다.
+>
+> 실제로 아희·엄랭이 그렇게 비어 있었다 (#394 → #588). 5번이 그것을 잡는다.
 
 이미지는 다음 제약 아래에서 동작해야 한다 (ADR-0003).
 
