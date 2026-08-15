@@ -134,6 +134,69 @@ class ProblemImportIntegrationTest : IntegrationTestBase() {
         ).andExpect(status().isBadRequest)
     }
 
+    @Test
+    fun `폴더째 압축한 묶음도 읽는다`() {
+        /*
+          `zip -r bundle.zip 내-문제` 는 이름을 `내-문제/problem.json` 으로 만든다 —
+          **폴더를 압축하는 가장 자연스러운 방법**이고, 그러면 루트에 problem.json 이
+          없어 통째로 거절당했다 (#594).
+
+          접두사는 내용이 아니라 **포장**이라 벗겨도 무엇이 들어왔는지는 그대로다.
+        */
+        upload(
+            listOf(
+                ProblemArchiveEntry("내-문제/problem.json", meta("wrapped")),
+                ProblemArchiveEntry("내-문제/testcases/1.in", "1 2\n"),
+                ProblemArchiveEntry("내-문제/testcases/1.out", "3\n"),
+            ),
+        ).andExpect(status().isCreated)
+    }
+
+    @Test
+    fun `맨 위 폴더가 둘이면 벗기지 않는다`() {
+        // 무엇이 뜻인지 알 수 없다. 짐작하면 엉뚱한 것을 문제로 만든다.
+        upload(
+            listOf(
+                ProblemArchiveEntry("가/problem.json", meta("two-roots")),
+                ProblemArchiveEntry("나/problem.json", meta("two-roots")),
+            ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("problem.json")))
+    }
+
+    @Test
+    fun `macOS 부스러기는 무시한다`() {
+        /*
+          macOS 는 폴더를 열기만 해도 `.DS_Store` 를 만들고, Finder 로 압축하면
+          `__MACOSX/`·`._*` 가 함께 들어간다. **출제자가 넣은 적이 없는 파일**이라
+          "모르는 파일을 버리지 않는다" 는 규칙이 지키려는 것이 여기에는 없다.
+        */
+        upload(
+            listOf(
+                ProblemArchiveEntry("problem.json", meta("mac-junk")),
+                ProblemArchiveEntry(".DS_Store", "\u0000\u0000"),
+                ProblemArchiveEntry("__MACOSX/._problem.json", "x"),
+                ProblemArchiveEntry("testcases/.DS_Store", "x"),
+                ProblemArchiveEntry("testcases/1.in", "1 2\n"),
+                ProblemArchiveEntry("testcases/1.out", "3\n"),
+            ),
+        ).andExpect(status().isCreated)
+    }
+
+    @Test
+    fun `부스러기가 아닌 모르는 파일은 여전히 거절한다`() {
+        // 목록을 좁게 둔다 — 정확히 아는 이름만 무시하고 나머지는 그대로 거절한다.
+        upload(
+            listOf(
+                ProblemArchiveEntry("내-문제/problem.json", meta("still-strict")),
+                ProblemArchiveEntry("내-문제/메모.txt", "여기 뭘 적었더라"),
+            ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("모르는 파일")))
+    }
+
     private fun upload(entries: List<ProblemArchiveEntry>) = mockMvc.perform(
         multipart("/api/v1/admin/problems/imports")
             .file(MockMultipartFile("file", "problem.zip", "application/zip", zip(entries)))
