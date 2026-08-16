@@ -104,6 +104,45 @@ class ProblemImportSqlIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.message").value(containsString("메모.txt")))
     }
 
+    @Test
+    fun `안 쓰는 스키마가 섞이면 무엇을 넣어야 하는지 알려 준다`() {
+        /*
+          손으로 폴더를 만들면 흔히 스키마를 통째로 복사해 온다 — 다섯 문제가 같은
+          폴더(`sql/`)를 공유하기 때문이다 (#594). 그때 "모르는 파일" 만 말하면
+          **무엇이 잘못인지 알기 어렵다.** 이 문제가 쓰는 파일을 함께 말한다.
+        */
+        val meta = seedJson("08-sql-seoul-members.json")
+        post(
+            "/imports",
+            zip(
+                listOf(
+                    "problem.json" to meta,
+                    "sql/library.sql" to seedText("sql/library.sql"),
+                    "sql/library-mariadb.sql" to seedText("sql/library-mariadb.sql"),
+                ),
+            ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value(containsString("sql/library-mariadb.sql")))
+            .andExpect(jsonPath("$.message").value(containsString("이 문제가 쓰는 파일은 sql/library.sql")))
+    }
+
+    @Test
+    fun `시드 SQL 문제를 폴더째 압축해도 들어간다`() {
+        // `zip -r bundle.zip 08-sql-seoul-members` 가 만드는 모양이다 (#594).
+        val meta = seedJson("08-sql-seoul-members.json")
+        post(
+            "/imports",
+            zip(
+                listOf(
+                    "08-sql-seoul-members/problem.json" to meta,
+                    "08-sql-seoul-members/sql/library.sql" to seedText("sql/library.sql"),
+                    "08-sql-seoul-members/.DS_Store" to "x",
+                ),
+            ),
+        ).andExpect(status().isCreated)
+    }
+
     private fun post(path: String, body: ByteArray) = mockMvc.perform(
         multipart("/api/v1/admin/problems$path")
             .file(MockMultipartFile("file", "problem.zip", "application/zip", body))

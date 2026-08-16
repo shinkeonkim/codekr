@@ -174,7 +174,13 @@ class ProblemImportService(
         if (unused.isNotEmpty()) {
             throw ApiException(
                 ErrorCode.VALIDATION_ERROR,
-                "묶음에 모르는 파일이 있습니다: ${unused.sorted().joinToString()}",
+                buildString {
+                    append("묶음에 모르는 파일이 있습니다: ${unused.sorted().joinToString()}")
+                    // **무엇을 넣어야 하는지 함께 말한다** (#594). SQL 문제는 스키마
+                    // 파일을 넣어야 하는데, 여러 개를 넣으면 안 쓰는 것이 걸린다 —
+                    // 그때 "모르는 파일" 만 보이면 무엇이 잘못인지 알기 어렵다.
+                    if (schemaFile != null) append(" (이 문제가 쓰는 파일은 $schemaFile 입니다)")
+                },
             )
         }
         return root.toString()

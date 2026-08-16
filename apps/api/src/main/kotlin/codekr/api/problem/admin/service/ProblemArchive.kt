@@ -61,6 +61,44 @@ object ProblemArchive {
     /** 파일 수 상한. 테스트케이스 하나에 두 개(`.in`/`.out`)이므로 넉넉히 잡는다. */
     private const val MAX_ENTRIES = 5_000
 
+    /**
+     * 사람이 넣지 않은 파일들 (#594).
+     *
+     * **조용히 버려도 되는 유일한 것들이다.** "모르는 파일을 버리지 않는다" 는 규칙은
+     * 출제자가 넣은 것이 들어갔다고 **믿게 두지 않으려는** 것인데, 이것들은 출제자가
+     * 넣은 적이 없다 — macOS 는 폴더를 열기만 해도 `.DS_Store` 를 만들고, Finder 로
+     * 압축하면 `__MACOSX/`·`._*` 가 함께 들어간다.
+     *
+     * **목록을 좁게 둔다.** 정확히 아는 이름만 무시하고 나머지는 그대로 거절한다.
+     */
+    private fun isJunk(name: String): Boolean {
+        val last = name.substringAfterLast('/')
+        return name.startsWith("__MACOSX/") ||
+            last == ".DS_Store" ||
+            last == "Thumbs.db" ||
+            last.startsWith("._")
+    }
+
+    /**
+     * 맨 위 폴더 하나를 벗긴다 (#594).
+     *
+     * `zip -r bundle.zip 08-sql-seoul-members` 는 이름을 `08-sql-seoul-members/...` 로
+     * 만든다 — **폴더를 압축하는 가장 자연스러운 방법**이고, 그러면 루트에 `problem.json`
+     * 이 없어 통째로 거절당했다.
+     *
+     * **이것은 조용히 고치는 것이 아니다.** 폴더 접두사는 내용이 아니라 **포장**이라,
+     * 벗겨도 무엇이 들어왔는지는 그대로다. 다만 맨 위가 둘 이상이면 벗기지 않는다 —
+     * 그때는 무엇이 뜻인지 알 수 없고, 짐작하면 엉뚱한 것을 문제로 만든다.
+     */
+    private fun stripWrapper(names: Collection<String>): String {
+        val roots = names.map { it.substringBefore('/') }.toSet()
+        if (roots.size != 1) return ""
+        val root = roots.first()
+        // 루트에 파일이 하나라도 있으면(=`problem.json`) 벗길 폴더가 아니다.
+        if (names.any { it == root }) return ""
+        return "$root/"
+    }
+
     /** zip 의 첫 네 바이트. 이름과 `Content-Type` 대신 이것으로 본다 (#537). */
     private val ZIP_MAGIC = byteArrayOf(0x50, 0x4B, 0x03, 0x04)
 
@@ -127,10 +165,10 @@ object ProblemArchive {
     }
 
     private fun readZip(stream: InputStream): Content {
-        var meta: String? = null
-        val inputs = mutableMapOf<Int, String>()
-        val outputs = mutableMapOf<Int, String>()
-        val extras = mutableMapOf<String, String>()
+        // **먼저 다 읽고 나서 분류한다** (#594). 맨 위 폴더를 벗기려면 이름이 전부
+        // 모여야 한다 — 하나씩 보는 동안에는 그 폴더가 포장인지 자료인지 알 수 없다.
+        // 크기·개수 상한은 읽는 동안 그대로 센다.
+        val files = linkedMapOf<String, String>()
         var total = 0L
         var entries = 0
 
@@ -148,19 +186,27 @@ object ProblemArchive {
                     // **다 풀고 나서 재지 않는다.** 그때는 이미 메모리를 다 먹은 뒤다.
                     throw ApiException(ErrorCode.VALIDATION_ERROR, "압축을 푼 크기가 너무 큽니다(최대 64MB).")
                 }
-                val text = body.toString(Charsets.UTF_8)
+                if (!isJunk(name)) files[name] = body.toString(Charsets.UTF_8)
+            }
+        }
 
-                when {
-                    name == META_ENTRY -> meta = text
-                    name.startsWith(TESTCASE_DIR) && name.endsWith(".in") ->
-                        inputs[seqOf(name, ".in")] = text
-                    name.startsWith(TESTCASE_DIR) && name.endsWith(".out") ->
-                        outputs[seqOf(name, ".out")] = text
-                    // 나머지는 모아 둔다. `problem.json` 이 가리키는 것일 수 있고
-                    // (SQL 스키마 — #561), 그 판단은 메타를 읽어야 할 수 있다.
-                    // **아무도 안 가리키면 호출자가 거절한다.**
-                    else -> extras[name] = text
-                }
+        val prefix = stripWrapper(files.keys)
+        var meta: String? = null
+        val inputs = mutableMapOf<Int, String>()
+        val outputs = mutableMapOf<Int, String>()
+        val extras = mutableMapOf<String, String>()
+        for ((raw, text) in files) {
+            val name = raw.removePrefix(prefix)
+            when {
+                name == META_ENTRY -> meta = text
+                name.startsWith(TESTCASE_DIR) && name.endsWith(".in") ->
+                    inputs[seqOf(name, ".in")] = text
+                name.startsWith(TESTCASE_DIR) && name.endsWith(".out") ->
+                    outputs[seqOf(name, ".out")] = text
+                // 나머지는 모아 둔다. `problem.json` 이 가리키는 것일 수 있고
+                // (SQL 스키마 — #561), 그 판단은 메타를 읽어야 할 수 있다.
+                // **아무도 안 가리키면 호출자가 거절한다.**
+                else -> extras[name] = text
             }
         }
 
