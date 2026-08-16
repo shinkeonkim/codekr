@@ -1,5 +1,6 @@
 package codekr.api.admin
 
+import codekr.api.admin.service.DataResetService
 import codekr.api.auth.security.JwtTokenProvider
 import codekr.api.support.IntegrationTestBase
 import codekr.api.user.entity.User
@@ -71,6 +72,36 @@ class DataResetIntegrationTest : IntegrationTestBase() {
             "users·posts·tags 는 남아야 한다",
         )
         assertEquals(post, jdbcClient.sql("SELECT id FROM posts").query(Long::class.java).single())
+    }
+
+    @Test
+    fun `문제를 가리키는 표는 전부 지우거나 남기거나 둘 중 하나에 적혀 있다`() {
+        /*
+          **손으로 적는 목록은 반드시 뒤처진다** (#597). 실제로 `problem_allowed_runtimes`
+          하나가 빠져 초기화가 외래키 위반으로 죽었고, 그 뒤에 아홉 개가 더 빠져 있었다.
+
+          목록을 DB 에서 자동으로 만들지는 않는다 — 무엇을 **남길지**가 이 기능의 뜻이고
+          그 판단은 사람이 한다. 다만 "새 표가 생겼는데 어느 쪽에도 없다" 는 여기서 잡는다.
+        */
+        val children = jdbcClient.sql(
+            """
+            SELECT DISTINCT tc.table_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.constraint_column_usage ccu
+              ON tc.constraint_name = ccu.constraint_name
+            WHERE tc.constraint_type = 'FOREIGN KEY'
+              AND ccu.table_name IN ('problems', 'submissions')
+              AND tc.table_name NOT IN ('problems', 'submissions')
+            """,
+        ).query(String::class.java).list()
+
+        val known = DataResetService.RESET_TABLES + DataResetService.KEEP
+        val forgotten = children.filterNot { it in known }
+
+        assert(forgotten.isEmpty()) {
+            "문제·제출을 가리키는 표가 초기화 목록에도 KEEP 에도 없습니다: $forgotten\n" +
+                "지울 것이면 DataResetService.tables 에, 남길 것이면 KEEP 에 이유와 함께 넣으십시오."
+        }
     }
 
     @Test

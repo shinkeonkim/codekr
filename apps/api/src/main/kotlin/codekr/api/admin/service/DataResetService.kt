@@ -45,25 +45,57 @@ class DataResetService(
      *
      * (이 순서와 목록이 맞는지는 시험이 지킨다. 외래키가 하나 늘면 조용히 바뀐다.)
      */
-    private val tables = listOf(
-        // 제출 위에 쌓인 것부터
-        "submission_testcase_results", "submission_views",
-        "user_problem_scores", "user_daily_activity", "user_badges",
-        "rejudge_submission_results", "rejudge_batches",
-        // 대회 (제출을 가리킨다)
-        "contest_submissions", "contest_registrations", "contest_notices",
-        "contest_questions", "contest_problems", "contests",
-        // 문제집
-        "problem_collection_items", "problem_collections",
-        // 제출
-        "submissions",
-        // 문제와 딸린 것
-        "problem_testcases", "problem_templates", "problem_runtime_limits",
-        "problem_sql_specs", "problem_tags", "problem_solution_verifications",
-        "problems",
-        // 지워진 것을 가리키는 알림이 남으면 안 된다
-        "notifications",
-    )
+    private val tables = RESET_TABLES
+
+
+
+    companion object {
+        /**
+         * 지우는 표. **자식부터** 적는다 — 순서가 뒤집히면 외래키 위반으로 통째로 죽는다.
+         */
+        val RESET_TABLES = listOf(
+            // 제출 위에 쌓인 것부터
+            "submission_testcase_results", "submission_views",
+            "user_problem_scores", "user_daily_activity", "user_badges",
+            "rejudge_submission_results", "rejudge_batches",
+            // 대회 (제출을 가리킨다)
+            "contest_submissions", "contest_registrations", "contest_notices",
+            "contest_questions", "contest_problems", "contests",
+            // 문제집
+            "problem_collection_items", "problem_collections",
+            // 제출
+            "submissions",
+            // 문제와 딸린 것
+            //
+            // **여기에 빠진 표가 있으면 초기화가 통째로 죽는다** — 실제로 그랬다 (#597).
+            // `problem_allowed_runtimes` 하나가 빠져 외래키 위반으로 500 이 났고, 그 뒤에
+            // 아홉 개가 더 빠져 있었다. 그래서 아래 KEEP 과 함께 **시험이 검사한다.**
+            "problem_testcases", "problem_testcase_groups", "problem_templates",
+            "problem_runtime_limits", "problem_allowed_runtimes", "problem_files",
+            "problem_harnesses", "problem_sql_specs", "problem_redis_specs",
+            "problem_mongo_specs", "problem_tags", "problem_credits",
+            "problem_difficulty_votes", "problem_reports", "problem_stats",
+            "problem_solution_verifications",
+            "problems",
+            // 지워진 것을 가리키는 알림이 남으면 안 된다
+            "notifications",
+        )
+
+        /**
+         * **문제를 가리키지만 지우지 않는 표** (#597).
+         *
+         * 지우는 목록을 DB 에서 자동으로 만들지 않는 이유가 이것이다 — 무엇을 **남길지**가
+         * 이 기능의 뜻이고, 그 판단은 사람이 한다. 다만 "새 표가 생겼는데 어느 쪽에도
+         * 없다" 는 기계가 잡을 수 있다 (`DataResetIntegrationTest`).
+         */
+        val KEEP = setOf(
+            // 문제를 가리키던 질문·글은 **살아남는다** (#139). 외래키가
+            // `ON DELETE SET NULL` 이라 문제만 사라진다.
+            "posts",
+            // 대회는 따로 지운다(위 목록). 이 표는 제출 감사 기록이라 대회와 함께 간다.
+            "contest_submission_audits",
+        )
+    }
 
     /**
      * @param actor 누른 사람. **기록에 남긴다** — 이 조작이 남지 않으면 나중에
