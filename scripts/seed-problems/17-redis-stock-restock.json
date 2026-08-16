@@ -1,7 +1,7 @@
 {
   "slug": "redis-stock-restock",
   "title": "재고 채우고 품절 지우기 (Redis)",
-  "category": "ALGORITHM",
+  "category": "REDIS",
   "difficulty": "SILVER_5",
   "problemKind": "JUDGE_REDIS",
   "allowedRuntimeIds": [
