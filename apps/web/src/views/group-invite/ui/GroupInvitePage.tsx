@@ -7,6 +7,7 @@ import { ApiError } from "@/shared/api";
 import { Button, Card, EmptyState, useToast } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 /**
  * 초대 링크 (#401).
@@ -54,7 +55,7 @@ function GroupInviteView({ token }: { token: string }) {
   };
 
   return (
-    <div className="mx-auto max-w-md space-y-4">
+    <div className={`${PAGE_WIDTH.form} space-y-4`}>
       <Card className="space-y-3 p-5">
         <div>
           <h1 className="text-xl font-bold text-ink">{preview.name}</h1>

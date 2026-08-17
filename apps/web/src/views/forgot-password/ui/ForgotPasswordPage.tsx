@@ -6,6 +6,7 @@ import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input } from "@/shared/ui";
 import Link from "next/link";
 import { useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 /**
  * 비밀번호 재설정 요청 (#315).
@@ -34,7 +35,7 @@ export function ForgotPasswordPage() {
 
   return (
     <RequireGuest>
-      <div className="mx-auto max-w-md py-12">
+      <div className={`${PAGE_WIDTH.form} py-12`}>
         <Card className="space-y-3 p-6">
           <div>
             <h1 className="text-lg font-bold text-ink">비밀번호 재설정</h1>

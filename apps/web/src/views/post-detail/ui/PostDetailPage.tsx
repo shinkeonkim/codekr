@@ -10,6 +10,7 @@ import { Badge, Button, Card, ConfirmDialog, EmptyState, Markdown, useToast } fr
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 export function PostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -48,7 +49,7 @@ function Detail({ id }: { id: number }) {
   const { summary } = post;
 
   return (
-    <article className="mx-auto max-w-3xl space-y-5">
+    <article className={`${PAGE_WIDTH.reading} space-y-5`}>
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={summary.board === "NOTICE" ? "info" : "muted"}>{summary.boardLabel}</Badge>

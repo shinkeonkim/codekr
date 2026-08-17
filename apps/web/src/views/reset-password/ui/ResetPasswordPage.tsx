@@ -5,6 +5,7 @@ import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input } from "@/shared/ui";
 import Link from "next/link";
 import { useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 /** 새 비밀번호를 정하는 화면 (#315). 메일의 링크가 여기로 온다. */
 export function ResetPasswordPage() {
@@ -28,7 +29,7 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md py-12">
+    <div className={`${PAGE_WIDTH.form} py-12`}>
       <Card className="space-y-3 p-6">
         <h1 className="text-lg font-bold text-ink">새 비밀번호</h1>
 

@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui";
 import { NAV_ITEMS, activeHref } from "./nav";
+import { SHELL_WIDTH } from "@/shared/ui/pageWidth";
 
 /**
  * 사이트 헤더 (#182, #261, #289).
@@ -44,7 +45,7 @@ export function SiteHeader() {
   return (
     <>
       <header className="sticky top-0 z-header border-b border-border bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 lg:gap-6">
+      <div className={`${SHELL_WIDTH} flex h-14 items-center gap-4 lg:gap-6`}>
         {/* 워드마크 하나로 둔다 (#261) — "드" 안에 이미 `</>` 가 있어 심벌을 나란히
             놓으면 같은 표시가 두 번 나온다. */}
         <Link href="/" className="flex shrink-0 items-center">

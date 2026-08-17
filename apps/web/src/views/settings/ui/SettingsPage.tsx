@@ -17,6 +17,7 @@ import { WithdrawalCard } from "./WithdrawalCard";
 import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, CardTitle, EmptyState, Select, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 export function SettingsPage() {
   return (
@@ -59,7 +60,7 @@ function SettingsView() {
   if (!settings) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className={`${PAGE_WIDTH.wide} space-y-5`}>
       <header>
         <h1 className="text-2xl font-bold text-ink">설정</h1>
       </header>

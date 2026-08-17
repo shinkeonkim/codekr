@@ -13,6 +13,7 @@ export { MarkdownEditor } from "./markdown/MarkdownEditor";
 export { useToast } from "./toast/ToastContext";
 export { ToastViewport } from "./toast/ToastViewport";
 export { Pagination } from "./Pagination";
+export { PAGE_WIDTH, SHELL_WIDTH, type PageWidth } from "./pageWidth";
 export { Table } from "./Table";
 export type { Column } from "./Table";
 export { EmptyState } from "./primitives";

@@ -10,6 +10,7 @@ import { formatDateTime } from "@/shared/lib";
 import { Badge, Button, Card, EmptyState, Pagination, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 export function NotificationsPage() {
   return (
@@ -63,7 +64,7 @@ function NotificationList() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className={`${PAGE_WIDTH.reading} space-y-4`}>
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-ink">알림</h1>
         <div className="ml-auto flex items-center gap-2">

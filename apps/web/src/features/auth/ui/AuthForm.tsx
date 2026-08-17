@@ -12,6 +12,7 @@ import type { FormEvent } from "react";
 
 import { Alert, BrandCharacter, Button, Card, Field, Input } from "@/shared/ui";
 import type { BrandCharacterName } from "@/shared/ui";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 export interface AuthFormField {
   name: string;
@@ -90,7 +91,7 @@ export function AuthForm({
   };
 
   return (
-    <div className="mx-auto max-w-md py-8">
+    <div className={`${PAGE_WIDTH.form} py-8`}>
       <Card className="p-6">
         {mascot ? <BrandCharacter name={mascot} size={200} className="mx-auto mb-2" /> : null}
         <h1 className="text-xl font-bold text-ink">{title}</h1>

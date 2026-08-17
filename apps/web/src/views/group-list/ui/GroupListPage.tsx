@@ -8,6 +8,7 @@ import { Badge, Button, Card, CardTitle, EmptyState, Field, Input, useToast } fr
 import { OpenGroupBrowser } from "./OpenGroupBrowser";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 /**
  * 내 그룹 (#401, #240 6단계).
@@ -56,7 +57,7 @@ function GroupListView() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className={`${PAGE_WIDTH.wide} space-y-5`}>
       <header>
         <h1 className="text-2xl font-bold text-ink">그룹</h1>
         <p className="mt-1 text-sm text-ink-muted">

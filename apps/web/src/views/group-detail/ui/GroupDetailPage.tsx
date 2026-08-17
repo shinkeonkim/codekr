@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useState } from "react";
 import { GroupOwnerPanel } from "./GroupOwnerPanel";
 import { GroupRanking } from "./GroupRanking";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 /**
  * 그룹 상세 (#401).
@@ -63,7 +64,7 @@ function GroupDetailView({ id }: { id: number }) {
   if (!group) return <p className="py-16 text-center text-sm text-ink-muted">불러오는 중…</p>;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className={`${PAGE_WIDTH.wide} space-y-5`}>
       <header>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-ink">{group.name}</h1>
