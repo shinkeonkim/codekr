@@ -34,7 +34,12 @@ export function SiteFooter() {
           links={[
             { href: REPOSITORY_URL, label: "GitHub 저장소" },
             { href: `${REPOSITORY_URL}/blob/main/LICENSE`, label: "MIT 라이선스" },
-            { href: `${REPOSITORY_URL}/issues`, label: "문제 신고·제안" },
+            /*
+              **서비스 안에서 받는다** (#603). 전에는 GitHub 이슈 목록으로 나갔는데,
+              계정이 있어야 하고 공개된 곳에 쓰는 일이라 사실상 안 받는 것에 가까웠다.
+              저장소 링크는 위에 그대로 남는다 — 가입 자체가 안 되는 사람의 길이다.
+            */
+            { href: "/feedback", label: "신고·제안" },
             // 약관은 **가입하기 전에 읽을 수 있어야** 한다 (#235, #234).
             { href: "/terms", label: "약관" },
           ]}

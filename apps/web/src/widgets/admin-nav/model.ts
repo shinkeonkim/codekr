@@ -106,6 +106,13 @@ export const ADMIN_NAV: AdminNavItem[] = [
     roles: ["PROBLEM_SETTER"],
   },
   {
+    href: "/admin/feedbacks",
+    label: "신고·제안",
+    description: "문제에 매이지 않은 버그·제안",
+    // 사이트 전체 이야기라 문제 출제자가 아니라 어드민이 본다 (#603).
+    roles: ["ADMIN"],
+  },
+  {
     href: "/admin/operations",
     label: "운영 작업",
     description: "랭킹·활동 집계 재계산",
