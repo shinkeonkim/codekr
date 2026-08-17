@@ -57,6 +57,45 @@ export function linePrefix(text: string, start: number, end: number, prefix: str
 }
 
 /**
+ * 고른 줄을 번호 목록으로 만든다 (#602).
+ *
+ * **`linePrefix` 로는 안 된다.** 그것은 같은 표시를 모든 줄에 붙이는데, 번호 목록은
+ * 줄마다 번호가 달라야 한다. `1.` 을 세 줄에 붙이면 마크다운이 알아서 세어 주기는
+ * 하지만, **쓰는 사람이 자기 글에서 순서를 못 읽는다.**
+ */
+export function orderedList(text: string, start: number, end: number): EditResult {
+  const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+  const scanFrom = end > start && text[end - 1] === "\n" ? end - 1 : end;
+  const lineEnd = text.indexOf("\n", scanFrom) === -1 ? text.length : text.indexOf("\n", scanFrom);
+  const numbered = text
+    .slice(lineStart, lineEnd)
+    .split("\n")
+    .map((line, index) => `${index + 1}. ${line}`)
+    .join("\n");
+
+  return {
+    text: `${text.slice(0, lineStart)}${numbered}${text.slice(lineEnd)}`,
+    selectionStart: lineStart,
+    selectionEnd: lineStart + numbered.length,
+  };
+}
+
+/**
+ * 링크로 감싼다 (#602).
+ *
+ * **커서를 주소 자리에 둔다.** 고른 글자는 보이는 이름이 되고 사람이 이어서 칠 것은
+ * 주소다 — 커서를 글 끝에 두면 주소를 넣으려고 다시 클릭해야 한다.
+ */
+export function link(text: string, start: number, end: number): EditResult {
+  const label = text.slice(start, end) || "링크";
+  const mark = `[${label}](`;
+  const next = `${text.slice(0, start)}${mark})${text.slice(end)}`;
+  const caret = start + mark.length;
+
+  return { text: next, selectionStart: caret, selectionEnd: caret };
+}
+
+/**
  * 코드 블록으로 감싼다.
  *
  * **이 버튼이 이 편집기의 이유다.** "이 코드가 왜 틀렸나요" 가 질문 게시판의
