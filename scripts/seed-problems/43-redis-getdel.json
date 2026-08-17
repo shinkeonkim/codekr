@@ -1,0 +1,29 @@
+{
+  "slug": "redis-getdel",
+  "title": "읽으면서 치우기 (Redis)",
+  "category": "REDIS",
+  "difficulty": "SILVER_4",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n한 번만 쓰는 값 셋이 들어 있습니다.\n`otp:1` 은 `1234`, `otp:2` 는 `5678`, `flag` 는 `on` 입니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `otp:1` 을 **읽으면서 동시에 지웁니다.** 일회용 번호는 읽힌 순간 없어져야 합니다.\n- `otp:2` 는 **읽으면서 만료 시각(`1893456000`)을 붙입니다.** 지우지는 않습니다.\n- `flag` 를 `off` 로 바꾸되, **바꾸면서 바뀌기 전 값을 돌려받습니다.**\n\n셋 다 \"읽고 나서 또 명령\" 으로 흉내 낼 수 있지만, **그 사이에 남이 끼어들면**\n같은 일회용 번호를 두 사람이 쓰게 됩니다. 한 명령으로 끝나는 것들이 따로 있습니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "SET otp:1 1234\nSET otp:2 5678\nSET flag on",
+    "answerCommands": "GETDEL otp:1\nGETEX otp:2 EXAT 1893456000\nSET flag off GET",
+    "verifyCommands": "EXISTS otp:1\nGET otp:2\nEXPIRETIME otp:2\nGET flag",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

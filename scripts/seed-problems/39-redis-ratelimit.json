@@ -1,0 +1,29 @@
+{
+  "slug": "redis-ratelimit",
+  "title": "1분에 몇 번까지 (Redis 카운팅)",
+  "category": "REDIS",
+  "difficulty": "SILVER_3",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n비율 제한을 세는 칸을 만듭니다. 지금 `rate:민수` 는 없고, `rate:지영` 은 `4` 입니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `rate:민수` 를 **1 늘립니다** — 없던 키라 1 이 됩니다.\n- `rate:민수` 가 **유닉스 시각 `1893456000` 에 사라지도록** 합니다. 창이 지나면\n  스스로 없어져야 다음 창이 0 부터 시작합니다.\n- `rate:지영` 을 1 늘립니다 (5 가 됩니다).\n\n**세는 것과 만료가 짝이다.** 늘리기만 하고 만료를 안 걸면 그 사람은 영원히 막히고,\n만료만 걸고 안 늘리면 아무도 안 막힙니다.\n\n없는 키를 늘리면 0 에서 시작하므로 미리 만들어 둘 필요가 없습니다. 다만 **늘릴 때\n만료가 새로 걸리지는 않으니**, 만료는 따로 걸어야 합니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "SET rate:지영 4",
+    "answerCommands": "INCR rate:민수\nEXPIREAT rate:민수 1893456000\nINCR rate:지영",
+    "verifyCommands": "GET rate:민수\nEXPIRETIME rate:민수\nGET rate:지영\nTTL rate:지영",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

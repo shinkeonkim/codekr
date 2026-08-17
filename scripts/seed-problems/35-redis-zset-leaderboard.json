@@ -1,0 +1,29 @@
+{
+  "slug": "redis-zset-leaderboard",
+  "title": "순위표 만들기 (Redis)",
+  "category": "REDIS",
+  "difficulty": "SILVER_4",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`board` 라는 정렬 집합에 `민수` 120, `지영` 200, `현우` 90 이 들어 있습니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `수빈` 을 160 점으로 넣습니다.\n- `현우` 의 점수를 **60 만큼 올립니다.**\n- `민수` 를 지웁니다.\n\n끝난 뒤 점수가 높은 순서는 `지영`(200), `수빈`(160), `현우`(150) 이어야 합니다.\n\n순위표를 리스트로 만들면 넣을 때마다 자리를 찾아 밀어야 하지만, 정렬 집합은\n**넣는 순간 이미 정렬돼 있습니다.**",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "ZADD board 120 민수 200 지영 90 현우",
+    "answerCommands": "ZADD board 160 수빈\nZINCRBY board 60 현우\nZREM board 민수",
+    "verifyCommands": "ZCARD board\nZREVRANGE board 0 -1 WITHSCORES\nZREVRANK board 지영\nZSCORE board 민수",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

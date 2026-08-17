@@ -1,0 +1,29 @@
+{
+  "slug": "redis-zrangebylex",
+  "title": "사전순으로 앞자리 찾기 (Redis)",
+  "category": "REDIS",
+  "difficulty": "GOLD_4",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`words` 라는 정렬 집합에 **점수가 전부 0 인** 낱말들이 들어 있습니다.\n`apple`, `apply`, `banana`, `band`, `bank`, `cat` 입니다.\n\n점수가 모두 같으면 정렬 집합은 **사전순으로** 정렬됩니다. 이 성질로 자동완성을 만듭니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `ban` 으로 시작하는 낱말들을 `hits` 라는 새 정렬 집합에 담습니다\n  (`banana`, `band`, `bank` 가 들어갑니다).\n- `words` 에서 `apply` 를 지웁니다.\n\n\"…로 시작하는\" 은 **사전순 범위**로 말합니다 — `ban` 이상이면서 `ban` 다음 글자\n바로 앞까지입니다. 범위의 끝을 여는 표기(`[`, `(`)와 무한을 뜻하는 표기(`-`, `+`)가\n있습니다.\n\n**범위의 끝을 열어 두면 안 됩니다.** `ban` 부터 끝까지로 잡으면 `cat` 까지 딸려 옵니다.\n\n**점수가 서로 다르면 이 방법은 통하지 않습니다.** 사전순 범위는 \"점수가 모두 같다\" 를\n전제로 합니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "ZADD words 0 apple 0 apply 0 banana 0 band 0 bank 0 cat",
+    "answerCommands": "ZRANGESTORE hits words [ban (banz BYLEX\nZREM words apply",
+    "verifyCommands": "ZRANGE hits 0 -1\nZCARD hits\nZRANGE words 0 -1\nZCARD words",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}
