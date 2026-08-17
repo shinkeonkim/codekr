@@ -90,7 +90,7 @@ class SubmissionExploreIntegrationTest : IntegrationTestBase() {
             mockMvc.perform(get("/api/v1/submissions/explore?$query").header("Authorization", "Bearer $aliceToken"))
                 .andExpect(status().isOk)
 
-        explore("problemSlug=two-sum").andExpect(jsonPath("$.totalElements").value(1))
+        explore("problemKey=two-sum").andExpect(jsonPath("$.totalElements").value(1))
         explore("nickname=밥").andExpect(jsonPath("$.totalElements").value(1))
         explore("runtimeId=python:3.12").andExpect(jsonPath("$.totalElements").value(2))
         explore("runtimeId=ruby:3.4").andExpect(jsonPath("$.totalElements").value(0))
@@ -104,13 +104,55 @@ class SubmissionExploreIntegrationTest : IntegrationTestBase() {
         complete(aliceId, "ACCEPTED")
 
         mockMvc.perform(
-            get("/api/v1/submissions/explore?problemSlug=two-sum&nickname=앨리스&verdict=ACCEPTED")
+            get("/api/v1/submissions/explore?problemKey=two-sum&nickname=앨리스&verdict=ACCEPTED")
                 .header("Authorization", "Bearer $aliceToken"),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.totalElements").value(1))
             .andExpect(jsonPath("$.content.length()").value(1))
             .andExpect(jsonPath("$.content[0].nickname").value("앨리스"))
+    }
+
+    /**
+     * `/problems/9/submissions` 가 늘 비어 있던 것을 막는다 (#600).
+     *
+     * 문제 상세는 번호로도 열리는데(#204) 제출 거르개만 slug 로 풀었다. 숫자로만 된
+     * slug 는 만들 수 없으므로 **조건이 늘 빈 집합**이 됐고, 화면에서는 "제출이 없다" 와
+     * 구별되지 않았다.
+     */
+    @Test
+    fun `문제 거르개는 번호로도 slug 로도 같은 결과를 낸다`() {
+        submit(aliceToken, "two-sum")
+        submit(bobToken, "reverse-words")
+        val twoSumId = problemRepository.findBySlugAndDeletedAtIsNull("two-sum")!!.id
+
+        fun explore(query: String) =
+            mockMvc.perform(get("/api/v1/submissions/explore?$query").header("Authorization", "Bearer $aliceToken"))
+                .andExpect(status().isOk)
+
+        explore("problemKey=two-sum").andExpect(jsonPath("$.totalElements").value(1))
+        explore("problemKey=$twoSumId").andExpect(jsonPath("$.totalElements").value(1))
+        // 다른 문제의 번호로는 그 문제 것만 나온다 — 번호를 아무렇게나 통과시키는 것이 아니다.
+        val otherId = problemRepository.findBySlugAndDeletedAtIsNull("reverse-words")!!.id
+        explore("problemKey=$otherId")
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].problemSlug").value("reverse-words"))
+        // 없는 번호는 빈 목록이다. 거르개가 자유 입력이라 오류로 되돌리지 않는다.
+        explore("problemKey=999999").andExpect(jsonPath("$.totalElements").value(0))
+    }
+
+    @Test
+    fun `내 제출 목록도 문제 번호를 받는다`() {
+        submit(aliceToken, "two-sum")
+        val twoSumId = problemRepository.findBySlugAndDeletedAtIsNull("two-sum")!!.id
+
+        mockMvc.perform(
+            get("/api/v1/submissions?problemKey=$twoSumId").header("Authorization", "Bearer $aliceToken"),
+        ).andExpect(status().isOk).andExpect(jsonPath("$.totalElements").value(1))
+
+        mockMvc.perform(
+            get("/api/v1/submissions?problemKey=two-sum").header("Authorization", "Bearer $aliceToken"),
+        ).andExpect(status().isOk).andExpect(jsonPath("$.totalElements").value(1))
     }
 
     @Test

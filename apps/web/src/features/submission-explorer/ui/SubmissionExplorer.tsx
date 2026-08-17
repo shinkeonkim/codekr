@@ -19,13 +19,13 @@ import { FilterPanel } from "./FilterPanel";
 
 interface Props {
   /** 문제 상세 안에서 쓸 때는 그 문제로 범위를 고정한다. */
-  fixedProblemSlug?: string;
+  fixedProblemKey?: string;
   /** 프로필 안에서 쓸 때는 그 사람으로 범위를 고정한다 (#83). */
   fixedNickname?: string;
   emptyMessage?: string;
 }
 
-export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessage }: Props) {
+export function SubmissionExplorer({ fixedProblemKey, fixedNickname, emptyMessage }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -58,7 +58,7 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
     submissionApi
       .explore({
         ...filters,
-        problemSlug: fixedProblemSlug ?? filters.problemSlug,
+        problemKey: fixedProblemKey ?? filters.problemKey,
         nickname: fixedNickname ?? filters.nickname,
         size: 20,
       })
@@ -69,11 +69,11 @@ export function SubmissionExplorer({ fixedProblemSlug, fixedNickname, emptyMessa
       .catch(() => setError("제출 내역을 불러오지 못했습니다."));
     // searchParams 문자열이 바뀔 때만 다시 조회한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.toString(), fixedProblemSlug, fixedNickname]);
+  }, [searchParams.toString(), fixedProblemKey, fixedNickname]);
 
   // 범위가 고정된 화면(문제 상세·프로필)에서는 그 필터를 그리지도, 칩으로 보이지도 않는다.
   const hidden: FilterKey[] = [
-    ...(fixedProblemSlug ? (["problemSlug"] as FilterKey[]) : []),
+    ...(fixedProblemKey ? (["problemKey"] as FilterKey[]) : []),
     ...(fixedNickname ? (["nickname"] as FilterKey[]) : []),
   ];
   const hasFilters = hasActiveFilters(filters, hidden);

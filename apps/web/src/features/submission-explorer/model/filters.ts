@@ -6,7 +6,7 @@ import type { Verdict } from "@/entities/submission";
  * URL 쿼리에 그대로 담는다 — 새로고침·뒤로가기·링크 공유 후에도 같은 목록이 나와야 한다.
  */
 export const FILTER_KEYS = [
-  "problemSlug",
+  "problemKey",
   "nickname",
   "runtimeId",
   "verdict",
@@ -28,10 +28,10 @@ export type Filters = Partial<Record<FilterKey, string>>;
 export const PRIMARY_KEYS: FilterKey[] = ["verdict", "runtimeId", "sort"];
 
 /** 접어 두는 필터. 칩으로 걸린 사실이 보이므로 감춰도 잊히지 않는다. */
-export const SECONDARY_KEYS: FilterKey[] = ["problemSlug", "nickname", "from", "to"];
+export const SECONDARY_KEYS: FilterKey[] = ["problemKey", "nickname", "from", "to"];
 
 export const FILTER_LABELS: Record<FilterKey, string> = {
-  problemSlug: "문제",
+  problemKey: "문제",
   nickname: "제출자",
   runtimeId: "언어",
   verdict: "판정",

@@ -28,7 +28,7 @@ export function FilterPanel({
   // 접어 둔 필터가 이미 걸려 있으면 펼친 채로 시작한다 —
   // 걸린 필터를 고치려고 매번 펼치게 하면 안 된다.
   const secondaryActive = activeChips(filters, hidden).some((key) =>
-    (["problemSlug", "nickname", "from", "to"] as FilterKey[]).includes(key),
+    (["problemKey", "nickname", "from", "to"] as FilterKey[]).includes(key),
   );
   const [expanded, setExpanded] = useState(secondaryActive);
 
@@ -80,12 +80,12 @@ export function FilterPanel({
 
       {expanded ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {show("problemSlug") ? (
-            <Field label={FILTER_LABELS.problemSlug}>
+          {show("problemKey") ? (
+            <Field label={FILTER_LABELS.problemKey}>
               <Input
-                value={filters.problemSlug ?? ""}
-                onChange={(e) => onChange("problemSlug", e.target.value)}
-                placeholder="two-sum"
+                value={filters.problemKey ?? ""}
+                onChange={(e) => onChange("problemKey", e.target.value)}
+                placeholder="9 또는 two-sum"
               />
             </Field>
           ) : null}

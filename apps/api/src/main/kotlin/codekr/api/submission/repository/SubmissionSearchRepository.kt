@@ -44,8 +44,8 @@ class SubmissionSearchRepository(private val queryFactory: JPAQueryFactory) {
             // 정답 코드 검증 제출은 어떤 사용자 목록에도 나타나지 않는다 (#39).
             and(submission.kind.eq(SubmissionKind.USER))
 
-            condition.problemSlug?.takeIf { it.isNotBlank() }?.let { slug ->
-                and(submission.problemId.`in`(problemIdsBySlug(slug)))
+            condition.problemKey?.takeIf { it.isNotBlank() }?.let { key ->
+                and(submission.problemId.`in`(problemIdsByKey(key)))
             }
             condition.nickname?.takeIf { it.isNotBlank() }?.let { nickname ->
                 and(submission.userId.`in`(userIdsByNickname(nickname)))
@@ -57,9 +57,20 @@ class SubmissionSearchRepository(private val queryFactory: JPAQueryFactory) {
         }
     }
 
-    private fun problemIdsBySlug(slug: String) =
+    /**
+     * 번호와 slug 를 둘 다 푼다 — `ProblemService.findByKey` 와 같은 규칙이다 (#204, #600).
+     *
+     * **하나의 하위 질의로 둘 다 본다.** 번호로 먼저 찾아보고 없으면 slug 로 찾는 식으로
+     * 나누면 질의가 두 번 나가고, 그 사이에 문제가 지워지면 결과가 달라진다. 숫자로만 된
+     * slug 는 만들 수 없으므로 **둘이 동시에 맞는 일은 없다** — `or` 로 묶어도 안전하다.
+     */
+    private fun problemIdsByKey(key: String) =
         queryFactory.select(QProblem.problem.id).from(QProblem.problem)
-            .where(QProblem.problem.slug.eq(slug))
+            .where(
+                key.toLongOrNull()
+                    ?.let { QProblem.problem.id.eq(it).or(QProblem.problem.slug.eq(key)) }
+                    ?: QProblem.problem.slug.eq(key),
+            )
 
     private fun userIdsByNickname(nickname: String) =
         queryFactory.select(QUser.user.id).from(QUser.user)

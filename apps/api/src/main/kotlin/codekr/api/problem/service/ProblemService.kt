@@ -75,8 +75,11 @@ class ProblemService(
      * **숫자로만 이루어진 slug 는 만들 수 없다** — 어드민 검증이 slug 에 글자를 요구하지
      * 않으므로, 그런 slug 가 생기면 번호와 부딪힌다. 그때는 번호가 이긴다(먼저 본다).
      * 지금 그런 문제는 없고, 생기면 이 주석이 그것을 설명한다.
+     *
+     * **문제를 가리키는 값을 푸는 곳은 여기 하나다** (#600). 제출 목록이 이 규칙을 따르지
+     * 않고 slug 로만 풀어서 `/problems/9/submissions` 가 늘 비어 있었다.
      */
-    private fun findByKey(key: String): Problem? {
+    fun findByKey(key: String): Problem? {
         val id = key.toLongOrNull()
         if (id != null) {
             problemRepository.findByIdAndDeletedAtIsNull(id)?.let { return it }
