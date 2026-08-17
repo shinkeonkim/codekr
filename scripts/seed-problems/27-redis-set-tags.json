@@ -1,0 +1,29 @@
+{
+  "slug": "redis-set-tags",
+  "title": "태그 손보기 (Redis 집합)",
+  "category": "REDIS",
+  "difficulty": "BRONZE_4",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`tags:1` 이라는 **집합**에 `redis`, `db` 가 들어 있습니다.\n\n집합은 **순서가 없고 같은 것이 두 번 들어가지 않는** 자료형입니다. 태그처럼\n\"있다/없다\" 만 따지는 것에 씁니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `tags:1` 에 `cache` 를 더합니다.\n- `tags:1` 에서 `db` 를 뺍니다.\n- `tags:1` 에 `redis` 를 **한 번 더 더해 봅니다** — 집합이라 개수는 늘지 않습니다.\n\n끝난 뒤 `tags:1` 에는 `redis` 와 `cache` 두 개만 있어야 합니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "SADD tags:1 redis db",
+    "answerCommands": "SADD tags:1 cache\nSREM tags:1 db\nSADD tags:1 redis",
+    "verifyCommands": "SISMEMBER tags:1 redis\nSISMEMBER tags:1 cache\nSISMEMBER tags:1 db\nSCARD tags:1",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "slug": "redis-key-type",
+  "title": "자료형을 보고 치우기 (Redis)",
+  "category": "REDIS",
+  "difficulty": "SILVER_5",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n키 네 개가 들어 있는데 **자료형이 제각각**입니다.\n\n- `a` — 문자열\n- `b` — 리스트\n- `c` — 집합\n- `d` — 해시\n\n명령을 써서 **리스트와 집합인 키만 지우세요.** 문자열과 해시는 남아 있어야 합니다.\n\n어떤 키가 무슨 자료형인지 **물어보는 명령**이 있습니다. 지문에 적혀 있으니 바로\n지워도 통과하지만, 그 명령을 한 번 써 보고 무엇이 돌아오는지 보아 두면 다음 문제가\n쉬워집니다.\n\n참고로 `KEYS` 처럼 **키를 통째로 훑는 명령은 막혀 있습니다.** 운영 중인 Redis 에서\n그것을 쓰면 서버가 그 동안 멈춥니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "SET a 1\nRPUSH b x y\nSADD c z\nHSET d f v",
+    "answerCommands": "DEL b\nDEL c",
+    "verifyCommands": "TYPE a\nEXISTS b\nEXISTS c\nTYPE d\nDBSIZE",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

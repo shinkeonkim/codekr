@@ -1,0 +1,29 @@
+{
+  "slug": "redis-hash-config",
+  "title": "설정값 손보기 (Redis 해시)",
+  "category": "REDIS",
+  "difficulty": "BRONZE_3",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`config:app` 이라는 해시에 설정이 들어 있습니다. `theme` 은 `dark`, `lang` 은 `ko` 입니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `timezone` 은 **이미 있으면 건드리지 않고, 없을 때만** `Asia/Seoul` 을 넣습니다.\n- `lang` 을 `en` 으로 바꿉니다.\n- `theme` 을 지웁니다.\n\n\"없을 때만 넣는\" 명령이 따로 있습니다. `HSET` 은 있든 없든 덮어쓰므로, **먼저 있는지\n확인하고 넣는 방식**과 달리 사이에 남이 끼어들 틈이 없습니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "HSET config:app theme dark lang ko",
+    "answerCommands": "HSETNX config:app timezone Asia/Seoul\nHSET config:app lang en\nHDEL config:app theme",
+    "verifyCommands": "HGET config:app timezone\nHGET config:app lang\nHEXISTS config:app theme\nHLEN config:app",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

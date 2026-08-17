@@ -1,0 +1,29 @@
+{
+  "slug": "redis-hash-profile",
+  "title": "회원 정보 고치기 (Redis 해시)",
+  "category": "REDIS",
+  "difficulty": "BRONZE_4",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`user:1` 이라는 **해시**에 회원 정보가 들어 있습니다. 지금 담긴 것은\n`name` 은 `김코드`, `email` 은 `old@codekr.dev`, `city` 는 `서울` 입니다.\n\n해시는 **하나의 키 안에 이름표와 값이 여러 쌍** 들어가는 자료형입니다. 회원 정보처럼\n한 덩어리로 다루는 것을 `user:1:name`, `user:1:email` 로 흩어 두지 않아도 됩니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `email` 을 `new@codekr.dev` 로 바꿉니다.\n- `city` 를 **지웁니다.**\n- `age` 에 `20` 을 넣습니다.\n\n`name` 은 그대로 두어야 합니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "HSET user:1 name 김코드 email old@codekr.dev city 서울",
+    "answerCommands": "HSET user:1 email new@codekr.dev\nHDEL user:1 city\nHSET user:1 age 20",
+    "verifyCommands": "HGET user:1 name\nHGET user:1 email\nHEXISTS user:1 city\nHGET user:1 age\nHLEN user:1",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

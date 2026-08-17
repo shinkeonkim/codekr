@@ -1,0 +1,29 @@
+{
+  "slug": "redis-zset-score",
+  "title": "점수 고치기 (Redis 정렬 집합)",
+  "category": "REDIS",
+  "difficulty": "BRONZE_3",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`scores` 라는 **정렬 집합**에 점수가 들어 있습니다. `가` 는 30, `나` 는 20, `다` 는 10 입니다.\n\n정렬 집합은 **원소마다 점수가 붙은 집합**입니다. 넣는 순간부터 점수 순으로 정렬돼\n있어서 순위표에 씁니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `나` 의 점수를 **25 만큼 올립니다** (45 가 됩니다).\n- `라` 를 5 점으로 새로 넣습니다.\n- `다` 를 지웁니다.\n\n점수를 올릴 때 `ZADD scores 45 나` 처럼 적어 넣어도 결과는 같지만, **지금 점수를\n몰라도 되는 명령**이 따로 있습니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "ZADD scores 30 가 20 나 10 다",
+    "answerCommands": "ZINCRBY scores 25 나\nZADD scores 5 라\nZREM scores 다",
+    "verifyCommands": "ZSCORE scores 가\nZSCORE scores 나\nZSCORE scores 라\nZSCORE scores 다\nZCARD scores",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}
