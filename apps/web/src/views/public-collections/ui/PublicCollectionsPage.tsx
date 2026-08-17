@@ -4,7 +4,8 @@ import { collectionApi } from "@/entities/collection";
 import type { CollectionSummary } from "@/entities/collection";
 import { useAuth } from "@/features/auth";
 import type { Page } from "@/shared/api";
-import { Badge, Button, Card, EmptyState, Input, Pagination, useToast } from "@/shared/ui";
+import { Badge, Button, Card, EmptyState, Input, PAGE_WIDTH, Pagination, useToast } from "@/shared/ui";
+import { CollectionTabs } from "@/widgets/collection-tabs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -60,11 +61,12 @@ export function PublicCollectionsPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className={`${PAGE_WIDTH.wide} space-y-5`}>
       <header>
-        <h1 className="text-2xl font-bold text-ink">공개 문제집</h1>
+        <h1 className="text-2xl font-bold text-ink">문제집</h1>
         <p className="mt-1 text-sm text-ink-muted">다른 사람이 만든 커리큘럼을 그대로 따라갈 수 있습니다.</p>
       </header>
+      <CollectionTabs />
 
       {result && result.content.length === 0 ? (
         <EmptyState

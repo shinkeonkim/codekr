@@ -23,7 +23,9 @@ export const collectionApi = {
       query: { reason },
     }),
 
-  mine: () => request<CollectionSummary[]>("/api/v1/collections/me", { auth: true }),
+  /** 내 문제집 목록. 공개 목록과 같이 페이지로 온다 (#601). */
+  mine: (query: { page?: number; size?: number }) =>
+    request<Page<CollectionSummary>>("/api/v1/collections/me", { auth: true, query }),
 
   detail: (id: number) => request<CollectionDetail>(`/api/v1/collections/${id}`, { auth: true }),
 

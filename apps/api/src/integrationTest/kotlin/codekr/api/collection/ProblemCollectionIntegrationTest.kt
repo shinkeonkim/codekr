@@ -55,8 +55,33 @@ class ProblemCollectionIntegrationTest : IntegrationTestBase() {
 
         mockMvc.perform(get("/api/v1/collections/me").header("Authorization", "Bearer $ownerToken"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.length()").value(1))
-            .andExpect(jsonPath("$[0].problemCount").value(2))
+            .andExpect(jsonPath("$.totalElements").value(1))
+            .andExpect(jsonPath("$.content[0].problemCount").value(2))
+    }
+
+    /**
+     * 내 목록도 페이지로 온다 (#601).
+     *
+     * 전에는 `List` 를 그대로 되돌렸다 — 공개 목록은 처음부터 `size` 를 받는데 내 것만
+     * 안 받아서, 문제집이 늘어나면 **한 번에 다 실어 보낸다.**
+     */
+    @Test
+    fun `내 문제집 목록은 페이지로 온다`() {
+        repeat(3) { create(ownerToken, problems = listOf(1)) }
+
+        mockMvc.perform(
+            get("/api/v1/collections/me?size=2").header("Authorization", "Bearer $ownerToken"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(3))
+            .andExpect(jsonPath("$.totalPages").value(2))
+            .andExpect(jsonPath("$.content.length()").value(2))
+
+        mockMvc.perform(
+            get("/api/v1/collections/me?size=2&page=1").header("Authorization", "Bearer $ownerToken"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.content.length()").value(1))
     }
 
     @Test

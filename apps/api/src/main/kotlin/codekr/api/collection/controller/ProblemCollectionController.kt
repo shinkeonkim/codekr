@@ -49,8 +49,14 @@ class ProblemCollectionController(private val collectionService: ProblemCollecti
 
     @AuthenticatedApi
     @GetMapping("/me")
-    fun findMine(principal: AuthPrincipal): List<CollectionSummaryResponse> =
-        collectionService.findMine(principal.userId)
+    fun findMine(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        principal: AuthPrincipal,
+    ) = collectionService.findMine(
+        principal.userId,
+        org.springframework.data.domain.PageRequest.of(maxOf(page, 0), size.coerceIn(1, 50)),
+    )
 
     @AuthenticatedApi
     @GetMapping("/{id}")

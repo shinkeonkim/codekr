@@ -1,0 +1,1 @@
+export { CollectionTabs } from "./CollectionTabs";

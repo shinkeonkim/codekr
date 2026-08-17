@@ -85,10 +85,13 @@ class ProblemCollectionService(
             }
     }
 
-    fun findMine(userId: Long): List<CollectionSummaryResponse> {
+    /** 내 문제집. 공개 목록과 같이 페이지로 되돌린다 (#601). */
+    fun findMine(userId: Long, pageable: Pageable): PageResponse<CollectionSummaryResponse> {
         val nickname = nicknameOf(userId)
-        return collectionRepository.findByOwnerIdAndDeletedAtIsNullOrderByIdDesc(userId)
-            .map { summaryOf(it, nickname, userId, forOwner = true) }
+        return PageResponse.from(
+            collectionRepository.findByOwnerIdAndDeletedAtIsNullOrderByIdDesc(userId, pageable)
+                .map { summaryOf(it, nickname, userId, forOwner = true) },
+        )
     }
 
     /** 남의 문제집은 링크(공유 토큰)로만 연다. 번호로 훑을 수 없다. */
