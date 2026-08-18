@@ -3,7 +3,8 @@ import type { Page, Query } from "@/shared/api";
 import type {
   AdminProblemDetail,
   ProblemDetail,
-  ProblemImportPreview,
+  ProblemBundlePreview,
+  ProblemImportResult,
   ProblemSummary,
   ProblemVerification,
   Runtime,
@@ -35,7 +36,7 @@ export const problemApi = {
    * zip 과 맨 JSON 을 모두 받는다 — 서버가 매직 바이트로 가른다.
    */
   importPreview: (file: File) =>
-    request<ProblemImportPreview>("/api/v1/admin/problems/imports/preview", {
+    request<ProblemBundlePreview>("/api/v1/admin/problems/imports/preview", {
       method: "POST",
       body: toForm(file),
       auth: true,
@@ -47,7 +48,7 @@ export const problemApi = {
    * 미리보기 뒤에도 **파일을 다시 올린다** — 서버가 올린 것을 들고 있지 않기 때문이다.
    */
   importBundle: (file: File) =>
-    request<{ id: number; slug: string }>("/api/v1/admin/problems/imports", {
+    request<ProblemImportResult>("/api/v1/admin/problems/imports", {
       method: "POST",
       body: toForm(file),
       auth: true,

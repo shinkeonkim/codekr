@@ -2,7 +2,9 @@ package codekr.api.problem.admin.service
 
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.problem.admin.dto.ProblemBundlePreview
 import codekr.api.problem.admin.dto.ProblemCreatedResponse
+import codekr.api.problem.admin.dto.ProblemImportResult
 import codekr.api.problem.admin.dto.ProblemImportPreview
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
 import codekr.api.problem.admin.dto.TestcaseRequest
@@ -45,17 +47,40 @@ class ProblemImportService(
         const val SCHEMA_FILE_KEY = "sqlSchemaFile"
     }
 
+    /**
+     * 묶음을 만든다. **하나라도 걸리면 아무것도 만들지 않는다** (#623).
+     *
+     * 한 트랜잭션인 이유: 한 벌로 설계한 문제들은 **같이 들어가야 뜻이 맞는다.**
+     * 절반만 들어가면 무엇이 들어갔는지 사람이 손으로 대조해야 하고, 그것은
+     * "실패하면 아무것도 만들어지지 않는다" 는 한 개짜리의 결과도 어긋난다.
+     */
     @Transactional
-    fun import(file: MultipartFile, createdBy: Long): ProblemCreatedResponse {
-        val read = read(file)
+    fun import(file: MultipartFile, createdBy: Long): ProblemImportResult {
+        val reads = readAll(file)
 
-        // 폼으로 만들 때와 **같은 규칙**을 지난다 (#59, #60, #454, #455).
-        // 여기서만 통과하는 길을 두면 그 길로 들어온 문제가 화면에서 고쳐지지 않는다.
-        val violations = violationsOf(read.request)
+        /*
+          **먼저 다 검사하고 나서 만든다.** 만들면서 검사하면 세 번째에서 걸렸을 때
+          앞의 둘이 이미 만들어진 뒤다 — 트랜잭션이 되돌리기는 하지만, 올린 사람에게
+          보이는 것은 "무엇이 왜 틀렸는지" 하나뿐이어야 한다.
+        */
+        val problems = reads.map { it.request }
+        val violations = problems.flatMap { request ->
+            violationsOf(request).map { "${request.slug}: $it" }
+        }
         if (violations.isNotEmpty()) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, violations.joinToString())
         }
-        return adminProblemService.create(read.request, createdBy)
+
+        // 묶음 **안에서** 겹치는 것은 서버가 만들다가 알게 되면 늦다.
+        val duplicated = problems.groupingBy { it.slug }.eachCount().filterValues { it > 1 }.keys
+        if (duplicated.isNotEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "묶음 안에 같은 slug 가 여럿 있습니다: ${duplicated.sorted().joinToString()}",
+            )
+        }
+
+        return ProblemImportResult(problems.map { adminProblemService.create(it, createdBy) })
     }
 
     /**
@@ -64,13 +89,19 @@ class ProblemImportService(
      * `import` 와 **같은 [read] 를 지난다.** 여기서만 통과하는 길이 생기면
      * "미리보기는 됐는데 저장이 실패" 가 나고, 그러면 미리보기를 믿을 수 없게 된다.
      */
-    fun preview(file: MultipartFile): ProblemImportPreview {
-        val read = read(file)
-        return ProblemImportPreview(
-            source = when (read.source) {
-                ProblemArchive.Source.ZIP -> ProblemImportPreview.BundleSource.ZIP
-                ProblemArchive.Source.JSON -> ProblemImportPreview.BundleSource.JSON
+    fun preview(file: MultipartFile): ProblemBundlePreview {
+        val reads = readAll(file)
+        return ProblemBundlePreview(
+            source = when (reads.first().source) {
+                ProblemArchive.Source.ZIP -> ProblemBundlePreview.BundleSource.ZIP
+                ProblemArchive.Source.JSON -> ProblemBundlePreview.BundleSource.JSON
             },
+            problems = reads.map(::previewOf),
+        )
+    }
+
+    private fun previewOf(read: Read): ProblemImportPreview =
+        ProblemImportPreview(
             slug = read.request.slug,
             title = read.request.title,
             category = read.request.category,
@@ -86,7 +117,6 @@ class ProblemImportService(
             // **던지지 않고 모아서 준다.** 첫 번째에서 멈추면 고치고 다시 올리기를 반복한다.
             violations = violationsOf(read.request),
         )
-    }
 
     private data class Read(
         val request: ProblemUpsertRequest,
@@ -95,10 +125,18 @@ class ProblemImportService(
         val publishedInBundle: Boolean,
     )
 
-    private fun read(file: MultipartFile): Read {
+    /**
+     * 묶음에 든 문제를 전부 읽는다 (#623).
+     *
+     * `import` 와 `preview` 가 **같은 길을 지난다** — 여기서만 통과하는 길이 생기면
+     * "미리보기는 됐는데 저장이 실패" 가 나고, 그러면 미리보기를 믿을 수 없게 된다.
+     */
+    private fun readAll(file: MultipartFile): List<Read> {
         if (file.isEmpty) throw ApiException(ErrorCode.VALIDATION_ERROR, "빈 파일입니다.")
+        return file.inputStream.use(ProblemArchive::readAll).map(::readOne)
+    }
 
-        val content = file.inputStream.use(ProblemArchive::read)
+    private fun readOne(content: ProblemArchive.Content): Read {
         val meta = parse(resolveSchemaFile(content))
         val fromFiles = content.testcases.map { (seq, pair) ->
             TestcaseRequest(seq = seq, input = pair.first, expectedOutput = pair.second)

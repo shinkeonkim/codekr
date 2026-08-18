@@ -153,16 +153,84 @@ class ProblemImportIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `맨 위 폴더가 둘이면 벗기지 않는다`() {
-        // 무엇이 뜻인지 알 수 없다. 짐작하면 엉뚱한 것을 문제로 만든다.
+    fun `맨 위 폴더가 여럿이면 문제도 여럿이다`() {
+        /*
+          #594 는 여기서 "무엇이 뜻인지 알 수 없다" 며 거절했다. **#623 이 그것을
+          뒤집는다** — 폴더마다 `problem.json` 이 있으면 짐작할 것이 없다.
+          한 벌로 설계한 문제들을 한 번에 올릴 수 있어야 한다.
+        */
         upload(
             listOf(
-                ProblemArchiveEntry("가/problem.json", meta("two-roots")),
-                ProblemArchiveEntry("나/problem.json", meta("two-roots")),
+                ProblemArchiveEntry("가/problem.json", meta("two-roots-a")),
+                ProblemArchiveEntry("나/problem.json", meta("two-roots-b")),
+            ),
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.created.length()").value(2))
+            // 폴더 이름순이다 — 번호를 매겨 두면 문제 번호가 그 순서로 붙는다 (#204).
+            .andExpect(jsonPath("$.created[0].slug").value("two-roots-a"))
+            .andExpect(jsonPath("$.created[1].slug").value("two-roots-b"))
+    }
+
+    @Test
+    fun `problem_json 이 없는 폴더가 있으면 통째로 거절한다`() {
+        // 조용히 건너뛰면 올린 사람은 그것도 들어갔다고 믿는다.
+        upload(
+            listOf(
+                ProblemArchiveEntry("가/problem.json", meta("has-meta")),
+                ProblemArchiveEntry("나/testcases/1.in", "1\n"),
+                ProblemArchiveEntry("나/testcases/1.out", "1\n"),
             ),
         )
             .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("problem.json")))
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("나")))
+    }
+
+    @Test
+    fun `묶음 안에 같은 slug 가 여럿이면 거절한다`() {
+        // 만들다가 알게 되면 늦다 — 먼저 다 보고 나서 만든다.
+        upload(
+            listOf(
+                ProblemArchiveEntry("가/problem.json", meta("same-slug")),
+                ProblemArchiveEntry("나/problem.json", meta("same-slug")),
+            ),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("same-slug")))
+    }
+
+    @Test
+    fun `하나라도 걸리면 아무것도 만들어지지 않는다`() {
+        /*
+          한 벌로 설계한 문제들은 **같이 들어가야 뜻이 맞는다.** 절반만 들어가면
+          무엇이 들어갔는지 사람이 손으로 대조해야 한다.
+        */
+        upload(
+            listOf(
+                ProblemArchiveEntry("가/problem.json", meta("survivor")),
+                ProblemArchiveEntry("나/problem.json", meta("bad").replace("\"두 수의 합\"", "\"\"")),
+            ),
+        ).andExpect(status().isBadRequest)
+
+        mockMvc.perform(
+            get("/api/v1/admin/problems?q=survivor").header("Authorization", "Bearer $adminToken"),
+        ).andExpect(jsonPath("$.content.length()").value(0))
+    }
+
+    @Test
+    fun `미리보기가 든 문제를 전부 보여준다`() {
+        upload(
+            listOf(
+                ProblemArchiveEntry("01-가/problem.json", meta("preview-a")),
+                ProblemArchiveEntry("02-나/problem.json", meta("preview-b")),
+            ),
+            path = "/imports/preview",
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.source").value("ZIP"))
+            .andExpect(jsonPath("$.problems.length()").value(2))
+            .andExpect(jsonPath("$.problems[0].slug").value("preview-a"))
+            .andExpect(jsonPath("$.problems[1].slug").value("preview-b"))
     }
 
     @Test
@@ -197,8 +265,11 @@ class ProblemImportIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("모르는 파일")))
     }
 
-    private fun upload(entries: List<ProblemArchiveEntry>) = mockMvc.perform(
-        multipart("/api/v1/admin/problems/imports")
+    private fun upload(
+        entries: List<ProblemArchiveEntry>,
+        path: String = "/imports",
+    ) = mockMvc.perform(
+        multipart("/api/v1/admin/problems$path")
             .file(MockMultipartFile("file", "problem.zip", "application/zip", zip(entries)))
             .header("Authorization", "Bearer $adminToken"),
     )

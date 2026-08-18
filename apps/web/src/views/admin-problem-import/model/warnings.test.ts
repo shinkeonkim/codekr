@@ -4,8 +4,7 @@ import { importWarnings, isBlocked } from "./warnings";
 
 function preview(overrides: Partial<ProblemImportPreview> = {}): ProblemImportPreview {
   return {
-    source: "JSON",
-    slug: "a-plus-b",
+      slug: "a-plus-b",
     title: "A + B",
     category: "ALGORITHM",
     problemKind: "JUDGE_STDIO",

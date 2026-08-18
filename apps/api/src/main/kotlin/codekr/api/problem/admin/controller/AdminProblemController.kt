@@ -6,7 +6,8 @@ import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
 import codekr.api.problem.admin.dto.AdminProblemDetailResponse
 import codekr.api.problem.admin.dto.ProblemCreatedResponse
-import codekr.api.problem.admin.dto.ProblemImportPreview
+import codekr.api.problem.admin.dto.ProblemBundlePreview
+import codekr.api.problem.admin.dto.ProblemImportResult
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
 import codekr.api.problem.admin.dto.VerificationResponse
 import codekr.api.problem.admin.service.AdminProblemService
@@ -58,7 +59,7 @@ class AdminProblemController(
      */
     @AdminApi(UserRole.PROBLEM_SETTER)
     @PostMapping("/imports/preview", consumes = ["multipart/form-data"])
-    fun previewArchive(@RequestPart("file") file: MultipartFile): ProblemImportPreview =
+    fun previewArchive(@RequestPart("file") file: MultipartFile): ProblemBundlePreview =
         importService.preview(file)
 
     /**
@@ -81,7 +82,7 @@ class AdminProblemController(
     fun importArchive(
         @RequestPart("file") file: MultipartFile,
         principal: AuthPrincipal,
-    ): ProblemCreatedResponse = importService.import(file, principal.userId)
+    ): ProblemImportResult = importService.import(file, principal.userId)
 
     @AdminApi(UserRole.PROBLEM_SETTER)
     @GetMapping

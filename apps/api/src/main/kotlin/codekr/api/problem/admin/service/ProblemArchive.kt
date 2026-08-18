@@ -122,9 +122,37 @@ object ProblemArchive {
         val extras: Map<String, String> = emptyMap(),
     )
 
+    /**
+     * 묶음 하나를 읽는다. **문제가 여럿이면 거절한다** — 부르는 쪽이 하나를 기대한다.
+     */
     fun read(stream: InputStream): Content {
+        val all = readAll(stream)
+        if (all.size > 1) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "문제가 ${all.size}개 들어 있습니다.")
+        }
+        return all.first()
+    }
+
+    /**
+     * 묶음에 든 문제를 전부 읽는다 (#623).
+     *
+     * ## 무엇으로 여럿인지 아는가
+     *
+     * **루트에 `problem.json` 이 있으면 문제 하나다** — 지금까지와 같다. 없으면
+     * 맨 위 폴더 하나하나를 문제로 본다. 짐작이 아니라 **`problem.json` 이 어디 있는지**
+     * 로 가른다.
+     *
+     * `#594` 가 벗기는 포장 폴더와도 부딪히지 않는다. `python-basics/01-x/problem.json`
+     * 은 포장(`python-basics/`)을 벗기고 나면 `01-x/problem.json` 이라 폴더별로 갈린다.
+     *
+     * ## 순서
+     *
+     * **폴더 이름순이다.** `01-`, `02-` 로 번호를 매겨 두면 문제 번호가 그 순서로
+     * 붙는다 — 번호는 사용자에게 보이는 값이다 (#204).
+     */
+    fun readAll(stream: InputStream): List<Content> {
         val buffered = stream.buffered()
-        return if (looksLikeZip(buffered)) readZip(buffered) else readJson(buffered)
+        return if (looksLikeZip(buffered)) readZipAll(buffered) else listOf(readJson(buffered))
     }
 
     /**
@@ -164,7 +192,7 @@ object ProblemArchive {
         return Content(body.toString(Charsets.UTF_8), emptyMap(), Source.JSON)
     }
 
-    private fun readZip(stream: InputStream): Content {
+    private fun readZipAll(stream: InputStream): List<Content> {
         // **먼저 다 읽고 나서 분류한다** (#594). 맨 위 폴더를 벗기려면 이름이 전부
         // 모여야 한다 — 하나씩 보는 동안에는 그 폴더가 포장인지 자료인지 알 수 없다.
         // 크기·개수 상한은 읽는 동안 그대로 센다.
@@ -191,11 +219,47 @@ object ProblemArchive {
         }
 
         val prefix = stripWrapper(files.keys)
+        val stripped = files.mapKeys { (name, _) -> name.removePrefix(prefix) }
+
+        // 루트에 `problem.json` 이 있으면 문제 하나다 — 지금까지와 같은 길이다.
+        if (stripped.containsKey(META_ENTRY)) return listOf(oneProblem(stripped, ""))
+
+        /*
+          없으면 맨 위 폴더마다 문제 하나로 본다 (#623).
+
+          **폴더에 `problem.json` 이 없으면 거절한다.** 조용히 건너뛰면 올린 사람은
+          그것도 들어갔다고 믿는다 — "모르는 파일을 버리지 않는다" 와 같은 규칙이다.
+        */
+        val folders = stripped.keys.mapNotNull { it.substringBefore('/', "").ifEmpty { null } }.toSortedSet()
+        if (folders.isEmpty()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "묶음에 $META_ENTRY 이 없습니다.")
+        }
+        val without = folders.filter { !stripped.containsKey("$it/$META_ENTRY") }
+        if (without.isNotEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "$META_ENTRY 이 없는 폴더가 있습니다: ${without.sorted().joinToString()}",
+            )
+        }
+        // 폴더 밖에 떠 있는 파일은 어느 문제의 것인지 알 수 없다.
+        val loose = stripped.keys.filter { !it.contains('/') }
+        if (loose.isNotEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "어느 문제의 것인지 알 수 없는 파일이 있습니다: ${loose.sorted().joinToString()}",
+            )
+        }
+        return folders.map { folder -> oneProblem(stripped, "$folder/") }
+    }
+
+    /** 접두사 아래의 파일들을 문제 하나로 엮는다. */
+    private fun oneProblem(files: Map<String, String>, prefix: String): Content {
         var meta: String? = null
         val inputs = mutableMapOf<Int, String>()
         val outputs = mutableMapOf<Int, String>()
         val extras = mutableMapOf<String, String>()
         for ((raw, text) in files) {
+            if (!raw.startsWith(prefix)) continue
             val name = raw.removePrefix(prefix)
             when {
                 name == META_ENTRY -> meta = text
@@ -210,7 +274,8 @@ object ProblemArchive {
             }
         }
 
-        val body = meta ?: throw ApiException(ErrorCode.VALIDATION_ERROR, "묶음에 $META_ENTRY 이 없습니다.")
+        val where = if (prefix.isEmpty()) "묶음" else "$prefix"
+        val body = meta ?: throw ApiException(ErrorCode.VALIDATION_ERROR, "$where 에 $META_ENTRY 이 없습니다.")
         val onlyInput = inputs.keys - outputs.keys
         val onlyOutput = outputs.keys - inputs.keys
         if (onlyInput.isNotEmpty() || onlyOutput.isNotEmpty()) {
@@ -218,7 +283,7 @@ object ProblemArchive {
             // 기대 출력만 있으면 무엇으로 그 답이 나오는지가 없다.
             throw ApiException(
                 ErrorCode.VALIDATION_ERROR,
-                "짝이 맞지 않는 테스트케이스가 있습니다: " +
+                "$where 에 짝이 맞지 않는 테스트케이스가 있습니다: " +
                     (onlyInput.map { "$it.in" } + onlyOutput.map { "$it.out" }).sorted().joinToString(),
             )
         }
