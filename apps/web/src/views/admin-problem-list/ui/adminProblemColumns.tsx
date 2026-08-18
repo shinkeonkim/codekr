@@ -63,6 +63,11 @@ export function adminProblemColumns(
       header: "번호",
       // 카드 목록에는 번호가 아예 없었다. 로그도 API 도 번호로 말하는데 화면에는 slug 뿐이라,
       // 어드민이 번호를 알려면 편집 화면을 열어 주소를 읽어야 했다.
+      //
+      // **좁은 화면에서는 접는다** — 고르는 칸(#627)이 붙으면서 열이 다섯이 됐고,
+      // 560px 에서 표가 담는 칸보다 37px 넓어져 **삭제 버튼이 잘렸다.** 감싼 상자가
+      // `overflow-hidden` 이라 잘린 부분에는 닿을 수도 없다.
+      hideBelow: "sm",
       width: "w-20",
       render: (problem) => <span className="tabular-nums text-ink-muted">{problem.id}</span>,
     },
@@ -102,7 +107,10 @@ export function adminProblemColumns(
         줄마다 달라서, 미공개가 몇 개인지 훑어서 셀 수 없었다. 열로 서면 세로로 읽힌다.
       */
       render: (problem) => (
-        <Badge tone={problem.published ? "ok" : "muted"}>{problem.published ? "공개" : "미공개"}</Badge>
+        <Badge tone={problem.published ? "ok" : "muted"}>
+          {/* 좁은 화면에서 "공/개" 로 접혀 두 줄이 됐다. */}
+          <span className="whitespace-nowrap">{problem.published ? "공개" : "미공개"}</span>
+        </Badge>
       ),
     },
     {
