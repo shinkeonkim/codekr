@@ -34,6 +34,18 @@ interface ProblemCollectionRepository : JpaRepository<ProblemCollection, Long> {
     fun findByShareTokenAndDeletedAtIsNull(shareToken: String): ProblemCollection?
 
     fun findByOwnerIdAndDeletedAtIsNullOrderByIdDesc(ownerId: Long): List<ProblemCollection>
+
+    /**
+     * 내 문제집 목록 (#601).
+     *
+     * **페이지가 없으면 통째로 실어 보낸다.** 공개 목록은 처음부터 `size` 를 받는데
+     * 내 목록만 `List` 였다 — 지금은 몇 개 안 만들어 티가 안 나지만, 늘어나면 한 번에
+     * 다 나간다.
+     */
+    fun findByOwnerIdAndDeletedAtIsNullOrderByIdDesc(
+        ownerId: Long,
+        pageable: org.springframework.data.domain.Pageable,
+    ): org.springframework.data.domain.Page<ProblemCollection>
 }
 
 interface ProblemCollectionItemRepository : JpaRepository<ProblemCollectionItem, CollectionItemId> {
