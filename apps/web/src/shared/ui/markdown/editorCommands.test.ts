@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { codeFence, linePrefix, wrap } from "./editorCommands";
+import { codeFence, linePrefix, link, orderedList, wrap } from "./editorCommands";
 
 /**
  * 편집기 버튼 (#388).
@@ -68,5 +68,38 @@ describe("코드 블록", () => {
 
     expect(result.text.slice(0, result.selectionStart)).toBe("```\n");
     expect(result.selectionStart).toBe(result.selectionEnd);
+  });
+});
+
+describe("번호 목록", () => {
+  test("줄마다 번호가 올라간다", () => {
+    const result = orderedList("하나\n둘\n셋", 0, 8);
+
+    expect(result.text).toBe("1. 하나\n2. 둘\n3. 셋");
+  });
+
+  test("선택이 줄 첫머리에서 끝나면 그 줄은 넣지 않는다", () => {
+    // `linePrefix` 와 같은 규칙이다 — 다르면 버튼마다 다르게 동작한다.
+    const result = orderedList("하나\n둘\n셋", 0, 3);
+
+    expect(result.text).toBe("1. 하나\n둘\n셋");
+  });
+});
+
+describe("링크", () => {
+  test("고른 글자가 이름이 되고 커서는 주소 자리에 선다", () => {
+    const result = link("여기를 보세요", 0, 3);
+
+    expect(result.text).toBe("[여기를]() 보세요");
+    // 커서가 괄호 안이어야 주소를 바로 칠 수 있다.
+    expect(result.selectionStart).toBe("[여기를](".length);
+    expect(result.selectionEnd).toBe(result.selectionStart);
+  });
+
+  test("아무것도 안 골랐으면 이름 자리를 채워 둔다", () => {
+    // 빈 `[]()` 를 남기면 무엇을 채워야 하는지가 안 보인다.
+    const result = link("", 0, 0);
+
+    expect(result.text).toBe("[링크]()");
   });
 });

@@ -1,11 +1,10 @@
 "use client";
 
-import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/textarea";
 import { ApiError, request } from "@/shared/api";
 import { useRef, useState } from "react";
 import { Markdown } from "./Markdown";
-import { codeFence, linePrefix, wrap } from "./editorCommands";
+import { EditorToolbar } from "./EditorToolbar";
 import type { EditResult } from "./editorCommands";
 
 /**
@@ -20,11 +19,16 @@ import type { EditResult } from "./editorCommands";
  * 통째로 사라진다" 고 적은 길이다. 새 의존성이 없으므로 지연 로딩도 필요 없다.
  *
  * 이미지 첨부(#389)는 이 도구 모음에 붙는다.
+ *
+ * **#602 에서 세 가지를 손봤다.** 칸이 작았고(`rows=14`, 크기를 못 바꿨다), 버튼이
+ * 다섯이었고, 미리보기가 **아래에 쌓여** 쓰는 칸과 결과를 나란히 볼 수 없었다.
+ * 넓은 화면에서는 좌우로 나누고, 좁은 화면에서는 그대로 아래에 쌓는다 — 반씩 나누면
+ * 양쪽 다 못 쓴다.
  */
 export function MarkdownEditor({
   value,
   onChange,
-  rows = 14,
+  rows = 18,
   placeholder,
 }: {
   value: string;
@@ -91,22 +95,13 @@ export function MarkdownEditor({
 
   return (
     <div className="space-y-2">
-      {/* 좁은 화면에서는 줄이 접힌다. 도구 모음이 가로로 넘치면 못 쓰는 버튼이 생긴다. */}
-      <div className="flex flex-wrap gap-1">
-        <ToolButton label="굵게" onClick={() => apply((t, s, e) => wrap(t, s, e, "**"))} />
-        <ToolButton label="코드" onClick={() => apply((t, s, e) => wrap(t, s, e, "`"))} />
-        <ToolButton label="코드 블록" onClick={() => apply((t, s, e) => codeFence(t, s, e))} />
-        <ToolButton label="목록" onClick={() => apply((t, s, e) => linePrefix(t, s, e, "- "))} />
-        <ToolButton label="제목" onClick={() => apply((t, s, e) => linePrefix(t, s, e, "## "))} />
-        <ToolButton
-          label={uploading ? "올리는 중…" : "이미지"}
-          onClick={() => fileRef.current?.click()}
-        />
-        <ToolButton
-          label={preview ? "미리보기 닫기" : "미리보기"}
-          onClick={() => setPreview((it) => !it)}
-        />
-      </div>
+      <EditorToolbar
+        onCommand={apply}
+        onPickImage={() => fileRef.current?.click()}
+        uploading={uploading}
+        preview={preview}
+        onTogglePreview={() => setPreview((it) => !it)}
+      />
       {/* 버튼이 누르는 진짜 입력. 화면에는 안 보인다. */}
       <input
         ref={fileRef}
@@ -120,33 +115,38 @@ export function MarkdownEditor({
       />
       {uploadError ? <p className="text-xs text-danger">{uploadError}</p> : null}
 
-      <Textarea
-        ref={ref}
-        rows={rows}
-        className="font-mono text-xs"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        required
-      />
-
       {/*
-        **실제 글과 같은 것으로 그린다.** 이 한 줄이 이 부품의 전부다 —
-        미리보기가 다른 렌더러를 쓰면 그것은 미리보기가 아니라 다른 화면이다.
+        미리보기를 켜면 **넓은 화면에서만** 좌우로 나눈다. `lg` 아래에서 반씩 나누면
+        코드 블록이 한 줄에 서른 글자도 못 들어가 양쪽 다 못 쓴다.
       */}
-      {preview ? (
-        <div className="rounded-lg border border-border p-4">
-          <Markdown source={value} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
+      <div className={preview ? "grid gap-3 lg:grid-cols-2" : ""}>
+        <Textarea
+          ref={ref}
+          rows={rows}
+          /* 사람마다 쓰는 글의 길이가 다르다. 세로로 끌어 늘릴 수 있게 둔다. */
+          className="resize-y font-mono text-xs"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          required
+        />
 
-function ToolButton({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <Button type="button" variant="secondary" className="px-2 py-1 text-xs" onClick={onClick}>
-      {label}
-    </Button>
+        {/*
+          **실제 글과 같은 것으로 그린다.** 이 한 줄이 이 부품의 전부다 —
+          미리보기가 다른 렌더러를 쓰면 그것은 미리보기가 아니라 다른 화면이다.
+
+          쓰는 칸과 높이를 맞추고 넘치면 안에서 굴린다. 미리보기가 길어져서 폼 전체가
+          늘어나면 저장 버튼이 화면 밖으로 밀린다.
+        */}
+        {preview ? (
+          <div
+            className="overflow-y-auto rounded-lg border border-border p-4"
+            style={{ maxHeight: `calc(${rows} * 1.6rem)` }}
+          >
+            <Markdown source={value} />
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
