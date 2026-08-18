@@ -103,6 +103,19 @@ runtimes:
     template: |
       const data = require('fs').readFileSync(0, 'utf8').trim().split(/\s+/);
       console.log(data.map(Number).reduce((a, b) => a + b, 0));
+    # 함수형 문제 (#421, #616).
+    #
+    # 하네스를 **파일에서 읽어 지운 뒤 `node -e` 로 넘긴다.** 남겨 두면 사용자 코드가
+    # `readFileSync("main.js")` 로 그대로 읽는다 — 파이썬 로더와 같은 이유다.
+    # `node -e` 안에서도 `require` 는 그대로 쓸 수 있어 하네스가 손해 보는 것이 없다.
+    #
+    # **사용자에게 `module.exports` 를 요구하지 않는다.** 하네스가 `vm` 으로
+    # `solution.js` 를 돌려 거기 정의된 함수를 꺼낸다 — 기초 문제에서 배울 것은
+    # 모듈 체계가 아니다. 대신 하네스마다 그 몇 줄이 붙는다.
+    functionHarness:
+      file: "main.js"
+      sourceFile: "solution.js"
+      run: ["sh", "-c", "SRC=$(cat main.js) && rm -f main.js && exec node -e \"$SRC\""]
 
   - id: "javascript:20"
     label: "JavaScript (Node 20)"
@@ -177,6 +190,20 @@ runtimes:
           printf("%lld\n", a + b);
           return 0;
       }
+    # 함수형 문제 (#421, #616).
+    #
+    # **컴파일 명령을 따로 두지 않는다** — 위의 `gcc ... *.c` 가 이미 디렉터리의
+    # `.c` 를 통째로 먹으므로, 하네스(`main.c`)와 사용자 코드(`solution.c`)가 그대로
+    # 함께 컴파일된다. 하네스는 함수를 **선언**하고 사용자는 **정의**한다.
+    #
+    # 실행 전에 `.c` 를 지운다. 그러지 않으면 사용자 코드가 `fopen("main.c")` 로
+    # 하네스를 그대로 읽을 수 있다 — 파이썬이 로더에서 하는 일과 같은 이유이고,
+    # 방법만 언어를 따른다. 컴파일이 끝난 뒤라 지워도 실행에는 지장이 없다.
+    functionHarness:
+      file: "main.c"
+      # 하네스가 진입점(`main`)을 가져가므로 사용자 코드는 옆에 놓인다.
+      sourceFile: "solution.c"
+      run: ["sh", "-c", "rm -f ./*.c && exec ./main"]
 
   # ── JVM ───────────────────────────────────────────────────────────────────
   # 클래스 이름을 Main 으로 고정한다 — 파일명과 public 클래스 이름이 같아야 하기 때문이다.
