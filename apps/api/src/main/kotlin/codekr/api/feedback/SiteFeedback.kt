@@ -24,8 +24,13 @@ import java.time.Instant
 @Table(name = "site_feedbacks")
 class SiteFeedback(
 
-    @Column(name = "reporter_id", nullable = false)
-    val reporterId: Long,
+    /**
+     * 넣은 회원. **비회원이 넣었으면 `null`** (#611).
+     *
+     * 가장 급한 신고가 로그인 바깥에 있다 — "가입이 안 됩니다" 는 로그인해서 넣을 수 없다.
+     */
+    @Column(name = "reporter_id")
+    val reporterId: Long? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -33,6 +38,10 @@ class SiteFeedback(
 
     @Column(nullable = false, columnDefinition = "text")
     val body: String,
+
+    /** 비회원이 넣었을 때의 출처 힌트 (#611). 회원이 넣었으면 `null`. */
+    @Column(name = "reporter_hint", length = 60)
+    val reporterHint: String? = null,
 
     /** 어디에서 겪었는가. 재현하려면 화면이 어디였는지가 있어야 한다. */
     @Column(name = "page_url", length = 500)
