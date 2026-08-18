@@ -69,11 +69,14 @@ class SubmissionController(private val submissionService: SubmissionService) {
 
     /**
      * 전체 회원의 제출 목록. 소스 코드는 담기지 않으며 공개 범위는 상세에서 적용된다 (#33).
+     *
+     * `problemKey` 는 **번호와 slug 를 둘 다 받는다** (#600). 거르개는 자유 입력이라
+     * 못 찾은 값을 오류로 되돌리지 않는다 — 글자를 하나 칠 때마다 오류가 된다.
      */
     @AuthenticatedApi
     @GetMapping("/submissions/explore")
     fun explore(
-        @RequestParam(required = false) problemSlug: String?,
+        @RequestParam(required = false) problemKey: String?,
         @RequestParam(required = false) nickname: String?,
         @RequestParam(required = false) runtimeId: String?,
         @RequestParam(required = false) verdict: Verdict?,
@@ -85,7 +88,7 @@ class SubmissionController(private val submissionService: SubmissionService) {
         principal: AuthPrincipal,
     ): PageResponse<SubmissionSummaryResponse> {
         val condition = SubmissionSearchCondition(
-            problemSlug = problemSlug,
+            problemKey = problemKey,
             nickname = nickname,
             runtimeId = runtimeId,
             verdict = verdict,
@@ -104,13 +107,13 @@ class SubmissionController(private val submissionService: SubmissionService) {
     @AuthenticatedApi
     @GetMapping("/submissions")
     fun findMine(
-        @RequestParam(required = false) problemSlug: String?,
+        @RequestParam(required = false) problemKey: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         principal: AuthPrincipal,
     ): PageResponse<SubmissionSummaryResponse> = submissionService.findMine(
         userId = principal.userId,
-        problemSlug = problemSlug,
+        problemKey = problemKey,
         pageable = PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)),
     )
 }

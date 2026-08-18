@@ -19,7 +19,7 @@ describe("필터 칩 (#76)", () => {
 
   test("범위가 고정된 화면에서는 그 필터를 칩으로 보이지 않는다", () => {
     // 문제 상세 안에서 "문제: two-sum" 칩은 지울 수 없는데 지울 수 있어 보인다.
-    expect(activeChips({ problemSlug: "two-sum", verdict: "ACCEPTED" }, ["problemSlug"]))
+    expect(activeChips({ problemKey: "two-sum", verdict: "ACCEPTED" }, ["problemKey"]))
       .toEqual(["verdict"]);
   });
 

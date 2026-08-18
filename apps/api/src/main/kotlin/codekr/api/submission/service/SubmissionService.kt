@@ -202,12 +202,10 @@ class SubmissionService(
     private fun nicknameOf(userId: Long): String =
         WithdrawnUser.nicknameOf(userRepository.findById(userId).orElse(null))
 
-    fun findMine(userId: Long, problemSlug: String?, pageable: Pageable): PageResponse<SubmissionSummaryResponse> {
-        val page = problemSlug
-            ?.let {
-                problemRepository.findBySlugAndDeletedAtIsNull(it)
-                    ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND)
-            }
+    fun findMine(userId: Long, problemKey: String?, pageable: Pageable): PageResponse<SubmissionSummaryResponse> {
+        val page = problemKey
+            // 번호와 slug 를 둘 다 받는다 — 문제 상세와 같은 규칙이다 (#204, #600).
+            ?.let { problemService.findByKey(it) ?: throw ApiException(ErrorCode.PROBLEM_NOT_FOUND) }
             ?.let {
                 submissionRepository.findByUserIdAndProblemIdAndKindAndDeletedAtIsNullOrderByIdDesc(
                     userId, it.id, SubmissionKind.USER, pageable,
