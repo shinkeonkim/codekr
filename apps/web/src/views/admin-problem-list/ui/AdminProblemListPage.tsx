@@ -1,14 +1,21 @@
 "use client";
 
-import { CATEGORY_LABELS, TierBadge, problemApi } from "@/entities/problem";
+import { problemApi } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import type { Page } from "@/shared/api";
-import { Alert, Badge, Button, Card, ConfirmDialog, EmptyState, Pagination } from "@/shared/ui";
+import { Alert, Button, EmptyState, Pagination, Table } from "@/shared/ui";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { adminProblemColumns } from "./adminProblemColumns";
 
-
+/**
+ * 어드민 문제 목록 (#625).
+ *
+ * **카드에서 표로 바꿨다.** 카드일 때는 티어와 공개 여부가 제목 길이를 따라 줄마다
+ * 다른 자리에 떠서 **세로로 비교되지 않았고**, 창을 조금만 좁히면 삭제 버튼이 화면
+ * 밖으로 밀려났다. 어드민 회원 목록도 사용자 문제 목록도 이미 표다 — 여기만 남아 있었다.
+ */
 export function AdminProblemListPage() {
   const [result, setResult] = useState<Page<ProblemSummary> | null>(null);
   const [page, setPage] = useState(0);
@@ -24,7 +31,6 @@ export function AdminProblemListPage() {
 
   useEffect(load, [load]);
 
-  /** 되묻는 것은 표의 버튼(`ConfirmDialog`)이 한다 (#291 4단계). */
   const remove = async (id: number) => {
     try {
       await problemApi.remove(id);
@@ -60,40 +66,16 @@ export function AdminProblemListPage() {
         <EmptyState title="등록된 문제가 없습니다." description="첫 문제를 등록해 보세요." />
       ) : null}
 
-      <div className="space-y-2">
-        {result?.content.map((problem) => (
-          <Card key={problem.id} className="flex items-center gap-3 px-5 py-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-ink">{problem.title}</p>
-              <p className="mt-0.5 text-xs text-ink-muted">
-                {problem.slug} · {CATEGORY_LABELS[problem.category]}
-              </p>
-            </div>
-            <TierBadge difficulty={problem.difficulty} label={problem.difficultyLabel} />
-            <Badge tone={problem.published ? "ok" : "muted"}>
-              {problem.published ? "공개" : "미공개"}
-            </Badge>
-            <Button asChild variant="secondary">
-              <Link href={`/admin/problems/${problem.id}/edit`}>수정</Link>
-            </Button>
-            <ConfirmDialog
-              title={`'${problem.title}' 문제를 삭제할까요?`}
-              description="제출 이력은 그대로 남습니다. 문제만 목록에서 사라집니다."
-              confirmLabel="삭제"
-              onConfirm={() => remove(problem.id)}
-              trigger={<Button variant="danger">삭제</Button>}
-            />
-          </Card>
-        ))}
-      </div>
-
-      {result ? (
-        <Pagination
-          page={result.page}
-          totalPages={result.totalPages}
-          totalElements={result.totalElements}
-          onChange={setPage}
-        />
+      {result && result.content.length > 0 ? (
+        <>
+          <Table rows={result.content} rowKey={(problem) => problem.id} columns={adminProblemColumns(remove)} />
+          <Pagination
+            page={result.page}
+            totalPages={result.totalPages}
+            totalElements={result.totalElements}
+            onChange={setPage}
+          />
+        </>
       ) : null}
     </div>
   );
