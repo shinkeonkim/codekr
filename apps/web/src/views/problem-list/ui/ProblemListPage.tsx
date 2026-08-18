@@ -46,16 +46,30 @@ export function ProblemListPage() {
   const value = useCallback((key: Key) => searchParams.get(key) ?? "", [searchParams]);
   const keyword = value("q");
 
-  const setParam = useCallback(
-    (key: Key, next: string) => {
+  /**
+   * 여러 칸을 **한 번에** 바꾼다 (#618).
+   *
+   * `setParam` 을 연달아 두 번 부르면 **뒤엣것이 앞엣것을 지운다.** 둘 다 그 시점의
+   * `searchParams` 로 주소를 새로 만들기 때문이다 — 첫 호출의 결과는 아직 그 값에
+   * 없다. 티어 칸(#195)이 실제로 그래서 걸리지 않았다: 골드를 골라도 주소가 비었다.
+   */
+  const setParams = useCallback(
+    (changes: Partial<Record<Key, string>>) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (next) params.set(key, next);
-      else params.delete(key);
+      Object.entries(changes).forEach(([key, next]) => {
+        if (next) params.set(key, next);
+        else params.delete(key);
+      });
       // 조건이 바뀌면 첫 페이지부터 다시 본다.
-      if (key !== "page") params.delete("page");
+      if (!("page" in changes)) params.delete("page");
       router.replace(params.size > 0 ? `${pathname}?${params}` : pathname, { scroll: false });
     },
     [pathname, router, searchParams],
+  );
+
+  const setParam = useCallback(
+    (key: Key, next: string) => setParams({ [key]: next } as Partial<Record<Key, string>>),
+    [setParams],
   );
 
   /** 태그는 여러 개가 같은 이름으로 들어온다 (`?tag=dp&tag=graph`). */
@@ -85,6 +99,9 @@ export function ProblemListPage() {
           tag: searchParams.getAll("tag"),
           sort: value("sort") || "LATEST",
           kind: value("kind"),
+          // 언어·런타임 (#618). **버전이 있으면 그쪽이 좁다** — 서버도 같은 규칙이다.
+          language: value("language"),
+          runtime: value("runtime"),
           acceptanceFrom: value("acceptanceFrom"),
           acceptanceTo: value("acceptanceTo"),
           solversFrom: value("solversFrom"),
@@ -141,8 +158,11 @@ export function ProblemListPage() {
             onChange={(event) => {
               const picked = event.target.value;
               const isState = picked.startsWith("state:");
-              setParam("tier", isState ? "" : picked);
-              setParam("difficultyState", isState ? picked.slice("state:".length) : "");
+              // **한 번에 바꾼다.** 두 번 부르면 뒤엣것이 앞엣것을 지운다 (#618 에서 드러났다).
+              setParams({
+                tier: isState ? "" : picked,
+                difficultyState: isState ? picked.slice("state:".length) : "",
+              });
             }}
           >
             <option value="">전체</option>
@@ -197,10 +217,7 @@ export function ProblemListPage() {
           <LanguageFilter
             language={value("language")}
             runtime={value("runtime")}
-            onChange={(next) => {
-              setParam("language", next.language);
-              setParam("runtime", next.runtime);
-            }}
+            onChange={(next) => setParams({ language: next.language, runtime: next.runtime })}
           />
 
           {/*
