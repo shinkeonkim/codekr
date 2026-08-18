@@ -339,7 +339,6 @@ export interface AdminProblemDetail extends ProblemSummary {
  * `violations` 가 비어 있지 않으면 저장은 실패한다.
  */
 export interface ProblemImportPreview {
-  source: "ZIP" | "JSON";
   slug: string;
   title: string;
   category: ProblemCategory;
@@ -354,4 +353,20 @@ export interface ProblemImportPreview {
   templateCount: number;
   publishedInBundle: boolean;
   violations: string[];
+}
+
+/**
+ * 묶음 하나의 미리보기 (#623).
+ *
+ * **문제가 여럿일 수 있다.** 한 개짜리 묶음도 목록에 하나가 담겨 오므로, 화면은
+ * "한 개일 때" 와 "여러 개일 때" 를 따로 만들지 않는다.
+ */
+export interface ProblemBundlePreview {
+  source: "ZIP" | "JSON";
+  problems: ProblemImportPreview[];
+}
+
+/** 묶음을 올린 결과 (#623). 한 개짜리도 하나가 담긴 목록으로 온다. */
+export interface ProblemImportResult {
+  created: { id: number; slug: string }[];
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { problemApi } from "@/entities/problem";
-import type { ProblemImportPreview } from "@/entities/problem";
+import type { ProblemBundlePreview } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
-import { Alert, Button, Card, CardTitle } from "@/shared/ui";
+import { Alert, Badge, Button, Card, CardTitle } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { isBlocked } from "../model/warnings";
@@ -29,7 +29,7 @@ export function AdminProblemImportPage() {
   const input = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<ProblemImportPreview | null>(null);
+  const [preview, setPreview] = useState<ProblemBundlePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -55,16 +55,21 @@ export function AdminProblemImportPage() {
     setError(null);
     try {
       // 미리보기가 아니라 **파일을 다시 올린다** — 서버가 들고 있지 않기 때문이다.
-      const created = await problemApi.importBundle(file);
-      // 초안이라 사용자 화면에는 없다. 고칠 수 있는 곳으로 보낸다.
-      router.push(`/admin/problems/${created.id}/edit`);
+      const { created } = await problemApi.importBundle(file);
+      /*
+        초안이라 사용자 화면에는 없다. 고칠 수 있는 곳으로 보낸다.
+
+        **여럿이면 편집 화면이 아니라 목록으로 보낸다** (#623) — 하나를 골라 열면
+        나머지가 들어갔는지 확인할 자리가 없다.
+      */
+      router.push(created.length === 1 ? `/admin/problems/${created[0].id}/edit` : "/admin/problems");
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "문제를 만들지 못했습니다.");
       setBusy(false);
     }
   };
 
-  const blocked = preview !== null && isBlocked(preview);
+  const blocked = preview !== null && preview.problems.some(isBlocked);
 
   return (
     <div className="space-y-4">
@@ -76,6 +81,9 @@ export function AdminProblemImportPage() {
           <code>problem.json</code> 하나를 그대로 올리거나, 테스트케이스가 많으면{" "}
           <code>problem.json</code> 과 <code>testcases/</code> 를 담은 zip 을 올립니다.
           형식은 <code>scripts/seed-problems</code> 의 파일과 같습니다.
+          <br />
+          <strong>문제를 여러 개 담아도 됩니다</strong> — zip 안에 문제마다 폴더를 하나씩
+          두면 한 번에 만듭니다 (#623). 하나라도 걸리면 아무것도 만들지 않습니다.
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -99,10 +107,16 @@ export function AdminProblemImportPage() {
 
       {preview ? (
         <>
-          <ImportPreviewCard preview={preview} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge>{preview.source === "ZIP" ? "zip 묶음" : "JSON 파일"}</Badge>
+            <span className="text-sm text-ink-muted">문제 {preview.problems.length}개</span>
+          </div>
+          {preview.problems.map((each) => (
+            <ImportPreviewCard key={each.slug} preview={each} />
+          ))}
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" onClick={save} disabled={busy || blocked}>
-              이대로 만들기
+              {preview.problems.length === 1 ? "이대로 만들기" : `${preview.problems.length}개 모두 만들기`}
             </Button>
             {blocked ? (
               <span className="text-sm text-ink-muted">

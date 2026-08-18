@@ -62,10 +62,10 @@ class ProblemImportSqlIntegrationTest : IntegrationTestBase() {
         // SQL 은 정답 쿼리로 채점한다 — 0개가 정상이다.
         post("/imports/preview", seedBundle("08-sql-seoul-members.json"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.problemKind").value("JUDGE_SQL"))
-            .andExpect(jsonPath("$.testcaseCount").value(0))
-            .andExpect(jsonPath("$.needsTestcases").value(false))
-            .andExpect(jsonPath("$.violations.length()").value(0))
+            .andExpect(jsonPath("$.problems[0].problemKind").value("JUDGE_SQL"))
+            .andExpect(jsonPath("$.problems[0].testcaseCount").value(0))
+            .andExpect(jsonPath("$.problems[0].needsTestcases").value(false))
+            .andExpect(jsonPath("$.problems[0].violations.length()").value(0))
     }
 
     @Test

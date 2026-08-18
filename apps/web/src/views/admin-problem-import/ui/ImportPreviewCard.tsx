@@ -1,13 +1,7 @@
 import { CATEGORY_LABELS, difficultyLabel } from "@/entities/problem";
 import type { ProblemImportPreview } from "@/entities/problem";
-import { Alert, Badge, Card, CardTitle } from "@/shared/ui";
+import { Alert, Card, CardTitle } from "@/shared/ui";
 import { importWarnings } from "../model/warnings";
-
-/** 화면에서만 쓰는 표시용 이름. */
-const SOURCE_LABELS: Record<ProblemImportPreview["source"], string> = {
-  ZIP: "zip 묶음",
-  JSON: "JSON 파일",
-};
 
 const TESTCASE_SOURCE_LABELS: Record<ProblemImportPreview["testcaseSource"], string> = {
   FILES: "묶음 안의 testcases 폴더",
@@ -26,10 +20,7 @@ export function ImportPreviewCard({ preview }: { preview: ProblemImportPreview }
 
   return (
     <Card className="p-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <CardTitle>{preview.title}</CardTitle>
-        <Badge>{SOURCE_LABELS[preview.source]}</Badge>
-      </div>
+      <CardTitle>{preview.title}</CardTitle>
 
       {/* 좁은 화면에서 두 칸이 붙지 않게 한 칸으로 떨어뜨린다 (#484). */}
       <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">

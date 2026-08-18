@@ -66,12 +66,12 @@ class ProblemImportJsonIntegrationTest : IntegrationTestBase() {
         post("/imports/preview", seedFile("04-a-plus-b.json"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.source").value("JSON"))
-            .andExpect(jsonPath("$.slug").value("a-plus-b"))
-            .andExpect(jsonPath("$.testcaseCount").value(6))
-            .andExpect(jsonPath("$.testcaseSource").value("INLINE"))
+            .andExpect(jsonPath("$.problems[0].slug").value("a-plus-b"))
+            .andExpect(jsonPath("$.problems[0].testcaseCount").value(6))
+            .andExpect(jsonPath("$.problems[0].testcaseSource").value("INLINE"))
             // 묶음에 적힌 값 그대로 보인다 — "적혀 있지만 초안으로 들어간다" 를 말해야 한다.
-            .andExpect(jsonPath("$.publishedInBundle").value(true))
-            .andExpect(jsonPath("$.violations.length()").value(0))
+            .andExpect(jsonPath("$.problems[0].publishedInBundle").value(true))
+            .andExpect(jsonPath("$.problems[0].violations.length()").value(0))
 
         // 미리보기만 했으므로 어디에도 없다.
         mockMvc.perform(
@@ -84,14 +84,14 @@ class ProblemImportJsonIntegrationTest : IntegrationTestBase() {
         // 첫 번째에서 멈추면 고치고 다시 올리기를 반복하게 된다.
         post("/imports/preview", json(meta().replace("\"title\": \"두 수의 합\"", "\"title\": \"\"")))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.violations.length()").value(1))
-            .andExpect(jsonPath("$.violations[0]").value(containsString("title")))
+            .andExpect(jsonPath("$.problems[0].violations.length()").value(1))
+            .andExpect(jsonPath("$.problems[0].violations[0]").value(containsString("title")))
     }
 
     @Test
     fun `미리보기를 통과하지 못한 것은 저장도 통과하지 못한다`() {
         val broken = json(meta().replace("\"title\": \"두 수의 합\"", "\"title\": \"\""))
-        post("/imports/preview", broken).andExpect(jsonPath("$.violations.length()").value(1))
+        post("/imports/preview", broken).andExpect(jsonPath("$.problems[0].violations.length()").value(1))
         post("/imports", broken).andExpect(status().isBadRequest)
     }
 
@@ -106,7 +106,7 @@ class ProblemImportJsonIntegrationTest : IntegrationTestBase() {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.source").value("ZIP"))
-            .andExpect(jsonPath("$.testcaseSource").value("FILES"))
+            .andExpect(jsonPath("$.problems[0].testcaseSource").value("FILES"))
     }
 
     @Test

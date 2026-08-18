@@ -14,8 +14,6 @@ import codekr.api.problem.entity.ProblemKind
  * **아무것도 만들지 않는다.** 읽고 검사한 결과만 돌려준다.
  */
 data class ProblemImportPreview(
-    /** zip 으로 읽었는지 맨 JSON 으로 읽었는지. 올린 사람이 착각했는지 여기서 드러난다. */
-    val source: BundleSource,
     val slug: String,
     val title: String,
     val category: ProblemCategory,
@@ -51,8 +49,20 @@ data class ProblemImportPreview(
      */
     val violations: List<String>,
 ) {
-    enum class BundleSource { ZIP, JSON }
-
     /** `FILES` = 묶음 안의 `testcases` 폴더, `INLINE` = `problem.json` 의 `testcases` 배열. */
     enum class TestcaseSource { FILES, INLINE, NONE }
+}
+
+/**
+ * 묶음 하나의 미리보기 (#623).
+ *
+ * **문제가 여럿일 수 있다.** 한 개짜리 묶음도 목록에 하나가 담겨 오므로, 화면은
+ * "한 개일 때" 와 "여러 개일 때" 를 따로 만들지 않는다.
+ */
+data class ProblemBundlePreview(
+    /** zip 으로 읽었는지 맨 JSON 으로 읽었는지. 올린 사람이 착각했는지 여기서 드러난다. */
+    val source: BundleSource,
+    val problems: List<ProblemImportPreview>,
+) {
+    enum class BundleSource { ZIP, JSON }
 }
