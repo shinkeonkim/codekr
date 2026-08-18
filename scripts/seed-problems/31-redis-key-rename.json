@@ -1,0 +1,29 @@
+{
+  "slug": "redis-key-rename",
+  "title": "키 이름 바꾸고 치우기 (Redis)",
+  "category": "REDIS",
+  "difficulty": "BRONZE_4",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n키 세 개가 들어 있습니다. `old:title` 은 `제목`, `tmp` 는 `버릴 것`,\n`keep` 은 `남길 것` 입니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `old:title` 을 **`new:title` 이라는 이름으로 바꿉니다.** 값은 그대로여야 합니다.\n- `tmp` 를 지웁니다.\n- `keep` 은 건드리지 않습니다.\n\n`GET` 으로 읽어 `SET` 으로 새로 넣고 지워도 결과는 같지만, **이름만 바꾸는 명령**이\n있습니다 — 값이 크면 오가는 것이 없다는 차이가 큽니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "SET old:title 제목\nSET tmp 버릴것\nSET keep 남길것",
+    "answerCommands": "RENAME old:title new:title\nDEL tmp",
+    "verifyCommands": "GET new:title\nEXISTS old:title\nEXISTS tmp\nGET keep",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

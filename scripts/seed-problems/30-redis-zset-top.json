@@ -1,0 +1,29 @@
+{
+  "slug": "redis-zset-top",
+  "title": "상위 세 명만 남기기 (Redis 정렬 집합)",
+  "category": "REDIS",
+  "difficulty": "SILVER_5",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`rank` 라는 정렬 집합에 다섯 명의 점수가 들어 있습니다.\n`a` 100, `b` 90, `c` 80, `d` 70, `e` 60 입니다.\n\n명령을 써서 **점수가 높은 세 명만 남기고 나머지를 지우세요.** 끝난 뒤 `rank` 에는\n`a`, `b`, `c` 만 있어야 합니다.\n\n정렬 집합의 **순위 범위로 한 번에 지우는 명령**이 있습니다. 순위는 **점수가 낮은 것이\n0번** 입니다 — 낮은 쪽부터 세는 것에 주의하세요. 뒤에서부터 세는 음수 순위도 씁니다.\n\n사람이 몇 명이든 명령 하나로 끝나야 합니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "ZADD rank 100 a 90 b 80 c 70 d 60 e",
+    "answerCommands": "ZREMRANGEBYRANK rank 0 -4",
+    "verifyCommands": "ZCARD rank\nZREVRANGE rank 0 -1\nZSCORE rank d\nZSCORE rank e",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

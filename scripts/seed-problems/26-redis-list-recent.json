@@ -1,0 +1,29 @@
+{
+  "slug": "redis-list-recent",
+  "title": "최근 본 것 다섯 개만 (Redis 리스트)",
+  "category": "REDIS",
+  "difficulty": "BRONZE_3",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n`recent` 라는 리스트에 앞에서부터 `p1` 부터 `p7` 까지 일곱 개가 들어 있습니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- **맨 앞에** `p8` 을 넣습니다 — 최근 것이 앞에 오는 목록입니다.\n- 그다음 **앞에서 다섯 개만 남기고** 나머지를 버립니다.\n\n끝난 뒤 앞에서부터 `p8`, `p1`, `p2`, `p3`, `p4` 가 되어야 합니다.\n\n하나씩 뒤에서 빼도 되지만, **남길 범위를 한 번에 말하는 명령**이 있습니다. 목록이\n길어져도 명령 수가 늘지 않습니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "RPUSH recent p1 p2 p3 p4 p5 p6 p7",
+    "answerCommands": "LPUSH recent p8\nLTRIM recent 0 4",
+    "verifyCommands": "LRANGE recent 0 -1\nLLEN recent",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}
