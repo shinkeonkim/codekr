@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CodeBlock } from "./CodeBlock";
+import { parseTable } from "./markdownTable";
 
 /**
  * 최소 마크다운 렌더러 (#137).
@@ -12,7 +13,7 @@ import { CodeBlock } from "./CodeBlock";
  * 없는 방식**을 골랐다. 여기서 새는 구멍은 나중에 붙는 댓글·질문에 그대로 이어진다.
  *
  * 지원: 문단, 코드 블록(```, 언어에 맞게 칠한다 #384), 인라인 코드, **굵게**,
- * 링크, **이미지**(우리 저장소의 것만, #389), 불릿 목록, 제목(#).
+ * 링크, **이미지**(우리 저장소의 것만, #389), 불릿 목록, 제목(#), **표**(#590).
  *
  * **기울임(`*x*`·`_x_`)은 넣지 않았다** (#338). 문제 지문에는 `loans.member_id` 처럼
  * 밑줄이 든 식별자가 흔하다 — 기울임을 켜면 그 이름들이 조용히 기울어진다.
@@ -87,6 +88,44 @@ function renderBlocks(source: string, hideCode: boolean, labels: Map<number, str
         </p>,
       );
       index += 1;
+      continue;
+    }
+
+    /*
+      표 (#590). **`|---|` 은 문단이 아니다.**
+
+      시드 45개 중 13개가 표를 쓰고, SQL 문제는 **표를 읽어야 쿼리를 쓸 수 있다**
+      (#526 의 예시 데이터). 지금까지는 파이프가 그대로 보였다.
+    */
+    const table = parseTable(lines, index);
+    if (table) {
+      blocks.push(
+        <div key={key++} className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-border">
+              <tr>
+                {table.header.map((cell, i) => (
+                  <th key={i} className="whitespace-nowrap px-3 py-2 font-medium text-ink">
+                    {renderInline(cell, labels)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {table.rows.map((row, i) => (
+                <tr key={i} className="border-b border-border/60">
+                  {row.map((cell, j) => (
+                    <td key={j} className="px-3 py-1.5 align-top">
+                      {renderInline(cell, labels)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
+      index = table.next;
       continue;
     }
 
