@@ -3,6 +3,7 @@
 import { CATEGORY_LABELS, SELECTABLE_KINDS, PROBLEM_SORTS, TIER_LABELS, problemApi } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import type { Page } from "@/shared/api";
+import { LanguageFilter } from "@/features/language-filter";
 import { TagFilter } from "@/features/tag-filter";
 import { EmptyState, Field, Input, Pagination, Select, Table } from "@/shared/ui";
 import { useAuth } from "@/features/auth";
@@ -27,6 +28,9 @@ const KEYS = [
   "solved",
   // 난이도 상태 (#195). 티어 범위로는 잡히지 않는다.
   "difficultyState",
+  // 언어와 런타임 (#618). **두 단이다** — 언어까지만 골라도 되고 버전까지 좁힐 수도 있다.
+  "language",
+  "runtime",
 ] as const;
 type Key = (typeof KEYS)[number];
 
@@ -186,6 +190,19 @@ export function ProblemListPage() {
               ))}
             </Select>
           </Field>
+          {/*
+            언어와 버전 (#618). **두 칸이지만 하나처럼 쓴다** — 언어를 고르기 전에는
+            버전 칸이 아예 없다. 런타임 스물둘을 한 줄에 늘어놓으면 고르는 일이 일이 된다.
+          */}
+          <LanguageFilter
+            language={value("language")}
+            runtime={value("runtime")}
+            onChange={(next) => {
+              setParam("language", next.language);
+              setParam("runtime", next.runtime);
+            }}
+          />
+
           {/*
             **로그인해야 뜻이 있다** (#239). 비로그인에게 보이면 눌러도 아무 일이
             일어나지 않는 칸이 된다 — 서버가 조용히 무시하기 때문이다.

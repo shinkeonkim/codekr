@@ -10,6 +10,8 @@ import codekr.api.auth.security.AuthPrincipal
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.repository.ProblemSearchCondition
+import codekr.api.problem.repository.RuntimeFilter
+import codekr.api.runtime.RuntimeRegistry
 import codekr.api.problem.repository.ProblemSort
 import codekr.api.problem.service.ProblemService
 import org.springframework.data.domain.PageRequest
@@ -23,7 +25,10 @@ private const val MAX_PAGE_SIZE = 100
 
 @RestController
 @RequestMapping("/api/v1/problems")
-class ProblemController(private val problemService: ProblemService) {
+class ProblemController(
+    private val problemService: ProblemService,
+    private val runtimeRegistry: RuntimeRegistry,
+) {
 
     @PublicApi
     @GetMapping
@@ -48,6 +53,19 @@ class ProblemController(private val problemService: ProblemService) {
          * 누를 수 없는 필터를 만들지 않는 것은 화면의 몫이고, 서버는 조용히 넘긴다.
          */
         @RequestParam(required = false) solved: Boolean?,
+        /**
+         * 언어 (#618). `python` 처럼 **버전 없이** 넘긴다 — 그 언어의 런타임 전부다.
+         *
+         * 허용 목록이 비어 있는 문제도 함께 걸린다. 그것이 "제한 없음"(#419)의 뜻이다.
+         */
+        @RequestParam(required = false) language: String?,
+        /**
+         * 런타임 (#618). `python:3.12` 처럼 버전까지 좁힐 때 쓴다.
+         *
+         * [language] 와 함께 오면 **이쪽이 이긴다** — 더 좁은 쪽이 사람이 마지막에
+         * 고른 것이다.
+         */
+        @RequestParam(required = false) runtime: String?,
         @RequestParam(defaultValue = "LATEST") sort: ProblemSort,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
@@ -68,6 +86,7 @@ class ProblemController(private val problemService: ProblemService) {
             solversTo = solversTo,
             viewerId = principal?.userId,
             solved = solved,
+            runtimeFilter = RuntimeFilter.of(language, runtime, runtimeRegistry.findAll()),
         )
         return problemService.search(condition, PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)))
     }

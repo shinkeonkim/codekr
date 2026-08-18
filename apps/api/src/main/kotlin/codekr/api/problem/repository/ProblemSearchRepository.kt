@@ -1,9 +1,11 @@
 package codekr.api.problem.repository
 
 import codekr.api.problem.entity.QProblem
+import codekr.api.problem.entity.QProblemAllowedRuntime
 import codekr.api.ranking.entity.QUserProblemScoreRef
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.BooleanExpression
+import com.querydsl.core.types.dsl.Expressions
 import java.math.BigDecimal
 import java.math.RoundingMode
 import codekr.api.problem.entity.QProblemStat
@@ -62,6 +64,26 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
                 and(hasTag(problem, slug))
             }
             condition.problemKind?.let { and(problem.problemKind.eq(it)) }
+
+            /*
+                언어·런타임 (#618).
+
+                **"제한 없음" 을 함께 걸지 않으면 거의 아무것도 안 나온다.** 허용 목록에
+                행이 있는 문제는 소수이고(#419 가 기존 문제를 그대로 돌리려고 그렇게 정했다),
+                나머지는 유형이 허용을 정한다.
+            */
+            condition.runtimeFilter?.let { filter ->
+                and(
+                    when {
+                        // 모르는 언어·런타임을 골랐다. 빈 목록이 맞다 — 조건을 지우면
+                        // **거른 적 없는 것처럼** 전부 나온다.
+                        filter.isEmpty -> Expressions.FALSE.isTrue
+                        filter.kinds.isEmpty() -> allows(problem, filter.runtimeIds)
+                        else -> allows(problem, filter.runtimeIds)
+                            .or(unrestricted(problem).and(problem.problemKind.`in`(filter.kinds)))
+                    },
+                )
+            }
 
             /*
                 정답률·푼 사람 수 범위 (#239).
@@ -139,6 +161,27 @@ class ProblemSearchRepository(private val queryFactory: JPAQueryFactory) {
             QUserProblemScoreRef.userProblemScoreRef.userId.eq(userId),
         )
         .exists()
+
+    /** 그 런타임들 중 하나라도 **명시적으로 허용**했는가 (#419). */
+    private fun allows(problem: QProblem, runtimeIds: List<String>) = JPAExpressions
+        .selectOne()
+        .from(QProblemAllowedRuntime.problemAllowedRuntime)
+        .where(
+            QProblemAllowedRuntime.problemAllowedRuntime.problem.id.eq(problem.id),
+            QProblemAllowedRuntime.problemAllowedRuntime.runtimeId.`in`(runtimeIds),
+        )
+        .exists()
+
+    /**
+     * 허용 목록이 **비어 있는가.** 비어 있으면 그 유형을 푸는 런타임 전부가 허용이다.
+     *
+     * 이 조건이 이 필터의 핵심이다 — 빼면 언어를 지정한 소수만 걸린다.
+     */
+    private fun unrestricted(problem: QProblem) = JPAExpressions
+        .selectOne()
+        .from(QProblemAllowedRuntime.problemAllowedRuntime)
+        .where(QProblemAllowedRuntime.problemAllowedRuntime.problem.id.eq(problem.id))
+        .notExists()
 
     private fun hasTag(problem: QProblem, slug: String) = JPAExpressions
         .selectOne()
