@@ -1,6 +1,7 @@
 import { PUBLIC_ROUTES } from "@/shared/config/routes";
 import { BrandCharacter, BrandWordmark } from "@/shared/ui";
 import Link from "next/link";
+import { SHELL_WIDTH } from "@/shared/ui/pageWidth";
 
 /**
  * 사이트 푸터 (#234, #261).
@@ -14,7 +15,7 @@ import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-border bg-surface-muted/30">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,1fr)_auto]">
+      <div className={`${SHELL_WIDTH} grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,1fr)_auto]`}>
         <div>
           <BrandWordmark height={30} />
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">

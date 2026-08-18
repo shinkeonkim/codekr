@@ -7,6 +7,7 @@ import { ApiError } from "@/shared/api";
 import { Alert, Button, Card, Field, Input, MarkdownEditor, Select, useToast } from "@/shared/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 export function PostNewPage() {
   return (
@@ -72,7 +73,7 @@ function Editor({ title, postId }: { title: string; postId?: number }) {
   };
 
   return (
-    <form className="mx-auto max-w-3xl space-y-4" onSubmit={save}>
+    <form className={`${PAGE_WIDTH.wide} space-y-4`} onSubmit={save}>
       <h1 className="text-2xl font-bold text-ink">{title}</h1>
       {error ? <Alert>{error}</Alert> : null}
 

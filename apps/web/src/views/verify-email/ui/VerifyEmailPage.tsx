@@ -7,6 +7,7 @@ import { readNextParam } from "@/shared/lib";
 import { Alert, Button, Card } from "@/shared/ui";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PAGE_WIDTH } from "@/shared/ui/pageWidth";
 
 type State = { kind: "working" } | { kind: "done" } | { kind: "failed"; message: string };
 
@@ -53,7 +54,7 @@ export function VerifyEmailPage() {
   }, [refresh]);
 
   return (
-    <div className="mx-auto max-w-md py-12">
+    <div className={`${PAGE_WIDTH.form} py-12`}>
       <Card className="space-y-3 p-6 text-center">
         <h1 className="text-lg font-bold text-ink">이메일 확인</h1>
         {state.kind === "working" ? <p className="text-sm text-ink-muted">확인하는 중…</p> : null}
