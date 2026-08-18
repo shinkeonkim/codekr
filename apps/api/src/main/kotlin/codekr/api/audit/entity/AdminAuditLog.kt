@@ -164,6 +164,24 @@ enum class AdminAction(val label: String, val requiresReason: Boolean) {
      * 했는지는 반드시 남는다.
      */
     AFFILIATION_CHANGE("소속 변경", requiresReason = false),
+
+    /**
+     * 문제 공개/비공개 (#627).
+     *
+     * 사유를 요구하지 않는다 — **되돌릴 수 있고**, 여러 건을 한 번에 바꾸는 일이라
+     * 매번 적게 하면 "공개" 같은 값만 쌓인다.
+     *
+     * 다만 **무엇이 사람들 앞에 놓였는지**는 반드시 남는다. 검증이 끝나지 않은 문제가
+     * 공개됐을 때 "언제부터 그랬나" 를 물을 자리가 여기다.
+     */
+    PROBLEM_PUBLISH("문제 공개 여부 변경", requiresReason = false),
 }
 
-enum class AuditTargetType { USER }
+/**
+ * 기록이 가리키는 것.
+ *
+ * V35 가 `target_type` 을 둔 것은 **회원이 아닌 대상이 생길 것을 알았기 때문**이고,
+ * #627 에서 문제가 첫 사례가 됐다. 갈라 두지 않으면 회원 42번과 문제 42번이 같은
+ * 색인 자리(`target_type, target_id`)에 겹친다.
+ */
+enum class AuditTargetType { USER, PROBLEM }

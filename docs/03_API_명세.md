@@ -897,6 +897,25 @@ GET /api/v1/admin/problems?q=&category=&tier=&published=&sort=&page=&size=
 **빈 문자열을 보내지 않는다.** `published=` 는 Boolean 으로 읽히지 않아 400 이다 —
 조건을 지운다는 뜻이면 **키를 빼서** 보낸다.
 
+### 문제 일괄 공개/비공개 (#627)
+
+```
+POST /api/v1/admin/problems/publish   {"ids": [12, 13], "published": true}
+→ {"requested": 2, "changed": 1, "missing": []}
+```
+
+**`PUT /{id}` 로 하지 않는 이유**는 그쪽이 문제 전체를 덮어쓰는 upsert 이기 때문이다.
+공개 여부 한 칸을 뒤집어도 **테스트케이스가 통째로 지워졌다 다시 들어간다** — 실제로
+행 번호가 `[1, 2]` 에서 `[3, 4]` 로 바뀐다. 묶음(#479)이 테스트케이스 수백 개짜리
+문제를 위해 있는데 그 문제를 공개하는 값이 가장 비쌌다.
+
+- `changed` 는 **실제로 바뀐 수**다. 이미 그 상태였던 것은 세지 않는다
+- 없는 문제는 `missing` 으로 돌려준다 — **조용히 넘기지 않는다**
+- 한 번에 **100개**까지 (`ProblemPublishService.MAX_AT_ONCE`)
+- **문제마다** 관리 기록(#225)이 남는다 (`PROBLEM_PUBLISH`, `target_type = PROBLEM`).
+  기록의 색인이 `(target_type, target_id)` 라 스무 건을 한 줄로 남기면 나머지
+  열아홉 문제에 대해서는 답이 없다
+
 ### 문제 데이터 업로드 (#479, #537)
 
 ```

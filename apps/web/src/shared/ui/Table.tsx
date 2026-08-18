@@ -5,7 +5,13 @@ import { cellTarget } from "./tableLink";
 
 export interface Column<T> {
   key: string;
-  header: string;
+  /**
+   * 머리글. **글자만이 아니다** (#627).
+   *
+   * 전체 선택 체크박스가 머리글에 서야 하기 때문이다 — 고르는 칸의 머리는 "고르기"
+   * 라는 이름이 아니라 **그 열 전체를 고르는 버튼**이다.
+   */
+  header: ReactNode;
   /**
    * 이 폭보다 좁으면 감춘다 (#193).
    *
