@@ -1,0 +1,29 @@
+{
+  "slug": "redis-expire-session",
+  "title": "세션에 만료 시각 붙이기 (Redis)",
+  "category": "REDIS",
+  "difficulty": "SILVER_4",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n세션 두 개가 들어 있습니다. `session:1` 은 `민수`, `session:2` 는 `지영` 이고\n**둘 다 만료가 없습니다.**\n\n명령을 써서 아래 상태를 만드세요.\n\n- `session:1` 이 **유닉스 시각 `1893456000` 에 만료되도록** 합니다.\n- `session:2` 는 **만료가 아예 없게** 둡니다 (이미 없으니 그대로 두어도 됩니다).\n- `session:3` 을 `현우` 로 새로 넣되, **넣으면서 같은 시각에 만료되도록** 합니다.\n\n`EXPIRE` 는 \"지금부터 몇 초\" 를 받고, 시각을 그대로 받는 명령이 따로 있습니다.\n**\"몇 초 뒤\" 로 걸면 서버 시계가 언제 읽느냐에 따라 남은 시간이 달라집니다** —\n언제 만료될지가 정해져 있는 것이라면 시각으로 거는 편이 낫습니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "SET session:1 민수\nSET session:2 지영",
+    "answerCommands": "EXPIREAT session:1 1893456000\nSET session:3 현우 EXAT 1893456000",
+    "verifyCommands": "GET session:1\nEXPIRETIME session:1\nTTL session:2\nGET session:3\nEXPIRETIME session:3",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

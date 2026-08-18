@@ -1,0 +1,29 @@
+{
+  "slug": "redis-hll-unique",
+  "title": "순 방문자 세기 (Redis)",
+  "category": "REDIS",
+  "difficulty": "GOLD_5",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n방문자 아이디를 그대로 집합에 넣으면 사람 수만큼 메모리를 씁니다. 하루 백만 명이면\n아이디 백만 개가 남습니다. **정확한 수 대신 오차 1% 남짓을 받아들이는 대신 메모리를\n거의 안 쓰는 자료구조**가 따로 있습니다 (HyperLogLog).\n\n`hll:월` 에 이미 `u1`, `u2` 가 들어 있습니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `hll:화` 에 `u2`, `u3`, `u4` 를 넣습니다.\n- `hll:주간` 에 **`hll:월` 과 `hll:화` 를 합칩니다.** 겹치는 `u2` 는 한 번만 세어야\n  하므로, 합친 뒤 센 값은 4 입니다.\n\n원소를 꺼내 볼 수는 없습니다 — **세는 것만 됩니다.** 그래서 \"누가 왔는지\" 가 필요하면\n이것을 쓰면 안 됩니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "PFADD hll:월 u1 u2",
+    "answerCommands": "PFADD hll:화 u2 u3 u4\nPFMERGE hll:주간 hll:월 hll:화",
+    "verifyCommands": "PFCOUNT hll:월\nPFCOUNT hll:화\nPFCOUNT hll:주간",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}

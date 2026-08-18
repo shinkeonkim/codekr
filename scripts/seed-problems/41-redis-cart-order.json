@@ -1,0 +1,29 @@
+{
+  "slug": "redis-cart-order",
+  "title": "장바구니를 주문으로 (Redis)",
+  "category": "REDIS",
+  "difficulty": "GOLD_5",
+  "problemKind": "JUDGE_REDIS",
+  "allowedRuntimeIds": [
+    "redis:7"
+  ],
+  "description": "**Redis 로 푸는 문제입니다.**\n\n한 흐름을 자료형 셋으로 나눠 다룹니다.\n\n- `cart:1` — 해시. `사과` 2, `배` 1 이 담겨 있습니다.\n- `orders` — 리스트. 아직 비어 있습니다.\n- `ordered:1` — 집합. 아직 비어 있습니다.\n\n명령을 써서 아래 상태를 만드세요.\n\n- `orders` 리스트의 **맨 뒤에** `order:1` 을 넣습니다.\n- `ordered:1` 집합에 `사과` 와 `배` 를 넣습니다 — 이 회원이 무엇을 샀는지 남깁니다.\n- `cart:1` 을 **통째로 지웁니다.** 주문했으면 장바구니는 비어야 합니다.\n\n**자료형을 왜 나누는지** 가 이 문제입니다. 순서가 필요한 것은 리스트로, \"샀다/안 샀다\"\n만 따지는 것은 집합으로, 이름표마다 값이 붙는 것은 해시로 둡니다.",
+  "inputDescription": "표준 입력은 없습니다. 아래 상태가 미리 들어 있습니다.",
+  "outputDescription": "출력할 것은 없습니다. **끝난 뒤의 상태**로 채점합니다.",
+  "timeLimitMs": 5000,
+  "memoryLimitMb": 512,
+  "published": true,
+  "redisSpec": {
+    "seedCommands": "HSET cart:1 사과 2 배 1",
+    "answerCommands": "RPUSH orders order:1\nSADD ordered:1 사과 배\nDEL cart:1",
+    "verifyCommands": "LRANGE orders 0 -1\nSCARD ordered:1\nSISMEMBER ordered:1 사과\nEXISTS cart:1",
+    "ignoreOrder": false
+  },
+  "testcases": [],
+  "templates": [
+    {
+      "runtimeId": "redis:7",
+      "sourceCode": "# 한 줄에 명령 하나를 쓰세요.\n"
+    }
+  ]
+}
