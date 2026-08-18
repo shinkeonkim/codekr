@@ -29,7 +29,46 @@ class SiteFeedbackService(
     private val feedbackRepository: SiteFeedbackRepository,
     private val userRepository: UserRepository,
     private val notificationService: NotificationService,
+    private val rateLimiter: AnonymousFeedbackRateLimiter,
 ) {
+
+    /**
+     * 로그인하지 못하는 사람이 넣는다 (#611).
+     *
+     * **가장 급한 신고가 로그인 바깥에 있다** — "가입이 안 됩니다", "인증 메일이 안
+     * 옵니다" 는 로그인해서 넣을 수 없다.
+     *
+     * **답을 돌려주지 않는다.** 답하려면 연락처를 받아야 하는데, 그것은 **가입 없이
+     * 개인정보를 모으는 일**이라 약관(#235)이 다루지 않는 자리가 된다. 접수됐다는
+     * 사실만 알린다.
+     */
+    @Transactional
+    fun submitAnonymously(
+        kind: FeedbackKind,
+        body: String,
+        pageUrl: String?,
+        clientKey: String,
+    ): SiteFeedbackResponse {
+        if (body.isBlank()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "무엇을 말하려는지 적어 주세요.")
+        }
+        if (!rateLimiter.allow(clientKey)) {
+            throw ApiException(
+                ErrorCode.TOO_MANY_REQUESTS,
+                "잠시 뒤에 다시 보내 주세요. 같은 곳에서 너무 자주 들어왔습니다.",
+            )
+        }
+        val saved = feedbackRepository.save(
+            SiteFeedback(
+                reporterId = null,
+                kind = kind,
+                body = body.trim(),
+                pageUrl = pageUrl?.trim()?.take(PAGE_URL_LIMIT)?.ifBlank { null },
+                reporterHint = clientKey.take(HINT_LIMIT),
+            ),
+        )
+        return response(saved)
+    }
 
     @Transactional
     fun submit(reporterId: Long, kind: FeedbackKind, body: String, pageUrl: String?): SiteFeedbackResponse {
@@ -43,7 +82,12 @@ class SiteFeedbackService(
             )
         }
         val saved = feedbackRepository.save(
-            SiteFeedback(reporterId, kind, body.trim(), pageUrl?.trim()?.take(PAGE_URL_LIMIT)?.ifBlank { null }),
+            SiteFeedback(
+                reporterId = reporterId,
+                kind = kind,
+                body = body.trim(),
+                pageUrl = pageUrl?.trim()?.take(PAGE_URL_LIMIT)?.ifBlank { null },
+            ),
         )
         return response(saved)
     }
@@ -73,24 +117,38 @@ class SiteFeedbackService(
         }
         feedback.resolve(status, resolution?.trim(), adminId)
 
-        notificationService.notify(
-            userId = feedback.reporterId,
-            category = NotificationCategory.SYSTEM,
-            title = if (status == FeedbackStatus.ACCEPTED) "보내 주신 의견을 반영했습니다" else "보내 주신 의견을 처리했습니다",
-            body = feedback.resolution,
-            link = "/feedback",
-        )
+        // **비회원에게는 알릴 곳이 없다** (#611). 연락처를 받지 않기로 했기 때문이다.
+        feedback.reporterId?.let { reporterId ->
+            notificationService.notify(
+                userId = reporterId,
+                category = NotificationCategory.SYSTEM,
+                title = if (status == FeedbackStatus.ACCEPTED) "보내 주신 의견을 반영했습니다" else "보내 주신 의견을 처리했습니다",
+                body = feedback.resolution,
+                link = "/feedback",
+            )
+        }
         return response(feedback)
     }
 
+    /**
+     * 넣은 사람의 이름. **비회원이면 그렇다고 적는다** (#611).
+     *
+     * 어드민 목록에서 회원 것과 구별되어야 한다 — 같은 목록에 섞여 있으면 "이 사람에게
+     * 답을 줄 수 있나" 를 매번 다시 판단하게 된다.
+     */
     private fun response(feedback: SiteFeedback) = SiteFeedbackResponse.from(
         feedback,
-        userRepository.findById(feedback.reporterId).map { it.nickname }.orElse("(탈퇴한 회원)"),
+        feedback.reporterId
+            ?.let { id -> userRepository.findById(id).map { it.nickname }.orElse("(탈퇴한 회원)") }
+            ?: "(비회원)",
     )
 
     companion object {
         /** 한 사람이 동시에 열어 둘 수 있는 수. 목록이 한 사람 것으로 덮이지 않게. */
         private const val OPEN_LIMIT = 5
         private const val PAGE_URL_LIMIT = 500
+
+        /** 출처 힌트 길이. 주소를 그대로 두지 않는다 — 되짚을 만큼만 남긴다 (#611). */
+        private const val HINT_LIMIT = 60
     }
 }

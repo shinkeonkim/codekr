@@ -5,8 +5,10 @@ export type FeedbackStatus = "OPEN" | "ACCEPTED" | "REJECTED";
 
 export interface SiteFeedback {
   id: number;
-  reporterId: number;
+  /** 비회원이 넣은 것은 넣은 사람이 없다 (#611). */
+  reporterId: number | null;
   reporterNickname: string;
+  anonymous: boolean;
   kind: FeedbackKind;
   kindLabel: string;
   body: string;

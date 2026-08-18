@@ -26,9 +26,18 @@ export function LoginPage() {
       footer={{ text: "아직 계정이 없으신가요?", href: "/signup", linkLabel: "회원가입" }}
       // **그 자리가 없었다** (#315) — 잊으면 계정을 잃는 것과 같았다.
       aside={
-        <Link href="/forgot-password" className="text-ink-muted hover:text-ink hover:underline">
-          비밀번호를 잊으셨나요?
-        </Link>
+        <div className="flex flex-col gap-1">
+          <Link href="/forgot-password" className="text-ink-muted hover:text-ink hover:underline">
+            비밀번호를 잊으셨나요?
+          </Link>
+          {/*
+            **가장 급한 신고가 이 화면 바깥으로 못 나간다** (#611) — 가입·인증 메일·
+            재설정이 안 되는 사람은 로그인해서 알릴 수 없다. 그 통로를 여기 둔다.
+          */}
+          <Link href="/help" className="text-ink-muted hover:text-ink hover:underline">
+            로그인이 안 되시나요?
+          </Link>
+        </div>
       }
       onSubmit={(values) => userApi.login({ email: values.email, password: values.password })}
     />

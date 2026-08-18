@@ -48,9 +48,17 @@ export function FeedbackCard({
             **반영하지 않을 때 이유가 중요하다.** 이유 없는 거절은 넣은 사람에게
             "읽지 않았다" 와 구분되지 않고, 그러면 다음 제안이 오지 않는다.
           */}
+          {/*
+            **비회원 것에는 알림이 가지 않는다** (#611). 같은 안내를 그대로 두면
+            어드민은 답이 전달된 줄 알고 그 통로로 답을 쓴다 — 아무 데도 가지 않는다.
+          */}
           <Input
             value={resolution}
-            placeholder="처리 내용 (넣은 사람에게 알림으로 갑니다)"
+            placeholder={
+              feedback.anonymous
+                ? "처리 내용 (비회원이라 알림은 가지 않습니다 — 기록으로만 남습니다)"
+                : "처리 내용 (넣은 사람에게 알림으로 갑니다)"
+            }
             onChange={(event) => setResolution(event.target.value)}
           />
           <div className="flex flex-wrap gap-2">

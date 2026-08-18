@@ -100,6 +100,59 @@ class SiteFeedbackIntegrationTest : IntegrationTestBase() {
             .andExpect(status().isForbidden)
     }
 
+    @Test
+    fun `로그인하지 못하는 사람도 알릴 수 있다`() {
+        /*
+          **가장 급한 신고가 로그인 바깥에 있다** (#611) — "가입이 안 됩니다",
+          "인증 메일이 안 옵니다" 는 로그인해서 넣을 수 없다.
+        */
+        anonymous("가입이 안 됩니다. 인증 메일이 오지 않습니다.")
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.anonymous").value(true))
+            .andExpect(jsonPath("$.reporterId").doesNotExist())
+    }
+
+    @Test
+    fun `어드민 목록에서 회원 것과 구별된다`() {
+        // 같은 목록에 섞여 있으면 "이 사람에게 답을 줄 수 있나" 를 매번 다시 판단하게 된다.
+        submit(kind = "BUG", body = "회원이 넣은 것").andExpect(status().isCreated)
+        anonymous("비회원이 넣은 것").andExpect(status().isCreated)
+
+        val body = mockMvc.perform(
+            get("/api/v1/admin/feedbacks").header("Authorization", "Bearer $adminToken"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.totalElements").value(2))
+            .andReturn().response.getContentAsString(Charsets.UTF_8)
+
+        assert(body.contains("(비회원)")) { "비회원 표시가 없다: $body" }
+    }
+
+    @Test
+    fun `비회원 신고를 처리해도 터지지 않는다`() {
+        // **알릴 곳이 없다** — 연락처를 받지 않기로 했다. 알림을 건너뛰고 처리만 한다.
+        val id = idOf(anonymous("비밀번호 재설정이 안 됩니다."))
+
+        mockMvc.perform(
+            post("/api/v1/admin/feedbacks/$id/resolution")
+                .header("Authorization", "Bearer $adminToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"status":"ACCEPTED","resolution":"고쳤습니다."}"""),
+        ).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `비회원 신고에도 빈 내용은 받지 않는다`() {
+        anonymous("   ").andExpect(status().isBadRequest)
+    }
+
+    /** 로그인 없이 넣는다. 주소로 세므로 헤더가 없어도 된다 (#611). */
+    private fun anonymous(body: String) = mockMvc.perform(
+        post("/api/v1/feedbacks/anonymous")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""{"kind":"BUG","body":"$body"}"""),
+    )
+
     private fun submit(kind: String, body: String, pageUrl: String? = null) = mockMvc.perform(
         post("/api/v1/feedbacks")
             .header("Authorization", "Bearer $userToken")

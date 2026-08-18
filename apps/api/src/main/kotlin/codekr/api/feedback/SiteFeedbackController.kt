@@ -3,9 +3,11 @@ package codekr.api.feedback
 import codekr.api.auth.security.AuthPrincipal
 import codekr.api.common.dto.PageResponse
 import codekr.api.config.security.AdminApi
+import codekr.api.config.security.PublicApi
 import codekr.api.config.security.AuthenticatedApi
 import codekr.api.user.entity.UserRole
 import org.springframework.data.domain.PageRequest
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -24,6 +26,30 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class SiteFeedbackController(private val feedbackService: SiteFeedbackService) {
+
+    /**
+     * 로그인하지 못하는 사람의 통로 (#611).
+     *
+     * **경로를 나눈 이유**: 같은 경로를 열면 로그인한 사람의 신고도 익명으로 들어올 수
+     * 있고, 그때 "누가 넣었나" 가 조용히 비어 버린다. 길이 둘이면 무엇으로 들어왔는지가
+     * 저장된 값에 그대로 남는다.
+     *
+     * **답을 돌려주지 않는다.** 답하려면 연락처를 받아야 하는데, 그것은 가입 없이
+     * 개인정보를 모으는 일이라 약관(#235)이 다루지 않는 자리가 된다.
+     */
+    @PublicApi
+    @PostMapping("/api/v1/feedbacks/anonymous")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun submitAnonymously(
+        @RequestBody request: SiteFeedbackRequest,
+        httpRequest: HttpServletRequest,
+    ): SiteFeedbackResponse = feedbackService.submitAnonymously(
+        kind = request.kind,
+        body = request.body,
+        pageUrl = request.pageUrl,
+        // 로그인이 없으므로 주소로 센다 (#475 의 배지가 같은 방법을 쓴다).
+        clientKey = httpRequest.remoteAddr ?: "unknown",
+    )
 
     @AuthenticatedApi
     @PostMapping("/api/v1/feedbacks")
