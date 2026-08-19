@@ -3,9 +3,9 @@
 import { adminContestApi } from "@/entities/contest";
 import type { PendingApplicant } from "@/entities/contest";
 import { ApiError } from "@/shared/api";
-import { formatDateTime } from "@/shared/lib";
-import { Alert, Button, Card, CardTitle, EmptyState, Input, useToast } from "@/shared/ui";
+import { Alert, Button, Card, CardTitle, EmptyState, Input, Table, useToast } from "@/shared/ui";
 import { useCallback, useEffect, useState } from "react";
+import { applicantColumns } from "./applicantColumns";
 
 /**
  * 대회 참가 신청을 승인한다 (#466, #543).
@@ -26,7 +26,11 @@ export function ContestApplicantsPanel({
 }) {
   const toast = useToast();
   const [applicants, setApplicants] = useState<PendingApplicant[] | null>(null);
-  const [busy, setBusy] = useState(false);
+  /** 지금 처리 중인 사람. **그 줄만 잠근다** — 전에는 목록 전체가 잠겼다. */
+  const [busyId, setBusyId] = useState<number | null>(null);
+  /** 거절 사유를 적고 있는 사람. 사유 칸은 그 줄 아래에서 열린다 (#633 의 펼침 행). */
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [reason, setReason] = useState("");
 
   const load = useCallback(() => {
     adminContestApi
@@ -37,17 +41,40 @@ export function ContestApplicantsPanel({
 
   useEffect(load, [load]);
 
-  const act = async (action: () => Promise<void>, done: string, fallback: string) => {
-    setBusy(true);
+  const act = async (userId: number, action: () => Promise<void>, done: string, fallback: string) => {
+    setBusyId(userId);
     try {
       await action();
       toast.success(done);
+      setRejectingId(null);
+      setReason("");
       load();
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : fallback);
     } finally {
-      setBusy(false);
+      setBusyId(null);
     }
+  };
+
+  const approve = (applicant: PendingApplicant) =>
+    act(
+      applicant.userId,
+      () => adminContestApi.approve(contestId, applicant.userId),
+      `${applicant.nickname} 님을 승인했습니다.`,
+      "승인하지 못했습니다.",
+    );
+
+  const reject = (applicant: PendingApplicant) =>
+    act(
+      applicant.userId,
+      () => adminContestApi.reject(contestId, applicant.userId, reason.trim()),
+      `${applicant.nickname} 님의 신청을 거절했습니다.`,
+      "거절하지 못했습니다.",
+    );
+
+  const toggleReject = (applicant: PendingApplicant) => {
+    setReason("");
+    setRejectingId((current) => (current === applicant.userId ? null : applicant.userId));
   };
 
   return (
@@ -74,83 +101,31 @@ export function ContestApplicantsPanel({
       ) : applicants.length === 0 ? (
         <EmptyState title="대기 중인 신청이 없습니다." />
       ) : (
-        <ul className="space-y-2">
-          {applicants.map((applicant) => (
-            <ApplicantRow
-              key={applicant.userId}
-              applicant={applicant}
-              busy={busy}
-              onApprove={() =>
-                act(
-                  () => adminContestApi.approve(contestId, applicant.userId),
-                  `${applicant.nickname} 님을 승인했습니다.`,
-                  "승인하지 못했습니다.",
-                )
-              }
-              onReject={(reason) =>
-                act(
-                  () => adminContestApi.reject(contestId, applicant.userId, reason),
-                  `${applicant.nickname} 님의 신청을 거절했습니다.`,
-                  "거절하지 못했습니다.",
-                )
-              }
-            />
-          ))}
-        </ul>
+        <Table
+          rows={applicants}
+          rowKey={(applicant) => applicant.userId}
+          columns={applicantColumns(rejectingId, busyId, approve, toggleReject)}
+          expanded={(applicant) =>
+            rejectingId === applicant.userId ? (
+              <div className="space-y-2">
+                <Input
+                  value={reason}
+                  placeholder="거절 사유 (신청자에게 남는 유일한 설명입니다)"
+                  onChange={(event) => setReason(event.target.value)}
+                />
+                {/* 사유가 없으면 못 누른다. 서버도 필수로 받는다. */}
+                <Button
+                  variant="danger"
+                  disabled={busyId === applicant.userId || reason.trim() === ""}
+                  onClick={() => reject(applicant)}
+                >
+                  거절하기
+                </Button>
+              </div>
+            ) : null
+          }
+        />
       )}
     </Card>
-  );
-}
-
-function ApplicantRow({
-  applicant,
-  busy,
-  onApprove,
-  onReject,
-}: {
-  applicant: PendingApplicant;
-  busy: boolean;
-  onApprove: () => void;
-  onReject: (reason: string) => void;
-}) {
-  const [reason, setReason] = useState("");
-  const [rejecting, setRejecting] = useState(false);
-
-  return (
-    <li className="rounded-lg border border-border p-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium text-ink">{applicant.nickname}</span>
-        <span className="text-xs text-ink-muted">@{applicant.handle}</span>
-        <span className="ml-auto text-xs text-ink-muted">{formatDateTime(applicant.appliedAt)} 신청</span>
-      </div>
-
-      {rejecting ? (
-        <div className="mt-2 space-y-2">
-          <Input
-            value={reason}
-            placeholder="거절 사유 (신청자에게 남는 유일한 설명입니다)"
-            onChange={(event) => setReason(event.target.value)}
-          />
-          <div className="flex flex-wrap gap-2">
-            {/* 사유가 없으면 못 누른다. 서버도 필수로 받는다. */}
-            <Button variant="danger" disabled={busy || reason.trim() === ""} onClick={() => onReject(reason.trim())}>
-              거절하기
-            </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => setRejecting(false)}>
-              취소
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Button disabled={busy} onClick={onApprove}>
-            승인
-          </Button>
-          <Button variant="secondary" disabled={busy} onClick={() => setRejecting(true)}>
-            거절
-          </Button>
-        </div>
-      )}
-    </li>
   );
 }
