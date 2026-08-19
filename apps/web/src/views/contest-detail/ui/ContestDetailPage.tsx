@@ -33,15 +33,23 @@ function DetailView({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    contestApi
+    // 등록 뒤에 무엇을 말할지 정하려면 **다시 읽은 결과**를 봐야 한다 (#638).
+    return contestApi
       .detail(slug)
-      .then(setContest)
+      .then((next) => {
+        setContest(next);
+        return next;
+      })
       .catch((caught) =>
         setError(caught instanceof ApiError ? caught.message : "대회를 불러오지 못했습니다."),
       );
   }, [slug]);
 
-  useEffect(load, [load]);
+  // `load` 가 값을 돌려주므로 효과에 그대로 넘기지 않는다 — 효과가 함수를 돌려주면
+  // React 는 그것을 뒷정리로 여긴다.
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,8 +72,12 @@ function DetailView({ slug }: { slug: string }) {
   const register = async () => {
     try {
       await contestApi.register(slug);
-      toast.success("참가 등록했습니다.");
-      load();
+      const next = await load();
+      /*
+        **승인제 대회에서는 아직 참가자가 아니다** (#466). "참가 등록했습니다" 라고 하면
+        승인을 기다려야 한다는 것을 모른 채 문제를 찾다가 없다고 여긴다.
+      */
+      toast.success(next?.pendingApproval ? "신청했습니다. 승인을 기다립니다." : "참가 등록했습니다.");
     } catch (caught) {
       toast.error(caught instanceof ApiError ? caught.message : "참가 등록하지 못했습니다.");
     }
@@ -94,7 +106,16 @@ function DetailView({ slug }: { slug: string }) {
         <Card className="whitespace-pre-wrap p-5 text-sm text-ink">{contest.description}</Card>
       ) : null}
 
-      {contest.canRegister ? (
+      {/*
+        **대기 중이 먼저다** (#638). 서버는 신청을 받고도 `canRegister` 를 참으로 남기므로,
+        그것부터 보면 이미 신청한 사람에게 `참가 등록` 을 다시 권하게 된다 — 눌러도 서버는
+        조용히 204 라, 신청한 사람은 자기 신청이 들어갔는지 알 방법이 없었다.
+      */}
+      {contest.pendingApproval ? (
+        <Alert tone="warn">
+          신청했습니다. <strong>운영자가 승인하면 참가자가 됩니다.</strong> 승인 전에는 문제가 보이지 않습니다.
+        </Alert>
+      ) : contest.canRegister ? (
         <Button onClick={register}>참가 등록</Button>
       ) : !user ? (
         <Alert>참가하려면 로그인이 필요합니다.</Alert>

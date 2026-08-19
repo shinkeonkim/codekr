@@ -49,6 +49,13 @@ export interface ContestDetail {
   description: string;
   freezeAt: string | null;
   registered: boolean;
+  /**
+   * 신청해 놓고 **승인을 기다리는 중인가** (#466, #638).
+   *
+   * `registered` 와 다르다 — 신청은 접수됐지만 아직 참가자가 아니다. 이 값을 안 보면
+   * 화면이 `canRegister` 만 보고 **다시 신청하라고 권하게 된다.**
+   */
+  pendingApproval: boolean;
   canRegister: boolean;
   /** **시작 전에는 비어 있다** — 참가자도 볼 수 없다. */
   problems: ContestProblem[];
