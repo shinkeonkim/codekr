@@ -90,12 +90,19 @@ class AdminProblemController(
         @RequestParam(required = false) q: String?,
         @RequestParam(required = false) category: ProblemCategory?,
         @RequestParam(required = false) tier: DifficultyTier?,
+        /**
+         * 공개 여부 (#626). **주지 않으면 둘 다 준다** — 어드민 목록의 기본은 전부다.
+         *
+         * 이 필터가 사용자 목록에는 없는 이유는 저쪽이 `published = true` 로 고정이기
+         * 때문이고, 여기 필요한 이유는 **묶음이 언제나 초안으로 들어오기** 때문이다(#479).
+         * 한 번에 스물다섯 개가 들어오면(#605) 초안이 공개된 문제 사이에 흩어진다.
+         */
+        @RequestParam(required = false) published: Boolean?,
         @RequestParam(defaultValue = "LATEST") sort: ProblemSort,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
     ): PageResponse<ProblemSummaryResponse> {
-        // published = null → 미공개 문제까지 포함한다.
-        val condition = ProblemSearchCondition(q, category, tier, sort = sort, published = null)
+        val condition = ProblemSearchCondition(q, category, tier, sort = sort, published = published)
         return adminProblemService.search(condition, PageRequest.of(maxOf(page, 0), size.coerceIn(1, MAX_PAGE_SIZE)))
     }
 

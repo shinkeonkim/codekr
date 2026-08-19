@@ -8,6 +8,9 @@ import { Alert, Button, EmptyState, Pagination, Table } from "@/shared/ui";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { adminProblemColumns } from "./adminProblemColumns";
+import { AdminProblemFilters, EMPTY_FILTERS } from "./AdminProblemFilters";
+import type { AdminProblemFilterValues } from "./AdminProblemFilters";
+import { isFiltered, toQuery } from "./adminProblemQuery";
 
 /**
  * 어드민 문제 목록 (#625).
@@ -19,17 +22,24 @@ import { adminProblemColumns } from "./adminProblemColumns";
 export function AdminProblemListPage() {
   const [result, setResult] = useState<Page<ProblemSummary> | null>(null);
   const [page, setPage] = useState(0);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     // 전에는 첫 50개만 불러서 **51번째 문제에 화면으로 도달할 수 없었다** (#131).
     problemApi
-      .adminList({ page, size: 20 })
+      .adminList({ ...toQuery(filters), page, size: 20 })
       .then(setResult)
       .catch(() => setError("문제 목록을 불러오지 못했습니다."));
-  }, [page]);
+  }, [filters, page]);
 
   useEffect(load, [load]);
+
+  /** 조건이 바뀌면 **첫 장으로 돌아간다.** 3페이지에서 조건을 좁히면 빈 화면이 나온다. */
+  const changeFilters = (next: Partial<AdminProblemFilterValues>) => {
+    setFilters((current) => ({ ...current, ...next }));
+    setPage(0);
+  };
 
   const remove = async (id: number) => {
     try {
@@ -60,10 +70,20 @@ export function AdminProblemListPage() {
         </Button>
       </div>
 
+      <AdminProblemFilters values={filters} onChange={changeFilters} />
+
       {error ? <Alert>{error}</Alert> : null}
 
       {result && result.content.length === 0 ? (
-        <EmptyState title="등록된 문제가 없습니다." description="첫 문제를 등록해 보세요." />
+        /*
+          **아무것도 없는 것과 못 찾은 것을 구별한다.** 전에는 조건을 좁혀 0건이 되어도
+          "첫 문제를 등록해 보세요" 가 떴다 — 195개가 있는데도 그렇게 보인다.
+        */
+        isFiltered(filters) ? (
+          <EmptyState title="조건에 맞는 문제가 없습니다." description="검색어나 조건을 바꿔 보세요." />
+        ) : (
+          <EmptyState title="등록된 문제가 없습니다." description="첫 문제를 등록해 보세요." />
+        )
       ) : null}
 
       {result && result.content.length > 0 ? (
