@@ -78,7 +78,27 @@ export const problemApi = {
 
   remove: (id: number) =>
     request<void>(`/api/v1/admin/problems/${id}`, { method: "DELETE", auth: true }),
+
+  /**
+   * 고른 문제들의 공개 여부를 한 번에 (#627).
+   *
+   * **`update` 를 쓰지 않는다.** 그쪽은 문제 전체를 덮어써서 공개 여부만 바꿔도
+   * 테스트케이스가 지워졌다 다시 들어간다.
+   */
+  publish: (ids: number[], published: boolean) =>
+    request<PublishResult>("/api/v1/admin/problems/publish", {
+      method: "POST",
+      body: { ids, published },
+      auth: true,
+    }),
 };
+
+/** 몇 개가 실제로 바뀌었나. 이미 그 상태였던 것은 `changed` 에 들어가지 않는다. */
+export interface PublishResult {
+  requested: number;
+  changed: number;
+  missing: number[];
+}
 
 /**
  * 첫 화면이 보여 줄 숫자 (#231).

@@ -878,6 +878,44 @@ POST /api/v1/problems/{slug}/difficulty-vote   {"level": 12}
 - 반영에 필요한 표 수는 설정이다 (`codekr.difficulty-vote.min-votes`, 기본 3). 지금은
   사용자도 문제도 적어 **문턱을 높이면 아무도 못 쓰는 상태**가 된다
 
+### 어드민 문제 목록 (#626)
+
+```
+GET /api/v1/admin/problems?q=&category=&tier=&published=&sort=&page=&size=
+```
+
+사용자 목록(`GET /api/v1/problems`)과 **거르는 축은 같고 기본값이 다르다.**
+
+| | 사용자 목록 | 어드민 목록 |
+|---|---|---|
+| `published` | 언제나 `true` (고를 수 없다) | **주지 않으면 전부.** `true`·`false` 로 고른다 |
+
+**`published` 가 어드민에만 있는 이유**는 묶음이 언제나 초안으로 들어오기 때문이다(#479).
+한 번에 스물다섯 개가 들어오면(#605) 초안이 공개된 문제 사이에 흩어지고, 그때 필요한
+질문은 "지금 공개 안 된 것이 무엇인가" 하나다.
+
+**빈 문자열을 보내지 않는다.** `published=` 는 Boolean 으로 읽히지 않아 400 이다 —
+조건을 지운다는 뜻이면 **키를 빼서** 보낸다.
+
+### 문제 일괄 공개/비공개 (#627)
+
+```
+POST /api/v1/admin/problems/publish   {"ids": [12, 13], "published": true}
+→ {"requested": 2, "changed": 1, "missing": []}
+```
+
+**`PUT /{id}` 로 하지 않는 이유**는 그쪽이 문제 전체를 덮어쓰는 upsert 이기 때문이다.
+공개 여부 한 칸을 뒤집어도 **테스트케이스가 통째로 지워졌다 다시 들어간다** — 실제로
+행 번호가 `[1, 2]` 에서 `[3, 4]` 로 바뀐다. 묶음(#479)이 테스트케이스 수백 개짜리
+문제를 위해 있는데 그 문제를 공개하는 값이 가장 비쌌다.
+
+- `changed` 는 **실제로 바뀐 수**다. 이미 그 상태였던 것은 세지 않는다
+- 없는 문제는 `missing` 으로 돌려준다 — **조용히 넘기지 않는다**
+- 한 번에 **100개**까지 (`ProblemPublishService.MAX_AT_ONCE`)
+- **문제마다** 관리 기록(#225)이 남는다 (`PROBLEM_PUBLISH`, `target_type = PROBLEM`).
+  기록의 색인이 `(target_type, target_id)` 라 스무 건을 한 줄로 남기면 나머지
+  열아홉 문제에 대해서는 답이 없다
+
 ### 문제 데이터 업로드 (#479, #537)
 
 ```

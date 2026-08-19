@@ -1,30 +1,90 @@
 "use client";
 
-import { CATEGORY_LABELS, TierBadge, problemApi } from "@/entities/problem";
+import { problemApi } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import type { Page } from "@/shared/api";
-import { Alert, Badge, Button, Card, ConfirmDialog, EmptyState, Pagination } from "@/shared/ui";
+import { Alert, Button, EmptyState, Pagination, Table, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { adminProblemColumns } from "./adminProblemColumns";
+import { AdminProblemBulkBar } from "./AdminProblemBulkBar";
+import { AdminProblemFilters, EMPTY_FILTERS } from "./AdminProblemFilters";
+import type { AdminProblemFilterValues } from "./AdminProblemFilters";
+import { isFiltered, toQuery } from "./adminProblemQuery";
 
-
+/**
+ * 어드민 문제 목록 (#625).
+ *
+ * **카드에서 표로 바꿨다.** 카드일 때는 티어와 공개 여부가 제목 길이를 따라 줄마다
+ * 다른 자리에 떠서 **세로로 비교되지 않았고**, 창을 조금만 좁히면 삭제 버튼이 화면
+ * 밖으로 밀려났다. 어드민 회원 목록도 사용자 문제 목록도 이미 표다 — 여기만 남아 있었다.
+ */
 export function AdminProblemListPage() {
   const [result, setResult] = useState<Page<ProblemSummary> | null>(null);
   const [page, setPage] = useState(0);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const load = useCallback(() => {
     // 전에는 첫 50개만 불러서 **51번째 문제에 화면으로 도달할 수 없었다** (#131).
     problemApi
-      .adminList({ page, size: 20 })
+      .adminList({ ...toQuery(filters), page, size: 20 })
       .then(setResult)
       .catch(() => setError("문제 목록을 불러오지 못했습니다."));
-  }, [page]);
+  }, [filters, page]);
 
   useEffect(load, [load]);
 
-  /** 되묻는 것은 표의 버튼(`ConfirmDialog`)이 한다 (#291 4단계). */
+  /*
+    **장을 넘기거나 조건을 바꾸면 선택이 풀린다** (#627).
+
+    고른 것을 들고 다니면 **보이지 않는 것에 일괄로 걸게 된다** — 3장에서 고른 것을
+    잊은 채 1장에서 "공개하기" 를 누르면, 화면에 없는 스무 개가 함께 공개된다.
+    되돌릴 수는 있지만 그 사실을 알아채는 것이 먼저다.
+  */
+  const changePage = (next: number) => {
+    setPage(next);
+    setSelected(new Set());
+  };
+
+  /** 조건이 바뀌면 **첫 장으로 돌아간다.** 3페이지에서 조건을 좁히면 빈 화면이 나온다. */
+  const changeFilters = (next: Partial<AdminProblemFilterValues>) => {
+    setFilters((current) => ({ ...current, ...next }));
+    changePage(0);
+  };
+
+  const pageIds = result?.content.map((problem) => problem.id) ?? [];
+
+  const toggle = (id: number) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setSelected((current) => (pageIds.every((id) => current.has(id)) ? new Set() : new Set(pageIds)));
+
+  const publish = async (published: boolean) => {
+    try {
+      const result = await problemApi.publish([...selected], published);
+      const word = published ? "공개로" : "비공개로";
+      // **바꾼 수를 그대로 말한다.** 이미 그 상태였던 것은 세지 않는다 — "20개를
+      // 공개했습니다" 인데 실제로는 3개만 바뀌었다면 다음에 그 말을 믿지 않게 된다.
+      toast.success(
+        `${result.changed}개를 ${word} 바꿨습니다.` +
+          (result.missing.length > 0 ? ` (${result.missing.length}개는 찾지 못했습니다)` : ""),
+      );
+      setSelected(new Set());
+      load();
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "바꾸지 못했습니다.");
+    }
+  };
+
   const remove = async (id: number) => {
     try {
       await problemApi.remove(id);
@@ -54,46 +114,43 @@ export function AdminProblemListPage() {
         </Button>
       </div>
 
+      <AdminProblemFilters values={filters} onChange={changeFilters} />
+
+      <AdminProblemBulkBar count={selected.size} onPublish={publish} onClear={() => setSelected(new Set())} />
+
       {error ? <Alert>{error}</Alert> : null}
 
       {result && result.content.length === 0 ? (
-        <EmptyState title="등록된 문제가 없습니다." description="첫 문제를 등록해 보세요." />
+        /*
+          **아무것도 없는 것과 못 찾은 것을 구별한다.** 전에는 조건을 좁혀 0건이 되어도
+          "첫 문제를 등록해 보세요" 가 떴다 — 195개가 있는데도 그렇게 보인다.
+        */
+        isFiltered(filters) ? (
+          <EmptyState title="조건에 맞는 문제가 없습니다." description="검색어나 조건을 바꿔 보세요." />
+        ) : (
+          <EmptyState title="등록된 문제가 없습니다." description="첫 문제를 등록해 보세요." />
+        )
       ) : null}
 
-      <div className="space-y-2">
-        {result?.content.map((problem) => (
-          <Card key={problem.id} className="flex items-center gap-3 px-5 py-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-ink">{problem.title}</p>
-              <p className="mt-0.5 text-xs text-ink-muted">
-                {problem.slug} · {CATEGORY_LABELS[problem.category]}
-              </p>
-            </div>
-            <TierBadge difficulty={problem.difficulty} label={problem.difficultyLabel} />
-            <Badge tone={problem.published ? "ok" : "muted"}>
-              {problem.published ? "공개" : "미공개"}
-            </Badge>
-            <Button asChild variant="secondary">
-              <Link href={`/admin/problems/${problem.id}/edit`}>수정</Link>
-            </Button>
-            <ConfirmDialog
-              title={`'${problem.title}' 문제를 삭제할까요?`}
-              description="제출 이력은 그대로 남습니다. 문제만 목록에서 사라집니다."
-              confirmLabel="삭제"
-              onConfirm={() => remove(problem.id)}
-              trigger={<Button variant="danger">삭제</Button>}
-            />
-          </Card>
-        ))}
-      </div>
-
-      {result ? (
-        <Pagination
-          page={result.page}
-          totalPages={result.totalPages}
-          totalElements={result.totalElements}
-          onChange={setPage}
-        />
+      {result && result.content.length > 0 ? (
+        <>
+          <Table
+            rows={result.content}
+            rowKey={(problem) => problem.id}
+            columns={adminProblemColumns(remove, {
+              ids: selected,
+              onToggle: toggle,
+              onToggleAll: toggleAll,
+              pageIds,
+            })}
+          />
+          <Pagination
+            page={result.page}
+            totalPages={result.totalPages}
+            totalElements={result.totalElements}
+            onChange={changePage}
+          />
+        </>
       ) : null}
     </div>
   );

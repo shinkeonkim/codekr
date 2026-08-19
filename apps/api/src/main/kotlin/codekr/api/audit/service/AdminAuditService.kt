@@ -32,6 +32,8 @@ class AdminAuditService(private val repository: AdminAuditLogRepository) {
         action: AdminAction,
         targetId: Long,
         targetLabel: String?,
+        /** 무엇을 가리키는가. 회원이 아닌 대상은 반드시 넘긴다 (#627). */
+        targetType: AuditTargetType = AuditTargetType.USER,
         reason: String? = null,
         detail: String? = null,
     ) {
@@ -49,7 +51,7 @@ class AdminAuditService(private val repository: AdminAuditLogRepository) {
             AdminAuditLog(
                 actorId = actorId,
                 action = action,
-                targetType = AuditTargetType.USER,
+                targetType = targetType,
                 targetId = targetId,
                 targetLabel = targetLabel,
                 reason = reason?.trim()?.takeIf { it.isNotBlank() },
