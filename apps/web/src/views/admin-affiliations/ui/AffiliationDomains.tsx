@@ -2,16 +2,19 @@
 
 import { adminAffiliationApi } from "@/entities/affiliation";
 import type { Affiliation } from "@/entities/affiliation";
-import { Badge, Button, Card, ConfirmDialog, Input, useToast } from "@/shared/ui";
+import { Button, ConfirmDialog, Input, useToast } from "@/shared/ui";
 import { useState } from "react";
 
 /**
- * 소속 하나와 그 도메인들 (#428, #397 화면).
+ * 한 소속의 도메인들 — 펼친 행 안에 산다 (#633).
  *
- * **잘못 넣으면 그 도메인을 가진 모두가 그 소속을 얻는다.** 그래서 붙이고 떼는 것을
- * 한 번 묻고, 무엇이 걸린 일인지 물음에 적는다.
+ * **접혀 있을 때는 입력칸이 없다.** 전에는 소속마다 카드가 하나였고 카드마다 입력칸이
+ * 있어서, 소속이 열 개면 **아직 쓰지 않을 입력칸 열 개**가 화면을 채웠다.
+ *
+ * 잘못 넣으면 그 도메인을 가진 모두가 그 소속을 얻는다 — 붙이고 떼는 것을 한 번 묻고,
+ * 무엇이 걸린 일인지 물음에 적는다 (#428).
  */
-export function AffiliationCard({
+export function AffiliationDomains({
   affiliation,
   onChanged,
   onFail,
@@ -49,40 +52,9 @@ export function AffiliationCard({
     }
   };
 
-  const remove = async () => {
-    try {
-      await adminAffiliationApi.remove(affiliation.id);
-      toast.success("내렸습니다.");
-      await onChanged();
-    } catch (caught) {
-      onFail(caught, "내리지 못했습니다.");
-    }
-  };
-
   return (
-    <Card className="space-y-3 p-5">
-      <div className="flex items-center gap-2">
-        <span className="font-semibold text-ink">{affiliation.name}</span>
-        <Badge tone="muted">{affiliation.kindLabel}</Badge>
-        <span className="flex-1" />
-        <ConfirmDialog
-          trigger={
-            <Button variant="ghost" className="px-2 py-0.5 text-xs">
-              내리기
-            </Button>
-          }
-          title={`'${affiliation.name}' 을 내립니다`}
-          description="도메인이 함께 떨어져 새로 붙는 사람이 없어집니다. 이미 붙인 사람에게는 그대로 남습니다."
-          confirmLabel="내리기"
-          onConfirm={remove}
-        />
-      </div>
-
+    <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        {affiliation.domains.length === 0 ? (
-          // 도메인이 없으면 이 소속은 있으나 마나다. 그것을 눈에 띄게 말한다.
-          <span className="text-xs text-danger">도메인이 없어 아무에게도 붙지 않습니다.</span>
-        ) : null}
         {affiliation.domains.map((each) => (
           <span
             key={each.id}
@@ -92,7 +64,6 @@ export function AffiliationCard({
             <ConfirmDialog
               trigger={
                 // 글자 하나짜리 단추라 그냥 두면 **주소에 붙어 있고 누를 자리도 좁다.**
-                // 안쪽 여백으로 떼어 놓으면 간격과 누를 넓이가 같이 해결된다.
                 <button
                   type="button"
                   className="rounded px-1 leading-none text-ink-muted transition hover:bg-surface-muted hover:text-ink"
@@ -120,6 +91,6 @@ export function AffiliationCard({
           도메인 붙이기
         </Button>
       </div>
-    </Card>
+    </div>
   );
 }

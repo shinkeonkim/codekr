@@ -3,9 +3,10 @@
 import { adminAffiliationApi } from "@/entities/affiliation";
 import type { Affiliation, AffiliationKind } from "@/entities/affiliation";
 import { ApiError } from "@/shared/api";
-import { Button, Card, Field, Input, useToast } from "@/shared/ui";
+import { Button, Card, EmptyState, Field, Input, Table, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
-import { AffiliationCard } from "./AffiliationCard";
+import { affiliationColumns } from "./affiliationColumns";
+import { AffiliationDomains } from "./AffiliationDomains";
 
 /**
  * 소속과 도메인 관리 (#428, #397 화면).
@@ -21,6 +22,11 @@ export function AdminAffiliationsPage() {
   const [items, setItems] = useState<Affiliation[] | null>(null);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<AffiliationKind>("SCHOOL");
+  /*
+    **한 번에 하나만 펼친다.** 여럿을 열면 카드였을 때와 같아진다 — 입력칸이 줄줄이
+    쌓이고 표를 쓴 이유(조밀함)가 사라진다. 도메인을 견주는 일은 "도메인" 열이 한다.
+  */
+  const [openId, setOpenId] = useState<number | null>(null);
 
   const reload = () =>
     adminAffiliationApi
@@ -34,6 +40,16 @@ export function AdminAffiliationsPage() {
 
   const fail = (caught: unknown, fallback: string) =>
     toast.error(caught instanceof ApiError ? caught.message : fallback);
+
+  const remove = async (affiliation: { id: number }) => {
+    try {
+      await adminAffiliationApi.remove(affiliation.id);
+      toast.success("내렸습니다.");
+      await reload();
+    } catch (caught) {
+      fail(caught, "내리지 못했습니다.");
+    }
+  };
 
   const create = async () => {
     if (!name.trim()) {
@@ -98,14 +114,25 @@ export function AdminAffiliationsPage() {
       </Card>
 
       {items?.length === 0 ? (
-        <p className="text-sm text-ink-muted">아직 등록한 소속이 없습니다.</p>
+        <EmptyState title="아직 등록한 소속이 없습니다." description="위에서 학교나 회사를 만들어 주세요." />
       ) : null}
 
-      <div className="space-y-3">
-        {items?.map((item) => (
-          <AffiliationCard key={item.id} affiliation={item} onChanged={reload} onFail={fail} />
-        ))}
-      </div>
+      {items && items.length > 0 ? (
+        <Table
+          rows={items}
+          rowKey={(item) => item.id}
+          columns={affiliationColumns(
+            openId,
+            (id) => setOpenId((current) => (current === id ? null : id)),
+            remove,
+          )}
+          expanded={(item) =>
+            openId === item.id ? (
+              <AffiliationDomains affiliation={item} onChanged={reload} onFail={fail} />
+            ) : null
+          }
+        />
+      ) : null}
     </div>
   );
 }

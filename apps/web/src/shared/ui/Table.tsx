@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 import type { Align, Breakpoint } from "./tableCell";
 import { cellClass } from "./tableCell";
@@ -47,6 +48,16 @@ interface Props<T> {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string | number;
+  /**
+   * 행 아래로 여는 칸 (#633).
+   *
+   * **행 안에 폼이 들어가야 하는 목록이 있다.** 소속에 도메인을 붙이는 입력칸,
+   * 대회 신청을 거절할 때의 사유 칸이 그렇다. 칸 하나에 폼을 우겨넣으면 격자가
+   * 무너지고, 별도 화면으로 빼면 목록에서 하던 일이 두 걸음이 된다.
+   *
+   * `null` 을 돌려주면 그 행은 열리지 않는다 — **열 것이 없으면 빈 줄도 없다.**
+   */
+  expanded?: (row: T) => ReactNode;
 }
 
 /**
@@ -57,7 +68,7 @@ interface Props<T> {
  * 좁은 화면 대응은 **열을 감추는 방식**으로 한다. 가로 스크롤은 존재를 눈치채기 어렵고,
  * 카드로 전환하면 테이블을 쓴 이유(조밀함)가 사라진다.
  */
-export function Table<T>({ columns, rows, rowKey }: Props<T>) {
+export function Table<T>({ columns, rows, rowKey, expanded }: Props<T>) {
   return (
     <div className="overflow-hidden rounded-card border border-border">
       <table className="w-full text-sm">
@@ -75,10 +86,15 @@ export function Table<T>({ columns, rows, rowKey }: Props<T>) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rows.map((row) => {
+            const open = expanded?.(row) ?? null;
+            return (
+          <Fragment key={rowKey(row)}>
             <tr
-              key={rowKey(row)}
-              className="border-b border-border/60 transition last:border-0 hover:bg-surface-muted/40"
+              className={`transition hover:bg-surface-muted/40 ${
+                // 열린 행은 아래 칸과 한 덩어리다 — 사이에 줄을 그으면 둘로 보인다.
+                open ? "" : "border-b border-border/60 last:border-0"
+              }`}
             >
               {columns.map((column) => (
                 <td
@@ -97,7 +113,16 @@ export function Table<T>({ columns, rows, rowKey }: Props<T>) {
                 </td>
               ))}
             </tr>
-          ))}
+            {open ? (
+              <tr className="border-b border-border/60 last:border-0">
+                <td colSpan={columns.length} className="bg-surface-muted/20 px-4 pb-4 pt-1">
+                  {open}
+                </td>
+              </tr>
+            ) : null}
+          </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
