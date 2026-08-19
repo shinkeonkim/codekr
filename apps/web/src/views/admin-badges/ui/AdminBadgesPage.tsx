@@ -3,9 +3,10 @@
 import { badgeApi } from "@/entities/badge";
 import type { BadgeDefinition, BadgeRule } from "@/entities/badge";
 import { ApiError } from "@/shared/api";
-import { Badge, Button, Card, CardTitle, EmptyState, useToast } from "@/shared/ui";
+import { CardTitle, EmptyState, Table, useToast } from "@/shared/ui";
 import { useEffect, useState } from "react";
 import { BadgeDefinitionForm } from "./BadgeDefinitionForm";
+import { definitionColumns, ruleColumns } from "./badgeColumns";
 import { RuleEditor } from "./RuleEditor";
 
 /**
@@ -73,44 +74,24 @@ export function AdminBadgesPage() {
 
       <section className="space-y-2">
         <CardTitle>규칙</CardTitle>
-        {rules.length === 0 ? <EmptyState title="규칙이 없습니다." /> : null}
-        {rules.map((rule) => (
-          <Card key={rule.ruleKey} className="flex flex-wrap items-center gap-3 p-4 text-sm">
-            <span className="font-medium text-ink">{rule.ruleKey}</span>
-            <Badge tone="muted">{rule.event}</Badge>
-            <span className="flex-1 truncate text-xs text-ink-muted">
-              {rule.conditions.length === 0
-                ? "조건 없음 (이벤트가 곧 달성)"
-                : rule.conditions
-                    .map((condition) => `${condition.measure} ${condition.op} ${condition.value}`)
-                    .join(" · ")}
-            </span>
-            <Badge tone={rule.enabled ? "ok" : "muted"}>{rule.enabled ? "켜짐" : "꺼짐"}</Badge>
-            <Button variant="ghost" className="px-2 py-0.5 text-xs" onClick={() => toggleRule(rule)}>
-              {rule.enabled ? "끄기" : "켜기"}
-            </Button>
-          </Card>
-        ))}
+        {rules.length === 0 ? (
+          <EmptyState title="규칙이 없습니다." />
+        ) : (
+          <Table rows={rules} rowKey={(rule) => rule.ruleKey} columns={ruleColumns(toggleRule)} />
+        )}
       </section>
 
       <section className="space-y-2">
         <CardTitle>정의</CardTitle>
-        {definitions.map((definition) => (
-          <Card key={definition.code} className="flex flex-wrap items-center gap-3 p-4 text-sm">
-            <span className="font-medium text-ink">{definition.label}</span>
-            <span className="text-xs text-ink-muted">{definition.code}</span>
-            <span className="flex-1 truncate text-xs text-ink-muted">{definition.description}</span>
-            {/* 규칙과 어떻게 이어지는지 보여야 "왜 안 나오지" 를 여기서 답할 수 있다. */}
-            <Badge tone="muted">{definition.ruleKey}</Badge>
-            <Button
-              variant="ghost"
-              className="px-2 py-0.5 text-xs"
-              onClick={() => toggleVisible(definition)}
-            >
-              {definition.visible ? "숨기기" : "보이기"}
-            </Button>
-          </Card>
-        ))}
+        {definitions.length === 0 ? (
+          <EmptyState title="뱃지가 없습니다." />
+        ) : (
+          <Table
+            rows={definitions}
+            rowKey={(definition) => definition.code}
+            columns={definitionColumns(toggleVisible)}
+          />
+        )}
       </section>
     </div>
   );
