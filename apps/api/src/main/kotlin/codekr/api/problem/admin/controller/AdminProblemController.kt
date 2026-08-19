@@ -8,10 +8,13 @@ import codekr.api.problem.admin.dto.AdminProblemDetailResponse
 import codekr.api.problem.admin.dto.ProblemCreatedResponse
 import codekr.api.problem.admin.dto.ProblemBundlePreview
 import codekr.api.problem.admin.dto.ProblemImportResult
+import codekr.api.problem.admin.dto.ProblemPublishRequest
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
 import codekr.api.problem.admin.dto.VerificationResponse
 import codekr.api.problem.admin.service.AdminProblemService
 import codekr.api.problem.admin.service.ProblemImportService
+import codekr.api.problem.admin.service.ProblemPublishService
+import codekr.api.problem.admin.service.PublishResult
 import codekr.api.problem.admin.service.SolutionVerificationService
 import codekr.api.problem.dto.ProblemSummaryResponse
 import codekr.api.problem.entity.DifficultyTier
@@ -43,6 +46,7 @@ class AdminProblemController(
     private val adminProblemService: AdminProblemService,
     private val verificationService: SolutionVerificationService,
     private val importService: ProblemImportService,
+    private val publishService: ProblemPublishService,
 ) {
 
     /**
@@ -134,6 +138,23 @@ class AdminProblemController(
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun verify(@PathVariable id: Long, principal: AuthPrincipal): VerificationResponse =
         verificationService.verify(id, principal.userId)
+
+    /**
+     * 여러 문제의 공개 여부를 한 번에 바꾼다 (#627).
+     *
+     * **[update] 로 하지 않는 이유**는 그 경로가 문제 전체를 덮어쓰기 때문이다 —
+     * 체크 하나에 테스트케이스 전 행이 지워졌다 다시 들어간다. 여기서는 `published`
+     * 한 칸만 바뀐다.
+     *
+     * `PUT /{id}` 가 아니라 목록에 거는 `POST` 인 것은, **고른 것들**에 한 번에 거는
+     * 동작이라 대상이 하나가 아니기 때문이다.
+     */
+    @AdminApi(UserRole.PROBLEM_SETTER)
+    @PostMapping("/publish")
+    fun publish(
+        @Valid @RequestBody request: ProblemPublishRequest,
+        principal: AuthPrincipal,
+    ): PublishResult = publishService.publish(principal.userId, request.ids, request.published)
 
     @AdminApi(UserRole.PROBLEM_SETTER)
     @DeleteMapping("/{id}")

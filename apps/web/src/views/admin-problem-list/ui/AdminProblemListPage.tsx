@@ -4,10 +4,11 @@ import { problemApi } from "@/entities/problem";
 import type { ProblemSummary } from "@/entities/problem";
 import { ApiError } from "@/shared/api";
 import type { Page } from "@/shared/api";
-import { Alert, Button, EmptyState, Pagination, Table } from "@/shared/ui";
+import { Alert, Button, EmptyState, Pagination, Table, useToast } from "@/shared/ui";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { adminProblemColumns } from "./adminProblemColumns";
+import { AdminProblemBulkBar } from "./AdminProblemBulkBar";
 import { AdminProblemFilters, EMPTY_FILTERS } from "./AdminProblemFilters";
 import type { AdminProblemFilterValues } from "./AdminProblemFilters";
 import { isFiltered, toQuery } from "./adminProblemQuery";
@@ -23,7 +24,9 @@ export function AdminProblemListPage() {
   const [result, setResult] = useState<Page<ProblemSummary> | null>(null);
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   const load = useCallback(() => {
     // 전에는 첫 50개만 불러서 **51번째 문제에 화면으로 도달할 수 없었다** (#131).
@@ -35,10 +38,51 @@ export function AdminProblemListPage() {
 
   useEffect(load, [load]);
 
+  /*
+    **장을 넘기거나 조건을 바꾸면 선택이 풀린다** (#627).
+
+    고른 것을 들고 다니면 **보이지 않는 것에 일괄로 걸게 된다** — 3장에서 고른 것을
+    잊은 채 1장에서 "공개하기" 를 누르면, 화면에 없는 스무 개가 함께 공개된다.
+    되돌릴 수는 있지만 그 사실을 알아채는 것이 먼저다.
+  */
+  const changePage = (next: number) => {
+    setPage(next);
+    setSelected(new Set());
+  };
+
   /** 조건이 바뀌면 **첫 장으로 돌아간다.** 3페이지에서 조건을 좁히면 빈 화면이 나온다. */
   const changeFilters = (next: Partial<AdminProblemFilterValues>) => {
     setFilters((current) => ({ ...current, ...next }));
-    setPage(0);
+    changePage(0);
+  };
+
+  const pageIds = result?.content.map((problem) => problem.id) ?? [];
+
+  const toggle = (id: number) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setSelected((current) => (pageIds.every((id) => current.has(id)) ? new Set() : new Set(pageIds)));
+
+  const publish = async (published: boolean) => {
+    try {
+      const result = await problemApi.publish([...selected], published);
+      const word = published ? "공개로" : "비공개로";
+      // **바꾼 수를 그대로 말한다.** 이미 그 상태였던 것은 세지 않는다 — "20개를
+      // 공개했습니다" 인데 실제로는 3개만 바뀌었다면 다음에 그 말을 믿지 않게 된다.
+      toast.success(
+        `${result.changed}개를 ${word} 바꿨습니다.` +
+          (result.missing.length > 0 ? ` (${result.missing.length}개는 찾지 못했습니다)` : ""),
+      );
+      setSelected(new Set());
+      load();
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.message : "바꾸지 못했습니다.");
+    }
   };
 
   const remove = async (id: number) => {
@@ -72,6 +116,8 @@ export function AdminProblemListPage() {
 
       <AdminProblemFilters values={filters} onChange={changeFilters} />
 
+      <AdminProblemBulkBar count={selected.size} onPublish={publish} onClear={() => setSelected(new Set())} />
+
       {error ? <Alert>{error}</Alert> : null}
 
       {result && result.content.length === 0 ? (
@@ -88,12 +134,21 @@ export function AdminProblemListPage() {
 
       {result && result.content.length > 0 ? (
         <>
-          <Table rows={result.content} rowKey={(problem) => problem.id} columns={adminProblemColumns(remove)} />
+          <Table
+            rows={result.content}
+            rowKey={(problem) => problem.id}
+            columns={adminProblemColumns(remove, {
+              ids: selected,
+              onToggle: toggle,
+              onToggleAll: toggleAll,
+              pageIds,
+            })}
+          />
           <Pagination
             page={result.page}
             totalPages={result.totalPages}
             totalElements={result.totalElements}
-            onChange={setPage}
+            onChange={changePage}
           />
         </>
       ) : null}
