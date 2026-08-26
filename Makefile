@@ -10,7 +10,7 @@ GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \
-        pull-runtimes build-runtimes containerd-up containerd-down mirror-runtimes verify-runtimes verify-seccomp verify-storage seed smoke test test-api test-web test-go lint lint-go
+        coverage pull-runtimes build-runtimes containerd-up containerd-down mirror-runtimes verify-runtimes verify-seccomp verify-storage seed smoke test test-api test-web test-go lint lint-go
 
 help: ## 사용 가능한 명령 표시
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -107,3 +107,9 @@ test-web: ## web 단위 테스트 · 타입 체크 · 린트
 test-go: ## judge, executor 단위 테스트
 	cd apps/executor && go test ./...
 	cd apps/judge && go test ./...
+
+# **api 는 통합 시험까지 돈다** (#642). 시험 파일 114개 중 95개가 통합 시험이라,
+# 빼고 재면 숫자가 실제를 말하지 않는다 — Docker 가 필요하다.
+# 통합 시험 없이 보려면: `SKIP_INTEGRATION=1 bash scripts/coverage.sh api`
+coverage: ## 세 스택 커버리지 측정 (build/coverage/index.html)
+	@bash scripts/coverage.sh $(ARGS)

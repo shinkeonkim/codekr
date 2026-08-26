@@ -206,7 +206,7 @@ jobs:
       - run: ./gradlew test
 
   api-integration-test:
-    name: api 통합 테스트 (Testcontainers)
+    name: api 통합 테스트 · 커버리지 (Testcontainers)
     needs: changes
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
@@ -220,10 +220,29 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew integrationTest
+      # **커버리지를 여기서 잰다** (#642). 시험 파일 114개 중 95개가 통합 시험이라,
+      # 단위 쪽만 재면 8.8% 가 나오고 합치면 89.5% 다 — 나눠 재면 그 숫자는
+      # "안 시험한 코드" 가 아니라 "여기서 안 시험한 코드" 를 가리킨다.
+      #
+      # 이 잡이 이미 통합 시험을 돌리므로 늘어나는 것은 단위 시험(빠르다)과
+      # JaCoCo 계측뿐이다. 시험 자체는 그대로 이 단계에서 실패한다.
+      - run: bash scripts/coverage.sh api
+        working-directory: ${{ github.workspace }}
+      # **아티팩트만 올리면 아무도 안 본다** — 받아서 풀고 열어야 하기 때문이다.
+      # 숫자는 CI 를 여는 순간 보여야 하고, 줄 단위로 보고 싶은 사람만 받는다.
+      - name: 커버리지 요약
+        if: always()
+        run: cat build/coverage/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+        working-directory: ${{ github.workspace }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-api
+          path: build/coverage/api
+          retention-days: 7
 
   go-check:
-    name: executor · judge 린트 · 테스트
+    name: executor · judge 린트 · 테스트 · 커버리지
     needs: changes
     if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
@@ -244,8 +263,20 @@ jobs:
           working-directory: apps/${{ matrix.module }}
           args: --config ${{ github.workspace }}/.golangci.yml
       # 컨테이너 런타임이 필요한 라이브 샌드박스 테스트는 CODEKR_SANDBOX_TEST 로 분리돼 있다.
-      - run: go test ./...
-        working-directory: apps/${{ matrix.module }}
+      #
+      # **커버리지를 함께 잰다** (#642). `-coverpkg=./...` 이 붙는 것이 유일한 차이인데,
+      # 그것이 없으면 시험 파일이 없는 꾸러미(`cmd/`·`config`·`httpapi`)가 프로파일에
+      # 아예 안 들어가 비율이 실제보다 높게 나온다.
+      - run: GO_MODULES=${{ matrix.module }} bash scripts/coverage.sh go
+      - name: 커버리지 요약
+        if: always()
+        run: cat build/coverage/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-go-${{ matrix.module }}
+          path: build/coverage/go
+          retention-days: 7
 
   sandbox-live:
     # 러너에는 containerd 가 이미 있다. macOS 에서 겪은 FIFO 제약(#70)이 없다 —
@@ -328,7 +359,7 @@ jobs:
           test "$failed" -eq 0
 
   web-check:
-    name: web 시험 · 린트 · 타입 체크 · 빌드
+    name: web 시험 · 커버리지 · 린트 · 타입 체크 · 빌드
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -350,7 +381,19 @@ jobs:
       # **파일이 하나도 안 잡히면 `bun test` 는 1 로 죽는다** — 확인했다. 그래서
       # `sandbox-live` 처럼 통과 개수를 박아 두지 않는다. 웹 시험은 자주 늘어
       # 그 숫자가 곧 고쳐야 할 것이 된다.
-      - run: bun test
+      # 커버리지를 함께 잰다 (#642). 시험은 0.4초라 재는 값이 공짜에 가깝다.
+      - run: bash scripts/coverage.sh web
+        working-directory: ${{ github.workspace }}
+      - name: 커버리지 요약
+        if: always()
+        run: cat build/coverage/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+        working-directory: ${{ github.workspace }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-web
+          path: build/coverage/web
+          retention-days: 7
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run build
