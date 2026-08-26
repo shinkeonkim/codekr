@@ -328,7 +328,7 @@ jobs:
           test "$failed" -eq 0
 
   web-check:
-    name: web 린트 · 타입 체크 · 빌드
+    name: web 시험 · 린트 · 타입 체크 · 빌드
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -341,6 +341,16 @@ jobs:
         with:
           bun-version: "1.3"
       - run: bun install --frozen-lockfile
+      # **시험을 맨 앞에 둔다** (#641). 셋 중 가장 빠르고(0.5초) 가장 많은 것을 말한다.
+      #
+      # 이 줄이 들어오기 전까지 웹 시험 184개는 **아무 데서도 돌지 않았다** — 잡은
+      # 린트·타입·빌드만 봤고 `make test-web` 도 같았다. 회귀를 막으려고 쓴 시험들
+      # (#578 의 층 토큰, #599 의 폭 가드)이 아무것도 막고 있지 않았다.
+      #
+      # **파일이 하나도 안 잡히면 `bun test` 는 1 로 죽는다** — 확인했다. 그래서
+      # `sandbox-live` 처럼 통과 개수를 박아 두지 않는다. 웹 시험은 자주 늘어
+      # 그 숫자가 곧 고쳐야 할 것이 된다.
+      - run: bun test
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run build

@@ -99,8 +99,10 @@ test: test-api test-web test-go ## 전체 단위 테스트
 test-api: ## api 단위 테스트
 	cd apps/api && ./gradlew test
 
-test-web: ## web 타입 체크 및 린트
-	cd apps/web && bun install --frozen-lockfile && bun run typecheck && bun run lint
+# **시험이 먼저다** (#641). 전에는 이 목표가 타입 체크와 린트만 돌아서,
+# `make test` 를 돌려도 웹 시험 184개는 한 번도 실행되지 않았다.
+test-web: ## web 단위 테스트 · 타입 체크 · 린트
+	cd apps/web && bun install --frozen-lockfile && bun test && bun run typecheck && bun run lint
 
 test-go: ## judge, executor 단위 테스트
 	cd apps/executor && go test ./...
