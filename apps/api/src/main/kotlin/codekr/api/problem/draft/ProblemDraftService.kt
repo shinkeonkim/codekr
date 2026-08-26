@@ -31,6 +31,25 @@ class ProblemDraftService(
     private val log = LoggerFactory.getLogger(javaClass)
     private val calls = ConcurrentHashMap<Long, MutableList<Instant>>()
 
+    /*
+        **켜졌는지 기동할 때 말한다** (#647).
+
+        이 기능은 꺼져 있어도 서비스가 그대로 돌고, 꺼진 상태의 답이 404 라 화면에서도
+        "없는 기능" 으로 보인다. 그래서 **켰다고 생각했는데 안 켜진 것**을 아무도
+        모르는 상태가 생긴다 — 실제로 차트에 값이 없어서 운영에서 내내 꺼져 있었다.
+
+        붙어 보지는 않는다. 메일(#355)과 다른 점이고, 이유는 **부를 때마다 돈이 들기
+        때문**이다. 여기서 말하는 것은 "설정이 있는가" 까지다.
+    */
+    init {
+        if (properties.enabled) {
+            // **키는 찍지 않는다.** 어디로 가는지와 무엇을 부르는지만 남긴다.
+            log.info("문제 초안 준비됨 baseUrl={} model={}", properties.baseUrl, properties.model)
+        } else {
+            log.info("문제 초안 설정이 없습니다. 이 기능은 없는 것으로 답합니다(404).")
+        }
+    }
+
     private val restClient: RestClient by lazy {
         // **기다림에 끝이 있어야 한다.** 모델이 느릴 때 어드민 화면이 멈춰 있으면
         // 고장인지 느린 것인지 구분되지 않는다 (#237 이 쿠버네티스 호출에서 겪은 것).
