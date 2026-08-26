@@ -5,6 +5,7 @@ plugins {
     kotlin("kapt") version "2.4.10"
     id("org.springframework.boot") version "4.1.0"
     id("io.spring.dependency-management") version "1.1.7"
+    jacoco
 }
 
 group = "codekr"
@@ -111,4 +112,66 @@ tasks.withType<Test>().configureEach {
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName = "app.jar"
+}
+
+/*
+    커버리지 (#642).
+
+    **Kover 가 아니라 JaCoCo 다.** Kotlin 쪽 공식은 Kover 이고 그것을 먼저 붙여 봤는데,
+    이 프로젝트의 `integrationTest` 소스셋에서 설정 단계부터 죽는다.
+
+        Could not determine the dependencies of task ':koverGenerateArtifactJvm'.
+        > Could not get unknown property 'compileKotlinTask' for compilation
+          'integrationTest' (target  (jvm))
+
+    그 소스셋을 빼면 Kover 는 돌지만 **그러면 잴 것이 거의 없다** — 시험 파일 114개 중
+    95개가 통합 시험이고, 서비스·컨트롤러를 실제로 지나가는 것은 그쪽이다.
+    도구를 지키려고 재려던 것을 버리는 셈이라 JaCoCo 로 간다.
+
+    **둘을 합쳐서 본다.** 나누면 통합 시험이 덮은 코드가 단위 쪽 리포트에서 구멍으로
+    보이고, 그 숫자를 보고 있으면 이미 시험된 것에 시험을 또 쓰게 된다.
+*/
+jacoco {
+    toolVersion = "0.8.13"
+}
+
+tasks.withType<Test>().configureEach {
+    // 각 시험 태스크가 자기 실행 기록을 따로 남긴다. 리포트가 그 둘을 모은다.
+    extensions.configure<JacocoTaskExtension> {
+        setDestinationFile(layout.buildDirectory.file("jacoco/${name}.exec").get().asFile)
+    }
+}
+
+val coverageReport by tasks.registering(JacocoReport::class) {
+    description = "단위 시험과 통합 시험을 합친 커버리지 리포트"
+    group = "verification"
+
+    // **시험을 여기서 부르지 않는다.** 부르게 하면 리포트를 보려고 Testcontainers 를
+    // 반드시 띄워야 하고, 통합 시험 없이 단위 쪽만 보고 싶을 때 길이 없어진다.
+    // 대신 `.exec` 가 있는 것만 모은다 — 무엇을 돌렸는지가 곧 무엇이 담기는지다.
+    executionData.setFrom(fileTree(layout.buildDirectory.dir("jacoco")) { include("*.exec") })
+    // 같은 실행에서 시험과 함께 부르면 Gradle 이 순서를 모른다 — 기록을 읽는 쪽이
+    // 뒤라고 못박는다. 시험을 **부르지는** 않는다 (위 참조).
+    mustRunAfter(tasks.withType<Test>())
+    sourceDirectories.setFrom(sourceSets["main"].allSource.srcDirs)
+    classDirectories.setFrom(
+        files(sourceSets["main"].output.classesDirs).asFileTree.matching {
+            // Q 클래스는 kapt 가 만든 것이라 사람이 시험할 대상이 아니다 (#642).
+            // 남겨 두면 통째로 안 덮인 것으로 잡혀 전체 숫자를 끌어내린다.
+            exclude("**/Q*.class")
+        },
+    )
+
+    reports {
+        html.required = true
+        xml.required = true
+        csv.required = false
+    }
+
+    /*
+        **기록이 없으면 이 태스크는 조용히 SKIPPED 된다** — JaCoCo 가 그렇게 만들어져
+        있고, `doFirst` 도 `doLast` 도 그때는 불리지 않는다. 그래서 "리포트가 나왔는가"
+        는 여기서 못 지킨다. 확인은 `scripts/coverage.sh` 가 한다 —
+        리포트 파일이 실제로 생겼는지 보고, 없으면 죽는다.
+    */
 }
