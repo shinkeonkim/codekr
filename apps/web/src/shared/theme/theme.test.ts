@@ -10,7 +10,19 @@ import { THEME_STORAGE_KEY, isTheme, readStoredTheme, resolveTheme, storeTheme }
 
 const storage = new Map<string, string>();
 
-// bun 의 테스트 환경에는 window 가 없다. 필요한 만큼만 세운다.
+/*
+    **원래 `window` 를 기억해 두었다가 되돌린다** (#646).
+
+    전에는 뒷정리가 `window = undefined` 였다. bun 에 `window` 가 아예 없던 시절에는
+    그것이 "원래대로" 였는데, happy-dom 이 들어오면서 **이 파일이 뒤에 도는 모든 시험의
+    `window` 를 없애 버리게 됐다** — `httpClient` 의 열두 시험이 `Invalid URL` 로 죽었고,
+    그 파일만 따로 돌리면 통과해서 원인이 잘 안 보였다.
+
+    치우는 것과 **원래대로 되돌리는 것**은 다르다.
+*/
+const realWindow = (globalThis as { window?: unknown }).window;
+
+// 저장소가 던지는 상황·기기 설정을 흉내 내야 하므로 진짜 `window` 대신 세운다.
 function stubWindow(prefersDark: boolean, storageThrows = false) {
   (globalThis as { window?: unknown }).window = {
     localStorage: {
@@ -30,7 +42,7 @@ function stubWindow(prefersDark: boolean, storageThrows = false) {
 
 afterEach(() => {
   storage.clear();
-  (globalThis as { window?: unknown }).window = undefined;
+  (globalThis as { window?: unknown }).window = realWindow;
 });
 
 describe("readStoredTheme", () => {
@@ -59,6 +71,9 @@ describe("readStoredTheme", () => {
   });
 
   test("서버에서는 알 수 없으므로 시스템 따름", () => {
+    // 서버 렌더링에는 `window` 가 없다. **이 시험만** 그 상태를 만든다 —
+    // 뒷정리가 되돌린다.
+    (globalThis as { window?: unknown }).window = undefined;
     expect(readStoredTheme()).toBe("system");
   });
 });
