@@ -1,0 +1,51 @@
+# LiteLLM 프록시 설정 (#648).
+#
+# **모델이 아니라 일이 단위다.** `model_name` 에 `gpt-4o-mini` 를 적으면 모델을 바꿀
+# 때마다 api 의 `CODEKR_DRAFT_MODEL` 을 고쳐 **재배포**해야 한다. 여기에 일 이름을
+# 열어 두면 api 는 그 이름만 알고, 무엇이 그 일을 하는지는 이 파일이 정한다.
+#
+# 일이 늘면 이름이 는다 — `정답-코드`, `반례-데이터` 가 붙을 자리다 (#481, #482).
+
+model_list:
+  # 지문에서 문제 초안을 만든다 (#230).
+  #
+  # **`response_format: json_object` 를 지원하는 모델만 여기 넣는다.** 파서
+  # (`DraftParser`)가 JSON 하나를 기대하고, 형식이 흔들리면 파서가 아니라 사람이
+  # 고치게 된다. 폴백을 고를 때도 같은 기준이다 (#648).
+  - model_name: 문제-초안
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  # 폴백. **같은 이름을 여럿 두면 라우팅이 된다.**
+  #
+  # 키가 없으면 이 항목은 그냥 실패하고 위의 것으로 돌아간다 — 제공자를 하나만
+  # 쓰는 사람이 이 파일을 지울 이유가 없게 둔다.
+  - model_name: 문제-초안-예비
+    litellm_params:
+      model: anthropic/claude-haiku-4-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+router_settings:
+  # 앞의 것이 죽으면 뒤로 넘긴다. **끝까지 실패하면 api 가 받는 것은 같다** —
+  # `EXECUTION_FAILED` 이고, 화면은 "손으로 채워 주세요" 로 떨어진다.
+  fallbacks:
+    - 문제-초안: [문제-초안-예비]
+  # 한 번 더 해 보고 만다. 초안 만들기는 사람이 버튼을 누르고 기다리는 일이라
+  # 오래 매달리는 것보다 빨리 실패하는 편이 낫다.
+  num_retries: 1
+
+litellm_settings:
+  # **돈을 지키는 층은 여기다** (#648).
+  #
+  # api 쪽에도 사람당 분당 제한이 있지만(#230) 그것은 파드마다 세므로 파드가 여럿이면
+  # 그만큼 곱해진다. 그리고 막으려는 것은 남용이 아니라 **고장난 반복 호출**이라,
+  # 총액에 천장이 있어야 한다.
+  max_budget: 20
+  budget_duration: 30d
+  # 키가 로그로 새지 않게 한다.
+  set_verbose: false
+
+general_settings:
+  # api 가 들고 부를 키. **제공자 키가 아니다** — 새면 이것만 돌리면 된다.
+  master_key: os.environ/LITELLM_MASTER_KEY

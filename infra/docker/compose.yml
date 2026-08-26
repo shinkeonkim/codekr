@@ -60,6 +60,40 @@ services:
       retries: 20
     networks: [codekr]
 
+  # 모델 제공자 앞에 서는 프록시 (#648).
+  #
+  # **기본으로 뜨지 않는다.** `profiles` 가 붙어 있어 `make up` 은 이것을 건너뛴다 —
+  # 초안 만들기는 키가 있어야 쓸 수 있고, 키가 없는 사람에게 뜨지 않는 컨테이너 하나가
+  # 늘 실패해 보이는 것은 나쁘다. 켜려면:
+  #
+  #     docker compose --profile ai up -d litellm
+  #
+  # **api 는 이것이 있든 없든 그대로 뜬다.** `CODEKR_DRAFT_BASE_URL` 을 여기로 돌리는
+  # 것은 `.env` 에서 하는 일이고, 안 돌리면 기본값(OpenAI)으로 간다.
+  litellm:
+    image: ghcr.io/berriai/litellm:main-v1.77.3-stable
+    container_name: codekr-litellm
+    profiles: [ai]
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      # **제공자 키는 여기만 안다.** api 는 아래 master key 만 들고 부른다 —
+      # 새면 그것만 돌리면 되고, 제공자 계정 전체가 열리지 않는다.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-codekr-local}
+    volumes:
+      - ../litellm/config.yaml:/app/config.yaml:ro
+    ports:
+      - "${LITELLM_HOST_PORT:-14000}:4000"
+    healthcheck:
+      # `/health/liveliness` 는 키 없이도 답한다 — 제공자에 붙어 보지 않는다.
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:4000/health/liveliness')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [codekr]
+
   api:
     build:
       context: *build-context
