@@ -40,7 +40,7 @@ func main() {
 		"concurrency", cfg.Concurrency, "execTimeout", cfg.ExecTimeout, "drain", cfg.Drain)
 
 	service := judging.NewService(
-		dispatch.NewExecutor(redisClient, cfg.ExecTimeout),
+		dispatch.NewExecutor(redisClient, cfg.ExecTimeout, cfg.Lane),
 		dispatch.NewEventPublisher(redisClient),
 		log,
 	)

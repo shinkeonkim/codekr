@@ -142,6 +142,9 @@ class QueueContractTest {
         assertEquals(keys.judgeContestStream, QueueKeys.JUDGE_STREAM_CONTEST)
         assertTrue(QueueKeys.JUDGE_STREAM_CONTEST !in QueueKeys.JUDGE_PRIORITY_STREAMS)
         assertEquals(keys.execStream, QueueKeys.EXEC_STREAM)
+        // 실행 큐도 차선으로 나뉜다 (#639). **순서가 계약의 일부다** — 대회가 먼저다.
+        assertEquals(keys.execStreamsByPriority, QueueKeys.EXEC_STREAMS_BY_PRIORITY)
+        assertEquals(QueueKeys.EXEC_STREAM_CONTEST, QueueKeys.EXEC_STREAMS_BY_PRIORITY.first())
         assertEquals(keys.judgeGroup, QueueKeys.JUDGE_GROUP)
         assertEquals(keys.execGroup, QueueKeys.EXEC_GROUP)
         assertEquals(keys.eventChannel, QueueKeys.EVENT_CHANNEL)
@@ -158,6 +161,7 @@ class QueueContractTest {
     private data class QueueKeysFixture(
         val judgeStreamsByPriority: List<String>,
         val judgeContestStream: String,
+        val execStreamsByPriority: List<String>,
         val execStream: String,
         val judgeGroup: String,
         val execGroup: String,

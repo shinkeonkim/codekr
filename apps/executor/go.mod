@@ -3,6 +3,7 @@ module github.com/shinkeonkim/codekr/apps/executor
 go 1.25.0
 
 require (
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/containerd/containerd/v2 v2.1.4
 	github.com/containerd/platforms v1.0.0-rc.1
 	github.com/moby/moby/api v1.55.0
@@ -55,6 +56,7 @@ require (
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect

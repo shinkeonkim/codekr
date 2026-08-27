@@ -4,6 +4,12 @@ package contract
 
 // Redis 키. Stream 은 작업 큐, Channel 은 실시간 이벤트 브로드캐스트에 쓴다.
 const (
+	// StreamExec 은 **옛 실행 큐**다 (#639 이전).
+	//
+	// 실행 큐를 차선으로 나눈 뒤에도 지우지 않는다 — 배포는 파드마다 굴러가므로
+	// 그 사이에 **옛 채점기가 여기로 넣고 새 실행기가 새 큐만 읽는** 순간이 생긴다.
+	// 그러면 그 제출은 응답을 못 받고 시스템 오류가 된다. 실행기가 이것도 함께 읽되
+	// **가장 낮은 우선순위**로 둔다.
 	StreamExec        = "codekr:exec"
 	GroupJudge        = "judge-workers"
 	GroupExec         = "exec-workers"
@@ -30,6 +36,49 @@ const (
 	// StreamJudgeContest 는 대회 제출 전용이다 (#62). 전용 워커만 읽는다.
 	StreamJudgeContest = "codekr:judge:contest"
 )
+
+/*
+실행 큐도 차선으로 나눈다 (#639).
+
+**채점기만 나누는 것으로는 부족했다.** 대회 전용 채점기(#62)와 전용 큐가 있어도 그
+뒤의 실행 큐가 한 벌이라, 평소 제출이 몰리면 대회도 함께 밀렸다 — 실측으로 대회 판정
+중앙값이 조용할 때 14~17초에서 방해가 있을 때 27~28초로 **1.6~2배** 늘었다.
+
+큐를 나누고 **실행기가 대회부터 읽는다.** 전용 실행기를 따로 두지 않은 이유: 대회가
+없는 동안 그 실행기가 놀고, 있는 동안에는 나머지가 논다. 우선순위로 두면 대회가 없을
+때 모든 실행기가 평소 제출을 처리한다.
+
+**어느 큐에 넣을지는 채점기 프로세스가 정한다.** 대회 채점기(`CODEKR_JUDGE_LANE=contest`)
+는 대회 큐로, 일반 채점기는 일반 큐로 보낸다 — 메시지 안의 값이 아니라 **보내는 쪽이
+누구인가**로 갈리므로 조작할 자리가 없다. 채점 큐(#102)가 등급을 스트림에 둔 것과 같은 이유다.
+*/
+const (
+	StreamExecContest = "codekr:exec:contest"
+	StreamExecGeneral = "codekr:exec:general"
+)
+
+/*
+ExecStreamsByPriority 는 실행기가 **읽을 순서대로** 나열한다 (#639).
+
+대회가 먼저다. 옛 큐(`StreamExec`)는 배포가 굴러가는 동안만 쓰이므로 맨 뒤다.
+*/
+func ExecStreamsByPriority() []string {
+	return []string{StreamExecContest, StreamExecGeneral, StreamExec}
+}
+
+/*
+ExecStreamFor 는 그 차선의 채점기가 **넣을** 큐를 돌려준다 (#639).
+
+알 수 없는 차선은 일반으로 보낸다 — 읽는 쪽([JudgeStreamsFor])과 규칙이 다르다.
+거기서는 빈 목록이 "아무것도 안 한다" 로 즉시 드러나지만, 여기서 빈 값을 주면
+**채점이 통째로 멈춘다.** 잘못 넣는 것보다 나쁜 결과다.
+*/
+func ExecStreamFor(lane string) string {
+	if lane == LaneContest {
+		return StreamExecContest
+	}
+	return StreamExecGeneral
+}
 
 // JudgeStreamsByPriority 는 **높은 등급부터** 나열한다. 소비자는 이 순서로 시도한다.
 func JudgeStreamsByPriority() []string {
