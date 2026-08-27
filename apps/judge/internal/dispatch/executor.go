@@ -41,6 +41,8 @@ func NewExecutor(client *redis.Client, timeout time.Duration, lane string) *Exec
 func (e *Executor) Run(ctx context.Context, job contract.ExecJob) (contract.ExecResult, error) {
 	job.JobID = newJobID()
 	job.ReplyStream = contract.ReplyStreamPfx + job.JobID
+	// 유형마다 흩어진 아홉 군데가 아니라 **여기 한 곳**에서 찍는다 (#681).
+	job.SubmissionID = contract.SubmissionIDFrom(ctx)
 
 	// 응답 스트림은 결과를 읽은 뒤 지운다. 못 읽고 끝나도 실행기 쪽 TTL 이 정리한다.
 	defer e.redis.Del(context.WithoutCancel(ctx), job.ReplyStream)

@@ -76,12 +76,21 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 	// **여기서 잰다.** `complete` 는 조기 종결 경로가 넷이라 각자 재면 하나를 빠뜨린다.
 	start := time.Now()
 
+	/*
+		이 채점 한 건의 모든 로그에 제출 번호를 붙인다 (#681).
+
+		**줄마다 손으로 적지 않는다.** 전에는 그렇게 했는데, 그러면 새로 추가한 로그
+		한 줄이 조용히 빠지고 그 줄만 이어지지 않는다. 문맥에도 함께 실어 실행기까지
+		따라가게 한다 — `dispatch.Executor.Run` 이 그것을 읽는다.
+	*/
+	ctx = contract.WithSubmissionID(ctx, job.SubmissionID)
+	log := s.log.With(contract.LogKeySubmission, job.SubmissionID)
+
 	kind, known := s.kinds[job.KindOf()]
 	if !known {
 		// 우리가 모르는 유형이다. **채점을 시도하지 않는다** — stdin/stdout 으로 넘겨
 		// 짐작해 채점하면 엉뚱한 판정이 사용자 기록에 남는다.
-		s.log.Error("처리할 수 없는 문제 유형입니다",
-			"submissionId", job.SubmissionID, "kind", job.KindOf())
+		log.Error("처리할 수 없는 문제 유형입니다", "kind", job.KindOf())
 		s.complete(ctx, job, Summary{
 			Verdict:    contract.VerdictSystemError,
 			TotalCount: len(job.Testcases),
@@ -96,7 +105,7 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 		그러면 "틀렸다" 로 기록된다 — 사용자 잘못이 아닌데 사용자 기록에 남는다.
 	*/
 	if job.KindOf() == contract.KindJudgeFunction && job.Harness == "" {
-		s.log.Error("함수형 문제인데 하네스가 없습니다", "submissionId", job.SubmissionID)
+		log.Error("함수형 문제인데 하네스가 없습니다")
 		s.complete(ctx, job, Summary{
 			Verdict:    contract.VerdictSystemError,
 			TotalCount: len(job.Testcases),
@@ -107,8 +116,7 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 	// 제약이 잘못된 작업은 테스트케이스를 하나도 돌리지 않고 즉시 종결한다.
 	// 실행기에서 케이스마다 같은 오류를 반복해 내는 것보다 낫다.
 	if err := contract.ValidateLimits(job.TimeLimitMs, job.MemoryLimitMb); err != nil {
-		s.log.Error("실행 제약이 올바르지 않습니다",
-			"submissionId", job.SubmissionID, "error", err)
+		log.Error("실행 제약이 올바르지 않습니다", "error", err)
 		// 상세 사유는 로그에만 남긴다 — 사용자에게는 채점 인프라 문제로 보이는 편이 정확하다.
 		s.complete(ctx, job, Summary{
 			Verdict:    contract.VerdictSystemError,
@@ -137,14 +145,14 @@ func (s *Service) complete(ctx context.Context, job contract.JudgeJob, summary S
 	// 조기 종결(SYSTEM_ERROR)도 판정이다. 그것만 빠지면 **가장 알고 싶은 것이 빠진다.**
 	metrics.Completed(job.KindOf(), job.RuntimeID, string(summary.Verdict), time.Since(start))
 
-	s.log.Info("채점 완료",
-		"submissionId", job.SubmissionID, "verdict", summary.Verdict,
-		"passed", summary.PassedCount, "total", summary.TotalCount)
+	s.log.With(contract.LogKeySubmission, job.SubmissionID).Info("채점 완료",
+		"verdict", summary.Verdict, "passed", summary.PassedCount, "total", summary.TotalCount)
 }
 
 func (s *Service) publish(ctx context.Context, event contract.Event) {
 	if err := s.events.Publish(ctx, event); err != nil {
-		s.log.Error("이벤트 발행 실패", "submissionId", event.SubmissionID, "type", event.Type, "error", err)
+		s.log.Error("이벤트 발행 실패",
+			contract.LogKeySubmission, event.SubmissionID, "type", event.Type, "error", err)
 	}
 }
 

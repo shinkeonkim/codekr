@@ -2,6 +2,7 @@ package codekr.api.queue
 
 import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
+import codekr.api.observability.Correlation
 import codekr.api.queue.message.ExecJobMessage
 import codekr.api.queue.message.ExecResultMessage
 import codekr.api.queue.message.JudgeEventMessage
@@ -39,7 +40,17 @@ class QueuePublisher(
      */
     fun publishJudgeJob(job: JudgeJobMessage, priority: JudgePriority) {
         add(priority.stream, objectMapper.writeValueAsString(job))
-        log.debug("채점 작업 발행: submissionId={} priority={}", job.submissionId, priority)
+        /*
+            **사슬의 첫 줄이다** (#681). 제출 번호로 Loki 를 한 번 쿼리했을 때
+            api 의 이 줄이 맨 앞에 오고, 그 뒤로 judge·executor 가 따라온다.
+
+            전에는 `debug` 였고 번호가 메시지 문자열 안에 있었다. 둘 다 문제였다 —
+            기본 레벨이 INFO 라 **이 줄은 아예 안 나왔고**, 나왔더라도 통짜 텍스트라
+            Loki 에서 고를 수 없었다.
+        */
+        Correlation.withSubmission(job.submissionId) {
+            log.info("채점 작업을 큐에 넣었습니다. priority={}", priority)
+        }
     }
 
     /**

@@ -162,7 +162,14 @@ const (
 
 // ExecJob 은 judge(또는 api 의 단발 실행)가 실행기에 보내는 작업이다.
 type ExecJob struct {
-	JobID         string `json:"jobId"`
+	JobID string `json:"jobId"`
+	/*
+		SubmissionID 는 로그를 잇기 위한 것뿐이다 (#681). 실행에는 쓰이지 않는다.
+
+		0 이면 제출과 무관한 실행이다 — 코드 실행기(#68)가 그렇다. 채점기가
+		`dispatch.Executor.Run` 에서 문맥의 값으로 찍는다.
+	*/
+	SubmissionID  int64  `json:"submissionId,omitempty"`
 	RuntimeID     string `json:"runtimeId"`
 	SourceCode    string `json:"sourceCode"`
 	Stdin         string `json:"stdin"`
