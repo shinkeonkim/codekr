@@ -273,6 +273,20 @@ export interface MongoSpec {
   ignoreOrder: boolean;
 }
 
+/**
+ * 정규식 문제의 스펙 (#653). **어드민에게만 온다.**
+ *
+ * 푸는 사람에게는 확인 문자열이 가지 않는다 — 보이면 그것만 통과하는 패턴을 쓰면 되므로
+ * 문제가 무너진다. 히든 테스트케이스와 같은 이유다.
+ */
+export interface RegexSpec {
+  /** 한 줄에 하나. 첫 글자가 `+`(맞아야 함) 또는 `-`(맞으면 안 됨). */
+  cases: string;
+  /** 기본은 전체 일치 — 부분 일치는 `.` 하나로도 통과하는 문제가 많다. */
+  fullMatch: boolean;
+  ignoreCase: boolean;
+}
+
 /** 답을 어떻게 받는가 (#650). */
 export type QuizAnswerType = "SINGLE" | "MULTIPLE" | "SHORT";
 
@@ -361,6 +375,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   mongoSpec: MongoSpec | null;
   /** 퀴즈 유형이 아니면 null (#650). */
   quizSpec: QuizSpec | null;
+  /** 정규식 유형이 아니면 null (#653). */
+  regexSpec: RegexSpec | null;
   /** 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495). */
   canVerifySolution?: boolean;
   description: string;

@@ -39,6 +39,7 @@ export type {
   ProblemVerification,
   Runtime,
   MongoSpec,
+  RegexSpec,
   QuizAnswerType,
   QuizSpec,
   QuizView,

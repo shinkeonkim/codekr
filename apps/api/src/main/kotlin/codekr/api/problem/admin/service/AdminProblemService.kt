@@ -21,6 +21,7 @@ import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemMongoSpec
 import codekr.api.problem.entity.ProblemRedisSpec
+import codekr.api.problem.entity.ProblemRegexSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemTestcaseGroupRepository
@@ -29,6 +30,7 @@ import codekr.api.problem.quiz.ProblemQuizAnswerRepository
 import codekr.api.problem.quiz.ProblemQuizChoiceRepository
 import codekr.api.problem.quiz.ProblemQuizSpecRepository
 import codekr.api.problem.repository.ProblemRedisSpecRepository
+import codekr.api.problem.repository.ProblemRegexSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.repository.ProblemSearchCondition
@@ -49,6 +51,7 @@ class AdminProblemService(
     private val sqlSpecRepository: ProblemSqlSpecRepository,
     private val redisSpecRepository: ProblemRedisSpecRepository,
     private val mongoSpecRepository: ProblemMongoSpecRepository,
+    private val regexSpecRepository: ProblemRegexSpecRepository,
     private val quizSpecRepository: ProblemQuizSpecRepository,
     private val quizChoiceRepository: ProblemQuizChoiceRepository,
     private val quizAnswerRepository: ProblemQuizAnswerRepository,
@@ -73,6 +76,7 @@ class AdminProblemService(
             redisSpecRepository.findById(id).orElse(null),
             mongoSpecRepository.findById(id).orElse(null),
             quizSpecOf(id),
+            regexSpecRepository.findById(id).orElse(null),
             fileRepository.findByProblemIdOrderBySeq(id),
             groupRepository.findByProblemIdOrderByGroupNo(id),
             tagService.tagsOf(id),
@@ -165,6 +169,21 @@ class AdminProblemService(
      * 무엇의 개정인지 서버가 짐작하면 **정답 표시가 엉뚱한 줄에 남는다** — 그 실수는
      * 오류 없이 정답률로만 드러난다. 파일 목록(#457)·묶음(#473)이 같은 판단을 했다.
      */
+    /** 정규식 스펙을 넣거나 지운다 (#653). SQL·Redis 와 같은 이유로 유형을 바꾸면 지운다. */
+    private fun upsertRegexSpec(problemId: Long, request: ProblemUpsertRequest): ProblemRegexSpec? {
+        val spec = request.regexSpec ?: run {
+            regexSpecRepository.deleteById(problemId)
+            return null
+        }
+        val existing = regexSpecRepository.findById(problemId).orElse(null)
+            ?: return regexSpecRepository.save(spec.toEntity(problemId))
+
+        existing.cases = spec.cases.trim()
+        existing.fullMatch = spec.fullMatch
+        existing.ignoreCase = spec.ignoreCase
+        return existing
+    }
+
     /** 편집 화면에 돌려줄 퀴즈. **어드민에게는 정답과 해설이 함께 간다** (#650). */
     private fun quizSpecOf(problemId: Long): QuizSpecResponse? =
         quizSpecRepository.findById(problemId).orElse(null)?.let { spec ->
@@ -241,6 +260,7 @@ class AdminProblemService(
         request.redisSpec?.let { redisSpecRepository.save(it.toEntity(saved.id)) }
         request.mongoSpec?.let { mongoSpecRepository.save(it.toEntity(saved.id)) }
         upsertQuizSpec(saved.id, request)
+        request.regexSpec?.let { regexSpecRepository.save(it.toEntity(saved.id)) }
         replaceFiles(saved.id, request)
         replaceTestcaseGroups(saved.id, request)
         creditService.replace(saved.id, request.setterIds, request.reviewerIds)
@@ -315,6 +335,7 @@ class AdminProblemService(
             upsertRedisSpec(problem.id, request),
             upsertMongoSpec(problem.id, request),
             quizSpecOf(problem.id),
+            upsertRegexSpec(problem.id, request),
             fileRepository.findByProblemIdOrderBySeq(problem.id),
             groupRepository.findByProblemIdOrderByGroupNo(problem.id),
             tagService.tagsOf(problem.id),

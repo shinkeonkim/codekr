@@ -13,6 +13,7 @@ import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemTestcaseGroup
 import codekr.api.problem.entity.ProblemMongoSpec
 import codekr.api.problem.entity.ProblemRedisSpec
+import codekr.api.problem.entity.ProblemRegexSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.tag.dto.ProblemTagResponse
 
@@ -34,6 +35,8 @@ data class AdminProblemDetailResponse(
      * 푸는 사람이 받는 `QuizViewResponse` 와 다른 타입인 이유가 그것이다.
      */
     val quizSpec: QuizSpecResponse? = null,
+    /** 정규식 유형이 아니면 `null` (#653). */
+    val regexSpec: RegexSpecResponse? = null,
     /**
      * 정답 코드 검증(#39)을 할 수 있는 유형인가 (#495).
      *
@@ -98,6 +101,7 @@ data class AdminProblemDetailResponse(
             redisSpec: ProblemRedisSpec? = null,
             mongoSpec: ProblemMongoSpec? = null,
             quizSpec: QuizSpecResponse? = null,
+            regexSpec: ProblemRegexSpec? = null,
             files: List<ProblemFile> = emptyList(),
             testcaseGroups: List<ProblemTestcaseGroup> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
@@ -112,6 +116,7 @@ data class AdminProblemDetailResponse(
             redisSpec = redisSpec?.let(RedisSpecResponse::from),
             mongoSpec = mongoSpec?.let(MongoSpecResponse::from),
             quizSpec = quizSpec,
+            regexSpec = regexSpec?.let(RegexSpecResponse::from),
             canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
             testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),

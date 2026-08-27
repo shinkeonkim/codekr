@@ -76,6 +76,8 @@ class DataResetService(
             "problem_mongo_specs",
             // 퀴즈 (#650). 셋 다 문제와 함께 사라진다 — 문제가 없으면 보기도 정답도 뜻이 없다.
             "problem_quiz_specs", "problem_quiz_choices", "problem_quiz_answers",
+            // 정규식 (#653)
+            "problem_regex_specs",
             "problem_tags", "problem_credits",
             "problem_difficulty_votes", "problem_reports", "problem_stats",
             "problem_solution_verifications",

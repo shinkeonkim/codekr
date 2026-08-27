@@ -57,6 +57,7 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 			contract.KindJudgeRedis:       NewRedisJudge(executor, log),
 			contract.KindJudgeMongo:       NewMongoJudge(executor, log),
 			contract.KindJudgeInteractive: NewInteractiveJudge(executor, log),
+			contract.KindJudgeRegex:       NewRegexJudge(executor, log),
 		},
 		events: events,
 		log:    log,
