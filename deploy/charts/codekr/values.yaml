@@ -358,3 +358,20 @@ postdeployVerify:
   enabled: true
   # wget 만 있으면 된다. 앱 이미지를 쓰지 않는 이유는 검증이 앱과 함께 깨지지 않게 하려는 것.
   image: busybox:1.37
+
+# 돌고 있는 것을 밖에서 본다 (#677).
+#
+# **기본은 꺼짐** — `backup.alerts` 와 같은 이유다. Prometheus Operator 가 없는
+# 클러스터에서는 `ServiceMonitor`·`PodMonitor` 라는 종류 자체가 없어서 설치가 깨진다.
+#
+# 켜면 api 는 `ServiceMonitor`(`/actuator/prometheus`), 채점기 둘과 실행기는
+# `PodMonitor`(`/metrics`) 로 긁힌다. 워커에 Service 를 만들지 않는 이유는
+# `templates/monitoring.yaml` 에 적어 두었다.
+monitoring:
+  enabled: false
+  # 채점은 초 단위로 움직인다. 1분이면 대회 중 밀리는 구간이 한 점으로 뭉갠다.
+  interval: 30s
+  # 클러스터의 Prometheus 가 대상을 고르는 라벨. 그쪽 설정에 맞춘다.
+  # 홈랩의 kube-prometheus-stack 은 `serviceMonitorSelectorNilUsesHelmValues: false`
+  # 라 라벨 없이도 잡아간다 — 비워 두어도 된다.
+  labels: {}

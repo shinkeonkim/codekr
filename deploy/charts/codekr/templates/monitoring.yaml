@@ -1,0 +1,78 @@
+{{- if .Values.monitoring.enabled }}
+{{/*
+  Prometheus 가 codekr 을 긁게 한다 (#677).
+
+  **차트가 알림 규칙은 들고 갔는데 수집 설정은 안 들고 갔다.** `backup-alert.yaml`(#281)
+  이 `PrometheusRule` 을 이미 만들고 있어서 백업이 멈춘 것은 알림으로 오는데,
+  채점기가 죽은 것은 아무 데도 남지 않았다.
+
+  **두 종류를 섞는다.** 값을 치르고 고른 것이다.
+
+    api   → ServiceMonitor  이미 Service 가 있다. 웹이 부르는 대상이다
+    judge · judge-contest · executor
+          → PodMonitor      **호출자가 없다.** 큐를 소비할 뿐이다
+
+  긁히려고 Service 를 만들면 없는 호출자를 있는 척하게 된다 — 다음 사람이 그 Service 를
+  보고 "누가 부르는가" 를 찾다가 아무도 없다는 것을 알게 된다. `PodMonitor` 는 정확히
+  이 경우를 위해 있다.
+
+  **기본은 꺼짐.** `backup.alerts.enabled` 와 같은 이유다 — Prometheus Operator 가 없는
+  클러스터에서는 이 CR 자체가 뜨지 않는다. 홈랩에서는 켜는 한 줄이 따라와야 한다.
+*/}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: codekr-api
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: api }
+  endpoints:
+    # `/actuator/metrics` 가 아니다. 텍스트 노출 형식을 내는 것은 이쪽 하나이고,
+    # 인증 없이 열려 있는 것도 이쪽 하나다 (#676).
+    - port: http
+      path: /actuator/prometheus
+      interval: {{ .Values.monitoring.interval }}
+---
+{{/*
+  채점기 둘과 실행기를 **한 CR** 로 긁는다.
+
+  셋 다 컨테이너 포트 이름이 `http` 고 `/metrics` 를 낸다 (`internal/httpapi/server.go`).
+  CR 을 셋으로 나누면 포트나 경로가 바뀔 때 고칠 곳이 셋이 된다.
+
+  **`podTargetLabels` 가 이 CR 의 핵심이다.** judge 와 judge-contest 는 같은 이미지·
+  같은 포트라 이것이 없으면 지표에서 구분되지 않는다 — 대회 채점기가 밀리는지를
+  보려고 #639 를 했는데 정작 지표에서 둘이 한 덩어리가 된다.
+*/}}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: codekr-workers
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- /*
+    **실행기는 다른 네임스페이스에 있을 수 있다** (`executor.namespace`, `_helpers.tpl`).
+    기본값이면 이 CR 과 같은 곳이라 아무 일도 없지만, 갈라 두었을 때 그냥 두면
+    **실행기만 조용히 빠진다** — 채점기 둘은 보이므로 빠진 줄도 모른다.
+
+    `config.yaml` 이 네트워크 정책에서 쓰는 것과 같은 `uniq` 다.
+  */}}
+  namespaceSelector:
+    matchNames: {{- toYaml (list .Release.Namespace (include "codekr.executorNamespace" .) | uniq) | nindent 6 }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: codekr }
+    matchExpressions:
+      - { key: app.kubernetes.io/component, operator: In, values: [judge, judge-contest, executor] }
+  # 이것이 없으면 judge 와 judge-contest 가 지표에서 구분되지 않는다.
+  podTargetLabels: [app.kubernetes.io/component]
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.monitoring.interval }}
+{{- end }}
