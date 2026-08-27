@@ -53,6 +53,9 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 			// **함수형도 stdout 을 비교한다** (#447). 다른 것은 하네스가 입출력을
 			// 맡는다는 것뿐이라, 채점 방식을 새로 만들지 않는다.
 			contract.KindJudgeFunction:    NewStdioJudge(executor, log),
+			// 고치는 문제 (#651)도 같은 채점기다 — 사용자 코드가 하네스와 함께 돌고
+			// 출력을 견준다. 다른 것은 **무엇을 내는가**(함수 vs 고친 파일)뿐이다.
+			contract.KindJudgePatch: NewStdioJudge(executor, log),
 			contract.KindJudgeSQL:         NewSqlJudge(executor, log),
 			contract.KindJudgeRedis:       NewRedisJudge(executor, log),
 			contract.KindJudgeMongo:       NewMongoJudge(executor, log),

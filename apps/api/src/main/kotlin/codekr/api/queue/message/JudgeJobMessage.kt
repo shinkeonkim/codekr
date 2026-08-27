@@ -114,7 +114,10 @@ data class JudgeJobMessage(
                 epsilon = problem.floatEpsilon,
                 sql = sqlSpec?.let(JudgeSqlSpecMessage::from),
                 harness = when (problem.problemKind) {
-                    ProblemKind.JUDGE_FUNCTION -> problem.harnessFor(submission.runtimeId)
+                    // 고치는 문제(#651)에서는 이것이 **숨긴 시험**이다 — 함수형(#421)에서
+                    // 함수를 부르는 코드였던 자리와 같은 곳에 실린다.
+                    ProblemKind.JUDGE_FUNCTION, ProblemKind.JUDGE_PATCH ->
+                        problem.harnessFor(submission.runtimeId)
                     else -> null
                 },
                 redis = redisSpec?.let(JudgeRedisSpecMessage::from),

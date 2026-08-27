@@ -195,6 +195,16 @@ export function SolveWorkspace({ problem, onRuntimeChange, contest }: Props) {
           <span className="text-ink">함수만 구현하면 됩니다.</span> 입력을 읽고 결과를 찍는
           것은 문제가 대신합니다 — 아래 코드의 빈 곳을 채우세요.
         </p>
+      ) : problem.problemKind === "JUDGE_PATCH" ? (
+        /*
+          **처음부터 쓰는 것이 아니다** (#651). 이 말이 없으면 사용자는 빈 화면을
+          기대하다 남의 코드를 보고, 지우고 자기 방식으로 다시 쓴다 — 그러면 문제가
+          묻던 것("무엇이 틀렸는가")이 사라진다.
+        */
+        <p className="text-xs text-ink-muted">
+          <span className="text-ink">아래 코드에서 틀린 곳을 고치세요.</span> 보이지 않는
+          시험이 확인합니다 — 처음부터 다시 쓰지 않아도 됩니다.
+        </p>
       ) : null}
 
       {problem.runtimeRestricted ? (

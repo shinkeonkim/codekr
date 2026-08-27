@@ -226,15 +226,17 @@ export const BLANK_PROBLEM: ProblemFormValues = {
  */
 export function toRequest(values: ProblemFormValues) {
   const { setters, reviewers, sourceLabel, sourceUrl, ...rest } = values;
-  const functionKind = values.problemKind === "JUDGE_FUNCTION";
+  // 하네스를 쓰는 유형 둘 (#421, #651). 허용 언어를 정하는 규칙이 같다.
+  const usesHarness =
+    values.problemKind === "JUDGE_FUNCTION" || values.problemKind === "JUDGE_PATCH";
   return {
     ...rest,
     /*
-      **함수형은 하네스가 곧 허용 언어다** (#446). 둘을 함께 보내면 서버가 거부한다 —
+      **하네스를 쓰는 유형은 하네스가 곧 허용 언어다** (#446, #651). 둘을 함께 보내면 서버가 거부한다 —
       화면이 실수로 남겨 둔 값 때문에 저장이 막히지 않게 여기서 정리한다.
     */
-    allowedRuntimeIds: functionKind ? [] : values.allowedRuntimeIds,
-    harnesses: functionKind ? values.harnesses : {},
+    allowedRuntimeIds: usesHarness ? [] : values.allowedRuntimeIds,
+    harnesses: usesHarness ? values.harnesses : {},
     setterIds: setters.map((each) => each.id),
     reviewerIds: reviewers.map((each) => each.id),
     // 빈 칸은 보내지 않는다 — 빈 문자열을 저장하면 "없음" 과 "빈 값" 이 갈린다.

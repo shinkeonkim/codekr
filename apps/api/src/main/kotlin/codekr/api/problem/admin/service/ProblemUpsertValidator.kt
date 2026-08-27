@@ -34,16 +34,28 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
      * 때문이다(#419 와 같은 자리). 그래서 공개하려면 하나는 있어야 한다.
      */
     private fun validateHarnesses(request: ProblemUpsertRequest) {
-        if (request.problemKind != ProblemKind.JUDGE_FUNCTION) {
+        /*
+            **하네스를 쓰는 유형이 둘이다** (#421, #651).
+
+            함수 구현은 사용자가 함수를 쓰고 하네스가 그것을 부르며, 고치는 문제는
+            사용자가 망가진 코드를 고치고 하네스가 **숨긴 시험**을 돌린다. 실어 보내는
+            것도 허용 언어를 정하는 방식도 같아서 검증이 하나다.
+
+            **하네스는 어드민에게만 간다** — 공개 상세 DTO 에 그 자리가 없다. 고치는
+            문제에서 그것이 곧 "숨긴 시험" 의 근거다.
+        */
+        val kind = request.problemKind
+        if (kind != ProblemKind.JUDGE_FUNCTION && kind != ProblemKind.JUDGE_PATCH) {
             if (request.harnesses.isNotEmpty()) {
-                throw ApiException(ErrorCode.VALIDATION_ERROR, "함수 구현 문제가 아닌데 하네스가 실려 있습니다.")
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "하네스를 쓰는 유형이 아닌데 하네스가 실려 있습니다.")
             }
             return
         }
+        val label = if (kind == ProblemKind.JUDGE_FUNCTION) "함수 구현" else "고치는"
         if (request.published && request.harnesses.isEmpty()) {
             throw ApiException(
                 ErrorCode.VALIDATION_ERROR,
-                "함수 구현 문제는 하네스를 최소 하나 써야 합니다. 하네스가 있는 언어로만 풀 수 있습니다.",
+                "$label 문제는 하네스를 최소 하나 써야 합니다. 하네스가 있는 언어로만 풀 수 있습니다.",
             )
         }
         request.harnesses.keys.forEach { runtimeId ->
@@ -51,7 +63,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             if (!runtime.supportsFunctionHarness) {
                 throw ApiException(
                     ErrorCode.VALIDATION_ERROR,
-                    "이 언어로는 함수 구현 문제를 낼 수 없습니다: ${runtime.label}",
+                    "이 언어로는 $label 문제를 낼 수 없습니다: ${runtime.label}",
                 )
             }
         }
@@ -59,7 +71,19 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         if (request.allowedRuntimeIds.isNotEmpty()) {
             throw ApiException(
                 ErrorCode.VALIDATION_ERROR,
-                "함수 구현 문제는 허용 언어를 따로 고르지 않습니다. 하네스를 쓴 언어가 곧 허용 언어입니다.",
+                "$label 문제는 허용 언어를 따로 고르지 않습니다. 하네스를 쓴 언어가 곧 허용 언어입니다.",
+            )
+        }
+        /*
+            **고치는 문제에는 고칠 것이 있어야 한다** (#651).
+
+            시작 코드가 없으면 사용자는 빈 파일을 받고, 그것은 "고치기" 가 아니라
+            "처음부터 쓰기" 다 — 문제가 묻는 것이 조용히 바뀐다.
+        */
+        if (kind == ProblemKind.JUDGE_PATCH && request.published && request.files.none { it.editable }) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "고치는 문제에는 고칠 수 있는 파일이 하나 이상 필요합니다.",
             )
         }
     }
