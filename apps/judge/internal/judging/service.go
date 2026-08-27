@@ -3,7 +3,9 @@ package judging
 import (
 	"context"
 	"log/slog"
+	"time"
 
+	"github.com/shinkeonkim/codekr/apps/judge/internal/metrics"
 	contract "github.com/shinkeonkim/codekr/libs/gocontract"
 )
 
@@ -52,10 +54,10 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 			contract.KindJudgeStdio: NewStdioJudge(executor, log),
 			// **함수형도 stdout 을 비교한다** (#447). 다른 것은 하네스가 입출력을
 			// 맡는다는 것뿐이라, 채점 방식을 새로 만들지 않는다.
-			contract.KindJudgeFunction:    NewStdioJudge(executor, log),
+			contract.KindJudgeFunction: NewStdioJudge(executor, log),
 			// 고치는 문제 (#651)도 같은 채점기다 — 사용자 코드가 하네스와 함께 돌고
 			// 출력을 견준다. 다른 것은 **무엇을 내는가**(함수 vs 고친 파일)뿐이다.
-			contract.KindJudgePatch: NewStdioJudge(executor, log),
+			contract.KindJudgePatch:       NewStdioJudge(executor, log),
 			contract.KindJudgeSQL:         NewSqlJudge(executor, log),
 			contract.KindJudgeRedis:       NewRedisJudge(executor, log),
 			contract.KindJudgeMongo:       NewMongoJudge(executor, log),
@@ -71,6 +73,9 @@ func NewService(executor ExecutorClient, events EventSink, log *slog.Logger) *Se
 
 // Judge 는 작업 하나를 처음부터 끝까지 수행한다.
 func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
+	// **여기서 잰다.** `complete` 는 조기 종결 경로가 넷이라 각자 재면 하나를 빠뜨린다.
+	start := time.Now()
+
 	kind, known := s.kinds[job.KindOf()]
 	if !known {
 		// 우리가 모르는 유형이다. **채점을 시도하지 않는다** — stdin/stdout 으로 넘겨
@@ -80,7 +85,7 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 		s.complete(ctx, job, Summary{
 			Verdict:    contract.VerdictSystemError,
 			TotalCount: len(job.Testcases),
-		}, "")
+		}, "", start)
 		return
 	}
 
@@ -95,7 +100,7 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 		s.complete(ctx, job, Summary{
 			Verdict:    contract.VerdictSystemError,
 			TotalCount: len(job.Testcases),
-		}, "")
+		}, "", start)
 		return
 	}
 
@@ -108,15 +113,15 @@ func (s *Service) Judge(ctx context.Context, job contract.JudgeJob) {
 		s.complete(ctx, job, Summary{
 			Verdict:    contract.VerdictSystemError,
 			TotalCount: len(job.Testcases),
-		}, "")
+		}, "", start)
 		return
 	}
 
 	outcome := kind.Judge(ctx, job, func(event contract.Event) { s.publish(ctx, event) })
-	s.complete(ctx, job, outcome.Summary, outcome.CompileError)
+	s.complete(ctx, job, outcome.Summary, outcome.CompileError, start)
 }
 
-func (s *Service) complete(ctx context.Context, job contract.JudgeJob, summary Summary, compileError string) {
+func (s *Service) complete(ctx context.Context, job contract.JudgeJob, summary Summary, compileError string, start time.Time) {
 	s.publish(ctx, contract.Event{
 		Type:         contract.EventCompleted,
 		SubmissionID: job.SubmissionID,
@@ -129,6 +134,9 @@ func (s *Service) complete(ctx context.Context, job contract.JudgeJob, summary S
 		Score:        summary.Score,
 		MaxScore:     summary.MaxScore,
 	})
+	// 조기 종결(SYSTEM_ERROR)도 판정이다. 그것만 빠지면 **가장 알고 싶은 것이 빠진다.**
+	metrics.Completed(job.KindOf(), job.RuntimeID, string(summary.Verdict), time.Since(start))
+
 	s.log.Info("채점 완료",
 		"submissionId", job.SubmissionID, "verdict", summary.Verdict,
 		"passed", summary.PassedCount, "total", summary.TotalCount)

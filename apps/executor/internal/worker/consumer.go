@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/shinkeonkim/codekr/apps/executor/internal/metrics"
 	contract "github.com/shinkeonkim/codekr/libs/gocontract"
 )
 
@@ -65,7 +66,7 @@ Start 는 [ctx] 가 끝나면 **새 작업을 그만 받는다.** 하던 실행�
 func (c *Consumer) Start(ctx context.Context, drain time.Duration) error {
 	// 차선마다 스트림이 따로 있다 (#639). 하나라도 그룹이 없으면 그 차선을 못 읽는다.
 	for _, stream := range c.streams {
-		if err := ensureGroup(ctx, c.redis, stream, contract.GroupExec); err != nil {
+		if err := ensureGroup(ctx, c.redis, stream); err != nil {
 			return err
 		}
 	}
@@ -200,6 +201,7 @@ func (c *Consumer) handle(ctx context.Context, stream string, message redis.XMes
 
 	started := time.Now()
 	result := c.runner.Run(ctx, job)
+	metrics.Executed(job.RuntimeID, time.Since(started))
 	c.log.Info("실행 완료",
 		"jobId", job.JobID, "runtime", job.RuntimeID,
 		"status", result.Status, "elapsedMs", time.Since(started).Milliseconds())
@@ -224,8 +226,10 @@ func (c *Consumer) reply(ctx context.Context, job contract.ExecJob, result contr
 }
 
 // ensureGroup 은 consumer group 이 없으면 만든다. 이미 있으면 조용히 넘어간다.
-func ensureGroup(ctx context.Context, client *redis.Client, stream, group string) error {
-	err := client.XGroupCreateMkStream(ctx, stream, group, "0").Err()
+// group 은 늘 [contract.GroupExec] 다. 인자로 받으면 **다를 수 있다는 뜻**이 되고,
+// 실제로는 그런 호출이 없다.
+func ensureGroup(ctx context.Context, client *redis.Client, stream string) error {
+	err := client.XGroupCreateMkStream(ctx, stream, contract.GroupExec, "0").Err()
 	if err != nil && !isBusyGroup(err) {
 		return err
 	}
@@ -294,6 +298,7 @@ func (c *Consumer) reclaim(readCtx, workCtx context.Context, stream string) {
 		if entry.RetryCount > maxDeliveries {
 			c.log.Error("여러 번 실패한 실행 작업을 포기합니다",
 				"stream", stream, "messageId", entry.ID, "deliveries", entry.RetryCount)
+			metrics.Reclaimed(metrics.OutcomeDropped)
 			c.ack(workCtx, stream, entry.ID)
 			continue
 		}
@@ -316,6 +321,7 @@ func (c *Consumer) reclaim(readCtx, workCtx context.Context, stream string) {
 			c.log.Warn("놓친 실행 작업을 다시 실행합니다",
 				"stream", stream, "messageId", message.ID, "idle", entry.Idle,
 				"deliveries", entry.RetryCount, "from", entry.Consumer)
+			metrics.Reclaimed(metrics.OutcomeReclaimed)
 			c.handle(workCtx, stream, message)
 		}
 	}
