@@ -40,6 +40,7 @@ export type {
   Runtime,
   MongoSpec,
   RegexSpec,
+  GitSpec,
   QuizAnswerType,
   QuizSpec,
   QuizView,

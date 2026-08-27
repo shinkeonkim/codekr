@@ -78,6 +78,8 @@ class DataResetService(
             "problem_quiz_specs", "problem_quiz_choices", "problem_quiz_answers",
             // 정규식 (#653)
             "problem_regex_specs",
+            // Git (#654)
+            "problem_git_specs",
             "problem_tags", "problem_credits",
             "problem_difficulty_votes", "problem_reports", "problem_stats",
             "problem_solution_verifications",

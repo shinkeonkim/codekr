@@ -16,6 +16,7 @@ import {
   BLANK_MONGO_SPEC,
   BLANK_QUIZ_SPEC,
   BLANK_REGEX_SPEC,
+  BLANK_GIT_SPEC,
   BLANK_REDIS_SPEC,
   BLANK_SQL_SPEC,
   EMPTY_TESTCASE,
@@ -36,6 +37,7 @@ import { HarnessEditor } from "./HarnessEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { MongoSpecEditor } from "./MongoSpecEditor";
 import { QuizSpecEditor } from "./QuizSpecEditor";
+import { GitSpecEditor } from "./GitSpecEditor";
 import { RegexSpecEditor } from "./RegexSpecEditor";
 import { RedisSpecEditor } from "./RedisSpecEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
@@ -153,6 +155,7 @@ export function ProblemForm({
   const isQuiz = values.problemKind === "QUIZ";
   // 정규식도 실행기를 쓰지만 **언어를 고르지 않는다** (#653) — 엔진은 문제가 정한다.
   const isRegex = values.problemKind === "JUDGE_REGEX";
+  const isGit = values.problemKind === "JUDGE_GIT";
 
   /**
    * 채점 방식을 바꾸면 **그 유형의 자료만 남긴다** (#60).
@@ -176,13 +179,15 @@ export function ProblemForm({
       quizSpec: nextKind === "QUIZ" ? (previous.quizSpec ?? BLANK_QUIZ_SPEC) : null,
       regexSpec:
         nextKind === "JUDGE_REGEX" ? (previous.regexSpec ?? BLANK_REGEX_SPEC) : null,
+      gitSpec: nextKind === "JUDGE_GIT" ? (previous.gitSpec ?? BLANK_GIT_SPEC) : null,
       // 테스트케이스로 채점하지 않는 유형은 그 칸을 비운다 (#455, #527).
       testcases:
         nextKind === "JUDGE_SQL" ||
         nextKind === "JUDGE_REDIS" ||
         nextKind === "JUDGE_MONGODB" ||
         nextKind === "QUIZ" ||
-        nextKind === "JUDGE_REGEX"
+        nextKind === "JUDGE_REGEX" ||
+        nextKind === "JUDGE_GIT"
           ? []
           : previous.testcases,
     }));
@@ -335,6 +340,13 @@ export function ProblemForm({
           <MongoSpecEditor
             value={values.mongoSpec ?? BLANK_MONGO_SPEC}
             onChange={(spec) => update("mongoSpec", spec)}
+          />
+        </FormSection>
+      ) : isGit ? (
+        <FormSection title="Git 시드와 정답" required defaultOpen={open}>
+          <GitSpecEditor
+            value={values.gitSpec ?? BLANK_GIT_SPEC}
+            onChange={(spec) => update("gitSpec", spec)}
           />
         </FormSection>
       ) : isRegex ? (

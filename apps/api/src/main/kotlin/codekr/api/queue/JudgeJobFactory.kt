@@ -4,6 +4,7 @@ import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.repository.ProblemMongoSpecRepository
 import codekr.api.problem.repository.ProblemRedisSpecRepository
+import codekr.api.problem.repository.ProblemGitSpecRepository
 import codekr.api.problem.repository.ProblemRegexSpecRepository
 import codekr.api.problem.repository.ProblemTestcaseGroupRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
@@ -25,6 +26,7 @@ class JudgeJobFactory(
     private val redisSpecRepository: ProblemRedisSpecRepository,
     private val mongoSpecRepository: ProblemMongoSpecRepository,
     private val regexSpecRepository: ProblemRegexSpecRepository,
+    private val gitSpecRepository: ProblemGitSpecRepository,
 ) {
 
     fun of(submission: Submission, problem: Problem): JudgeJobMessage = JudgeJobMessage.of(
@@ -38,6 +40,10 @@ class JudgeJobFactory(
         },
         redisSpec = when (problem.problemKind) {
             ProblemKind.JUDGE_REDIS -> redisSpecRepository.findById(problem.id).orElse(null)
+            else -> null
+        },
+        gitSpec = when (problem.problemKind) {
+            ProblemKind.JUDGE_GIT -> gitSpecRepository.findById(problem.id).orElse(null)
             else -> null
         },
         regexSpec = when (problem.problemKind) {

@@ -249,6 +249,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         }
         validateQuiz(request)
         validateRegex(request)
+        validateGit(request)
         /*
           쓰기를 열었는데 상태를 읽는 쿼리가 없으면 (#453) 채점은 **조용히** 결과 집합
           비교로 돌아간다. `UPDATE` 는 결과 집합이 비어 있으니 아무나 통과한다 —
@@ -280,6 +281,42 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             throw ApiException(ErrorCode.RUNTIME_NOT_FOUND, "지원하지 않는 실행 환경입니다: ${it.runtimeId}")
         }
         request.solution?.let { runtimeRegistry.require(it.runtimeId) }
+    }
+
+    /**
+     * Git 의 규칙 (#654).
+     *
+     * **확인 명령이 커밋 해시를 그대로 찍으면 경고한다.** 하네스가 신원·시각을 고정해
+     * 해시가 재현되기는 하지만, **메시지 한 글자만 달라도 해시가 달라져** 같은 결과에
+     * 이른 다른 풀이가 틀린 답이 된다. 막지는 않는다 — 해시를 묻는 문제도 있을 수 있다.
+     */
+    private fun validateGit(request: ProblemUpsertRequest) {
+        val spec = request.gitSpec
+        if (request.problemKind != ProblemKind.JUDGE_GIT) {
+            if (spec != null) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "Git 문제가 아닌데 Git 스펙이 실려 있습니다.")
+            }
+            return
+        }
+        if (spec == null) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "Git 문제에는 정답 명령과 끝난 뒤를 읽는 명령이 필요합니다.",
+            )
+        }
+        /*
+            **명령 파일에는 git 명령만 담긴다.** 하네스도 같은 규칙으로 막지만,
+            거기서 막히면 사용자는 **출제자가 넣은 시드가 실패한 것**을 자기 잘못으로 본다.
+            등록에서 먼저 잡는다.
+        */
+        for ((label, commands) in listOf("시드" to spec.seedCommands, "정답" to spec.answerCommands)) {
+            commands.orEmpty().lines()
+                .map { it.trim() }
+                .firstOrNull { it.isNotEmpty() && !it.startsWith("#") && !it.startsWith("git ") }
+                ?.let {
+                    throw ApiException(ErrorCode.VALIDATION_ERROR, "$label 명령은 git 으로 시작해야 합니다: $it")
+                }
+        }
     }
 
     /**

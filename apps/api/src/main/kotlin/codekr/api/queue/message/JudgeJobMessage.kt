@@ -5,6 +5,7 @@ import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.entity.ProblemMongoSpec
 import codekr.api.problem.entity.ProblemRedisSpec
+import codekr.api.problem.entity.ProblemGitSpec
 import codekr.api.problem.entity.ProblemRegexSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.problem.entity.ProblemTestcaseGroup
@@ -57,6 +58,8 @@ data class JudgeJobMessage(
     val mongo: JudgeMongoSpecMessage? = null,
     /** 정규식 문제의 확인 문자열과 판정 방식 (#653). 그 유형일 때만 실린다. */
     val regex: JudgeRegexSpecMessage? = null,
+    /** Git 문제의 시드·정답·확인 명령 (#654). 그 유형일 때만 실린다. */
+    val git: JudgeGitSpecMessage? = null,
     /**
      * 함수형 유형일 때만 실린다 (#447, #421).
      *
@@ -93,6 +96,7 @@ data class JudgeJobMessage(
             redisSpec: ProblemRedisSpec? = null,
             mongoSpec: ProblemMongoSpec? = null,
             regexSpec: ProblemRegexSpec? = null,
+            gitSpec: ProblemGitSpec? = null,
         ): JudgeJobMessage {
             val limits = problem.limitsFor(submission.runtimeId)
             return JudgeJobMessage(
@@ -116,6 +120,7 @@ data class JudgeJobMessage(
                 redis = redisSpec?.let(JudgeRedisSpecMessage::from),
                 mongo = mongoSpec?.let(JudgeMongoSpecMessage::from),
                 regex = regexSpec?.let(JudgeRegexSpecMessage::from),
+                git = gitSpec?.let(JudgeGitSpecMessage::from),
                 interactor = problem.interactorSource
                     ?.takeIf { problem.problemKind == ProblemKind.JUDGE_INTERACTIVE },
                 checker = problem.checkerSource

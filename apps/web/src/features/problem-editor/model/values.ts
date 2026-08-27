@@ -10,6 +10,7 @@ import type {
   QuizSpec,
   RedisSpec,
   RegexSpec,
+  GitSpec,
   SqlSpec,
   Testcase,
 } from "@/entities/problem";
@@ -35,6 +36,8 @@ export interface ProblemFormValues {
   quizSpec: QuizSpec | null;
   /** 정규식 유형일 때만 보낸다 (#653). */
   regexSpec: RegexSpec | null;
+  /** Git 유형일 때만 보낸다 (#654). */
+  gitSpec: GitSpec | null;
   /** 비워 둘 수 있다 (#195) — 그때 `difficultyState` 가 뜻을 갖는다. */
   difficulty: Difficulty | null;
   difficultyState: DifficultyState;
@@ -116,6 +119,18 @@ export const BLANK_REGEX_SPEC: RegexSpec = {
   ignoreCase: false,
 };
 
+/**
+ * 새 Git 문제의 기본값 (#654).
+ *
+ * 확인 명령을 **트리 해시로 미리 채워 둔다.** 커밋 해시(`%H`)로 두면 메시지 한 글자만
+ * 달라도 같은 결과에 이른 다른 풀이가 틀린 답이 된다 — 그것을 기본으로 만들지 않는다.
+ */
+export const BLANK_GIT_SPEC: GitSpec = {
+  seedCommands: "git commit -q --allow-empty -m base\n",
+  answerCommands: "",
+  verifyCommands: "git log --format='%T %s'\n",
+};
+
 export const BLANK_SQL_SPEC: SqlSpec = {
   schemaSql: "",
   answerSql: "",
@@ -136,6 +151,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     mongoSpec: problem.mongoSpec ?? null,
     quizSpec: problem.quizSpec ?? null,
     regexSpec: problem.regexSpec ?? null,
+    gitSpec: problem.gitSpec ?? null,
     difficulty: problem.difficulty,
     difficultyState: problem.difficultyState ?? "UNRATED",
     description: problem.description,
@@ -175,6 +191,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   mongoSpec: null,
   quizSpec: null,
   regexSpec: null,
+  gitSpec: null,
   // 새 문제의 기본은 **미평가**다 (#195). 브론즈로 두면 "아직 안 정했다" 와
   // "쉽다" 가 구분되지 않는다 — 등록은 쉬워지지만 거짓 정보가 섞인다.
   difficulty: null,

@@ -94,6 +94,19 @@ enum class ProblemKind(
     JUDGE_REGEX("정규식", ready = true, needsTestcases = false, supportsSolutionVerification = false),
 
     /**
+     * Git (#654).
+     *
+     * **Redis(#455)와 채점 모델이 같다** — 제출이 명령의 연속이고 남는 것은 상태다.
+     * 그런데도 유형을 나눈 이유는 담기는 것이 다르고(git 명령 vs redis 명령), 하네스가
+     * 해야 하는 일이 다르기 때문이다: 커밋 해시가 재현되도록 **신원과 시각을 고정**하고
+     * 네트워크 명령을 즉시 막는다.
+     *
+     * 정답 코드 검증(#39)은 없다. 그 대응물("정답 명령을 시드에 돌려 상태를 본다")은
+     * 채점이 이미 매번 하고 있다 — 기대값이 그렇게 만들어진다.
+     */
+    JUDGE_GIT("Git", ready = true, needsTestcases = false, supportsSolutionVerification = false),
+
+    /**
      * 객관식·단답 (#650). **실행기를 쓰지 않는 유일한 유형이다.**
      *
      * 채점이 값 비교라 api 가 그 자리에서 한다 — 그래서 런타임도, 시간·메모리 제한도,
