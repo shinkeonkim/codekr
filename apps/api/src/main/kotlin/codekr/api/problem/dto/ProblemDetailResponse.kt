@@ -7,6 +7,7 @@ import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemCategory
 import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.quiz.QuizViewResponse
 import codekr.api.runtime.RuntimeDefinition
 import codekr.api.tag.dto.ProblemTagResponse
 
@@ -66,6 +67,13 @@ data class ProblemDetailResponse(
      * 태그로 공부할 문제를 고르는 일 자체가 불가능해진다.
      */
     val tags: List<ProblemTagResponse>,
+    /**
+     * 퀴즈 문제의 보기 (#650). 다른 유형이면 `null` 이다.
+     *
+     * **정답과 해설이 여기 없다.** 히든 테스트케이스를 이 타입에 담지 않는 것과 같은
+     * 규칙이다 — 담을 자리를 만들지 않으면 실수로도 새지 않는다.
+     */
+    val quiz: QuizViewResponse?,
 ) {
     companion object {
         fun of(
@@ -76,6 +84,7 @@ data class ProblemDetailResponse(
             credits: List<ProblemCreditResponse> = emptyList(),
             /** 런타임 → 그 언어로 풀 때 채울 파일들 (#457). */
             files: Map<String, List<ProblemFile>> = emptyMap(),
+            quiz: QuizViewResponse? = null,
         ) = ProblemDetailResponse(
             id = problem.id,
             slug = problem.slug,
@@ -109,6 +118,7 @@ data class ProblemDetailResponse(
                 )
             },
             tags = tags,
+            quiz = quiz,
         )
     }
 }

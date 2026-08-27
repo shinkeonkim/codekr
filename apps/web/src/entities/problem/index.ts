@@ -12,6 +12,7 @@ export {
 export { useProblem } from "./model/useProblem";
 export { PROBLEM_SORTS, SELECTABLE_KINDS } from "./model/types";
 export { OUTPUT_COMPARISON_LABELS } from "./model/types";
+export { QUIZ_ANSWER_TYPE_LABELS } from "./model/types";
 export { DIFFICULTY_STATE_LABELS } from "./ui/TierBadge";
 export type {
   AdminProblemDetail,
@@ -38,6 +39,10 @@ export type {
   ProblemVerification,
   Runtime,
   MongoSpec,
+  QuizAnswerType,
+  QuizSpec,
+  QuizView,
+  QuizResult,
   RedisSpec,
   SqlSpec,
   Testcase,

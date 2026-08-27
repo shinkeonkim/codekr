@@ -111,6 +111,8 @@ export interface ProblemDetail extends Omit<ProblemSummary, "published"> {
   problemKind: ProblemKind;
   /** 알고리즘 분류 (#232). 화면에서 기본으로 접어 둔다 — 풀이 힌트가 된다. */
   tags: ProblemTag[];
+  /** 퀴즈 문제의 보기 (#650). 다른 유형이면 null 이다. **정답은 여기 없다.** */
+  quiz: QuizView | null;
 }
 
 export type TestcaseVisibility = "PUBLIC" | "HIDDEN";
@@ -271,6 +273,49 @@ export interface MongoSpec {
   ignoreOrder: boolean;
 }
 
+/** 답을 어떻게 받는가 (#650). */
+export type QuizAnswerType = "SINGLE" | "MULTIPLE" | "SHORT";
+
+export const QUIZ_ANSWER_TYPE_LABELS: Record<QuizAnswerType, string> = {
+  SINGLE: "객관식 (하나)",
+  MULTIPLE: "객관식 (여럿)",
+  SHORT: "단답",
+};
+
+/**
+ * 퀴즈 문제의 스펙 (#650). **어드민에게만 온다.**
+ *
+ * 푸는 사람이 받는 것은 [QuizView] 이고, 거기에는 `correct` 도 `explanation` 도 없다.
+ */
+export interface QuizSpec {
+  answerType: QuizAnswerType;
+  explanation: string | null;
+  choices: { content: string; correct: boolean }[];
+  /** 단답으로 받아 줄 답. 동의어를 여기에 적는다 — 정규화로는 이을 수 없다. */
+  answers: string[];
+  ignoreCase: boolean;
+  ignoreWhitespace: boolean;
+}
+
+/**
+ * 푸는 사람이 보는 퀴즈 (#650).
+ *
+ * **정답도 해설도 없다.** 서버의 `QuizViewResponse` 에 그 자리가 없어서, 화면이
+ * 실수로 그릴 방법조차 없다.
+ */
+export interface QuizView {
+  answerType: QuizAnswerType;
+  answerTypeLabel: string;
+  choices: { seq: number; content: string }[];
+}
+
+/** 퀴즈 채점 결과 (#650). 해설은 여기서 처음 온다. */
+export interface QuizResult {
+  submissionId: number;
+  correct: boolean;
+  explanation: string | null;
+}
+
 /**
  * 여러 파일을 완성하는 문제의 파일 하나 (#457).
  *
@@ -314,6 +359,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   /** Redis 유형이 아니면 null (#455). */
   redisSpec: RedisSpec | null;
   mongoSpec: MongoSpec | null;
+  /** 퀴즈 유형이 아니면 null (#650). */
+  quizSpec: QuizSpec | null;
   /** 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495). */
   canVerifySolution?: boolean;
   description: string;

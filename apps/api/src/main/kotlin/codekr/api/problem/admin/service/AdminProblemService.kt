@@ -6,6 +6,7 @@ import codekr.api.common.error.ErrorCode
 import codekr.api.problem.admin.dto.AdminProblemDetailResponse
 import codekr.api.problem.admin.dto.ProblemCreatedResponse
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
+import codekr.api.problem.admin.dto.QuizSpecResponse
 import codekr.api.problem.admin.dto.RuntimeLimitRequest
 import codekr.api.problem.admin.dto.TemplateRequest
 import codekr.api.problem.admin.dto.TestcaseRequest
@@ -24,6 +25,9 @@ import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemTestcaseGroupRepository
 import codekr.api.problem.repository.ProblemMongoSpecRepository
+import codekr.api.problem.quiz.ProblemQuizAnswerRepository
+import codekr.api.problem.quiz.ProblemQuizChoiceRepository
+import codekr.api.problem.quiz.ProblemQuizSpecRepository
 import codekr.api.problem.repository.ProblemRedisSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.problem.repository.ProblemRepository
@@ -45,6 +49,9 @@ class AdminProblemService(
     private val sqlSpecRepository: ProblemSqlSpecRepository,
     private val redisSpecRepository: ProblemRedisSpecRepository,
     private val mongoSpecRepository: ProblemMongoSpecRepository,
+    private val quizSpecRepository: ProblemQuizSpecRepository,
+    private val quizChoiceRepository: ProblemQuizChoiceRepository,
+    private val quizAnswerRepository: ProblemQuizAnswerRepository,
     private val fileRepository: ProblemFileRepository,
     private val groupRepository: ProblemTestcaseGroupRepository,
     private val scoreResyncService: ProblemScoreResyncService,
@@ -65,6 +72,7 @@ class AdminProblemService(
             sqlSpecRepository.findById(id).orElse(null),
             redisSpecRepository.findById(id).orElse(null),
             mongoSpecRepository.findById(id).orElse(null),
+            quizSpecOf(id),
             fileRepository.findByProblemIdOrderBySeq(id),
             groupRepository.findByProblemIdOrderByGroupNo(id),
             tagService.tagsOf(id),
@@ -150,6 +158,45 @@ class AdminProblemService(
         return existing
     }
 
+    /**
+     * 퀴즈 자료를 넣거나 지운다 (#650).
+     *
+     * **보기와 답은 통째로 갈아 끼운다.** 번호가 바뀌면 그것은 다른 보기이고, 무엇이
+     * 무엇의 개정인지 서버가 짐작하면 **정답 표시가 엉뚱한 줄에 남는다** — 그 실수는
+     * 오류 없이 정답률로만 드러난다. 파일 목록(#457)·묶음(#473)이 같은 판단을 했다.
+     */
+    /** 편집 화면에 돌려줄 퀴즈. **어드민에게는 정답과 해설이 함께 간다** (#650). */
+    private fun quizSpecOf(problemId: Long): QuizSpecResponse? =
+        quizSpecRepository.findById(problemId).orElse(null)?.let { spec ->
+            QuizSpecResponse.of(
+                spec,
+                quizChoiceRepository.findByProblemIdOrderBySeqAsc(problemId),
+                quizAnswerRepository.findByProblemIdOrderBySeqAsc(problemId),
+            )
+        }
+
+    private fun upsertQuizSpec(problemId: Long, request: ProblemUpsertRequest): Boolean {
+        quizChoiceRepository.deleteByProblemId(problemId)
+        quizAnswerRepository.deleteByProblemId(problemId)
+
+        val spec = request.quizSpec ?: run {
+            quizSpecRepository.deleteById(problemId)
+            return false
+        }
+        val existing = quizSpecRepository.findById(problemId).orElse(null)
+        if (existing == null) {
+            quizSpecRepository.save(spec.toSpec(problemId))
+        } else {
+            existing.answerType = spec.answerType
+            existing.explanation = spec.explanation?.ifBlank { null }
+            existing.ignoreCase = spec.ignoreCase
+            existing.ignoreWhitespace = spec.ignoreWhitespace
+        }
+        quizChoiceRepository.saveAll(spec.toChoices(problemId))
+        quizAnswerRepository.saveAll(spec.toAnswers(problemId))
+        return true
+    }
+
     @Transactional
     fun create(request: ProblemUpsertRequest, createdBy: Long): ProblemCreatedResponse {
         if (problemRepository.existsBySlugAndDeletedAtIsNull(request.slug)) {
@@ -193,6 +240,7 @@ class AdminProblemService(
         request.sqlSpec?.let { sqlSpecRepository.save(it.toEntity(saved.id)) }
         request.redisSpec?.let { redisSpecRepository.save(it.toEntity(saved.id)) }
         request.mongoSpec?.let { mongoSpecRepository.save(it.toEntity(saved.id)) }
+        upsertQuizSpec(saved.id, request)
         replaceFiles(saved.id, request)
         replaceTestcaseGroups(saved.id, request)
         creditService.replace(saved.id, request.setterIds, request.reviewerIds)
@@ -244,6 +292,7 @@ class AdminProblemService(
         problem.replaceSolution(request.solution?.runtimeId, request.solution?.sourceCode)
         replaceFiles(problem.id, request)
         replaceTestcaseGroups(problem.id, request)
+        upsertQuizSpec(problem.id, request)
 
         /*
             바뀐 난이도·공개 여부를 이미 맞힌 사람들의 점수에 반영한다 (#194).
@@ -265,6 +314,7 @@ class AdminProblemService(
             upsertSqlSpec(problem.id, request),
             upsertRedisSpec(problem.id, request),
             upsertMongoSpec(problem.id, request),
+            quizSpecOf(problem.id),
             fileRepository.findByProblemIdOrderBySeq(problem.id),
             groupRepository.findByProblemIdOrderByGroupNo(problem.id),
             tagService.tagsOf(problem.id),

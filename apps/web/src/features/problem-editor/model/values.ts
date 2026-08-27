@@ -7,6 +7,7 @@ import type {
   ProblemSolution,
   ProblemTemplate,
   MongoSpec,
+  QuizSpec,
   RedisSpec,
   SqlSpec,
   Testcase,
@@ -29,6 +30,8 @@ export interface ProblemFormValues {
   /** Redis 유형일 때만 보낸다 (#455). */
   redisSpec: RedisSpec | null;
   mongoSpec: MongoSpec | null;
+  /** 퀴즈 유형일 때만 보낸다 (#650). */
+  quizSpec: QuizSpec | null;
   /** 비워 둘 수 있다 (#195) — 그때 `difficultyState` 가 뜻을 갖는다. */
   difficulty: Difficulty | null;
   difficultyState: DifficultyState;
@@ -85,6 +88,19 @@ export const BLANK_MONGO_SPEC: MongoSpec = {
   ignoreOrder: false,
 };
 
+/** 새 퀴즈의 기본값 (#650). 보기 둘로 시작한다 — 하나뿐이면 고를 것이 없다. */
+export const BLANK_QUIZ_SPEC: QuizSpec = {
+  answerType: "SINGLE",
+  explanation: null,
+  choices: [
+    { content: "", correct: false },
+    { content: "", correct: false },
+  ],
+  answers: [],
+  ignoreCase: true,
+  ignoreWhitespace: true,
+};
+
 export const BLANK_SQL_SPEC: SqlSpec = {
   schemaSql: "",
   answerSql: "",
@@ -103,6 +119,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     sqlSpec: problem.sqlSpec,
     redisSpec: problem.redisSpec ?? null,
     mongoSpec: problem.mongoSpec ?? null,
+    quizSpec: problem.quizSpec ?? null,
     difficulty: problem.difficulty,
     difficultyState: problem.difficultyState ?? "UNRATED",
     description: problem.description,
@@ -140,6 +157,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   sqlSpec: null,
   redisSpec: null,
   mongoSpec: null,
+  quizSpec: null,
   // 새 문제의 기본은 **미평가**다 (#195). 브론즈로 두면 "아직 안 정했다" 와
   // "쉽다" 가 구분되지 않는다 — 등록은 쉬워지지만 거짓 정보가 섞인다.
   difficulty: null,

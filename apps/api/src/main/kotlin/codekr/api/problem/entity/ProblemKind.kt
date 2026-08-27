@@ -77,8 +77,19 @@ enum class ProblemKind(
      */
     JUDGE_INTERACTIVE("인터랙티브", ready = true, supportsSolutionVerification = false),
 
-    /** 객관식·단답. 실행기를 쓰지 않고 api 에서 즉시 채점한다. */
-    QUIZ("객관식 · 단답", ready = false),
+    /**
+     * 객관식·단답 (#650). **실행기를 쓰지 않는 유일한 유형이다.**
+     *
+     * 채점이 값 비교라 api 가 그 자리에서 한다 — 그래서 런타임도, 시간·메모리 제한도,
+     * 테스트케이스도 없다. 정답 코드 검증(#39)의 대응물도 없다: 검증한다는 것이
+     * "정답 코드를 돌려 본다" 인데 여기에는 돌릴 것이 없다.
+     *
+     * **점수는 난이도에서 나온다.** 퀴즈는 난이도를 두지 않아(`UNRATED`) 0점이고,
+     * 푼 문제 수와 활동에는 센다 — #195 가 이미 정해 둔 규칙을 그대로 쓴다.
+     * 찍어서 맞는 문제가 랭킹 합에 들어가지 않게 하려는 것이고, 그 판단을 랭킹
+     * 계산에 손대지 않고 얻는다.
+     */
+    QUIZ("객관식 · 단답", ready = true, needsTestcases = false, supportsSolutionVerification = false),
 
     /** 서술형. 사람이 검수한다. */
     MANUAL("서술형 (사람 검수)", ready = false),
