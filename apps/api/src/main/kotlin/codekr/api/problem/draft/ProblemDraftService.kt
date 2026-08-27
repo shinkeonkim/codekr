@@ -126,8 +126,12 @@ class ProblemDraftService(
                 .retrieve()
                 .body(String::class.java)
         }.getOrElse { failure ->
-            // **키가 로그에 실리지 않게** 예외를 통째로 남기지 않는다 (#355 와 같은 규칙).
-            log.error("초안 만들기 실패 원인={}", "${failure.javaClass.simpleName}: ${failure.message}")
+            /*
+                **본문을 싣지 않는다** (#663). 이 자리에 "키가 로그에 실리지 않게" 라고
+                적혀 있었는데 실제로는 실리고 있었다 — `RestClient` 의 예외는 메시지에
+                응답 본문을 통째로 붙이고, 거기에 제공자가 마스킹한 키가 들어 있다.
+            */
+            log.error("초안 만들기 실패 원인={}", ProviderFailure.describe(failure, objectMapper))
             throw ApiException(ErrorCode.EXECUTION_FAILED, "초안을 만들지 못했습니다. 손으로 채워 주세요.")
         }
 
