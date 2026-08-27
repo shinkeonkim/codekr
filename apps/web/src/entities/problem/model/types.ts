@@ -173,6 +173,7 @@ export type ProblemKind =
   | "JUDGE_REGEX"
   | "JUDGE_GIT"
   | "JUDGE_PATCH"
+  | "JUDGE_MUTATION"
   | "QUIZ"
   | "MANUAL";
 
@@ -239,6 +240,8 @@ export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_GIT: "Git",
   // 망가진 코드를 고친다. 보이지 않는 시험이 확인한다 (#651).
   JUDGE_PATCH: "읽고 고치기",
+  // 사용자가 시험을 내고 우리가 구현을 숨긴다 (#652).
+  JUDGE_MUTATION: "테스트 작성 (뮤테이션)",
   // 실행기를 쓰지 않고 api 가 즉시 채점한다 (#650).
   QUIZ: "객관식 · 단답",
 };
@@ -293,6 +296,19 @@ export interface MongoSpec {
   verifyScript: string;
   /** 기본은 순서를 지킨다 — Redis 와 같은 판단이다. */
   ignoreOrder: boolean;
+}
+
+/**
+ * 테스트 작성 문제의 스펙 (#652). **어드민에게만 온다.**
+ *
+ * 푸는 사람에게는 구현도 이름표도 가지 않는다 — 무엇을 심었는지가 곧 무엇을 확인해야
+ * 하는지라, 보이면 답을 주는 것이 된다.
+ */
+export interface MutationSpec {
+  /** 올바른 구현. 사용자의 시험이 이것은 통과시켜야 한다. */
+  referenceSource: string;
+  /** 버그를 심은 구현들. 사용자의 시험이 전부 실패시켜야 한다. */
+  mutants: { label: string | null; source: string }[];
 }
 
 /**
@@ -414,6 +430,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   regexSpec: RegexSpec | null;
   /** Git 유형이 아니면 null (#654). */
   gitSpec: GitSpec | null;
+  /** 테스트 작성 유형이 아니면 null (#652). */
+  mutationSpec: MutationSpec | null;
   /** 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495). */
   canVerifySolution?: boolean;
   description: string;

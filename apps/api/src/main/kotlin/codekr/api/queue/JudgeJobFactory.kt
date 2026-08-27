@@ -5,6 +5,9 @@ import codekr.api.problem.entity.ProblemKind
 import codekr.api.problem.repository.ProblemMongoSpecRepository
 import codekr.api.problem.repository.ProblemRedisSpecRepository
 import codekr.api.problem.repository.ProblemGitSpecRepository
+import codekr.api.problem.repository.ProblemMutantRepository
+import codekr.api.problem.repository.ProblemMutationSpecRepository
+import codekr.api.queue.message.JudgeMutationSpecMessage
 import codekr.api.problem.repository.ProblemRegexSpecRepository
 import codekr.api.problem.repository.ProblemTestcaseGroupRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
@@ -27,6 +30,8 @@ class JudgeJobFactory(
     private val mongoSpecRepository: ProblemMongoSpecRepository,
     private val regexSpecRepository: ProblemRegexSpecRepository,
     private val gitSpecRepository: ProblemGitSpecRepository,
+    private val mutationSpecRepository: ProblemMutationSpecRepository,
+    private val mutantRepository: ProblemMutantRepository,
 ) {
 
     fun of(submission: Submission, problem: Problem): JudgeJobMessage = JudgeJobMessage.of(
@@ -40,6 +45,11 @@ class JudgeJobFactory(
         },
         redisSpec = when (problem.problemKind) {
             ProblemKind.JUDGE_REDIS -> redisSpecRepository.findById(problem.id).orElse(null)
+            else -> null
+        },
+        mutationSpec = when (problem.problemKind) {
+            ProblemKind.JUDGE_MUTATION -> mutationSpecRepository.findById(problem.id).orElse(null)
+                ?.let { JudgeMutationSpecMessage.of(it, mutantRepository.findByProblemIdOrderBySeqAsc(problem.id)) }
             else -> null
         },
         gitSpec = when (problem.problemKind) {

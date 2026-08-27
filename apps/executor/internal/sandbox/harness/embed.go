@@ -62,6 +62,15 @@ Git 은 Git 문제의 하네스다 (#654).
 */
 const Git = "git"
 
+/*
+Mutation 은 테스트 작성 문제의 하네스다 (#652).
+
+**구현마다 컨테이너를 띄우지 않는다.** 여기서 반복을 돌아 실행이 한 번이다 —
+그러지 않으면 실행기 부하가 구현 수만큼 늘고, 이 유형이 다른 것보다 비싼 이유가
+그것이었다.
+*/
+const Mutation = "mutation"
+
 // scripts 는 하네스 이름 → 작업 디렉터리에 쓸 파일 이름이다.
 var scripts = map[string]string{
 	SQL:         "run-sql.sh",
@@ -71,6 +80,7 @@ var scripts = map[string]string{
 	Interactive: "run-interactive.sh",
 	Regex:       "run-regex.sh",
 	Git:         "run-git.sh",
+	Mutation:    "run-mutation.sh",
 }
 
 // Files 는 그 하네스가 작업 디렉터리에 풀어야 할 파일들이다.

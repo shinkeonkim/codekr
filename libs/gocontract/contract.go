@@ -233,8 +233,19 @@ const (
 		"시작 코드가 망가져 있으면 고치는 문제" 라는 암묵 규칙을 만들지 않기 위해서다.
 	*/
 	KindJudgePatch = "JUDGE_PATCH"
-	KindQuiz       = "QUIZ"
-	KindManual     = "MANUAL"
+	/*
+		KindJudgeMutation 은 **테스트를 쓰는** 문제다 (#652).
+
+		채점이 뒤집혀 있다 — 다른 유형은 우리가 시험을 숨기고 사용자가 구현을 내지만,
+		여기서는 **사용자가 시험을 내고 우리가 구현을 숨긴다.** 정답은 심어 둔 버그를
+		전부 잡고 올바른 구현은 통과시키는 시험이다.
+
+		이름을 `JUDGE_TEST` 로 두지 않는다 — "시험" 은 이 저장소에서 너무 넓은 말이라
+		무엇을 채점하는지 가리지 못한다 (#455 의 교훈).
+	*/
+	KindJudgeMutation = "JUDGE_MUTATION"
+	KindQuiz          = "QUIZ"
+	KindManual        = "MANUAL"
 )
 
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.
@@ -305,6 +316,26 @@ type JudgeJob struct {
 	Regex *JudgeRegexSpec `json:"regex,omitempty"`
 	// Git 은 KindJudgeGit 일 때만 실린다 (#654).
 	Git *JudgeGitSpec `json:"git,omitempty"`
+	// Mutation 은 KindJudgeMutation 일 때만 실린다 (#652).
+	Mutation *JudgeMutationSpec `json:"mutation,omitempty"`
+}
+
+/*
+JudgeMutationSpec 은 테스트 작성 문제의 채점 자료다 (#652).
+
+**정답 시험을 두지 않는다.** 기대값은 구조가 정한다 — 올바른 구현은 통과, 버그 심은
+구현은 전부 실패다. 정답 시험으로 기대값을 만들면 **출제자가 놓친 버그는 아무도 잡지
+못한다**: 그 시험이 못 잡은 뮤턴트는 "잡지 않아도 되는 것" 이 되어 버린다.
+*/
+type JudgeMutationSpec struct {
+	// Reference 는 올바른 구현이다. 사용자의 시험이 이것은 **통과시켜야** 한다.
+	Reference string `json:"reference"`
+	/*
+		Mutants 는 버그를 심은 구현들이다. 사용자의 시험이 **전부 실패시켜야** 한다.
+
+		**순서가 판정의 순서다.** 하네스가 이 차례로 돌리고 그 줄 순서로 견준다.
+	*/
+	Mutants []string `json:"mutants"`
 }
 
 /*

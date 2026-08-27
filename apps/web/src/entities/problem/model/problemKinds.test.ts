@@ -21,15 +21,24 @@ const KIND_SOURCE = join(
   "api", "src", "main", "kotlin", "codekr", "api", "problem", "entity", "ProblemKind.kt",
 );
 
-/** `ready = true` 로 선언된 유형 이름들. */
+/**
+ * `ready = true` 로 선언된 유형 이름들.
+ *
+ * **줄 단위로 읽지 않는다.** 처음에는 "이름과 `ready = true` 가 같은 줄" 로 찾았는데,
+ * 인자가 길어 여러 줄로 쓴 항목(`JUDGE_MUTATION`)을 못 봤다 — 그리고 이 시험이
+ * 그것을 잡았다. **형식에 기대는 가드는 형식이 바뀌면 조용히 눈이 먼다.**
+ *
+ * 그래서 항목 이름이 나온 자리부터 **다음 항목 전까지**를 한 덩어리로 보고 그 안에서 찾는다.
+ */
 function readyKinds(): string[] {
   const source = readFileSync(KIND_SOURCE, "utf8");
-  const found: string[] = [];
-  for (const match of source.matchAll(/^\s{4}([A-Z_]+)\(([^\n]*)$/gm)) {
-    const [, name, rest] = match;
-    if (rest.includes("ready = true")) found.push(name);
-  }
-  return found;
+  const entries = [...source.matchAll(/^ {4}([A-Z][A-Z_]*)\(/gm)];
+  return entries
+    .filter(({ index }, at) => {
+      const until = entries[at + 1]?.index ?? source.length;
+      return source.slice(index, until).includes("ready = true");
+    })
+    .map(([, name]) => name);
 }
 
 describe("고를 수 있는 채점 방식 (#651)", () => {

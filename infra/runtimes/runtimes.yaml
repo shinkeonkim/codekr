@@ -491,6 +491,34 @@ runtimes:
     template: |
       ^[a-z]+$
 
+  # 테스트 작성 (#652).
+  #
+  # **새 이미지를 만들지 않는다.** 이미 등록된 파이썬을 쓰고 **표준 라이브러리만**
+  # 쓴다 — `pytest` 를 넣으려면 이미지를 만들어야 하고, 그러면 #588 이 겪은
+  # "레지스트리에 없는 이미지" 가 하나 는다. `python -m unittest` 는 들어 있다.
+  #
+  # **시간 제한을 넉넉히 잡아야 한다.** 사용자의 시험이 구현 수만큼 돈다 —
+  # 뮤턴트 다섯이면 여섯 번이다. 그것은 고장이 아니라 요구다: 시험은 그만큼 빨라야 한다.
+  - id: "mutation:python"
+    label: "테스트 작성 (Python unittest)"
+    monacoLanguage: "python"
+    problemKind: "JUDGE_MUTATION"
+    image: "python:3.13-alpine"
+    digest: "sha256:540c7d91f98ff6880174c40e99067bf5941eb54d818a7a5e094d188b196a934d"
+    sourceFile: "test_solution.py"
+    harness: "mutation"
+    run: ["sh", "run-mutation.sh"]
+    startupMs: 300
+    template: |
+      import unittest
+
+      from solution import average
+
+
+      class AverageTest(unittest.TestCase):
+          def test_basic(self):
+              self.assertEqual(average([1, 2, 3]), 2)
+
   # Git (#654).
   #
   # **새 이미지를 만들지 않는다.** C/C++ 이 쓰는 `gcc:13` 에 git 이 들어 있다

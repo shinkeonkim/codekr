@@ -274,6 +274,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         validateQuiz(request)
         validateRegex(request)
         validateGit(request)
+        validateMutation(request)
         /*
           쓰기를 열었는데 상태를 읽는 쿼리가 없으면 (#453) 채점은 **조용히** 결과 집합
           비교로 돌아간다. `UPDATE` 는 결과 집합이 비어 있으니 아무나 통과한다 —
@@ -305,6 +306,50 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             throw ApiException(ErrorCode.RUNTIME_NOT_FOUND, "지원하지 않는 실행 환경입니다: ${it.runtimeId}")
         }
         request.solution?.let { runtimeRegistry.require(it.runtimeId) }
+    }
+
+    /**
+     * 테스트 작성의 규칙 (#652).
+     *
+     * **버그 심은 구현이 하나도 없으면 문제가 아니다.** 아무것도 확인하지 않는 시험이
+     * 통과하고, 그것은 오류를 내지 않아 출제자가 자기 문제가 아무것도 묻지 않는다는
+     * 것을 모른다 — 정규식(#653)에서 "맞으면 안 되는 문자열" 이 없던 것과 같은 자리다.
+     */
+    private fun validateMutation(request: ProblemUpsertRequest) {
+        val spec = request.mutationSpec
+        if (request.problemKind != ProblemKind.JUDGE_MUTATION) {
+            if (spec != null) {
+                throw ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    "테스트 작성 문제가 아닌데 구현이 실려 있습니다.",
+                )
+            }
+            return
+        }
+        if (spec == null) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "테스트 작성 문제에는 올바른 구현과 버그 심은 구현이 필요합니다.",
+            )
+        }
+        if (request.published && spec.mutants.isEmpty()) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "버그를 심은 구현이 하나 이상 필요합니다. 없으면 아무것도 확인하지 않는 시험이 통과합니다.",
+            )
+        }
+        /*
+            **올바른 구현과 같은 구현을 뮤턴트로 넣으면 아무도 못 맞힌다.**
+
+            그 구현은 정의상 시험을 통과하는데 기대값은 실패이므로, **어떤 시험을 내도
+            틀린다.** 오류가 아니라 "정답률 0%" 로만 보여서 출제자가 원인을 못 찾는다.
+        */
+        spec.mutants.firstOrNull { it.source.trim() == spec.referenceSource.trim() }?.let {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "올바른 구현과 같은 것을 버그 심은 구현으로 넣을 수 없습니다. 아무도 맞힐 수 없는 문제가 됩니다.",
+            )
+        }
     }
 
     /**

@@ -195,6 +195,16 @@ export function SolveWorkspace({ problem, onRuntimeChange, contest }: Props) {
           <span className="text-ink">함수만 구현하면 됩니다.</span> 입력을 읽고 결과를 찍는
           것은 문제가 대신합니다 — 아래 코드의 빈 곳을 채우세요.
         </p>
+      ) : problem.problemKind === "JUDGE_MUTATION" ? (
+        /*
+          **채점이 뒤집혀 있다** (#652). 이 말이 없으면 사용자는 구현을 쓰고,
+          그것은 이 문제가 묻는 것과 정반대다.
+        */
+        <p className="text-xs text-ink-muted">
+          <span className="text-ink">구현이 아니라 시험을 쓰세요.</span> 보이지 않는 구현
+          여럿에 돌려 봅니다 — 올바른 것은 통과시키고 <b>버그가 있는 것은 전부 잡아야</b>
+          합니다.
+        </p>
       ) : problem.problemKind === "JUDGE_PATCH" ? (
         /*
           **처음부터 쓰는 것이 아니다** (#651). 이 말이 없으면 사용자는 빈 화면을
