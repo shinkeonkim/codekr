@@ -152,3 +152,25 @@ management:
 logging:
   level:
     kr.codekr: INFO
+  # 로그를 Loki 에서 **고를 수 있게** 한다 (#679).
+  #
+  # 수집은 이미 된다 — 홈랩의 Promtail 이 모든 파드 로그를 가져간다. 못 쓰던 것은
+  # api 것뿐이었다. judge·executor 는 `slog.NewJSONHandler` 로 이미 JSON 이라
+  # `| json | level="ERROR"` 가 통하는데, api 만 Spring 기본 콘솔 패턴이라 통짜
+  # 문자열이었다. 정규식으로 긁는 수밖에 없었고, 그러면 대시보드를 두 벌 써야 한다.
+  #
+  # **`logstash` 를 고른 이유는 `level` 하나다.** 세 형식 중 이것만 Go 의 slog 와
+  # 같은 키에 같은 값(`"ERROR"`)을 쓴다. `ecs` 는 `log.level`, `gelf` 는 숫자다.
+  #
+  #   logstash  {"@timestamp":…, "level":"ERROR", "message":…, "logger_name":…}
+  #   Go slog   {"@timestamp":…, "level":"ERROR", "message":…}
+  #
+  # Go 쪽은 기본값이 `time`·`msg` 라 `message`·`@timestamp` 로 맞췄다 (#679).
+  # 세 앱에 **같은 쿼리 한 벌**이 통하는 것이 이 이슈의 요점이다.
+  #
+  # **프로파일로 가르지 않는다.** 로컬만 줄글로 두면 운영에서만 도는 경로가 하나
+  # 생기고, 정작 디버깅할 때 보는 형식이 배포된 형식과 다르다. judge·executor 도
+  # 로컬에서 JSON 이다 — 이 저장소의 선례를 그대로 따른다.
+  structured:
+    format:
+      console: logstash
