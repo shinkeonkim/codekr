@@ -89,6 +89,24 @@ class SecurityConfig(
                 registry
                     // 컨트롤러가 아닌 것들. 스캔에 잡히지 않으므로 여기 남는다.
                     .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                    /*
+                        Prometheus 는 토큰을 들고 다니지 않는다 (#676).
+
+                        **관리 포트를 따로 두는 길(`management.server.port`)을 택하지 않았다.**
+                        그쪽이 구조적으로는 낫지만 — 인그레스가 무엇을 하든 밖에서 못 닿는다 —
+                        기동 프로브 세 개와 Service·containerPort 와 통합 시험의 포트가 함께
+                        움직이고, 관리 컨텍스트에서 이 필터 체인이 어떻게 도는지를 따로
+                        증명해야 한다. 지금 얻는 것에 비해 움직이는 것이 너무 많다.
+
+                        대신 이 선택의 약점 — "인그레스에 `/actuator` 를 넣으면 조용히
+                        열린다" — 을 시험으로 막았다: `scripts/check-ingress-paths.py` 가
+                        인그레스가 `/actuator` 를 api 로 보내면 CI 를 실패시킨다.
+
+                        **`metrics` 는 열지 않는다.** Prometheus 가 읽는 것은 이 하나뿐이고,
+                        `env`·`configprops` 는 애초에 `exposure.include` 에 없다 (설정값이
+                        그대로 보인다 — `docs/09_배포_가이드.md`).
+                    */
+                    .requestMatchers("/actuator/prometheus").permitAll()
                     // 웹소켓은 핸드셰이크 뒤 자체 인증을 한다 (#40).
                     .requestMatchers("/ws/**").permitAll()
                     /*

@@ -59,9 +59,38 @@ def ingress_prefixes() -> set[str]:
     return found
 
 
+def leaked_actuator(served: set[str]) -> list[str]:
+    """인그레스가 `/actuator` 로 가는 길을 열었는지 본다 (#676).
+
+    `/actuator/prometheus` 는 클러스터 안에서 Prometheus 가 토큰 없이 읽어야 해서
+    `SecurityConfig` 에서 `permitAll` 이다. **그 선택이 안전한 이유는 인그레스가
+    `/actuator` 를 api 로 보내지 않기 때문뿐이다.** 그러니 그 전제를 여기서 지킨다 —
+    누가 인그레스에 넣으면 조용히 열리는 것이 아니라 CI 가 멈춘다.
+
+    **양쪽으로 본다.** `/` 처럼 `/actuator` 를 품는 것도, `/actuator/prometheus` 처럼
+    그 아래를 콕 집는 것도 같은 결과를 낸다.
+    """
+    def touches(prefix: str) -> bool:
+        head = prefix.rstrip("/") or "/"
+        return "/actuator".startswith(head) or head.startswith("/actuator")
+
+    return sorted(prefix for prefix in served if touches(prefix))
+
+
 def main() -> int:
     served = ingress_prefixes()
     missing = sorted(prefix for prefix in api_prefixes() if prefix not in served)
+
+    if (leaked := leaked_actuator(served)):
+        print("✗ 인그레스가 `/actuator` 를 api 로 보냅니다:")
+        for prefix in leaked:
+            print(f"    {prefix}  →  deploy/charts/codekr/templates/ingress.yaml")
+        print(
+            "\n  `/actuator/prometheus` 는 토큰 없이 열려 있습니다 (#676). 클러스터 안에서만"
+            "\n  닿아야 하므로, 밖으로 가는 길이 생기면 그 선택이 무너집니다."
+            "\n  정말 열어야 한다면 SecurityConfig 의 permitAll 부터 다시 정하세요.",
+        )
+        return 1
 
     if missing:
         print("✗ API 가 여는데 인그레스가 웹으로 보내는 경로가 있습니다:")
