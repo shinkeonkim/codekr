@@ -1,0 +1,294 @@
+{
+  "uid": "codekr-overview",
+  "title": "codekr",
+  "tags": ["codekr"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "editable": false,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "prometheus",
+        "label": "Prometheus",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "loki",
+        "label": "Loki",
+        "type": "datasource",
+        "query": "loki",
+        "current": {},
+        "hide": 0
+      },
+      {
+        "name": "namespace",
+        "label": "네임스페이스",
+        "type": "textbox",
+        "query": "codekr.*",
+        "current": { "text": "codekr.*", "value": "codekr.*" },
+        "description": "정규식이다. 실행기를 다른 네임스페이스에 두었을 수 있어 정확히 일치로 두지 않는다 (#677).",
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "지금 — 무엇이 밀려 있나",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "큐에 쌓인 수",
+      "description": "차선마다 나뉘어 보여야 대회가 밀리는 것과 평소가 밀리는 것을 구분할 수 있다 (#639).",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "codekr_queue_length{namespace=~\"$namespace\"}",
+          "legendFormat": "{{stream}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "워커가 붙들고 있는 수 (pending)",
+      "description": "읽어 갔지만 아직 ack 되지 않은 것. 사실상 '지금 채점 중' 이다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "codekr_queue_pending{namespace=~\"$namespace\"}",
+          "legendFormat": "{{stream}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "붙어 있는 소비자 수",
+      "description": "0 이면 아무도 안 읽고 있다. 길이만 보면 '일이 없어서 0' 과 구분되지 않는다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "codekr_queue_consumers{namespace=~\"$namespace\"}",
+          "legendFormat": "{{stream}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "결과 — 무엇이 나오고 있나",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "판정 분포",
+      "description": "분포가 갑자기 기울면 문제나 런타임이 깨진 것이다. SYSTEM_ERROR 가 늘면 우리 잘못이다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "min": 0, "custom": { "stacking": { "mode": "normal" } } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (verdict) (rate(codekr_judge_verdicts_total{namespace=~\"$namespace\"}[5m]))",
+          "legendFormat": "{{verdict}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "런타임별 채점 수",
+      "description": "특정 런타임만 조용해지면 그 이미지가 깨진 것이다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (runtime) (rate(codekr_judge_verdicts_total{namespace=~\"$namespace\"}[5m]))",
+          "legendFormat": "{{runtime}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "속도 — 어디서 느려지나",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "채점 소요 p95 (유형별)",
+      "description": "180초에 닿으면 그 제출은 SYSTEM_ERROR 로 닫힌다 (ADR-0004). 마지막 버킷이 거기다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (kind, le) (rate(codekr_judge_duration_seconds_bucket{namespace=~\"$namespace\"}[5m])))",
+          "legendFormat": "p95 {{kind}}"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(codekr_judge_duration_seconds_bucket{namespace=~\"$namespace\"}[5m])))",
+          "legendFormat": "p50 전체"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "실행 소요 p95 (런타임별)",
+      "description": "첫 실행만 튀면 이미지 pull 이다 — 그래서 언어가 아니라 버전까지 라벨에 있다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (runtime, le) (rate(codekr_exec_duration_seconds_bucket{namespace=~\"$namespace\"}[5m])))",
+          "legendFormat": "{{runtime}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "건강 — 조용히 새고 있나",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "판정 없이 닫힌 제출 (1시간)",
+      "description": "채점기 응답을 못 받아 180초 뒤 닫힌 것. 사용자에게는 '채점 실패' 로만 보인다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(codekr_submissions_stale_closed_total{namespace=~\"$namespace\"}[1h]))",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "실행 작업 회수·포기 (1시간)",
+      "description": "dropped 가 보이면 그만큼의 제출이 판정 없이 닫힌다. 위 패널과 짝이다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (increase(codekr_exec_reclaims_total{namespace=~\"$namespace\"}[1h]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "api 5xx",
+      "description": "Micrometer 의 http.server.requests. outcome=SERVER_ERROR 가 5xx 다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (uri) (rate(http_server_requests_seconds_count{namespace=~\"$namespace\", outcome=\"SERVER_ERROR\"}[5m]))",
+          "legendFormat": "{{uri}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "파드 재시작 (1시간)",
+      "description": "kube-state-metrics 가 낸다. OOM 으로 죽는 워커가 여기 먼저 보인다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=~\"$namespace\"}[1h]))",
+          "legendFormat": "{{pod}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "로그 — 그때 무슨 일이 있었나",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "logs",
+      "title": "최근 ERROR (api · judge · executor)",
+      "description": "세 앱이 같은 필드 이름을 쓰기 때문에 필터가 한 벌이다 (#679). 위 그래프에서 튄 구간을 끌면 여기도 같이 좁혀진다.",
+      "datasource": { "type": "loki", "uid": "${loki}" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 36 },
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{namespace=~\"$namespace\"} | json | level=\"ERROR\"",
+          "queryType": "range"
+        }
+      ]
+    }
+  ]
+}
