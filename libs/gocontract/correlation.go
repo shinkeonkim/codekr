@@ -3,7 +3,7 @@ package contract
 import "context"
 
 /*
-제출 하나를 세 앱의 로그에서 이어 본다 (#681).
+LogKeySubmission 은 제출 하나를 세 앱의 로그에서 잇는 필드 이름이다 (#681).
 
 한 번 제출하면 로그가 최소 세 곳에 남는다(api → judge → executor). 셋이 공통으로 들고
 다니는 값이 없어서, "이 제출이 왜 3분 걸렸나" 를 보려면 시각으로 어림잡아 세 벌을

@@ -6,7 +6,9 @@ COMPOSE := docker compose --env-file .env -f infra/docker/compose.yml
 INFRA   := postgres redis storage
 GO_MODULES := apps/executor apps/judge libs/gocontract
 # 로컬에 golangci-lint 가 없어도 CI 와 같은 버전으로 검사할 수 있게 컨테이너로 돌린다.
-GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
+# **CI 의 `go-check` 와 같은 버전이어야 한다** (#668). 다르면 `make lint-go` 가 통과한
+# 것이 CI 에서 깨지고, 그러면 로컬로 미리 보는 의미가 없어진다.
+GOLANGCI_IMAGE := golangci/golangci-lint:v2.12-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \

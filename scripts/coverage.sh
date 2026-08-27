@@ -9,7 +9,7 @@
 #   bash scripts/coverage.sh            # 셋 다
 #   bash scripts/coverage.sh api        # 하나만 (api | web | go)
 #   SKIP_INTEGRATION=1 bash scripts/coverage.sh api   # Testcontainers 없이
-#   GO_MODULES=executor bash scripts/coverage.sh go    # go 모듈 하나만
+#   GO_MODULES=apps/executor bash scripts/coverage.sh go   # go 모듈 하나만
 set -uo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -67,17 +67,22 @@ fi
 
 # ── go ───────────────────────────────────────────────────────────────────────
 if want go; then
-  step "go — executor · judge"
+  step "go — executor · judge · gocontract"
   rm -rf "${OUT}/go" && mkdir -p "${OUT}/go"
-  # CI 는 모듈마다 잡이 따로라 하나씩 부른다: `GO_MODULES=executor bash scripts/coverage.sh go`
-  for module in ${GO_MODULES:-executor judge}; do
+  # **모듈을 경로로 받는다** (#668). 전에는 이름만 받고 여기서 `apps/` 를 붙였는데,
+  # 그래서 `apps/` 밑이 아닌 `libs/gocontract` 를 부를 방법이 없었다 — Makefile 은
+  # 경로로 적고 있어 두 곳이 다른 말을 쓰고 있었다.
+  #
+  # CI 는 모듈마다 잡이 따로라 하나씩 부른다: `GO_MODULES=apps/executor bash scripts/coverage.sh go`
+  for module in ${GO_MODULES:-apps/executor apps/judge libs/gocontract}; do
+    name="$(basename "${module}")"
     # **`-coverpkg=./...` 가 있어야 한다.** 없으면 시험 파일이 없는 꾸러미
     # (`cmd/`·`config`·`httpapi`)가 프로파일에 **아예 안 들어가고**, 0% 가 아니라
     # 없는 것이 되어 전체 비율이 실제보다 높게 나온다.
-    (cd "apps/${module}" && go test ./... -covermode=set \
-      -coverpkg=./... -coverprofile="${OUT}/go/${module}.out") || fail=1
-    if [[ -f "${OUT}/go/${module}.out" ]]; then
-      (cd "apps/${module}" && go tool cover -html="${OUT}/go/${module}.out" -o "${OUT}/go/${module}.html") || fail=1
+    (cd "${module}" && go test ./... -covermode=set \
+      -coverpkg=./... -coverprofile="${OUT}/go/${name}.out") || fail=1
+    if [[ -f "${OUT}/go/${name}.out" ]]; then
+      (cd "${module}" && go tool cover -html="${OUT}/go/${name}.out" -o "${OUT}/go/${name}.html") || fail=1
     fi
   done
 fi
@@ -90,7 +95,8 @@ echo
 echo "리포트: ${OUT}/index.html"
 echo "  api  ${OUT}/api/index.html    (줄 단위로 보인다)"
 echo "  web  ${OUT}/web/summary.txt   (lcov.info 는 편집기가 읽는다)"
-echo "  go   ${OUT}/go/executor.html · ${OUT}/go/judge.html"
+# 손으로 적으면 모듈이 늘 때 또 빠뜨린다 (#668). 만들어진 것을 그대로 읽는다.
+echo "  go   $(ls "${OUT}"/go/*.html 2>/dev/null | tr '\n' ' ')"
 
 if [[ "${fail}" -ne 0 ]]; then
   printf '\n\033[31m✗ 실패한 항목이 있습니다.\033[0m\n'
