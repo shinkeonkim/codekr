@@ -5,6 +5,7 @@ import { ToastViewport } from "@/shared/ui";
 import { AppShell } from "@/widgets/app-shell";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { GoogleTagManagerNoScript, GoogleTagManagerScript } from "@/shared/analytics";
 
 import "./globals.css";
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           `<html>` 의 속성이 서버 HTML 과 달라지므로 경고를 끈다 — 다른 것이 정상이다.
         */}
         <ThemeScript />
+        <GoogleTagManagerScript />
       </head>
       {/*
         본문이 짧은 화면에서도 Footer 가 바닥에 붙어 있게 세로 flex 로 잡고 main 이
@@ -61,6 +63,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         100vh 가 아니라 100dvh 인 이유: 모바일 주소창 때문에 vh 는 실제 높이와 어긋난다.
       */}
       <body className="flex min-h-[100dvh] flex-col bg-surface text-ink">
+        <GoogleTagManagerNoScript />
         <AuthProvider>
           {/* 헤더·본문 폭·푸터는 AppShell 한 곳에서 정한다 (#131). */}
           <AppShell>{children}</AppShell>
