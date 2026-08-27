@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, isValidElement } from "react";
+import { Children, Fragment, isValidElement } from "react";
 import type { ReactNode } from "react";
 import { Select as Root, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 
@@ -31,16 +31,52 @@ interface Option {
   disabled?: boolean;
 }
 
-/** 자식으로 넘어온 `<option>` 들을 읽는다. `<optgroup>` 은 아직 쓰는 곳이 없다. */
+/**
+ * 자식으로 넘어온 `<option>` 들을 읽는다.
+ *
+ * **조각(`<>…</>`) 안을 들여다본다** (#660). `Children.forEach` 는 조각을 자식 하나로
+ * 세고 그 `type` 이 `"option"` 이 아니라, 전에는 **항목이 통째로 사라졌다.** 오류도
+ * 없이 빈 선택기가 그려져서 화면을 열기 전까지 몰랐다.
+ *
+ * 조각은 조건부 렌더에서 자연스럽게 나온다 — `{isAdmin && (<><option/><option/></>)}`.
+ * 그러면 **어드민에게만 두 항목이 조용히 사라진다.**
+ *
+ * `<optgroup>` 은 **지원하지 않고, 대신 알린다.** 안을 펼쳐 붙일 수도 있지만 그러면
+ * 묶음 이름이 사라져 서로 다른 묶음의 같은 이름("기본")이 구별되지 않는다 — 조용히
+ * 틀린 화면이다. 이 층은 부르는 쪽이 옮겨간 뒤 지울 것이라(#291) 묶음을 제대로
+ * 구현하는 자리가 아니다.
+ */
 function readOptions(children: ReactNode): Option[] {
   const options: Option[] = [];
   Children.forEach(children, (child) => {
-    if (!isValidElement(child) || child.type !== "option") return;
+    if (!isValidElement(child)) return;
+    if (child.type === Fragment) {
+      // 조각 안이 또 조각일 수 있다. 배열은 Children 이 이미 펼친다.
+      options.push(...readOptions((child.props as { children?: ReactNode }).children));
+      return;
+    }
+    if (child.type !== "option") {
+      warnUnsupported(child.type);
+      return;
+    }
     const props = child.props as { value?: string | number; children?: ReactNode; disabled?: boolean };
     const value = String(props.value ?? "");
     options.push({ value, label: props.children ?? value, disabled: props.disabled });
   });
   return options;
+}
+
+/**
+ * 모르는 자식은 **버리되 말한다** (#660).
+ *
+ * 재귀로 조각은 풀렸지만 `<div>`·`<optgroup>` 같은 것은 여전히 사라진다. 조용히
+ * 사라지는 것이 이 결함의 본질이었으므로, 같은 모양을 남겨 두지 않는다.
+ * 운영에서는 말하지 않는다 — 사용자가 할 수 있는 일이 없다.
+ */
+function warnUnsupported(type: unknown) {
+  if (process.env.NODE_ENV === "production") return;
+  const name = typeof type === "string" ? `<${type}>` : String(type);
+  console.warn(`SelectField: ${name} 는 항목으로 그려지지 않습니다. <option> 이나 조각으로 감싸세요 (#660).`);
 }
 
 interface Props {
