@@ -19,6 +19,7 @@ import (
 	"github.com/shinkeonkim/codekr/apps/executor/internal/sandbox"
 	"github.com/shinkeonkim/codekr/apps/executor/internal/selftest"
 	"github.com/shinkeonkim/codekr/apps/executor/internal/worker"
+	contract "github.com/shinkeonkim/codekr/libs/gocontract"
 )
 
 // main 은 종료 코드만 정한다. 실제 구동은 run 이 한다 —
@@ -39,7 +40,7 @@ func run() int {
 	)
 	flag.Parse()
 
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := slog.New(contract.NewLogHandler(os.Stdout))
 	cfg := config.Load()
 
 	box, err := sandbox.New(cfg.SandboxRuntime, cfg.SeccompProfilePath)

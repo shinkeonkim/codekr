@@ -16,10 +16,11 @@ import (
 	"github.com/shinkeonkim/codekr/apps/judge/internal/httpapi"
 	"github.com/shinkeonkim/codekr/apps/judge/internal/judging"
 	"github.com/shinkeonkim/codekr/apps/judge/internal/worker"
+	contract "github.com/shinkeonkim/codekr/libs/gocontract"
 )
 
 func main() {
-	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	log := slog.New(contract.NewLogHandler(os.Stdout))
 	cfg := config.Load()
 
 	redisClient := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr})
