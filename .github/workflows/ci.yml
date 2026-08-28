@@ -120,6 +120,12 @@ jobs:
       - name: 시크릿을 읽는 워크로드가 재적용 대상인지
         run: python3 scripts/check-reload-annotations.py
 
+      # 라이브 시험을 고르는 필터가 **손으로 적은 이름 목록**이었다 (#728). 목록에 없는
+      # 다섯이 조용히 안 돌았고, 그중 셋은 실제 사고(#709·#715·#716)를 고치며 붙인
+      # 것이었다 — 그 사고가 다시 나도 CI 는 초록이었다.
+      - name: 라이브 시험이 CI 대상에서 빠지지 않았는지
+        run: python3 scripts/check-live-tests.py
+
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest
@@ -157,6 +163,10 @@ jobs:
               - 'apps/executor/**'
               - 'infra/sandbox/**'
               - 'infra/runtimes/**'
+              # **거르는 규칙을 고치면 걸러지던 것을 다시 돌려야 한다** (#728).
+              # 라이브 시험 필터를 뒤집는 변경이 이 잡을 안 돌려서, 뒤집은 것이
+              # 제대로 도는지를 병합한 뒤에야 알 수 있었다.
+              - '.github/workflows/ci.yml'
 
       # 손으로 고른 값이 있으면 그것이 이긴다 (#317).
       #
@@ -374,22 +384,33 @@ jobs:
           # /proc/self/uid_map 을 읽어 잡는다.
           CODEKR_USERNS_HOST_OFFSET: "100000"
         run: |
-          # 런타임 매트릭스는 뺀다. 15개 중 2개가 아직 없는 이미지를 가리켜 실패한다 (#171).
-          # 이미지가 올라가면 이 제외를 지운다.
+          # **고르지 않고 뺀다** (#728).
+          #
+          # 전에는 돌릴 시험의 이름을 손으로 적었고, 그래서 **목록에 없는 다섯이 조용히
+          # 안 돌고 있었다** — 그중 셋은 실제 사고(#709·#715·#716)를 고치며 붙인
+          # 시험이다. 그 사고가 다시 나도 CI 는 초록이었다.
+          #
+          # 빼는 것은 하나뿐이고 이유도 분명하다: 런타임 매트릭스는 15개 중 2개가 아직
+          # 없는 이미지를 가리켜 실패한다 (#171). 이미지가 올라가면 이 줄을 지운다.
           set -o pipefail
           sudo -E /tmp/sandbox.test -test.v -test.timeout 30m \
-            -test.run 'TestLive(Runs|Reports|Detects|Blocks|Hardening|Narrowed|SQL|MariaDB|Redis|MultiFile|Interactive|UserNamespace)' \
+            -test.run 'TestLive' \
+            -test.skip 'TestLiveEveryRegisteredRuntimeSolvesSumOfTwo' \
             2>&1 | tee /tmp/sandbox.log
           ran=$(grep -cE '^(    )?--- (PASS|FAIL)' /tmp/sandbox.log || true)
           failed=$(grep -cE '^(    )?--- FAIL' /tmp/sandbox.log || true)
-          echo "돌아간 검사: ${ran}개 (실패 ${failed}개)"
+          skipped=$(grep -cE '^(    )?--- SKIP' /tmp/sandbox.log || true)
+          echo "돌아간 검사: ${ran}개 (실패 ${failed}개, 건너뜀 ${skipped}개)"
           # SKIP 만 남은 상태를 막는 하한이다. 검사를 늘리면 이 숫자도 올린다.
-          # MariaDB 10개(#454)·Redis 11개(#455)·여러 파일 9개(#457)·인터랙티브 4개(#474)를
-          # 더해 54개다. 로컬 실측과 같은 필터다.
-          test "$ran" -ge 52
+          # 실측 61개(#728 에서 필터를 뒤집어 Git 3개·미리받기 2개가 들어왔다).
+          test "$ran" -ge 59
           # 세는 것만으로는 부족하다. **실패가 0 인지도 따로 본다** — pipefail 을 빠뜨렸을
           # 때 이 줄이 마지막 방어선이 된다.
           test "$failed" -eq 0
+          # **건너뛴 것이 있으면 멈춘다.** 환경 변수를 빠뜨리면 라이브 시험은 전부
+          # SKIP 인데 초록으로 보인다 — 그것이 가장 나쁜 결과다. 위에서 뺀 하나는
+          # `-test.skip` 이라 애초에 목록에 안 나온다.
+          test "$skipped" -eq 0
 
   web-check:
     name: web 시험 · 커버리지 · 린트 · 타입 체크 · 빌드
