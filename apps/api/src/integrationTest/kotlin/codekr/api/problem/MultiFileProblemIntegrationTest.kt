@@ -14,6 +14,7 @@ import org.springframework.http.MediaType
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -118,6 +119,52 @@ class MultiFileProblemIntegrationTest : IntegrationTestBase() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"runtimeId":"python:3.13","sourceCode":"print(1)"}"""),
         ).andExpect(status().isAccepted)
+    }
+
+    /*
+        **같은 문제를 두 번 저장한다** (#708).
+
+        `(problem_id, runtime_id, name)` 에 유니크 제약이 있는데, JPA 는 한 flush 안에서
+        INSERT 를 DELETE 보다 먼저 낼 수 있다 — 그러면 **수정할 때만** 500 이 난다.
+        등록만 시험하면 드러나지 않아서, 실제로 문제를 올리다 500 을 만나고서야 알았다.
+
+        #560 이 같은 종류의 첫 사고였고 퀴즈·뮤테이션은 그때 손질됐는데 파일만 빠져
+        있었다 — `files` 를 쓰는 문제가 운영에 없어서 아무도 밟지 않았다.
+    */
+    @Test
+    fun `파일이 있는 문제를 다시 저장해도 500 이 나지 않는다`() {
+        val id = jdbcClient.sql("SELECT id FROM problems WHERE slug = 'design-shapes'")
+            .query(Long::class.java).single()
+
+        mockMvc.perform(
+            put("/api/v1/admin/problems/$id")
+                .header("Authorization", "Bearer $adminToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "slug": "design-shapes", "title": "도형 넓이",
+                      "category": "ALGORITHM", "difficulty": "SILVER_5",
+                      "description": "넓이를 구하는 함수를 쓰세요.", "published": true,
+                      "allowedRuntimeIds": ["python:3.13"],
+                      "testcases": [{"seq": 1, "input": "", "expectedOutput": "4\n", "visibility": "PUBLIC"}],
+                      "templates": [],
+                      "files": [
+                        {"runtimeId": "python:3.13", "name": "main.py",
+                         "template": "from shape import area\nprint(area())", "editable": true},
+                        {"runtimeId": "python:3.13", "name": "shape.py",
+                         "template": "def area():\n    return 9", "editable": false}
+                      ]
+                    }
+                    """.trimIndent(),
+                ),
+        ).andExpect(status().isOk)
+
+        // 바뀐 내용이 실제로 반영됐는지도 본다 — 500 만 안 나면 되는 것이 아니다.
+        val template = jdbcClient
+            .sql("SELECT template FROM problem_files WHERE problem_id = :id AND name = 'shape.py'")
+            .param("id", id).query(String::class.java).single()
+        org.junit.jupiter.api.Assertions.assertTrue(template.contains("9"), "고친 내용이 안 남았습니다: $template")
     }
 
     private fun queuedJob(): String =

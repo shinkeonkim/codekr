@@ -134,6 +134,18 @@ class AdminProblemService(
 
     private fun replaceFiles(problemId: Long, request: ProblemUpsertRequest): List<ProblemFile> {
         fileRepository.deleteByProblemId(problemId)
+        /*
+            **지우기가 먼저 반영돼야 한다** (#708, #560 이 이미 겪은 자리).
+
+            `(problem_id, runtime_id, name)` 에 유니크 제약이 있는데, JPA 는 한 flush
+            안에서 INSERT 를 DELETE 보다 먼저 낼 수 있다 — 그러면 같은 이름이 겹쳐
+            **500 이 난다.** 등록은 되고 **수정할 때만** 나므로, 등록만 시험하면
+            드러나지 않는다.
+
+            같은 파일의 퀴즈·뮤테이션은 이미 이 손질이 들어가 있었고 파일만 빠져 있었다.
+            `files` 를 쓰는 문제가 운영에 아직 없어서 드러나지 않았을 뿐이다.
+        */
+        fileRepository.flush()
         if (request.files.isEmpty()) return emptyList()
         return fileRepository.saveAll(
             request.files.mapIndexed { index, file -> file.toEntity(problemId, index + 1) },
