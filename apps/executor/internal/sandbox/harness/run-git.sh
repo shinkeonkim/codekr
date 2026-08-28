@@ -27,6 +27,18 @@
 # `protocol.allow=never` 로 git 이 **즉시** 거부하게 한다.
 set -eu
 
+# **HOME 을 작업 디렉터리로 옮긴다** (#709).
+#
+# 아래 `git config --global` 은 `~/.gitconfig` 를 쓰는데, 샌드박스는 rootfs 가 읽기
+# 전용이고 이 이미지의 `HOME` 은 `/` 다 — 그대로 두면 **첫 설정에서 죽는다.**
+#
+#     error: could not lock config file //.gitconfig: Read-only file system
+#
+# `set -eu` 라 거기서 끝나고, 사용자 명령은 돌지도 못한 채 SYSTEM_ERROR 가 된다.
+# **하네스만 따로 돌리면 root 라서 그냥 되므로**, 샌드박스 옵션을 준 채로 돌려야
+# 드러난다. 그렇게 드러났다.
+export HOME=/work
+
 export GIT_AUTHOR_NAME=codekr GIT_AUTHOR_EMAIL=codekr@codekr.kr
 export GIT_COMMITTER_NAME=codekr GIT_COMMITTER_EMAIL=codekr@codekr.kr
 export GIT_AUTHOR_DATE="2020-01-01T00:00:00+00:00"
