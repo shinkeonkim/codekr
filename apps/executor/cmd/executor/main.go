@@ -102,6 +102,8 @@ func run() int {
 		"redis", cfg.RedisAddr, "http", cfg.HTTPAddr, "sandbox", cfg.SandboxRuntime,
 		"concurrency", cfg.Concurrency, "runtimes", registry.Images())
 
+	go warmImages(ctx, box, registry.Images(), cfg.RuntimeRegistry, log)
+
 	runner := worker.NewRunner(
 		registry,
 		box,
@@ -177,4 +179,40 @@ func runVerifyRuntimes(
 	}
 	log.Info("런타임 준비 상태 확인 통과")
 	return 0
+}
+
+/*
+warmImages 는 정의 파일의 이미지를 미리 받아 둔다 (#712).
+
+**기동을 막지 않는다.** 열아홉 개를 다 받고 뜨게 하면 배포가 몇 분씩 걸리고, 그동안
+큐가 쌓인다. 배경으로 돌리면 파드는 바로 일을 시작하고 이미지는 곧 따뜻해진다.
+
+**한 번에 하나씩 받는다.** 동시에 당기면 노드의 디스크와 네트워크를 실행 중인 채점과
+나눠 쓰게 된다 — 미리 받기가 지금 도는 채점을 느리게 만들면 안 된다.
+
+실패해도 계속한다. 하나가 안 받아진다고 나머지를 포기할 이유가 없고, 실패한 것은
+전처럼 첫 제출이 기다릴 뿐이다.
+*/
+func warmImages(ctx context.Context, box sandbox.Sandbox, images []string, prefix string, log *slog.Logger) {
+	started := time.Now()
+	warmed, failed := 0, 0
+	for _, image := range images {
+		if ctx.Err() != nil {
+			return
+		}
+		ref := image
+		if prefix != "" {
+			ref = prefix + "/" + image
+		}
+		if err := box.Warm(ctx, ref); err != nil {
+			failed++
+			// **경고로 남긴다.** 채점은 그대로 돌므로 오류가 아니다. 다만 그 런타임의
+			// 첫 제출은 여전히 이미지 받기를 기다린다.
+			log.Warn("런타임 이미지를 미리 받지 못했습니다", "image", ref, "error", err)
+			continue
+		}
+		warmed++
+	}
+	log.Info("런타임 이미지 준비 완료",
+		"받음", warmed, "실패", failed, "걸린시간", time.Since(started).Round(time.Second).String())
 }

@@ -106,6 +106,17 @@ func (s *containerSandbox) Preflight(ctx context.Context) error {
 	return nil
 }
 
+/*
+Warm 은 아무것도 하지 않는다 (#712).
+
+**이 구현은 이미지를 받지 않는다** — 없으면 컨테이너 생성에서 곧바로 "이미지가 노드에
+없습니다" 로 실패하고 `make pull-runtimes` 를 가리킨다. 빨리 실패하는 것이 이쪽의
+설계이므로, 여기서 조용히 받아 오면 그 설계가 흐려진다.
+
+미리 받는 것이 필요한 쪽은 containerd 구현이다. 운영이 그것을 쓴다.
+*/
+func (s *containerSandbox) Warm(context.Context, string) error { return nil }
+
 // Run 은 격리된 컨테이너에서 코드를 한 번 실행하고 관찰 결과를 돌려준다.
 func (s *containerSandbox) Run(ctx context.Context, spec Spec) (Outcome, error) {
 	budget := lifetime(spec)

@@ -29,6 +29,9 @@ func (s *stubSandbox) Run(_ context.Context, spec sandbox.Spec) (sandbox.Outcome
 
 func (s *stubSandbox) Preflight(_ context.Context) error { return nil }
 
+// 미리 받기는 이 시험의 관심사가 아니다 (#712). 인터페이스를 채우기만 한다.
+func (s *stubSandbox) Warm(_ context.Context, _ string) error { return nil }
+
 func (s *stubSandbox) Close() error { return nil }
 
 func newTestRunner(t *testing.T, box sandbox.Sandbox) *Runner {

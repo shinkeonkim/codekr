@@ -81,6 +81,21 @@ type Sandbox interface {
 	// healthy 로 뜬 뒤 모든 제출을 실패시킨다 — 운영 노드와 로컬 개발 환경의 런타임이
 	// 다를 수 있으므로(#45) 실패는 첫 제출이 아니라 기동에서 드러나야 한다.
 	Preflight(ctx context.Context) error
+	/*
+		Warm 은 이미지를 미리 받아 둔다 (#712).
+
+		**첫 제출이 이미지 받기를 대신 기다리면 안 된다.** 판정기는 실행 결과를 60초까지
+		기다리는데(`JUDGE_EXEC_TIMEOUT_MS`), 큰 이미지는 그보다 오래 걸린다 — 운영에서
+		`gcc:13` 이 250초였다. 그동안 판정기는 포기하고 사용자는 `SYSTEM_ERROR` 를 본다.
+		"내 답이 틀렸나" 로 보이고, 왜인지 알 방법이 없다.
+
+		"노드에 미리 받아 두는 것이 전제" 라고 여러 곳에 적혀 있었는데, **그 미리 받기를
+		하는 곳이 없었다.** 여기가 그 자리다.
+
+		이미 있으면 아무 일도 하지 않는다. 실패해도 채점은 그대로 돈다 — 그때는 첫 제출이
+		전처럼 기다릴 뿐이다.
+	*/
+	Warm(ctx context.Context, image string) error
 	Run(ctx context.Context, spec Spec) (Outcome, error)
 	// Close 는 백그라운드 자원을 정리한다.
 	Close() error
