@@ -1,0 +1,35 @@
+{{- if .Values.monitoring.dashboard.enabled }}
+{{/*
+  Grafana 대시보드를 차트가 들고 간다 (#680).
+
+  **홈랩 저장소를 안 고쳐도 뜬다.** Grafana 사이드카가 `grafana_dashboard: "1"` 라벨이
+  붙은 ConfigMap 을 **모든 네임스페이스에서** 읽는다(`sidecar.dashboards.searchNamespace: ALL`).
+  우리가 ConfigMap 하나만 만들면 된다.
+
+  **여기 두는 이유**: 대시보드가 보는 지표 이름을 만드는 곳이 이 저장소다(#678, #684).
+  갈라 두면 이름을 바꿀 때 한쪽만 바뀌고, 그러면 그래프가 조용히 빈다 — 패널은 그대로
+  그려지고 선만 사라지므로 보는 사람은 "제출이 없었나 보다" 로 읽는다.
+
+  `monitoring.enabled` 와 **따로 끈다.** 지표를 긁는 것과 Grafana 가 있는 것은 다른
+  이야기다 — Prometheus 만 있고 Grafana 가 없는 클러스터에서는 이 ConfigMap 이
+  아무 데도 안 읽히고 남는다.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codekr-dashboard
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+    # 이 라벨 하나가 사이드카에게 "이건 대시보드다" 를 말한다. 빠지면 조용히 안 뜬다.
+    grafana_dashboard: "1"
+    {{- with .Values.monitoring.dashboard.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.monitoring.dashboard.folderAnnotation }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+data:
+  # 키 이름이 Grafana 안의 파일 이름이 된다.
+  codekr.json: |
+{{ .Files.Get "files/dashboard.json" | indent 4 }}
+{{- end }}

@@ -104,6 +104,11 @@ jobs:
       - name: 워커 지표가 PodMonitor 에 들어 있는지
         run: python3 scripts/check-monitoring-targets.py
 
+      # 지표 이름이 바뀌면 Grafana 는 **오류를 안 낸다** (#680). 패널은 그려지고
+      # 선만 사라져서, 보는 사람은 "제출이 없었나 보다" 로 읽는다.
+      - name: 대시보드가 그리는 지표가 실제로 있는지
+        run: python3 scripts/check-dashboard-metrics.py
+
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest

@@ -375,3 +375,16 @@ monitoring:
   # 홈랩의 kube-prometheus-stack 은 `serviceMonitorSelectorNilUsesHelmValues: false`
   # 라 라벨 없이도 잡아간다 — 비워 두어도 된다.
   labels: {}
+
+  # Grafana 대시보드 (#680).
+  #
+  # **위의 `enabled` 와 따로 끈다.** 지표를 긁는 것과 Grafana 가 있는 것은 다른
+  # 이야기다 — Prometheus 만 있는 클러스터에서는 이 ConfigMap 이 아무 데도 안 읽히고
+  # 남는다. 반대로 Grafana 사이드카는 `grafana_dashboard: "1"` 만 보므로 Prometheus
+  # Operator 가 없어도 뜬다(그리고 그리는 것이 없어 빈 그래프가 된다).
+  dashboard:
+    enabled: false
+    labels: {}
+    # 폴더를 나누는 클러스터에서 쓴다. 홈랩은 안 나눠서 비운다.
+    # 예: { grafana_folder: "codekr" }
+    folderAnnotation: {}
