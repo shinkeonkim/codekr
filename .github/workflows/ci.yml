@@ -114,6 +114,12 @@ jobs:
       - name: api egress 정책에 빠진 곳이 없는지
         run: python3 scripts/check-api-egress.py
 
+      # 시크릿을 고쳐도 **도는 파드는 모른다** (#705, #713). 매니페스트가 안 바뀌었으니
+      # ArgoCD 는 Synced 라고 말하고, 화면 어디에도 신호가 없다. 새 워크로드가 시크릿을
+      # 읽기 시작하면서 어노테이션을 잊으면 같은 일이 다시 난다.
+      - name: 시크릿을 읽는 워크로드가 재적용 대상인지
+        run: python3 scripts/check-reload-annotations.py
+
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest

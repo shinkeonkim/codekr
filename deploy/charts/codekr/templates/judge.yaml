@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: codekr-judge
   labels: {{- include "codekr.labels" . | nindent 4 }}
+  {{- include "codekr.reloadOnChange" . | nindent 2 }}
 spec:
   replicas: {{ .Values.judge.replicas }}
   {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}
@@ -49,6 +50,7 @@ kind: Deployment
 metadata:
   name: codekr-judge-contest
   labels: {{- include "codekr.labels" . | nindent 4 }}
+  {{- include "codekr.reloadOnChange" . | nindent 2 }}
 spec:
   replicas: {{ .Values.judge.contest.replicas }}
   {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}

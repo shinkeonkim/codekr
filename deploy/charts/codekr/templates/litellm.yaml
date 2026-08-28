@@ -12,6 +12,7 @@ kind: Deployment
 metadata:
   name: codekr-litellm
   labels: {{- include "codekr.labels" . | nindent 4 }}
+  {{- include "codekr.reloadOnChange" . | nindent 2 }}
 spec:
   replicas: 1
   {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}

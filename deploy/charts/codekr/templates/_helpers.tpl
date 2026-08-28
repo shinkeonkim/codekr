@@ -87,3 +87,24 @@ imagePullSecrets:
 {{- define "codekr.terminationGrace" -}}
 terminationGracePeriodSeconds: {{ add .Values.workers.drainSeconds 30 }}
 {{- end }}
+
+{{/*
+시크릿·설정이 바뀌면 워크로드를 굴린다 (#713).
+
+**`envFrom` 은 파드가 뜰 때 확정된다.** 시크릿을 고쳐도 도는 파드는 옛 값을 계속 들고
+있고, 매니페스트는 안 바뀌었으니 **ArgoCD 는 `Synced` 라고 말한다** — 화면 어디에도
+신호가 없다. #705 에서 초안 만들기 키가 그렇게 조용히 꺼져 있었다.
+
+흔한 헬름 관용구인 체크섬 어노테이션은 **여기서 못 쓴다.** `codekr-secrets` 를 만드는
+것은 차트가 아니라 홈랩의 ksops 라서 차트가 내용을 알 수 없다. 그래서 클러스터에서
+보고 있는 Reloader 에게 맡긴다.
+
+`auto` 는 **이 워크로드가 실제로 참조하는** 시크릿·컨피그맵만 따라간다. 이름을 손으로
+적지 않으므로, 참조가 늘거나 줄어도 이 줄을 고칠 일이 없다.
+
+Reloader 가 없는 클러스터에서는 그냥 모르는 어노테이션 한 줄이다 — 아무 일도 안 한다.
+*/}}
+{{- define "codekr.reloadOnChange" -}}
+annotations:
+  reloader.stakater.com/auto: "true"
+{{- end }}
