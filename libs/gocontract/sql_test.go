@@ -10,13 +10,14 @@ import (
 // 전에는 하네스가 `-tA -F'|'` 로 냈고 줄을 그대로 견줬다. 그러면 `a|b` 한 칸과
 // `a`,`b` 두 칸이 **같은 줄**이 되어, 맞은 답이 틀렸다고 나오거나 그 반대가 됐다.
 func TestNormalizeSQLRowsSeparatesEmbeddedDelimiter(t *testing.T) {
-	// 옛 형식(`-tA -F'|'`)에서는 이 둘이 **똑같이** `a|b|부산` 이었다.
-	// 그래서 한 칸짜리 `a|b` 와 두 칸짜리 `a`,`b` 를 가릴 수 없었다.
-	const oldFormat = "a|b|부산"
-	if NormalizeSQLRows(oldFormat, false) != NormalizeSQLRows(oldFormat, false) {
-		t.Fatal("같은 입력이 다르게 나온다")
-	}
+	/*
+		옛 형식(`-tA -F'|'`)에서는 아래 두 입력이 **똑같이** `a|b|부산` 한 줄이었다.
+		그래서 한 칸짜리 `a|b` 와 두 칸짜리 `a`,`b` 를 가릴 수 없었다.
 
+		**여기 그것을 확인한다던 줄이 있었는데 자기 자신을 견주고 있었다** (#668):
+		`NormalizeSQLRows(x) != NormalizeSQLRows(x)`. 무엇을 돌려주든 통과한다.
+		확인해야 할 것은 아래 세 줄이 이미 하고 있으므로 지웠다.
+	*/
 	oneField := NormalizeSQLRows("\"a|b\",\"부산\"\n", false)
 	twoFields := NormalizeSQLRows("\"a\",\"b\",\"부산\"\n", false)
 

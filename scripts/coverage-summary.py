@@ -17,12 +17,19 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # (이름, 사람이 열 파일) — 순서가 표의 순서다.
+#
+# **Go 쪽은 손으로 적지 않는다** (#668). 모듈이 셋이 되면서 `executor`·`judge` 만
+# 적힌 이 목록이 세 번째를 조용히 빠뜨렸다. 잰 것이 표에 안 나오면 안 잰 것과
+# 구별되지 않는다 — 있는 파일에서 읽는다.
 LINKS = {
     "api": "api/index.html",
     "web": "web/summary.txt",
-    "go · executor": "go/executor.html",
-    "go · judge": "go/judge.html",
 }
+
+
+def go_modules(out: Path) -> list[str]:
+    """실제로 만들어진 커버리지 프로파일에서 모듈 이름을 읽는다."""
+    return sorted(path.stem for path in (out / "go").glob("*.out"))
 
 
 def jacoco(path: Path):
@@ -72,12 +79,14 @@ def coverprofile(path: Path):
 
 
 def collect(out: Path):
-    return {
+    rows = {
         "api": jacoco(out / "api.xml"),
         "web": lcov(out / "web" / "lcov.info"),
-        "go · executor": coverprofile(out / "go" / "executor.out"),
-        "go · judge": coverprofile(out / "go" / "judge.out"),
     }
+    for module in go_modules(out):
+        rows[f"go · {module}"] = coverprofile(out / "go" / f"{module}.out")
+        LINKS[f"go · {module}"] = f"go/{module}.html"
+    return rows
 
 
 def percent(value):
