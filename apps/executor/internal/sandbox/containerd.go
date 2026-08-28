@@ -112,7 +112,8 @@ func (s *containerdSandbox) Run(ctx context.Context, spec Spec) (Outcome, error)
 	// 무관한 실패를 받고, 같은 코드를 다시 내면 통과한다.
 	//
 	// 이미지는 노드에 남으므로 이 기다림은 **런타임마다 한 번**이다.
-	pullCtx, cancelPull := context.WithTimeout(s.withNamespace(ctx), pullTimeout)
+	// 네임스페이스는 `pull` 이 스스로 씌운다 (#725). 여기서는 시간만 잰다.
+	pullCtx, cancelPull := context.WithTimeout(ctx, pullTimeout)
 	image, err := s.pull(pullCtx, spec.Image)
 	cancelPull()
 	if err != nil {

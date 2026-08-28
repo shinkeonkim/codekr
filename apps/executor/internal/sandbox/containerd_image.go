@@ -25,6 +25,12 @@ pull 은 이미지를 준비한다.
 비공개라 자격증명이 필요한 환경에서도, 미리 받아 둔 노드는 그것 없이 돈다.
 */
 func (s *containerdSandbox) pull(ctx context.Context, ref string) (client.Image, error) {
+	// **여기서 씌운다.** containerd 는 모든 호출에 네임스페이스를 요구하는데, 전에는
+	// 부르는 쪽이 씌우고 있었다 — 그래서 새로 생긴 부르는 쪽(#712 의 미리 받기)이
+	// 그것을 몰랐고, 운영에서 열넷이 전부 `namespace is required` 로 떨어졌다.
+	//
+	// 두 번 씌워도 안전하다(뒤엣것이 이긴다). 안 씌우는 길이 없는 편이 낫다.
+	ctx = s.withNamespace(ctx)
 	full := normalizeRef(ref)
 
 	if image, err := s.localImage(ctx, full); err != nil {
@@ -186,7 +192,14 @@ func credentialState(creds registryCredentials, ref string) string {
 }
 
 // Warm 은 이미지를 미리 받아 둔다 (#712). 인터페이스 주석에 이유가 있다.
+//
+// **한 장에 시간 제한을 둔다.** 없으면 안 받아지는 이미지 하나가 기동 뒤의 미리 받기를
+// 통째로 멈춰 세우고, 뒤에 선 것들은 영영 차례가 오지 않는다 — 한 번에 하나씩 받기
+// 때문이다. 제출 경로와 같은 제한을 쓴다.
 func (s *containerdSandbox) Warm(ctx context.Context, image string) error {
+	ctx, cancel := context.WithTimeout(ctx, pullTimeout)
+	defer cancel()
+
 	_, err := s.pull(ctx, image)
 	return err
 }
