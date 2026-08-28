@@ -149,6 +149,10 @@ export function ProblemForm({
   const isSql = values.problemKind === "JUDGE_SQL";
   // 함수형은 허용 언어를 따로 고르지 않는다 — 하네스가 그것을 정한다 (#446).
   const isFunction = values.problemKind === "JUDGE_FUNCTION";
+  // 고치는 문제 (#651). **장치가 함수형과 같다** — 하네스가 숨긴 시험을 나르고
+  // 시작 코드는 파일 목록(#457)이 나른다. 다른 것은 사용자가 무엇을 하느냐다.
+  const isPatch = values.problemKind === "JUDGE_PATCH";
+  const usesHarness = isFunction || isPatch;
   const isRedis = values.problemKind === "JUDGE_REDIS";
   const isMongo = values.problemKind === "JUDGE_MONGODB";
   // 퀴즈는 실행기를 쓰지 않는다 (#650) — 언어·제한·테스트케이스가 모두 뜻이 없다.
@@ -432,9 +436,9 @@ export function ProblemForm({
         </FormSection>
       )}
 
-      {isFunction ? (
+      {usesHarness ? (
       <FormSection
-        title="하네스 (보이지 않는 실행 코드)"
+        title={isPatch ? "숨긴 시험 (보이지 않는 실행 코드)" : "하네스 (보이지 않는 실행 코드)"}
         defaultOpen={open}
         description="여기 쓴 언어로만 풀 수 있다"
       >

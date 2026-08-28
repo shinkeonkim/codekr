@@ -26,6 +26,8 @@ export function HarnessEditor({
 
   useEffect(() => {
     // **함수형을 지원하는 런타임만 온다** — 실행기가 방식을 아는 것만이다.
+    // **고치는 문제(#651)도 같은 목록이다** — 하네스를 실을 수 있는 언어가 곧
+    // 허용 목록이고, 그 규칙은 두 유형이 공유한다 (`RuntimeDefinition.canSolve`).
     problemApi.runtimes("JUDGE_FUNCTION").then(setRuntimes).catch(() => setRuntimes([]));
   }, []);
 

@@ -163,13 +163,16 @@ export interface ProblemVerification {
  * **분야(`ProblemCategory`)와는 다른 축이다** — 분야는 무엇에 대한 문제인지를,
  * 채점 방식은 어떻게 채점하는지를 말한다. 화면에서도 두 말을 구분해 쓴다.
  */
-// JUDGE_FUNCTION 은 하네스가 입출력을 맡는 유형이다 (#421).
 export type ProblemKind =
   | "JUDGE_STDIO"
   | "JUDGE_SQL"
   | "JUDGE_REDIS"
   | "JUDGE_MONGODB"
   | "JUDGE_FUNCTION"
+  | "JUDGE_INTERACTIVE"
+  | "JUDGE_REGEX"
+  | "JUDGE_GIT"
+  | "JUDGE_PATCH"
   | "QUIZ"
   | "MANUAL";
 
@@ -211,7 +214,16 @@ export const PROBLEM_SORTS: { value: ProblemSort; label: string }[] = [
   { value: "TITLE", label: "제목순" },
 ];
 
-/** 지금 고를 수 있는 채점 방식. 나머지는 채점기 구현이 없어 서버가 거절한다. */
+/**
+ * 지금 고를 수 있는 채점 방식. 나머지는 채점기 구현이 없어 서버가 거절한다.
+ *
+ * **서버의 `ProblemKind` 중 `ready = true` 인 것과 같아야 한다.** 실제로 다섯 번
+ * 어긋나 있었다 — 인터랙티브(#474)·퀴즈(#650)·정규식(#653)·Git(#654)이 서버에서는
+ * 열렸는데 이 목록에 없었다. 그러면 **어드민이 그 유형을 고를 수 없고**, 문제 목록에서
+ * 걸러 볼 수도 없다. 만들어 두고 닿지 못하는 상태다 (#432 가 짚은 종류).
+ *
+ * 눈으로 맞추지 않는다 — `problemKinds.test.ts` 가 서버 파일을 읽어 견준다.
+ */
 export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_STDIO: "코드 실행 (stdin/stdout)",
   JUDGE_SQL: "SQL",
@@ -219,6 +231,16 @@ export const SELECTABLE_KINDS: Record<string, string> = {
   JUDGE_MONGODB: "MongoDB",
   // 하네스가 입출력을 맡고 사용자는 함수만 쓴다 (#421).
   JUDGE_FUNCTION: "함수 구현",
+  // 도는 중에 주고받는다 (#474).
+  JUDGE_INTERACTIVE: "인터랙티브",
+  // 패턴 하나를 낸다. 엔진은 문제가 정한다 (#653).
+  JUDGE_REGEX: "정규식",
+  // 명령의 연속을 내고 끝난 뒤의 저장소를 견준다 (#654).
+  JUDGE_GIT: "Git",
+  // 망가진 코드를 고친다. 보이지 않는 시험이 확인한다 (#651).
+  JUDGE_PATCH: "읽고 고치기",
+  // 실행기를 쓰지 않고 api 가 즉시 채점한다 (#650).
+  QUIZ: "객관식 · 단답",
 };
 
 /**

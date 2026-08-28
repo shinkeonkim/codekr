@@ -225,8 +225,16 @@ const (
 		저기는 redis 명령이며, 하네스가 해야 하는 일(신원·시각 고정, 네트워크 차단)도 다르다.
 	*/
 	KindJudgeGit = "JUDGE_GIT"
-	KindQuiz     = "QUIZ"
-	KindManual   = "MANUAL"
+	/*
+		KindJudgePatch 는 읽고 고치는 문제다 (#651).
+
+		**채점은 KindJudgeStdio 와 같다** — 하네스와 사용자 파일을 함께 돌리고 출력을
+		견준다. 유형을 나눈 것은 채점기를 위해서가 아니라 **화면이 무엇을 하라고 말할지**와
+		"시작 코드가 망가져 있으면 고치는 문제" 라는 암묵 규칙을 만들지 않기 위해서다.
+	*/
+	KindJudgePatch = "JUDGE_PATCH"
+	KindQuiz       = "QUIZ"
+	KindManual     = "MANUAL"
 )
 
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.

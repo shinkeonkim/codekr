@@ -41,7 +41,11 @@ data class RuntimeDefinition(
      * **화면에 보이는데 제출은 안 되는** 조합이 생긴다.
      */
     fun canSolve(kind: ProblemKind): Boolean = when (kind) {
-        ProblemKind.JUDGE_FUNCTION -> problemKind == ProblemKind.JUDGE_STDIO && supportsFunctionHarness
+        // 하네스를 쓰는 유형 둘 (#421, #651). **하네스를 쓴 언어가 곧 허용 목록**이라
+        // 규칙이 같다 — 사용자가 함수를 쓰든 망가진 코드를 고치든, 실행기가 합치는
+        // 방법을 아는 언어여야 한다.
+        ProblemKind.JUDGE_FUNCTION, ProblemKind.JUDGE_PATCH ->
+            problemKind == ProblemKind.JUDGE_STDIO && supportsFunctionHarness
         else -> problemKind == kind
     }
 }
