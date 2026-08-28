@@ -10,7 +10,7 @@ GOLANGCI_IMAGE := golangci/golangci-lint:v2.6-alpine
 
 .DEFAULT_GOAL := help
 .PHONY: help env up down clean logs ps infra-up infra-down \
-        coverage pull-runtimes build-runtimes containerd-up containerd-down mirror-runtimes verify-runtimes verify-seccomp verify-storage seed smoke test test-api test-web test-go lint lint-go
+        coverage ai-up ai-down pull-runtimes build-runtimes containerd-up containerd-down mirror-runtimes verify-runtimes verify-seccomp verify-storage seed smoke test test-api test-web test-go lint lint-go
 
 help: ## 사용 가능한 명령 표시
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -45,6 +45,16 @@ infra-up: env ## postgres, redis 만 기동
 
 infra-down: env ## postgres, redis 만 중지
 	$(COMPOSE) stop $(INFRA)
+
+# 모델 제공자 프록시 (#648). **기본 스택에는 없다** — `profiles: [ai]` 라
+# `make up` 이 건너뛴다. 키가 없는 사람에게 늘 실패하는 컨테이너가 보이면 안 된다.
+ai-up: env ## 모델 프록시(LiteLLM) 기동 (#648)
+	$(COMPOSE) --profile ai up -d litellm
+	@echo "프록시: http://localhost:$${LITELLM_HOST_PORT:-14000}/v1"
+	@echo "api 가 이것을 쓰게 하려면 .env 의 CODEKR_DRAFT_* 를 바꾸고 'make up' 을 다시 도세요."
+
+ai-down: env ## 모델 프록시 중지 (#648)
+	$(COMPOSE) --profile ai stop litellm
 
 pull-runtimes: ## 코드 실행용 런타임 이미지 미리 받기
 	@bash scripts/pull-runtimes.sh
