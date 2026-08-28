@@ -16,6 +16,13 @@ data:
   CODEKR_MAIL_SSL: {{ .Values.mail.ssl | quote }}
   CODEKR_MAIL_FROM: {{ .Values.mail.from | quote }}
   {{- end }}
+  # 문제 초안 만들기 (#230, #647). **키는 여기 없다** — `codekr-secrets` 의
+  # `CODEKR_DRAFT_API_KEY` 가 `envFrom` 으로 들어오고, **그것이 유일한 스위치다.**
+  #
+  # 이 두 줄이 없던 동안 기능은 운영에서 기본값(OpenAI)으로만 돌 수 있었고, 무엇을
+  # 부르는지가 차트 어디에도 적혀 있지 않았다.
+  CODEKR_DRAFT_BASE_URL: {{ .Values.problemDraft.baseUrl | quote }}
+  CODEKR_DRAFT_MODEL: {{ .Values.problemDraft.model | quote }}
   # 메일 본문의 링크가 가리킬 곳. 사람이 눈으로 보는 주소라 정본 표기를 따른다 (ADR-0009).
   CODEKR_SITE_URL: "https://{{ .Values.ingress.publicHost }}"
   CODEKR_DB_URL: "jdbc:postgresql://{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"

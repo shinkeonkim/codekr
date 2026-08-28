@@ -222,6 +222,25 @@ mail:
   from: ""
   secretName: codekr-secrets
 
+# 문제 초안 만들기 (#230, #647).
+#
+# **스위치는 하나다: 키가 있으면 켜지고 없으면 없는 기능이다.** 앱이 그렇게 되어 있고
+# (`enabled = apiKey.isNotBlank()`), 차트에 별도의 `enabled` 를 두면 스위치가 둘이 되어
+# **"차트에서는 껐는데 켜져 있다"** 가 가능해진다. 저장소(#115)·메일(#355)과 같은 규칙이다.
+#
+# 키는 `codekr-secrets` 안에 `CODEKR_DRAFT_API_KEY` 로 둔다 — api 가 그 시크릿을
+# `envFrom` 으로 통째로 받으므로 여기 적을 것이 없다. **값은 SOPS 에만 있다**
+# (이 저장소는 public 이다, #424).
+#
+# 아래 둘은 키가 없어도 무해하다 — 부를 일이 없기 때문이다.
+# `baseUrl` 을 OpenAI 가 아닌 곳으로 돌리면 제공자가 바뀐다. LiteLLM 프록시(#648)를
+# 세우면 그 주소를 여기 적고, **api 는 그때도 고치지 않는다.**
+problemDraft:
+  baseUrl: https://api.openai.com/v1
+  # **모델 이름이 아니라 일 이름으로 두는 편이 낫다** (#648). 프록시가 서면 여기가
+  # `문제-초안` 이 되고, 모델을 바꿔도 이 값은 그대로다.
+  model: gpt-4o-mini
+
 postgres:
   # CNPG 오퍼레이터가 만든 클러스터를 쓴다 (홈랩 인프라 쪽에서 정의).
   host: codekr-db-rw
