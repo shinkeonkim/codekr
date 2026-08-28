@@ -12,8 +12,22 @@ package codekr.api.observability
  */
 object MetricNames {
 
-    /** `codekr_queue_length` — 스트림에 쌓인 메시지 수. */
+    /**
+     * `codekr_queue_length` — 스트림에 **남아 있는** 항목 수(`XLEN`).
+     *
+     * **밀린 수가 아니다** (#702). Redis Streams 는 ack 해도 항목을 지우지 않고
+     * 트리밍(`MAXLEN ~`)으로만 준다 — 처리가 다 끝나도 값이 남는다. 이 값이 쓸모
+     * 있는 자리는 하나다: **트리밍 상한에 붙었는지**. 밀린 것은 [QUEUE_LAG] 다.
+     */
     const val QUEUE_LENGTH = "codekr.queue.length"
+
+    /**
+     * `codekr_queue_lag` — 그룹이 **아직 안 읽은** 항목 수. **이것이 밀린 것이다** (#702).
+     *
+     * Redis 가 계산하지 못하면 이 계열이 아예 안 나온다. 0 으로 바꾸지 않는다 —
+     * 0 은 "밀린 게 없다" 로 읽혀 정반대가 된다.
+     */
+    const val QUEUE_LAG = "codekr.queue.lag"
 
     /** `codekr_queue_pending` — 읽어 갔지만 아직 ack 되지 않은 수. 워커가 붙들고 있는 양이다. */
     const val QUEUE_PENDING = "codekr.queue.pending"

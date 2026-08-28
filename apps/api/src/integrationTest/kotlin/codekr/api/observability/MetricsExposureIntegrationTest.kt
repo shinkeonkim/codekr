@@ -1,6 +1,8 @@
 package codekr.api.observability
 
 import codekr.api.config.properties.SubmissionProperties
+import codekr.api.queue.QueueKeys
+import codekr.api.queue.service.QueueMonitorService
 import codekr.api.problem.entity.Difficulty
 import codekr.api.problem.entity.Problem
 import codekr.api.problem.entity.ProblemCategory
@@ -14,6 +16,11 @@ import codekr.api.submission.service.StaleSubmissionSweeper
 import codekr.api.support.IntegrationTestBase
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.redis.connection.stream.Consumer
+import org.springframework.data.redis.connection.stream.MapRecord
+import org.springframework.data.redis.connection.stream.ReadOffset
+import org.springframework.data.redis.connection.stream.StreamOffset
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import kotlin.test.assertTrue
 
@@ -27,6 +34,8 @@ import kotlin.test.assertTrue
 class MetricsExposureIntegrationTest : IntegrationTestBase() {
 
     @Autowired private lateinit var queueMetrics: QueueMetrics
+    @Autowired private lateinit var monitor: QueueMonitorService
+    @Autowired private lateinit var redisOfMetrics: StringRedisTemplate
     @Autowired private lateinit var sweeper: StaleSubmissionSweeper
     @Autowired private lateinit var submissionRepository: SubmissionRepository
     @Autowired private lateinit var properties: SubmissionProperties
@@ -45,7 +54,7 @@ class MetricsExposureIntegrationTest : IntegrationTestBase() {
         queueMetrics.refresh()
 
         val body = scrape()
-        for (name in listOf("codekr_queue_length", "codekr_queue_pending", "codekr_queue_consumers")) {
+        for (name in listOf("codekr_queue_length", "codekr_queue_lag", "codekr_queue_pending", "codekr_queue_consumers")) {
             assertTrue(body.contains(name), "$name 이 /actuator/prometheus 에 없습니다")
         }
         // **차선마다 나뉘어야 한다** (#639). 합쳐서 나오면 나눈 효과를 볼 수 없다.
@@ -55,6 +64,33 @@ class MetricsExposureIntegrationTest : IntegrationTestBase() {
                 "$stream 이 라벨로 안 나옵니다",
             )
         }
+    }
+
+    /**
+     * **밀린 수와 남아 있는 수는 다른 값이다** (#702).
+     *
+     * `XLEN` 은 ack 해도 줄지 않는다 — Redis Streams 는 트리밍으로만 항목을 지운다.
+     * 그래서 처리가 다 끝난 스트림도 길이가 남고, 그것을 "밀린 수" 로 그리면 영원히
+     * 밀린 것처럼 보인다. 운영에서 `XLEN=10 · pending=0 · lag=0` 이었다.
+     */
+    @Test
+    fun `처리가 끝나면 밀린 수는 0 이고 남아 있는 수는 0 이 아니다`() {
+        val ops = redisOfMetrics.opsForStream<String, String>()
+        redisOfMetrics.delete(QueueKeys.JUDGE_STREAM_HIGH)
+        runCatching { ops.createGroup(QueueKeys.JUDGE_STREAM_HIGH, ReadOffset.from("0"), QueueKeys.JUDGE_GROUP) }
+        ops.add(MapRecord.create(QueueKeys.JUDGE_STREAM_HIGH, mapOf("payload" to "{}")))
+        // 읽고 ack 한다 — 처리가 끝난 상태다.
+        val read = ops.read(
+            Consumer.from(QueueKeys.JUDGE_GROUP, "확인용"),
+            StreamOffset.create(QueueKeys.JUDGE_STREAM_HIGH, ReadOffset.lastConsumed()),
+        )
+        read?.forEach { ops.acknowledge(QueueKeys.JUDGE_GROUP, it) }
+
+        val stream = monitor.status().streams.first { it.name == QueueKeys.JUDGE_STREAM_HIGH }
+
+        assertTrue(stream.length > 0, "ack 해도 스트림 항목은 남는다. length=${stream.length}")
+        assertTrue(stream.pending == 0L, "ack 했으므로 pending 은 0 이어야 한다: ${stream.pending}")
+        assertTrue(stream.lag == 0L, "다 읽었으므로 밀린 것은 0 이어야 한다: ${stream.lag}")
     }
 
     /**

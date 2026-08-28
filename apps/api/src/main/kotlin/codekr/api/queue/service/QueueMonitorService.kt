@@ -4,6 +4,7 @@ import codekr.api.queue.QueueKeys
 import codekr.api.queue.dto.QueueStatusResponse
 import codekr.api.queue.dto.StreamStatus
 import org.slf4j.LoggerFactory
+import org.springframework.data.redis.connection.stream.StreamInfo
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -67,6 +68,25 @@ class QueueMonitorService(
             .count { it.idleTimeMs() < activeWindow.toMillis() }
             .toLong()
 
+    /**
+     * **그룹이 아직 안 읽은 항목 수** (#702).
+     *
+     * `XLEN` 은 밀린 수가 아니다 — Redis Streams 는 ack 해도 항목을 지우지 않고
+     * 트리밍(`MAXLEN ~`)으로만 준다. 그래서 처리가 다 끝나도 값이 남는다. 운영에서
+     * `codekr:judge:normal` 이 `XLEN=10 · pending=0 · lag=0` 이었다 — 열은 이력이다.
+     *
+     * `XInfoGroup` 에 접근자가 없어 raw 로 읽는다. Redis 7.0 이 준다.
+     *
+     * **null 을 0 으로 바꾸지 않는다.** Redis 가 계산하지 못하는 경우(안 읽은 항목이
+     * 트리밍으로 잘렸을 때)가 있는데, 그때 0 을 내면 "밀린 게 없다" 로 읽혀 **정반대**가
+     * 된다. 값이 없는 것과 0 은 다른 말이어야 한다.
+     */
+    private fun lagOf(groupInfo: StreamInfo.XInfoGroup): Long? =
+        when (val raw = groupInfo.raw["lag"]) {
+            is Number -> raw.toLong()
+            else -> null
+        }
+
     private fun inspect(stream: String, group: String): StreamStatus {
         val operations = redis.opsForStream<String, String>()
         return runCatching {
@@ -77,6 +97,7 @@ class QueueMonitorService(
                 name = stream,
                 group = group,
                 length = length,
+                lag = groupInfo?.let(::lagOf),
                 pending = groupInfo?.pendingCount() ?: 0,
                 consumers = if (groupInfo == null) 0 else activeConsumers(stream, group),
                 lastDeliveredId = groupInfo?.lastDeliveredId(),
@@ -85,7 +106,7 @@ class QueueMonitorService(
         }.getOrElse { error ->
             // 워커가 아직 한 번도 뜨지 않았으면 스트림 자체가 없다 — 오류가 아니라 상태다.
             log.debug("큐 상태 조회 실패: {}", stream, error)
-            StreamStatus(stream, group, 0, 0, 0, null, ready = false)
+            StreamStatus(stream, group, 0, null, 0, 0, null, ready = false)
         }
     }
 
