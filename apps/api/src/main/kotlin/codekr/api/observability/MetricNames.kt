@@ -19,10 +19,15 @@ object MetricNames {
     const val QUEUE_PENDING = "codekr.queue.pending"
 
     /**
-     * `codekr_queue_consumers` — 그 그룹에 붙어 있는 소비자 수.
+     * `codekr_queue_consumers` — **최근 10분 안에 읽은** 소비자 수.
      *
      * **0 이면 아무도 안 읽고 있다.** 스트림 길이만 보면 "일이 없어서 0" 과 "읽는 이가
      * 없어서 안 줄어든다" 가 구분되지 않는다.
+     *
+     * **등록된 수가 아니다** (#699). `XINFO GROUPS` 의 `consumers` 는 한 번이라도
+     * 등록된 이름을 전부 세는데, 소비자 이름이 파드 이름이라(#415) 배포마다 죽은
+     * 이름이 쌓인다 — 운영에서 51개 중 살아 있는 것이 1개였다. 그 값으로는 위 문장을
+     * 말할 수 없다. 판단은 `QueueMonitorService` 가 한다.
      */
     const val QUEUE_CONSUMERS = "codekr.queue.consumers"
 

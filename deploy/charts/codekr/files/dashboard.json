@@ -77,7 +77,7 @@
     {
       "type": "timeseries",
       "title": "붙어 있는 소비자 수",
-      "description": "0 이면 아무도 안 읽고 있다. 길이만 보면 '일이 없어서 0' 과 구분되지 않는다.",
+      "description": "최근 10분 안에 읽은 소비자 수 (#699). 0 이면 아무도 안 읽고 있다 — 길이만 보면 '일이 없어서 0' 과 구분되지 않는다.",
       "datasource": { "type": "prometheus", "uid": "${prometheus}" },
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
       "fieldConfig": {
