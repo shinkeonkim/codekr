@@ -1,5 +1,6 @@
 package codekr.api.realtime
 
+import codekr.api.observability.Correlation
 import codekr.api.queue.message.JudgeEventMessage
 import codekr.api.submission.service.JudgeResultRecorder
 import org.slf4j.LoggerFactory
@@ -31,9 +32,13 @@ class JudgeEventListener(
                 return
             }
 
-        runCatching { recorder.record(event) }
-            .onFailure { log.error("채점 이벤트 영속화 실패: {}", event, it) }
+        // 여기부터가 **되돌아오는 쪽**이다 (#681). 영속화가 실패하면 사용자는 영원히
+        // "채점 중" 을 보다가 180초 뒤 SYSTEM_ERROR 를 받는데, 그 사이를 잇는 것이 이 번호다.
+        Correlation.withSubmission(event.submissionId) {
+            runCatching { recorder.record(event) }
+                .onFailure { log.error("채점 이벤트 영속화 실패: {}", event, it) }
 
-        webSocketHandler.broadcast(event.submissionId, payload)
+            webSocketHandler.broadcast(event.submissionId, payload)
+        }
     }
 }

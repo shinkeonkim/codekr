@@ -202,7 +202,18 @@ func (c *Consumer) handle(ctx context.Context, stream string, message redis.XMes
 	started := time.Now()
 	result := c.runner.Run(ctx, job)
 	metrics.Executed(job.RuntimeID, time.Since(started))
-	c.log.Info("실행 완료",
+	/*
+		제출 번호를 함께 남긴다 (#681).
+
+		**실행기의 로그가 가장 적은데, 그래서 이어져야 한다.** 채점이 오래 걸렸을 때
+		어느 테스트케이스에서 시간을 썼는지는 여기밖에 안 남는다. 0 이면 제출과 무관한
+		실행(코드 실행기, #68)이라 붙이지 않는다.
+	*/
+	log := c.log
+	if job.SubmissionID != 0 {
+		log = log.With(contract.LogKeySubmission, job.SubmissionID)
+	}
+	log.Info("실행 완료",
 		"jobId", job.JobID, "runtime", job.RuntimeID,
 		"status", result.Status, "elapsedMs", time.Since(started).Milliseconds())
 

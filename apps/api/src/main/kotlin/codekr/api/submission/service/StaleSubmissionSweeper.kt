@@ -1,6 +1,7 @@
 package codekr.api.submission.service
 
 import codekr.api.config.properties.SubmissionProperties
+import codekr.api.observability.Correlation
 import codekr.api.observability.MetricNames
 import codekr.api.submission.entity.SubmissionStatus
 import codekr.api.submission.repository.SubmissionRepository
@@ -47,6 +48,23 @@ class StaleSubmissionSweeper(
             threshold,
         )
         if (stale.isEmpty()) return
+
+        /*
+            **어느 제출이 닫혔는지를 한 줄씩 남긴다** (#681).
+
+            건수만 남기면 그 제출들을 찾을 방법이 없다. 여기까지 온 제출은 세 앱 어딘가에서
+            멈춘 것이므로, 번호를 들고 Loki 를 뒤지는 것이 **정확히 다음에 할 일**이다.
+            오류 경로라 양이 많지 않다.
+
+            **닫기 전에 남긴다.** `fail()` 뒤에는 전부 SYSTEM_ERROR 라 아무것도 구별되지
+            않는다. PENDING 이면 아무도 안 집어 간 것이고, JUDGING 이면 채점 도중에
+            멈춘 것이다 — 다음에 볼 곳이 서로 다르다.
+        */
+        stale.forEach { submission ->
+            Correlation.withSubmission(submission.id) {
+                log.warn("판정 없이 닫습니다. 마지막 상태={}", submission.status)
+            }
+        }
 
         stale.forEach { it.fail() }
         closed.increment(stale.size.toDouble())
