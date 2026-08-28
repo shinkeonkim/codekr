@@ -32,12 +32,25 @@ type Consumer struct {
 	runner       *Runner
 	consumerName string
 	concurrency  int
-	log          *slog.Logger
+	// 읽을 실행 큐. **대회부터** 나열된다 (#639).
+	streams []string
+	log     *slog.Logger
 }
 
 // NewConsumer 는 실행 큐 소비자를 만든다.
+//
+// **모든 실행기가 모든 큐를 읽는다** (#639). 대회 전용 실행기를 따로 두지 않은 이유:
+// 대회가 없는 동안 그 실행기가 놀고, 있는 동안에는 나머지가 논다. 우선순위로 두면
+// 대회가 없을 때 모든 실행기가 평소 제출을 처리한다.
 func NewConsumer(client *redis.Client, runner *Runner, consumerName string, concurrency int, log *slog.Logger) *Consumer {
-	return &Consumer{redis: client, runner: runner, consumerName: consumerName, concurrency: concurrency, log: log}
+	return &Consumer{
+		redis:        client,
+		runner:       runner,
+		consumerName: consumerName,
+		concurrency:  concurrency,
+		streams:      contract.ExecStreamsByPriority(),
+		log:          log,
+	}
 }
 
 /*
@@ -50,8 +63,11 @@ Start 는 [ctx] 가 끝나면 **새 작업을 그만 받는다.** 하던 실행�
 [drain] 은 "끝까지" 의 상한이다. 파드의 `terminationGracePeriodSeconds` 보다 짧아야 한다.
 */
 func (c *Consumer) Start(ctx context.Context, drain time.Duration) error {
-	if err := ensureGroup(ctx, c.redis, contract.StreamExec, contract.GroupExec); err != nil {
-		return err
+	// 차선마다 스트림이 따로 있다 (#639). 하나라도 그룹이 없으면 그 차선을 못 읽는다.
+	for _, stream := range c.streams {
+		if err := ensureGroup(ctx, c.redis, stream, contract.GroupExec); err != nil {
+			return err
+		}
 	}
 
 	workCtx, stopWork := context.WithCancel(context.WithoutCancel(ctx))
@@ -82,36 +98,93 @@ func (c *Consumer) Start(ctx context.Context, drain time.Duration) error {
 }
 
 // loop 은 [ctx] 로 큐를 읽고 [workCtx] 로 실행한다 (#415).
+//
+// **차선 순서대로 읽는다** (#639). 채점기와 같은 구조다 — 자세한 근거는 `priority.go`.
 func (c *Consumer) loop(ctx, workCtx context.Context) {
-	for ctx.Err() == nil {
+	for cycle := 0; ctx.Err() == nil; cycle++ {
+		if c.pickOne(ctx, workCtx, cycle) {
+			continue
+		}
+		c.waitForAny(ctx, workCtx)
+	}
+}
+
+/*
+pickOne 은 차선 순서대로 훑어 **처음 발견한 작업 하나**를 처리한다 (#639).
+
+차선마다 따로, 논블로킹으로 읽는 이유: 여러 스트림을 한 번에 블로킹으로 읽으면 Redis 가
+"먼저 들어온 것" 을 주기 때문에 **순서가 무시된다.** 순서는 우리가 정해야 한다.
+*/
+func (c *Consumer) pickOne(ctx, workCtx context.Context, cycle int) bool {
+	for _, stream := range streamOrder(c.streams, cycle) {
 		streams, err := c.redis.XReadGroup(ctx, &redis.XReadGroupArgs{
 			Group:    contract.GroupExec,
 			Consumer: c.consumerName,
-			Streams:  []string{contract.StreamExec, ">"},
+			Streams:  []string{stream, ">"},
 			Count:    1,
-			Block:    2 * time.Second,
+			Block:    -1, // 논블로킹. 비어 있으면 바로 다음 차선으로 넘어간다.
 		}).Result()
 
 		if err != nil {
 			if errors.Is(err, redis.Nil) || ctx.Err() != nil {
 				continue
 			}
-			c.log.Error("실행 큐 읽기 실패", "error", err)
+			c.log.Error("실행 큐 읽기 실패", "stream", stream, "error", err)
 			time.Sleep(time.Second)
 			continue
 		}
 
-		for _, stream := range streams {
-			for _, message := range stream.Messages {
-				c.handle(workCtx, message)
+		handled := false
+		for _, result := range streams {
+			for _, message := range result.Messages {
+				c.handle(workCtx, result.Stream, message)
+				handled = true
 			}
+		}
+		if handled {
+			return true
+		}
+	}
+	return false
+}
+
+// waitForAny 는 어느 차선이든 작업이 들어올 때까지 잠깐 기다린다.
+//
+// 여기서는 순서가 무시되지만 상관없다 — 어차피 큐가 비어 있어 경쟁할 것이 없다.
+// 깨어난 뒤 다음 차례부터 다시 차선 순서대로 읽는다.
+func (c *Consumer) waitForAny(ctx, workCtx context.Context) {
+	// XReadGroup 은 스트림 이름 뒤에 같은 수의 ID 를 요구한다 — 그래서 두 배다.
+	args := make([]string, 0, len(c.streams)*2)
+	args = append(args, c.streams...)
+	for range c.streams {
+		args = append(args, ">")
+	}
+
+	streams, err := c.redis.XReadGroup(ctx, &redis.XReadGroupArgs{
+		Group:    contract.GroupExec,
+		Consumer: c.consumerName,
+		Streams:  args,
+		Count:    1,
+		Block:    2 * time.Second,
+	}).Result()
+
+	if err != nil {
+		if !errors.Is(err, redis.Nil) && ctx.Err() == nil {
+			c.log.Error("실행 큐 대기 실패", "error", err)
+			time.Sleep(time.Second)
+		}
+		return
+	}
+	for _, result := range streams {
+		for _, message := range result.Messages {
+			c.handle(workCtx, result.Stream, message)
 		}
 	}
 }
 
-func (c *Consumer) handle(ctx context.Context, message redis.XMessage) {
+func (c *Consumer) handle(ctx context.Context, stream string, message redis.XMessage) {
 	// 메시지를 해석하지 못해도 ack 한다 — 재처리해도 같은 결과이므로 큐만 막는다.
-	defer c.ack(ctx, message.ID)
+	defer c.ack(ctx, stream, message.ID)
 
 	payload, ok := message.Values[contract.MessagePayloadKey].(string)
 	if !ok {
@@ -164,11 +237,13 @@ func isBusyGroup(err error) bool {
 }
 
 // ack 는 **취소되지 않는 ctx 로** 한다 (#415). 종료 중에도 반드시 나가야 하는 호출이다.
-func (c *Consumer) ack(ctx context.Context, id string) {
+// **어느 스트림에서 온 것인지 받아야 한다** (#639). 큐가 여럿이 된 뒤로,
+// 고정된 이름으로 ack 하면 **다른 큐의 작업이 영원히 PEL 에 남는다.**
+func (c *Consumer) ack(ctx context.Context, stream, id string) {
 	ackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), ackTimeout)
 	defer cancel()
-	if err := c.redis.XAck(ackCtx, contract.StreamExec, contract.GroupExec, id).Err(); err != nil {
-		c.log.Error("ack 실패", "messageId", id, "error", err)
+	if err := c.redis.XAck(ackCtx, stream, contract.GroupExec, id).Err(); err != nil {
+		c.log.Error("ack 실패", "stream", stream, "messageId", id, "error", err)
 	}
 }
 
@@ -190,14 +265,17 @@ func (c *Consumer) reclaimLoop(readCtx, workCtx context.Context) {
 		case <-readCtx.Done():
 			return
 		case <-ticker.C:
-			c.reclaim(readCtx, workCtx)
+			// 차선마다 따로 본다 (#639) — 한 스트림만 보면 나머지의 놓친 작업이 영영 남는다.
+			for _, stream := range c.streams {
+				c.reclaim(readCtx, workCtx, stream)
+			}
 		}
 	}
 }
 
-func (c *Consumer) reclaim(readCtx, workCtx context.Context) {
+func (c *Consumer) reclaim(readCtx, workCtx context.Context, stream string) {
 	pending, err := c.redis.XPendingExt(readCtx, &redis.XPendingExtArgs{
-		Stream: contract.StreamExec,
+		Stream: stream,
 		Group:  contract.GroupExec,
 		// 지금 누가 실행 중인 것을 빼앗지 않는다.
 		Idle:  reclaimMinIdle,
@@ -207,7 +285,7 @@ func (c *Consumer) reclaim(readCtx, workCtx context.Context) {
 	}).Result()
 	if err != nil {
 		if !errors.Is(err, redis.Nil) && readCtx.Err() == nil {
-			c.log.Error("밀린 실행 작업 조회 실패", "error", err)
+			c.log.Error("밀린 실행 작업 조회 실패", "stream", stream, "error", err)
 		}
 		return
 	}
@@ -215,13 +293,13 @@ func (c *Consumer) reclaim(readCtx, workCtx context.Context) {
 	for _, entry := range pending {
 		if entry.RetryCount > maxDeliveries {
 			c.log.Error("여러 번 실패한 실행 작업을 포기합니다",
-				"messageId", entry.ID, "deliveries", entry.RetryCount)
-			c.ack(workCtx, entry.ID)
+				"stream", stream, "messageId", entry.ID, "deliveries", entry.RetryCount)
+			c.ack(workCtx, stream, entry.ID)
 			continue
 		}
 
 		messages, err := c.redis.XClaim(readCtx, &redis.XClaimArgs{
-			Stream:   contract.StreamExec,
+			Stream:   stream,
 			Group:    contract.GroupExec,
 			Consumer: c.consumerName,
 			MinIdle:  reclaimMinIdle,
@@ -229,16 +307,16 @@ func (c *Consumer) reclaim(readCtx, workCtx context.Context) {
 		}).Result()
 		if err != nil {
 			if readCtx.Err() == nil {
-				c.log.Error("밀린 실행 작업 회수 실패", "messageId", entry.ID, "error", err)
+				c.log.Error("밀린 실행 작업 회수 실패", "stream", stream, "messageId", entry.ID, "error", err)
 			}
 			continue
 		}
 
 		for _, message := range messages {
 			c.log.Warn("놓친 실행 작업을 다시 실행합니다",
-				"messageId", message.ID, "idle", entry.Idle,
+				"stream", stream, "messageId", message.ID, "idle", entry.Idle,
 				"deliveries", entry.RetryCount, "from", entry.Consumer)
-			c.handle(workCtx, message)
+			c.handle(workCtx, stream, message)
 		}
 	}
 }

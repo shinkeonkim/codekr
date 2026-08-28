@@ -10,5 +10,10 @@
   "eventChannel": "codekr:events",
   "replyStreamPrefix": "codekr:exec:res:",
   "payloadField": "payload",
-  "judgeContestStream": "codekr:judge:contest"
+  "judgeContestStream": "codekr:judge:contest",
+  "execStreamsByPriority": [
+    "codekr:exec:contest",
+    "codekr:exec:general",
+    "codekr:exec"
+  ]
 }

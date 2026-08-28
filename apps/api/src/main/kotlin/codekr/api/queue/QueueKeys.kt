@@ -30,7 +30,30 @@ object QueueKeys {
      * 적체를 볼 수 없으면 워커를 언제 늘려야 하는지 알 수 없다.
      */
     val JUDGE_STREAMS = JUDGE_PRIORITY_STREAMS + JUDGE_STREAM_CONTEST
+    /**
+     * **옛 실행 큐** (#639 이전). 지금은 아무도 여기 넣지 않는다.
+     *
+     * 지우지 않는 이유: 배포는 파드마다 굴러가므로 그 사이에 **옛 채점기가 여기로 넣는**
+     * 순간이 있다. 실행기가 이것도 함께 읽되 가장 낮은 우선순위로 둔다.
+     */
     const val EXEC_STREAM = "codekr:exec"
+
+    /**
+     * 실행 큐도 차선으로 나눈다 (#639).
+     *
+     * **채점기만 나누는 것으로는 부족했다** — 대회 전용 채점기(#62)가 있어도 그 뒤의
+     * 실행 큐가 한 벌이라 평소 제출이 몰리면 대회도 함께 밀렸다. 실측으로 대회 판정
+     * 중앙값이 조용할 때 14~17초에서 방해가 있을 때 27~28초로 늘었다.
+     */
+    const val EXEC_STREAM_CONTEST = "codekr:exec:contest"
+    const val EXEC_STREAM_GENERAL = "codekr:exec:general"
+
+    /**
+     * 실행기가 **읽을 순서대로.** Go 의 `ExecStreamsByPriority()` 와 같은 목록이다.
+     *
+     * 순서가 계약의 일부다 — 대회가 먼저다.
+     */
+    val EXEC_STREAMS_BY_PRIORITY = listOf(EXEC_STREAM_CONTEST, EXEC_STREAM_GENERAL, EXEC_STREAM)
     const val JUDGE_GROUP = "judge-workers"
     const val EXEC_GROUP = "exec-workers"
     const val EVENT_CHANNEL = "codekr:events"

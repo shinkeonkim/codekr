@@ -78,7 +78,14 @@ class QueuePublisher(
         val job = ExecJobMessage(
             jobId, runtimeId, sourceCode, stdin, timeLimitMs, memoryLimitMb, replyStream, extraFiles,
         )
-        add(QueueKeys.EXEC_STREAM, objectMapper.writeValueAsString(job))
+        /*
+            **단발 실행은 일반 차선으로 간다** (#639).
+
+            대회 차선으로 보내지 않는 이유: 이 경로(`/run`)는 대회를 모른다 — 문제만
+            받는다. 대회 참가자가 누른 실행도 여기로 오지만, 그것까지 우대하려면
+            대회 맥락이 이 엔드포인트까지 와야 하고 그것은 따로 볼 일이다.
+        */
+        add(QueueKeys.EXEC_STREAM_GENERAL, objectMapper.writeValueAsString(job))
 
         return try {
             awaitReply(replyStream, waitTimeout)

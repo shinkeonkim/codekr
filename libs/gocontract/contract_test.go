@@ -94,6 +94,7 @@ func TestQueueKeysMatchFixture(t *testing.T) {
 	var fixture struct {
 		JudgeStreamsByPriority []string `json:"judgeStreamsByPriority"`
 		JudgeContestStream     string   `json:"judgeContestStream"`
+		ExecStreamsByPriority  []string `json:"execStreamsByPriority"`
 		ExecStream             string   `json:"execStream"`
 		JudgeGroup             string   `json:"judgeGroup"`
 		ExecGroup              string   `json:"execGroup"`
@@ -117,6 +118,22 @@ func TestQueueKeysMatchFixture(t *testing.T) {
 	for i, want := range fixture.JudgeStreamsByPriority {
 		if actual[i] != want {
 			t.Errorf("채점 스트림 %d 번이 다릅니다: %q != %q", i, actual[i], want)
+		}
+	}
+
+	/*
+		실행 큐도 차선으로 나뉜다 (#639). **순서가 계약의 일부다** — 대회가 먼저다.
+
+		여기서 순서까지 고정하는 이유: 이름만 맞추면 어느 쪽이 먼저인지가 코드에만 있고,
+		그것을 바꾸는 것은 **한 줄짜리 변경인데 결과가 크다.**
+	*/
+	execActual := ExecStreamsByPriority()
+	if len(execActual) != len(fixture.ExecStreamsByPriority) {
+		t.Fatalf("실행 스트림 개수가 다릅니다: %v vs %v", execActual, fixture.ExecStreamsByPriority)
+	}
+	for i, want := range fixture.ExecStreamsByPriority {
+		if execActual[i] != want {
+			t.Errorf("실행 스트림 %d 번이 다릅니다: %q != %q", i, execActual[i], want)
 		}
 	}
 

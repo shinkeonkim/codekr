@@ -22,7 +22,9 @@ class QueueMonitorService(private val redis: StringRedisTemplate) {
      */
     fun status(): QueueStatusResponse = QueueStatusResponse(
         QueueKeys.JUDGE_STREAMS.map { inspect(it, QueueKeys.JUDGE_GROUP) } +
-            inspect(QueueKeys.EXEC_STREAM, QueueKeys.EXEC_GROUP),
+            // **차선마다 보여야 한다** (#639). 하나로 합쳐 보이면 대회가 밀리는 것과
+            // 평소가 밀리는 것을 구별할 수 없고, 그러면 무엇을 늘려야 할지 알 수 없다.
+            QueueKeys.EXEC_STREAMS_BY_PRIORITY.map { inspect(it, QueueKeys.EXEC_GROUP) },
     )
 
     private fun inspect(stream: String, group: String): StreamStatus {
