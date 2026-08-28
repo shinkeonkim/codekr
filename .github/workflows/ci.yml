@@ -109,6 +109,11 @@ jobs:
       - name: 대시보드가 그리는 지표가 실제로 있는지
         run: python3 scripts/check-dashboard-metrics.py
 
+      # api 가 나가는 곳 일곱 중 **넷은 막혀도 조용하다** (#664). 업로드·메일·스케일
+      # 조정은 나머지가 멀쩡히 돌아서, 배포한 사람은 성공했다고 믿는다.
+      - name: api egress 정책에 빠진 곳이 없는지
+        run: python3 scripts/check-api-egress.py
+
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest
