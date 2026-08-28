@@ -40,6 +40,25 @@ var (
 	}, []string{"outcome"})
 )
 
+/*
+init 은 라벨 값이 **닫혀 있는** 지표를 0 으로 내보내 둔다 (#697).
+
+`CounterVec` 은 첫 `Inc()` 전까지 그 계열이 **아예 없다.** 그러면 대시보드에서
+"한 건도 없다" 와 "아무도 안 내보낸다" 가 같은 모양이 된다 — 패널이 비어 있는 것을
+보고 정상인지 긁히지 않는지 알 수 없다.
+
+**`dropped` 가 가장 보고 싶은 0 이다.** 포기된 작업이 있으면 그만큼의 제출이 판정
+없이 닫힌다(ADR-0004). 그것이 "없음" 이 아니라 "0" 으로 보여야 한다.
+
+**소요·판정은 하지 않는다.** 그쪽 라벨은 런타임·유형이라 값이 열려 있고, 미리 채우면
+**한 번도 쓰지 않은 런타임이 0 으로 존재하는 척**하게 된다.
+*/
+func init() {
+	for _, outcome := range []string{OutcomeReclaimed, OutcomeDropped} {
+		reclaims.WithLabelValues(outcome)
+	}
+}
+
 // Executed 는 실행 하나가 끝났음을 기록한다.
 func Executed(runtime string, elapsed time.Duration) {
 	duration.WithLabelValues(runtime).Observe(elapsed.Seconds())
