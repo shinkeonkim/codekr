@@ -33,6 +33,13 @@ class QueueMetrics(
 
     private class Holder {
         val length = AtomicLong()
+        /**
+         * **-1 은 "Redis 가 계산하지 못했다" 다** (#702).
+         *
+         * 게이지는 값을 비울 수 없으므로 표시값을 하나 쓴다. 0 을 쓰면 "밀린 게 없다" 와
+         * 구별되지 않고, 그 둘은 정반대다. 대시보드는 음수를 걸러 낸다.
+         */
+        val lag = AtomicLong(-1)
         val pending = AtomicLong()
         val consumers = AtomicLong()
     }
@@ -53,6 +60,7 @@ class QueueMetrics(
         for (stream in monitor.status().streams) {
             val holder = values.getOrPut(stream.name) { register(stream.name, stream.group) }
             holder.length.set(stream.length)
+            holder.lag.set(stream.lag ?: -1)
             holder.pending.set(stream.pending)
             holder.consumers.set(stream.consumers)
         }
@@ -62,6 +70,7 @@ class QueueMetrics(
         val holder = Holder()
         val tags = Tags.of(MetricNames.TAG_STREAM, stream, MetricNames.TAG_GROUP, group)
         registry.gauge(MetricNames.QUEUE_LENGTH, tags, holder.length)
+        registry.gauge(MetricNames.QUEUE_LAG, tags, holder.lag)
         registry.gauge(MetricNames.QUEUE_PENDING, tags, holder.pending)
         registry.gauge(MetricNames.QUEUE_CONSUMERS, tags, holder.consumers)
         return holder

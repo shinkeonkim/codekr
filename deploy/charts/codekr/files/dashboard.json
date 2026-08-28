@@ -46,15 +46,15 @@
     },
     {
       "type": "timeseries",
-      "title": "큐에 쌓인 수",
-      "description": "차선마다 나뉘어 보여야 대회가 밀리는 것과 평소가 밀리는 것을 구분할 수 있다 (#639).",
+      "title": "밀린 수 (아직 아무도 안 가져간 것)",
+      "description": "그룹이 아직 안 읽은 항목 수. **스트림 길이가 아니다** (#702) — Redis Streams 는 ack 해도 항목을 지우지 않아, 길이로 그리면 처리가 다 끝나도 밀린 것처럼 보인다. 차선마다 나뉘어 보여야 대회가 밀리는 것과 평소가 밀리는 것을 구분할 수 있다 (#639). -1 은 Redis 가 계산하지 못한 것이라 걸러 낸다.",
       "datasource": { "type": "prometheus", "uid": "${prometheus}" },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 },
       "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
       "targets": [
         {
           "refId": "A",
-          "expr": "codekr_queue_length{namespace=~\"$namespace\"}",
+          "expr": "codekr_queue_lag{namespace=~\"$namespace\"} >= 0",
           "legendFormat": "{{stream}}"
         }
       ]
@@ -64,7 +64,7 @@
       "title": "워커가 붙들고 있는 수 (pending)",
       "description": "읽어 갔지만 아직 ack 되지 않은 것. 사실상 '지금 채점 중' 이다.",
       "datasource": { "type": "prometheus", "uid": "${prometheus}" },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 1 },
       "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
       "targets": [
         {
@@ -79,7 +79,7 @@
       "title": "붙어 있는 소비자 수",
       "description": "최근 10분 안에 읽은 소비자 수 (#699). 0 이면 아무도 안 읽고 있다 — 길이만 보면 '일이 없어서 0' 과 구분되지 않는다.",
       "datasource": { "type": "prometheus", "uid": "${prometheus}" },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 1 },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -98,6 +98,21 @@
         {
           "refId": "A",
           "expr": "codekr_queue_consumers{namespace=~\"$namespace\"}",
+          "legendFormat": "{{stream}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "스트림에 남아 있는 수 (이력)",
+      "description": "`XLEN`. 처리가 끝난 것도 센다 — **밀림이 아니다** (#702). 이 값이 쓸모 있는 자리는 하나다: 트리밍 상한(10000)에 붙었는지. 붙었다면 오래된 이력이 잘리고 있다는 뜻이다.",
+      "datasource": { "type": "prometheus", "uid": "${prometheus}" },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "codekr_queue_length{namespace=~\"$namespace\"}",
           "legendFormat": "{{stream}}"
         }
       ]
