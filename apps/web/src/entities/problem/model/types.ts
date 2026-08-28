@@ -274,6 +274,19 @@ export interface MongoSpec {
 }
 
 /**
+ * Git 문제의 스펙 (#654). **어드민에게만 온다.**
+ *
+ * Redis 와 모양이 같다 — 시드 → 정답 → 확인. 담기는 것이 git 명령이라는 것만 다르다.
+ */
+export interface GitSpec {
+  /** 시작 저장소를 만드는 명령. 없으면 빈 저장소에서 시작한다. */
+  seedCommands: string | null;
+  answerCommands: string;
+  /** 끝난 뒤를 읽는 명령. **선택이 아니다.** */
+  verifyCommands: string;
+}
+
+/**
  * 정규식 문제의 스펙 (#653). **어드민에게만 온다.**
  *
  * 푸는 사람에게는 확인 문자열이 가지 않는다 — 보이면 그것만 통과하는 패턴을 쓰면 되므로
@@ -377,6 +390,8 @@ export interface AdminProblemDetail extends ProblemSummary {
   quizSpec: QuizSpec | null;
   /** 정규식 유형이 아니면 null (#653). */
   regexSpec: RegexSpec | null;
+  /** Git 유형이 아니면 null (#654). */
+  gitSpec: GitSpec | null;
   /** 이 유형이 정답 코드 검증(#39)을 지원하는가 (#495). */
   canVerifySolution?: boolean;
   description: string;

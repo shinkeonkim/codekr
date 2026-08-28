@@ -217,8 +217,16 @@ const (
 		하네스가 돌리고, 기대와 실제를 견준다.
 	*/
 	KindJudgeRegex = "JUDGE_REGEX"
-	KindQuiz       = "QUIZ"
-	KindManual     = "MANUAL"
+	/*
+		KindJudgeGit 은 Git 문제다 (#654).
+
+		**Redis(#455)와 채점 모델이 같다** — 제출이 명령의 연속이고 남는 것은 상태다.
+		그런데도 유형을 나눈 이유는 담기는 것이 다르기 때문이다: 여기는 git 명령이고
+		저기는 redis 명령이며, 하네스가 해야 하는 일(신원·시각 고정, 네트워크 차단)도 다르다.
+	*/
+	KindJudgeGit = "JUDGE_GIT"
+	KindQuiz     = "QUIZ"
+	KindManual   = "MANUAL"
 )
 
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.
@@ -287,6 +295,27 @@ type JudgeJob struct {
 	Mongo *JudgeMongoSpec `json:"mongo,omitempty"`
 	// Regex 는 KindJudgeRegex 일 때만 실린다 (#653).
 	Regex *JudgeRegexSpec `json:"regex,omitempty"`
+	// Git 은 KindJudgeGit 일 때만 실린다 (#654).
+	Git *JudgeGitSpec `json:"git,omitempty"`
+}
+
+/*
+JudgeGitSpec 은 Git 문제의 채점 자료다 (#654).
+
+**모양은 Redis 와 같다** — 시드로 시작 상태를 만들고, 정답 명령을 돌리고, 확인 명령으로
+끝난 뒤를 읽는다. 담기는 것이 git 명령이라는 것만 다르다.
+
+**확인 명령으로 커밋 해시를 그대로 찍는 것은 권하지 않는다.** 하네스가 신원과 시각을
+고정해 해시가 재현되기는 하지만, 메시지 한 글자만 달라도 해시가 달라져 **같은 결과에
+이른 다른 풀이가 틀린 답**이 된다. 트리 해시(`%T`)와 그래프 모양은 내용만 본다.
+*/
+type JudgeGitSpec struct {
+	// Seed 는 시작 저장소를 만드는 명령이다. 문제가 소유한다.
+	Seed string `json:"seed,omitempty"`
+	// Answer 는 정답 명령의 연속이다. 기대 상태를 만든다.
+	Answer string `json:"answer"`
+	// Verify 는 **끝난 뒤를 읽는 명령**이다. 양쪽에서 같은 것을 돌려 견준다.
+	Verify string `json:"verify"`
 }
 
 /*

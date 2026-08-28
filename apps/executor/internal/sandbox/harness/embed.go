@@ -52,6 +52,16 @@ Regex 는 정규식 문제의 하네스다 (#653).
 */
 const Regex = "regex"
 
+/*
+Git 은 Git 문제의 하네스다 (#654).
+
+**Redis 와 채점 모델이 같지만 하네스가 하는 일이 더 많다** — 커밋 해시가 재현되도록
+신원과 시각을 고정하고, 네트워크 명령이 **타임아웃이 아니라 즉시** 거부되게 만든다.
+
+새 이미지를 만들지 않는다 — C/C++ 이 쓰는 `gcc:13` 에 git 이 들어 있다.
+*/
+const Git = "git"
+
 // scripts 는 하네스 이름 → 작업 디렉터리에 쓸 파일 이름이다.
 var scripts = map[string]string{
 	SQL:         "run-sql.sh",
@@ -60,6 +70,7 @@ var scripts = map[string]string{
 	Mongo:       "run-mongo.sh",
 	Interactive: "run-interactive.sh",
 	Regex:       "run-regex.sh",
+	Git:         "run-git.sh",
 }
 
 // Files 는 그 하네스가 작업 디렉터리에 풀어야 할 파일들이다.

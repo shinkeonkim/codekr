@@ -491,6 +491,30 @@ runtimes:
     template: |
       ^[a-z]+$
 
+  # Git (#654).
+  #
+  # **새 이미지를 만들지 않는다.** C/C++ 이 쓰는 `gcc:13` 에 git 이 들어 있다
+  # (2.39.5, 확인함) — #588 이 겪은 "레지스트리에 없는 이미지" 를 늘리지 않는다.
+  # 큰 이미지지만 **이미 모든 노드에 있다.**
+  #
+  # 하네스가 하는 일이 다른 것보다 많다: 커밋 해시가 재현되도록 **신원과 시각을 고정**하고
+  # (안 하면 같은 답이 때에 따라 틀린다), 네트워크 명령이 타임아웃이 아니라 **즉시**
+  # 거부되게 한다(`protocol.allow=never`).
+  - id: "git:2"
+    label: "Git"
+    # Monaco 에 git 명령 모드가 없다. 셸로 강조하면 `git` 다음이 색이 갈려 읽기 낫다.
+    monacoLanguage: "shell"
+    problemKind: "JUDGE_GIT"
+    image: "gcc:13"
+    digest: "sha256:ad3bd9a25f8495c0d2830d9fdd15c6ce889ada806bc1a00f611f22411a1f8b7c"
+    sourceFile: "commands.git"
+    harness: "git"
+    run: ["sh", "run-git.sh"]
+    startupMs: 300
+    template: |
+      # 한 줄에 명령 하나씩 씁니다. git 명령만 쓸 수 있습니다.
+      git log --oneline
+
   # MongoDB (#527).
   #
   # **Redis 와 유형을 나눴다.** 질의 언어가 아예 다르기 때문이다 — #454 가 SQL 에

@@ -13,6 +13,7 @@ import codekr.api.problem.entity.ProblemFile
 import codekr.api.problem.entity.ProblemTestcaseGroup
 import codekr.api.problem.entity.ProblemMongoSpec
 import codekr.api.problem.entity.ProblemRedisSpec
+import codekr.api.problem.entity.ProblemGitSpec
 import codekr.api.problem.entity.ProblemRegexSpec
 import codekr.api.problem.entity.ProblemSqlSpec
 import codekr.api.tag.dto.ProblemTagResponse
@@ -37,6 +38,8 @@ data class AdminProblemDetailResponse(
     val quizSpec: QuizSpecResponse? = null,
     /** 정규식 유형이 아니면 `null` (#653). */
     val regexSpec: RegexSpecResponse? = null,
+    /** Git 유형이 아니면 `null` (#654). */
+    val gitSpec: GitSpecResponse? = null,
     /**
      * 정답 코드 검증(#39)을 할 수 있는 유형인가 (#495).
      *
@@ -102,6 +105,7 @@ data class AdminProblemDetailResponse(
             mongoSpec: ProblemMongoSpec? = null,
             quizSpec: QuizSpecResponse? = null,
             regexSpec: ProblemRegexSpec? = null,
+            gitSpec: ProblemGitSpec? = null,
             files: List<ProblemFile> = emptyList(),
             testcaseGroups: List<ProblemTestcaseGroup> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
@@ -117,6 +121,7 @@ data class AdminProblemDetailResponse(
             mongoSpec = mongoSpec?.let(MongoSpecResponse::from),
             quizSpec = quizSpec,
             regexSpec = regexSpec?.let(RegexSpecResponse::from),
+            gitSpec = gitSpec?.let(GitSpecResponse::from),
             canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
             testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),
