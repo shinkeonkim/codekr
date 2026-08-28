@@ -31,7 +31,10 @@ import codekr.api.problem.quiz.ProblemQuizAnswerRepository
 import codekr.api.problem.quiz.ProblemQuizChoiceRepository
 import codekr.api.problem.quiz.ProblemQuizSpecRepository
 import codekr.api.problem.repository.ProblemRedisSpecRepository
+import codekr.api.problem.admin.dto.MutationSpecResponse
 import codekr.api.problem.repository.ProblemGitSpecRepository
+import codekr.api.problem.repository.ProblemMutantRepository
+import codekr.api.problem.repository.ProblemMutationSpecRepository
 import codekr.api.problem.repository.ProblemRegexSpecRepository
 import codekr.api.problem.repository.ProblemSqlSpecRepository
 import codekr.api.problem.repository.ProblemRepository
@@ -55,6 +58,8 @@ class AdminProblemService(
     private val mongoSpecRepository: ProblemMongoSpecRepository,
     private val regexSpecRepository: ProblemRegexSpecRepository,
     private val gitSpecRepository: ProblemGitSpecRepository,
+    private val mutationSpecRepository: ProblemMutationSpecRepository,
+    private val mutantRepository: ProblemMutantRepository,
     private val quizSpecRepository: ProblemQuizSpecRepository,
     private val quizChoiceRepository: ProblemQuizChoiceRepository,
     private val quizAnswerRepository: ProblemQuizAnswerRepository,
@@ -81,6 +86,7 @@ class AdminProblemService(
             quizSpecOf(id),
             regexSpecRepository.findById(id).orElse(null),
             gitSpecRepository.findById(id).orElse(null),
+            mutationSpecOf(id),
             fileRepository.findByProblemIdOrderBySeq(id),
             groupRepository.findByProblemIdOrderByGroupNo(id),
             tagService.tagsOf(id),
@@ -173,6 +179,42 @@ class AdminProblemService(
      * 무엇의 개정인지 서버가 짐작하면 **정답 표시가 엉뚱한 줄에 남는다** — 그 실수는
      * 오류 없이 정답률로만 드러난다. 파일 목록(#457)·묶음(#473)이 같은 판단을 했다.
      */
+    /** 편집 화면에 돌려줄 테스트 작성 스펙. **어드민에게는 구현이 함께 간다** (#652). */
+    private fun mutationSpecOf(problemId: Long): MutationSpecResponse? =
+        mutationSpecRepository.findById(problemId).orElse(null)?.let { spec ->
+            MutationSpecResponse.of(spec, mutantRepository.findByProblemIdOrderBySeqAsc(problemId))
+        }
+
+    /**
+     * 테스트 작성 자료를 넣거나 지운다 (#652).
+     *
+     * **구현들은 통째로 갈아 끼운다** — 번호가 바뀌면 그것은 다른 구현이고, 무엇이
+     * 무엇의 개정인지 짐작하면 **판정 순서가 어긋난다.** 그 어긋남은 오류를 내지 않고
+     * 정답률로만 드러난다.
+     */
+    private fun upsertMutationSpec(problemId: Long, request: ProblemUpsertRequest) {
+        mutantRepository.deleteByProblemId(problemId)
+        /*
+            **지우기가 먼저 반영돼야 한다** (#560 이 이미 겪은 자리).
+
+            `(problem_id, seq)` 에 유니크 제약이 있는데, JPA 는 한 flush 안에서 INSERT 를
+            DELETE 보다 먼저 낼 수 있다 — 그러면 같은 번호가 겹쳐 **500 이 난다.**
+            수정할 때만 나므로 등록만 시험하면 드러나지 않는다.
+        */
+        mutantRepository.flush()
+        val spec = request.mutationSpec ?: run {
+            mutationSpecRepository.deleteById(problemId)
+            return
+        }
+        val existing = mutationSpecRepository.findById(problemId).orElse(null)
+        if (existing == null) {
+            mutationSpecRepository.save(spec.toSpec(problemId))
+        } else {
+            existing.referenceSource = spec.referenceSource
+        }
+        mutantRepository.saveAll(spec.toMutants(problemId))
+    }
+
     /** Git 스펙을 넣거나 지운다 (#654). Redis 와 같은 이유로 유형을 바꾸면 지운다. */
     private fun upsertGitSpec(problemId: Long, request: ProblemUpsertRequest): ProblemGitSpec? {
         val spec = request.gitSpec ?: run {
@@ -216,6 +258,10 @@ class AdminProblemService(
     private fun upsertQuizSpec(problemId: Long, request: ProblemUpsertRequest): Boolean {
         quizChoiceRepository.deleteByProblemId(problemId)
         quizAnswerRepository.deleteByProblemId(problemId)
+        // 뮤턴트와 같은 이유로 지우기를 먼저 반영한다 (#560). 보기·정답에도
+        // `(problem_id, seq)` 유니크 제약이 있다.
+        quizChoiceRepository.flush()
+        quizAnswerRepository.flush()
 
         val spec = request.quizSpec ?: run {
             quizSpecRepository.deleteById(problemId)
@@ -281,6 +327,7 @@ class AdminProblemService(
         upsertQuizSpec(saved.id, request)
         request.regexSpec?.let { regexSpecRepository.save(it.toEntity(saved.id)) }
         request.gitSpec?.let { gitSpecRepository.save(it.toEntity(saved.id)) }
+        upsertMutationSpec(saved.id, request)
         replaceFiles(saved.id, request)
         replaceTestcaseGroups(saved.id, request)
         creditService.replace(saved.id, request.setterIds, request.reviewerIds)
@@ -333,6 +380,7 @@ class AdminProblemService(
         replaceFiles(problem.id, request)
         replaceTestcaseGroups(problem.id, request)
         upsertQuizSpec(problem.id, request)
+        upsertMutationSpec(problem.id, request)
 
         /*
             바뀐 난이도·공개 여부를 이미 맞힌 사람들의 점수에 반영한다 (#194).
@@ -357,6 +405,7 @@ class AdminProblemService(
             quizSpecOf(problem.id),
             upsertRegexSpec(problem.id, request),
             upsertGitSpec(problem.id, request),
+            mutationSpecOf(problem.id),
             fileRepository.findByProblemIdOrderBySeq(problem.id),
             groupRepository.findByProblemIdOrderByGroupNo(problem.id),
             tagService.tagsOf(problem.id),

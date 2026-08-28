@@ -40,6 +40,8 @@ data class AdminProblemDetailResponse(
     val regexSpec: RegexSpecResponse? = null,
     /** Git 유형이 아니면 `null` (#654). */
     val gitSpec: GitSpecResponse? = null,
+    /** 테스트 작성 유형이 아니면 `null` (#652). */
+    val mutationSpec: MutationSpecResponse? = null,
     /**
      * 정답 코드 검증(#39)을 할 수 있는 유형인가 (#495).
      *
@@ -106,6 +108,7 @@ data class AdminProblemDetailResponse(
             quizSpec: QuizSpecResponse? = null,
             regexSpec: ProblemRegexSpec? = null,
             gitSpec: ProblemGitSpec? = null,
+            mutationSpec: MutationSpecResponse? = null,
             files: List<ProblemFile> = emptyList(),
             testcaseGroups: List<ProblemTestcaseGroup> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
@@ -122,6 +125,7 @@ data class AdminProblemDetailResponse(
             quizSpec = quizSpec,
             regexSpec = regexSpec?.let(RegexSpecResponse::from),
             gitSpec = gitSpec?.let(GitSpecResponse::from),
+            mutationSpec = mutationSpec,
             canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
             testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),

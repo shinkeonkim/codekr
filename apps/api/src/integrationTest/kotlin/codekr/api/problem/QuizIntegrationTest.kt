@@ -228,6 +228,41 @@ class QuizIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.quizSpec.explanation").value("TCP 는 전송 계층이다."))
     }
 
+    /**
+     * 보기를 다시 저장하면 **통째로 갈린다** (#650, #652 에서 발견).
+     *
+     * `(problem_id, seq)` 에 유니크 제약이 있는데 JPA 는 한 flush 안에서 INSERT 를
+     * DELETE 보다 먼저 낼 수 있다 — 그러면 **수정할 때만 500 이 난다.**
+     * 등록만 시험하면 드러나지 않아서, #652 에서 같은 모양을 만들다 잡았다.
+     * #560 이 이미 겪은 자리다.
+     */
+    @Test
+    fun `보기를 수정하면 통째로 갈린다`() {
+        createQuiz()
+        val id = jdbcOfBase.sql("SELECT id FROM problems ORDER BY id DESC LIMIT 1")
+            .query(Long::class.java).single()
+
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .put("/api/v1/admin/problems/$id")
+                .header("Authorization", "Bearer $adminToken")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"slug":"osi-layer","title":"TCP 는 몇 계층인가","category":"NETWORK",
+                     "problemKind":"QUIZ","description":"설명","published":true,
+                     "quizSpec":{"answerType":"SINGLE","explanation":"고친 해설",
+                       "choices":[{"content":"3계층","correct":false},
+                                  {"content":"4계층","correct":true}]}}
+                    """.trimIndent(),
+                ),
+        ).andExpect(status().isOk)
+
+        val rows = jdbcOfBase.sql("SELECT seq FROM problem_quiz_choices WHERE problem_id = :id ORDER BY seq")
+            .param("id", id).query(Int::class.java).list()
+        assertEquals(listOf(1, 2), rows, "번호가 1부터 다시 매겨져야 합니다")
+    }
+
     @Test
     fun `로그인하지 않으면 낼 수 없다`() {
         val slug = createQuiz()

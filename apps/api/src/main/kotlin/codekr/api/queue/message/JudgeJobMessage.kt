@@ -60,6 +60,8 @@ data class JudgeJobMessage(
     val regex: JudgeRegexSpecMessage? = null,
     /** Git 문제의 시드·정답·확인 명령 (#654). 그 유형일 때만 실린다. */
     val git: JudgeGitSpecMessage? = null,
+    /** 테스트 작성 문제의 구현들 (#652). 그 유형일 때만 실린다. */
+    val mutation: JudgeMutationSpecMessage? = null,
     /**
      * 함수형 유형일 때만 실린다 (#447, #421).
      *
@@ -97,6 +99,7 @@ data class JudgeJobMessage(
             mongoSpec: ProblemMongoSpec? = null,
             regexSpec: ProblemRegexSpec? = null,
             gitSpec: ProblemGitSpec? = null,
+            mutationSpec: JudgeMutationSpecMessage? = null,
         ): JudgeJobMessage {
             val limits = problem.limitsFor(submission.runtimeId)
             return JudgeJobMessage(
@@ -124,6 +127,7 @@ data class JudgeJobMessage(
                 mongo = mongoSpec?.let(JudgeMongoSpecMessage::from),
                 regex = regexSpec?.let(JudgeRegexSpecMessage::from),
                 git = gitSpec?.let(JudgeGitSpecMessage::from),
+                mutation = mutationSpec,
                 interactor = problem.interactorSource
                     ?.takeIf { problem.problemKind == ProblemKind.JUDGE_INTERACTIVE },
                 checker = problem.checkerSource

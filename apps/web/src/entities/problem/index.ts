@@ -41,6 +41,7 @@ export type {
   MongoSpec,
   RegexSpec,
   GitSpec,
+  MutationSpec,
   QuizAnswerType,
   QuizSpec,
   QuizView,

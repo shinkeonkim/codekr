@@ -11,6 +11,7 @@ import type {
   RedisSpec,
   RegexSpec,
   GitSpec,
+  MutationSpec,
   SqlSpec,
   Testcase,
 } from "@/entities/problem";
@@ -38,6 +39,8 @@ export interface ProblemFormValues {
   regexSpec: RegexSpec | null;
   /** Git 유형일 때만 보낸다 (#654). */
   gitSpec: GitSpec | null;
+  /** 테스트 작성 유형일 때만 보낸다 (#652). */
+  mutationSpec: MutationSpec | null;
   /** 비워 둘 수 있다 (#195) — 그때 `difficultyState` 가 뜻을 갖는다. */
   difficulty: Difficulty | null;
   difficultyState: DifficultyState;
@@ -131,6 +134,18 @@ export const BLANK_GIT_SPEC: GitSpec = {
   verifyCommands: "git log --format='%T %s'\n",
 };
 
+/**
+ * 새 테스트 작성 문제의 기본값 (#652).
+ *
+ * **버그 심은 구현을 하나 미리 넣어 둔다.** 없으면 아무것도 확인하지 않는 시험이
+ * 통과하는 문제가 되고, 서버가 막기는 하지만 **왜 막히는지**를 이 자리에서 먼저
+ * 보여 주는 편이 낫다.
+ */
+export const BLANK_MUTATION_SPEC: MutationSpec = {
+  referenceSource: "",
+  mutants: [{ label: null, source: "" }],
+};
+
 export const BLANK_SQL_SPEC: SqlSpec = {
   schemaSql: "",
   answerSql: "",
@@ -152,6 +167,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     quizSpec: problem.quizSpec ?? null,
     regexSpec: problem.regexSpec ?? null,
     gitSpec: problem.gitSpec ?? null,
+    mutationSpec: problem.mutationSpec ?? null,
     difficulty: problem.difficulty,
     difficultyState: problem.difficultyState ?? "UNRATED",
     description: problem.description,
@@ -192,6 +208,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   quizSpec: null,
   regexSpec: null,
   gitSpec: null,
+  mutationSpec: null,
   // 새 문제의 기본은 **미평가**다 (#195). 브론즈로 두면 "아직 안 정했다" 와
   // "쉽다" 가 구분되지 않는다 — 등록은 쉬워지지만 거짓 정보가 섞인다.
   difficulty: null,

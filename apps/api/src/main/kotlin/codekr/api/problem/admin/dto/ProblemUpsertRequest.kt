@@ -100,6 +100,10 @@ data class ProblemUpsertRequest(
     @field:Valid
     val gitSpec: GitSpecRequest? = null,
 
+    /** 테스트 작성 유형일 때만 쓴다 (#652). 다른 유형에 실려 오면 서비스가 거부한다. */
+    @field:Valid
+    val mutationSpec: MutationSpecRequest? = null,
+
     /**
      * 난이도 (#195). **비워 둘 수 있다** — 실제 난이도는 사람들이 풀어 봐야 아는 값이라,
      * 등록 시점에 아무 값이나 박아 넣으면 그 숫자가 곧바로 점수가 되어 랭킹에 반영된다.

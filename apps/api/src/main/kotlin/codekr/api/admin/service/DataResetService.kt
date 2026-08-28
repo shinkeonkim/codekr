@@ -80,6 +80,8 @@ class DataResetService(
             "problem_regex_specs",
             // Git (#654)
             "problem_git_specs",
+            // 테스트 작성 (#652)
+            "problem_mutation_specs", "problem_mutants",
             "problem_tags", "problem_credits",
             "problem_difficulty_votes", "problem_reports", "problem_stats",
             "problem_solution_verifications",
