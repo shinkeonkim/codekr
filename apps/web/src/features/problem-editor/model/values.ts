@@ -9,6 +9,7 @@ import type {
   MongoSpec,
   QuizSpec,
   RedisSpec,
+  RegexSpec,
   SqlSpec,
   Testcase,
 } from "@/entities/problem";
@@ -32,6 +33,8 @@ export interface ProblemFormValues {
   mongoSpec: MongoSpec | null;
   /** 퀴즈 유형일 때만 보낸다 (#650). */
   quizSpec: QuizSpec | null;
+  /** 정규식 유형일 때만 보낸다 (#653). */
+  regexSpec: RegexSpec | null;
   /** 비워 둘 수 있다 (#195) — 그때 `difficultyState` 가 뜻을 갖는다. */
   difficulty: Difficulty | null;
   difficultyState: DifficultyState;
@@ -101,6 +104,18 @@ export const BLANK_QUIZ_SPEC: QuizSpec = {
   ignoreWhitespace: true,
 };
 
+/**
+ * 새 정규식 문제의 기본값 (#653).
+ *
+ * **맞으면 안 되는 줄을 미리 넣어 둔다.** 없으면 `.*` 가 통과하는 문제가 되고,
+ * 서버가 막기는 하지만 **왜 막히는지**를 이 자리에서 먼저 보여 주는 편이 낫다.
+ */
+export const BLANK_REGEX_SPEC: RegexSpec = {
+  cases: "+맞아야 하는 문자열\n-맞으면 안 되는 문자열\n",
+  fullMatch: true,
+  ignoreCase: false,
+};
+
 export const BLANK_SQL_SPEC: SqlSpec = {
   schemaSql: "",
   answerSql: "",
@@ -120,6 +135,7 @@ export function toFormValues(problem: AdminProblemDetail): ProblemFormValues {
     redisSpec: problem.redisSpec ?? null,
     mongoSpec: problem.mongoSpec ?? null,
     quizSpec: problem.quizSpec ?? null,
+    regexSpec: problem.regexSpec ?? null,
     difficulty: problem.difficulty,
     difficultyState: problem.difficultyState ?? "UNRATED",
     description: problem.description,
@@ -158,6 +174,7 @@ export const BLANK_PROBLEM: ProblemFormValues = {
   redisSpec: null,
   mongoSpec: null,
   quizSpec: null,
+  regexSpec: null,
   // 새 문제의 기본은 **미평가**다 (#195). 브론즈로 두면 "아직 안 정했다" 와
   // "쉽다" 가 구분되지 않는다 — 등록은 쉬워지지만 거짓 정보가 섞인다.
   difficulty: null,

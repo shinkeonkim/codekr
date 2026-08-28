@@ -40,6 +40,18 @@ const Mongo = "mongo"
 // 파이프 둘을 파서 채점 코드와 제출을 서로 물린다.
 const Interactive = "interactive"
 
+/*
+Regex 는 정규식 문제의 하네스다 (#653).
+
+**하는 일이 다른 하네스와 다르다.** SQL·Redis 는 제출을 *실행*하지만 여기서는
+제출을 **자료로 읽어** 엔진에 넘긴다 — 패턴은 코드가 아니고, 실행했다가는 제출이
+곧 임의 코드 실행이 된다.
+
+새 이미지를 만들지 않는다 — 이미 등록된 파이썬 이미지를 쓴다 (#588 이 겪은
+"레지스트리에 없는 이미지" 를 늘리지 않는다).
+*/
+const Regex = "regex"
+
 // scripts 는 하네스 이름 → 작업 디렉터리에 쓸 파일 이름이다.
 var scripts = map[string]string{
 	SQL:         "run-sql.sh",
@@ -47,6 +59,7 @@ var scripts = map[string]string{
 	Redis:       "run-redis.sh",
 	Mongo:       "run-mongo.sh",
 	Interactive: "run-interactive.sh",
+	Regex:       "run-regex.sh",
 }
 
 // Files 는 그 하네스가 작업 디렉터리에 풀어야 할 파일들이다.

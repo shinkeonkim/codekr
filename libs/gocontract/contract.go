@@ -205,8 +205,20 @@ const (
 	KindJudgeMongo = "JUDGE_MONGODB"
 	// KindJudgeInteractive 는 **도는 중에 주고받는** 문제다 (#474).
 	KindJudgeInteractive = "JUDGE_INTERACTIVE"
-	KindQuiz             = "QUIZ"
-	KindManual           = "MANUAL"
+	/*
+		KindJudgeRegex 는 정규식 문제다 (#653).
+
+		**유형을 새로 만든 이유**: 제출이 코드가 아니라 패턴 하나이고, 어느 엔진으로
+		돌릴지는 사람이 아니라 **문제가** 정한다. `JUDGE_STDIO` 로 두면 사용자가 프로그램을
+		쓰게 되어 정규식 문제가 아니게 되고, 함수형 하네스(#421)에 얹으면 사용자에게
+		언어 선택이 새어 나온다.
+
+		모양은 SQL·Redis·MongoDB 와 같다 — 하나를 제출하고, 문제가 정한 런타임에서
+		하네스가 돌리고, 기대와 실제를 견준다.
+	*/
+	KindJudgeRegex = "JUDGE_REGEX"
+	KindQuiz       = "QUIZ"
+	KindManual     = "MANUAL"
 )
 
 // JudgeJob 은 api 가 채점 큐에 넣는 작업이다.
@@ -273,6 +285,33 @@ type JudgeJob struct {
 	Redis *JudgeRedisSpec `json:"redis,omitempty"`
 	// Mongo 는 KindJudgeMongo 일 때만 실린다 (#527).
 	Mongo *JudgeMongoSpec `json:"mongo,omitempty"`
+	// Regex 는 KindJudgeRegex 일 때만 실린다 (#653).
+	Regex *JudgeRegexSpec `json:"regex,omitempty"`
+}
+
+/*
+JudgeRegexSpec 은 정규식 문제의 채점 자료다 (#653).
+
+**정답 패턴을 두지 않는다.** SQL·Redis 는 정답을 돌려 기대값을 만들지만, 정규식은
+"이 문자열은 맞아야 하고 저것은 아니어야 한다" 가 곧 기대값이다 — 정답 패턴으로
+기대값을 만들면 **출제자가 실수한 패턴이 곧 정답이 되어** 아무도 그것을 잡을 수 없다.
+*/
+type JudgeRegexSpec struct {
+	/*
+		Cases 는 한 줄에 하나씩이다. 첫 글자가 판정이고 나머지가 문자열이다.
+
+			+abc123     이 줄은 맞아야 한다
+			-abc        이 줄은 맞으면 안 된다
+
+		**빈 문자열도 자료다** (`+` 한 글자). 그래서 접두사를 뗀 나머지를 그대로 쓴다.
+	*/
+	Cases string `json:"cases"`
+	// FullMatch 가 참이면 문자열 전체가 맞아야 한다. 거짓이면 일부만 맞아도 된다.
+	//
+	// **문제가 정하고 지문에 적어야 한다** — `match` 와 `search` 는 다른 문제다.
+	FullMatch bool `json:"fullMatch"`
+	// IgnoreCase 가 참이면 대소문자를 무시한다.
+	IgnoreCase bool `json:"ignoreCase"`
 }
 
 /*

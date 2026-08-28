@@ -248,6 +248,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "MongoDB 문제가 아닌데 MongoDB 스펙이 실려 있습니다.")
         }
         validateQuiz(request)
+        validateRegex(request)
         /*
           쓰기를 열었는데 상태를 읽는 쿼리가 없으면 (#453) 채점은 **조용히** 결과 집합
           비교로 돌아간다. `UPDATE` 는 결과 집합이 비어 있으니 아무나 통과한다 —
@@ -279,6 +280,43 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             throw ApiException(ErrorCode.RUNTIME_NOT_FOUND, "지원하지 않는 실행 환경입니다: ${it.runtimeId}")
         }
         request.solution?.let { runtimeRegistry.require(it.runtimeId) }
+    }
+
+    /**
+     * 정규식의 규칙 (#653).
+     *
+     * **맞으면 안 되는 문자열이 없으면 문제가 아니다.** `.*` 가 통과하기 때문이다 —
+     * 그리고 그것은 오류를 내지 않으므로 출제자는 자기 문제가 아무것도 묻지 않는다는
+     * 것을 모른다. #605 에서 Redis 문제 하나가 **틀린 답도 통과**했던 것과 같은 종류다.
+     */
+    private fun validateRegex(request: ProblemUpsertRequest) {
+        val spec = request.regexSpec
+        if (request.problemKind != ProblemKind.JUDGE_REGEX) {
+            if (spec != null) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "정규식 문제가 아닌데 정규식 스펙이 실려 있습니다.")
+            }
+            return
+        }
+        if (spec == null) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "정규식 문제에는 확인할 문자열이 필요합니다.")
+        }
+
+        val lines = spec.cases.lines().map { it.trim('\r') }.filter { it.isNotBlank() }
+        lines.firstOrNull { !it.startsWith("+") && !it.startsWith("-") }?.let {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "확인할 문자열은 + 또는 - 로 시작해야 합니다: $it",
+            )
+        }
+        if (lines.none { it.startsWith("+") }) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "맞아야 하는 문자열이 하나 이상 필요합니다.")
+        }
+        if (lines.none { it.startsWith("-") }) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "맞으면 안 되는 문자열이 하나 이상 필요합니다. 없으면 `.*` 가 통과합니다.",
+            )
+        }
     }
 
     /**

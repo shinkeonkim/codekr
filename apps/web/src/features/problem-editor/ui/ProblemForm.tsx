@@ -15,6 +15,7 @@ import type {
 import {
   BLANK_MONGO_SPEC,
   BLANK_QUIZ_SPEC,
+  BLANK_REGEX_SPEC,
   BLANK_REDIS_SPEC,
   BLANK_SQL_SPEC,
   EMPTY_TESTCASE,
@@ -35,6 +36,7 @@ import { HarnessEditor } from "./HarnessEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { MongoSpecEditor } from "./MongoSpecEditor";
 import { QuizSpecEditor } from "./QuizSpecEditor";
+import { RegexSpecEditor } from "./RegexSpecEditor";
 import { RedisSpecEditor } from "./RedisSpecEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
@@ -149,6 +151,8 @@ export function ProblemForm({
   const isMongo = values.problemKind === "JUDGE_MONGODB";
   // 퀴즈는 실행기를 쓰지 않는다 (#650) — 언어·제한·테스트케이스가 모두 뜻이 없다.
   const isQuiz = values.problemKind === "QUIZ";
+  // 정규식도 실행기를 쓰지만 **언어를 고르지 않는다** (#653) — 엔진은 문제가 정한다.
+  const isRegex = values.problemKind === "JUDGE_REGEX";
 
   /**
    * 채점 방식을 바꾸면 **그 유형의 자료만 남긴다** (#60).
@@ -170,12 +174,15 @@ export function ProblemForm({
           ? (previous.mongoSpec ?? BLANK_MONGO_SPEC)
           : null,
       quizSpec: nextKind === "QUIZ" ? (previous.quizSpec ?? BLANK_QUIZ_SPEC) : null,
+      regexSpec:
+        nextKind === "JUDGE_REGEX" ? (previous.regexSpec ?? BLANK_REGEX_SPEC) : null,
       // 테스트케이스로 채점하지 않는 유형은 그 칸을 비운다 (#455, #527).
       testcases:
         nextKind === "JUDGE_SQL" ||
         nextKind === "JUDGE_REDIS" ||
         nextKind === "JUDGE_MONGODB" ||
-        nextKind === "QUIZ"
+        nextKind === "QUIZ" ||
+        nextKind === "JUDGE_REGEX"
           ? []
           : previous.testcases,
     }));
@@ -328,6 +335,13 @@ export function ProblemForm({
           <MongoSpecEditor
             value={values.mongoSpec ?? BLANK_MONGO_SPEC}
             onChange={(spec) => update("mongoSpec", spec)}
+          />
+        </FormSection>
+      ) : isRegex ? (
+        <FormSection title="확인할 문자열" required defaultOpen={open}>
+          <RegexSpecEditor
+            value={values.regexSpec ?? BLANK_REGEX_SPEC}
+            onChange={(spec) => update("regexSpec", spec)}
           />
         </FormSection>
       ) : isQuiz ? (
