@@ -43,6 +43,7 @@ import { MutationSpecEditor } from "./MutationSpecEditor";
 import { RegexSpecEditor } from "./RegexSpecEditor";
 import { RedisSpecEditor } from "./RedisSpecEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
+import { EditorialEditor } from "./EditorialEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
 import {
   Alert,
@@ -517,6 +518,20 @@ export function ProblemForm({
             verification={verification ?? null}
             onChange={(solution) => update("solution", solution)}
           />
+        </FormSection>
+      ) : null}
+
+      {/*
+        모범 답안 (#719). **문제를 만든 뒤에만 보인다** — 아직 번호가 없으면 붙일 곳이
+        없다. 이 폼과 따로 저장한다: 서버에서도 다른 표이고 다른 길이다.
+      */}
+      {problemId !== undefined ? (
+        <FormSection
+          title="모범 답안"
+          defaultOpen={false}
+          description="푼 사람에게만 보인다. 채점에는 쓰이지 않는다 (#719)"
+        >
+          <EditorialEditor problemId={problemId} />
         </FormSection>
       ) : null}
 

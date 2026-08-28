@@ -9,6 +9,7 @@ export { BrandSymbol } from "./brand/BrandSymbol";
 export { BrandWordmark } from "./brand/BrandWordmark";
 export { CodeEditor } from "./CodeEditor";
 export { Markdown, isSafeUrl } from "./markdown/Markdown";
+export { CodeBlock } from "./markdown/CodeBlock";
 export { MarkdownEditor } from "./markdown/MarkdownEditor";
 export { useToast } from "./toast/ToastContext";
 export { ToastViewport } from "./toast/ToastViewport";
