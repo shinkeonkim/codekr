@@ -82,6 +82,9 @@ class DataResetService(
             "problem_git_specs",
             // 테스트 작성 (#652)
             "problem_mutation_specs", "problem_mutants",
+            // 모범 답안 (#719). **문제와 함께 사라진다** — 그 문제의 풀이 설명이라
+            // 문제가 없어지면 가리킬 것이 없다.
+            "problem_editorials",
             "problem_tags", "problem_credits",
             "problem_difficulty_votes", "problem_reports", "problem_stats",
             "problem_solution_verifications",
