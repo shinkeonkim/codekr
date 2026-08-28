@@ -139,6 +139,21 @@ abstract class IntegrationTestBase {
             registry.add("spring.datasource.password", postgres::getPassword)
             registry.add("spring.data.redis.host", redis::getHost)
             registry.add("spring.data.redis.port") { redis.getMappedPort(6379) }
+            /*
+                **커넥션 풀을 작게 잡는다** (#645).
+
+                스프링은 시험 설정이 다를 때마다 컨텍스트를 따로 만들어 캐시에 쥐고 있고,
+                컨텍스트마다 Hikari 풀이 하나씩 붙는다. 기본값이 10 이라 컨텍스트가
+                늘어날수록 **놀고 있는 커넥션**이 열 개씩 쌓이고, 어느 순간
+                `FATAL: sorry, too many clients already` 로 **엉뚱한 시험이 죽는다** —
+                실제로 그랬고, 죽는 시험이 매번 달라 원인을 찾기 어려웠다.
+
+                시험은 컨텍스트마다 한 스레드로 도니 둘이면 넉넉하다. 한도를 올리는 대신
+                쥐는 양을 줄이는 쪽인 이유: 한도를 올리면 컨텍스트가 하나 더 늘 때
+                같은 일이 다시 난다.
+            */
+            registry.add("spring.datasource.hikari.maximum-pool-size") { 2 }
+            registry.add("spring.datasource.hikari.minimum-idle") { 0 }
         }
     }
 }
