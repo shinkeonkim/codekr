@@ -95,7 +95,7 @@ func TestPickOneTakesContestBeforeGeneral(t *testing.T) {
 	consumer, client := newTestConsumer(t)
 	ctx := context.Background()
 	for _, stream := range consumer.streams {
-		if err := ensureGroup(ctx, client, stream, contract.GroupExec); err != nil {
+		if err := ensureGroup(ctx, client, stream); err != nil {
 			t.Fatalf("그룹 생성 실패: %v", err)
 		}
 	}
@@ -119,7 +119,7 @@ func TestPickOneGivesGeneralATurnOnStarvationCycle(t *testing.T) {
 	consumer, client := newTestConsumer(t)
 	ctx := context.Background()
 	for _, stream := range consumer.streams {
-		if err := ensureGroup(ctx, client, stream, contract.GroupExec); err != nil {
+		if err := ensureGroup(ctx, client, stream); err != nil {
 			t.Fatalf("그룹 생성 실패: %v", err)
 		}
 	}
