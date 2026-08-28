@@ -77,6 +77,8 @@ kind: Service
 metadata:
   name: codekr-api
   labels: {{- include "codekr.labels" . | nindent 4 }}
+    # ServiceMonitor 가 이 Service 를 **라벨로** 고른다 (#677). 이름으로는 못 고른다.
+    app.kubernetes.io/component: api
 spec:
   selector: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: api }
   ports:

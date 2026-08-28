@@ -99,6 +99,11 @@ jobs:
       - name: API 가 여는 경로가 인그레스에 있는지
         run: python3 scripts/check-ingress-paths.py
 
+      # PodMonitor 는 컴포넌트를 **손으로 적은 목록**으로 고른다 (#677). 새 워커가
+      # 생기면 조용히 빠지는데, 나머지가 up=1 이라 대시보드는 정상으로 보인다.
+      - name: 워커 지표가 PodMonitor 에 들어 있는지
+        run: python3 scripts/check-monitoring-targets.py
+
   changes:
     name: 변경 영역 판별
     runs-on: ubuntu-latest
