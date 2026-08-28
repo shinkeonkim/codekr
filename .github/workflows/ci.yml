@@ -402,7 +402,8 @@ jobs:
           skipped=$(grep -cE '^(    )?--- SKIP' /tmp/sandbox.log || true)
           echo "돌아간 검사: ${ran}개 (실패 ${failed}개, 건너뜀 ${skipped}개)"
           # SKIP 만 남은 상태를 막는 하한이다. 검사를 늘리면 이 숫자도 올린다.
-          test "$ran" -ge 57
+          # 실측 61개(#728 에서 필터를 뒤집어 Git 3개·미리받기 2개가 들어왔다).
+          test "$ran" -ge 59
           # 세는 것만으로는 부족하다. **실패가 0 인지도 따로 본다** — pipefail 을 빠뜨렸을
           # 때 이 줄이 마지막 방어선이 된다.
           test "$failed" -eq 0
