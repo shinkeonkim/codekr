@@ -5,6 +5,7 @@ import type { Runtime } from "@/entities/problem";
 import { RequireAuth } from "@/features/auth";
 import { EmptyState } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
+import { QuizWorkspace } from "@/widgets/quiz-workspace";
 import { SolveWorkspace } from "@/widgets/solve-workspace";
 import { use, useState } from "react";
 
@@ -46,7 +47,15 @@ function SolveView({ params }: { params: Promise<{ slug: string }> }) {
   return (
     <div className="space-y-5">
       <ProblemHeader problem={problem} runtime={runtime} />
-      <SolveWorkspace problem={problem} onRuntimeChange={setRuntime} />
+      {/*
+        퀴즈는 에디터가 아니다 (#650). 실행기를 쓰지 않아 언어도 실행도 없고,
+        답을 내면 그 자리에서 채점이 끝난다.
+      */}
+      {problem.problemKind === "QUIZ" ? (
+        <QuizWorkspace problem={problem} />
+      ) : (
+        <SolveWorkspace problem={problem} onRuntimeChange={setRuntime} />
+      )}
     </div>
   );
 }

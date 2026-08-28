@@ -8,6 +8,10 @@ import codekr.api.problem.dto.ProblemStats
 import codekr.api.problem.dto.ProblemSummaryResponse
 import codekr.api.problem.repository.ProblemStatsRepository
 import codekr.api.problem.entity.Problem
+import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.quiz.ProblemQuizChoiceRepository
+import codekr.api.problem.quiz.ProblemQuizSpecRepository
+import codekr.api.problem.quiz.QuizViewResponse
 import codekr.api.problem.repository.ProblemFileRepository
 import codekr.api.problem.repository.ProblemRepository
 import codekr.api.problem.repository.ProblemSearchCondition
@@ -28,6 +32,8 @@ class ProblemService(
     private val runtimeRegistry: RuntimeRegistry,
     private val statsRepository: ProblemStatsRepository,
     private val tagService: TagService,
+    private val quizSpecRepository: ProblemQuizSpecRepository,
+    private val quizChoiceRepository: ProblemQuizChoiceRepository,
 ) {
 
     fun search(condition: ProblemSearchCondition, pageable: Pageable): PageResponse<ProblemSummaryResponse> {
@@ -54,7 +60,17 @@ class ProblemService(
             // 파일 목록은 런타임마다다 (#457). 한 번에 읽어 언어별로 나눈다 —
             // 언어마다 질의하면 목록이 긴 문제에서 조회가 언어 수만큼 는다.
             fileRepository.findByProblemIdOrderBySeq(problem.id).groupBy { it.runtimeId },
+            // 퀴즈면 보기를 함께 내린다 (#650). **정답과 해설은 담기지 않는다** —
+            // `QuizViewResponse` 에 그 자리가 없다.
+            quizViewOf(problem),
         )
+    }
+
+    /** 퀴즈가 아니거나 아직 덜 채워진 문제면 `null` 이다. */
+    private fun quizViewOf(problem: Problem): QuizViewResponse? {
+        if (problem.problemKind != ProblemKind.QUIZ) return null
+        val spec = quizSpecRepository.findById(problem.id).orElse(null) ?: return null
+        return QuizViewResponse.of(spec, quizChoiceRepository.findByProblemIdOrderBySeqAsc(problem.id))
     }
 
     /**

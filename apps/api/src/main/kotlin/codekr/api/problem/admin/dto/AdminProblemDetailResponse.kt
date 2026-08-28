@@ -28,6 +28,13 @@ data class AdminProblemDetailResponse(
     val redisSpec: RedisSpecResponse? = null,
     val mongoSpec: MongoSpecResponse? = null,
     /**
+     * 퀴즈 유형이 아니면 `null` (#650).
+     *
+     * **어드민에게는 정답과 해설이 함께 간다** — 편집 화면이 그것을 고쳐야 한다.
+     * 푸는 사람이 받는 `QuizViewResponse` 와 다른 타입인 이유가 그것이다.
+     */
+    val quizSpec: QuizSpecResponse? = null,
+    /**
      * 정답 코드 검증(#39)을 할 수 있는 유형인가 (#495).
      *
      * **화면이 유형 이름을 나열하지 않게** 서버가 말한다 — 유형이 하나 늘 때마다 화면을
@@ -90,6 +97,7 @@ data class AdminProblemDetailResponse(
             sqlSpec: ProblemSqlSpec? = null,
             redisSpec: ProblemRedisSpec? = null,
             mongoSpec: ProblemMongoSpec? = null,
+            quizSpec: QuizSpecResponse? = null,
             files: List<ProblemFile> = emptyList(),
             testcaseGroups: List<ProblemTestcaseGroup> = emptyList(),
             tags: List<ProblemTagResponse> = emptyList(),
@@ -103,6 +111,7 @@ data class AdminProblemDetailResponse(
             sqlSpec = sqlSpec?.let(SqlSpecResponse::from),
             redisSpec = redisSpec?.let(RedisSpecResponse::from),
             mongoSpec = mongoSpec?.let(MongoSpecResponse::from),
+            quizSpec = quizSpec,
             canVerifySolution = problem.problemKind.supportsSolutionVerification,
             files = files.map(ProblemFileResponse::from),
             testcaseGroups = testcaseGroups.map(TestcaseGroupResponse::from),

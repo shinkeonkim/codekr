@@ -14,6 +14,7 @@ import type {
 } from "@/entities/problem";
 import {
   BLANK_MONGO_SPEC,
+  BLANK_QUIZ_SPEC,
   BLANK_REDIS_SPEC,
   BLANK_SQL_SPEC,
   EMPTY_TESTCASE,
@@ -33,6 +34,7 @@ import { AllowedRuntimeEditor } from "./AllowedRuntimeEditor";
 import { HarnessEditor } from "./HarnessEditor";
 import { RuntimeLimitEditor } from "./RuntimeLimitEditor";
 import { MongoSpecEditor } from "./MongoSpecEditor";
+import { QuizSpecEditor } from "./QuizSpecEditor";
 import { RedisSpecEditor } from "./RedisSpecEditor";
 import { SqlSpecEditor } from "./SqlSpecEditor";
 import { SolutionVerifier } from "./SolutionVerifier";
@@ -145,6 +147,8 @@ export function ProblemForm({
   const isFunction = values.problemKind === "JUDGE_FUNCTION";
   const isRedis = values.problemKind === "JUDGE_REDIS";
   const isMongo = values.problemKind === "JUDGE_MONGODB";
+  // 퀴즈는 실행기를 쓰지 않는다 (#650) — 언어·제한·테스트케이스가 모두 뜻이 없다.
+  const isQuiz = values.problemKind === "QUIZ";
 
   /**
    * 채점 방식을 바꾸면 **그 유형의 자료만 남긴다** (#60).
@@ -165,9 +169,13 @@ export function ProblemForm({
         nextKind === "JUDGE_MONGODB"
           ? (previous.mongoSpec ?? BLANK_MONGO_SPEC)
           : null,
+      quizSpec: nextKind === "QUIZ" ? (previous.quizSpec ?? BLANK_QUIZ_SPEC) : null,
       // 테스트케이스로 채점하지 않는 유형은 그 칸을 비운다 (#455, #527).
       testcases:
-        nextKind === "JUDGE_SQL" || nextKind === "JUDGE_REDIS" || nextKind === "JUDGE_MONGODB"
+        nextKind === "JUDGE_SQL" ||
+        nextKind === "JUDGE_REDIS" ||
+        nextKind === "JUDGE_MONGODB" ||
+        nextKind === "QUIZ"
           ? []
           : previous.testcases,
     }));
@@ -320,6 +328,13 @@ export function ProblemForm({
           <MongoSpecEditor
             value={values.mongoSpec ?? BLANK_MONGO_SPEC}
             onChange={(spec) => update("mongoSpec", spec)}
+          />
+        </FormSection>
+      ) : isQuiz ? (
+        <FormSection title="보기와 정답" required defaultOpen={open}>
+          <QuizSpecEditor
+            value={values.quizSpec ?? BLANK_QUIZ_SPEC}
+            onChange={(spec) => update("quizSpec", spec)}
           />
         </FormSection>
       ) : (

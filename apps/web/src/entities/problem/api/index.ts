@@ -6,6 +6,7 @@ import type {
   ProblemBundlePreview,
   ProblemImportResult,
   ProblemSummary,
+  QuizResult,
   ProblemVerification,
   Runtime,
 } from "../model/types";
@@ -21,6 +22,15 @@ export const problemApi = {
   list: (query: Query) => request<Page<ProblemSummary>>("/api/v1/problems", { query }),
 
   detail: (slug: string) => request<ProblemDetail>(`/api/v1/problems/${slug}`),
+
+  /**
+   * 퀴즈 답을 내고 **그 자리에서** 채점받는다 (#650).
+   *
+   * 코드 제출(`/submissions`)과 경로를 나눈 이유: 저쪽은 202 로 접수만 하고 판정은
+   * 소켓으로 오는데, 여기는 응답에 결과와 해설이 함께 온다.
+   */
+  submitQuiz: (slug: string, body: { selected: number[]; text: string | null }) =>
+    request<QuizResult>(`/api/v1/problems/${slug}/quiz`, { method: "POST", body, auth: true }),
 
   /**
    * 실행 환경 목록 (#60, #448). 유형으로 거른다.

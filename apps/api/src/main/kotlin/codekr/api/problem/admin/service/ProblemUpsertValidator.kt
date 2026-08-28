@@ -5,6 +5,7 @@ import codekr.api.common.error.ErrorCode
 import codekr.api.problem.admin.dto.ProblemUpsertRequest
 import codekr.api.problem.entity.OutputComparison
 import codekr.api.problem.entity.ProblemKind
+import codekr.api.problem.entity.QuizAnswerType
 import codekr.api.runtime.RuntimeRegistry
 import org.springframework.stereotype.Component
 
@@ -21,6 +22,9 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
     private companion object {
         /** 기동을 빼고 쿼리에 남겨 둘 최소 시간 (#454). */
         const val SQL_QUERY_BUDGET_MS = 1000
+
+        /** 보기가 하나뿐이면 고를 것이 없다 (#650). */
+        const val MIN_CHOICES = 2
     }
 
     /**
@@ -243,6 +247,7 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         if (request.problemKind != ProblemKind.JUDGE_MONGODB && request.mongoSpec != null) {
             throw ApiException(ErrorCode.VALIDATION_ERROR, "MongoDB 문제가 아닌데 MongoDB 스펙이 실려 있습니다.")
         }
+        validateQuiz(request)
         /*
           쓰기를 열었는데 상태를 읽는 쿼리가 없으면 (#453) 채점은 **조용히** 결과 집합
           비교로 돌아간다. `UPDATE` 는 결과 집합이 비어 있으니 아무나 통과한다 —
@@ -275,4 +280,58 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
         }
         request.solution?.let { runtimeRegistry.require(it.runtimeId) }
     }
+
+    /**
+     * 퀴즈의 규칙 (#650).
+     *
+     * **다른 유형과 다른 것이 하나 있다: 난이도를 두지 않는다.** 점수는 난이도에서
+     * 나오므로(#195) 그것이 곧 "랭킹 합에 넣지 않는다" 가 된다 — 찍어서 맞는 문제가
+     * 합에 들어가면 순위의 뜻이 옅어진다. 랭킹 계산에 손대지 않고 얻는 결론이다.
+     */
+    private fun validateQuiz(request: ProblemUpsertRequest) {
+        val spec = request.quizSpec
+        if (request.problemKind != ProblemKind.QUIZ) {
+            if (spec != null) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "퀴즈 문제가 아닌데 퀴즈 스펙이 실려 있습니다.")
+            }
+            return
+        }
+        if (spec == null) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "퀴즈 문제에는 보기 또는 받아 줄 답이 필요합니다.")
+        }
+        if (request.difficulty != null) {
+            throw ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                "퀴즈에는 난이도를 매기지 않습니다. 찍어서 맞는 문제가 랭킹 점수에 들어가면 순위의 뜻이 옅어집니다.",
+            )
+        }
+
+        if (spec.answerType.usesChoices) {
+            if (spec.answers.isNotEmpty()) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "객관식에는 단답 정답을 넣지 않습니다.")
+            }
+            if (spec.choices.size < MIN_CHOICES) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "보기는 ${MIN_CHOICES}개 이상이어야 합니다.")
+            }
+            val correct = spec.choices.count { it.correct }
+            // **정답이 없으면 아무도 못 맞힌다.** 오류가 나지 않아 정답률 0%로만 보인다.
+            if (correct == 0) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "정답인 보기를 하나 이상 골라야 합니다.")
+            }
+            // 하나만 고르는 문제인데 정답이 여럿이면 **맞힐 수 있는 답이 여럿**이 되고,
+            // 채점은 "정확히 일치" 라서 그중 무엇을 골라도 틀린다.
+            if (spec.answerType == QuizAnswerType.SINGLE && correct > 1) {
+                throw ApiException(ErrorCode.VALIDATION_ERROR, "하나만 고르는 문제에는 정답이 하나여야 합니다.")
+            }
+            return
+        }
+
+        if (spec.choices.isNotEmpty()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "단답에는 보기를 넣지 않습니다.")
+        }
+        if (spec.answers.isEmpty()) {
+            throw ApiException(ErrorCode.VALIDATION_ERROR, "받아 줄 답을 하나 이상 적어야 합니다.")
+        }
+    }
+
 }

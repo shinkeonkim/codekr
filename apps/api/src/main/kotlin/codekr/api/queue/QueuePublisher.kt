@@ -4,6 +4,7 @@ import codekr.api.common.error.ApiException
 import codekr.api.common.error.ErrorCode
 import codekr.api.queue.message.ExecJobMessage
 import codekr.api.queue.message.ExecResultMessage
+import codekr.api.queue.message.JudgeEventMessage
 import codekr.api.queue.message.JudgeJobMessage
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.connection.RedisStreamCommands.XAddOptions
@@ -39,6 +40,23 @@ class QueuePublisher(
     fun publishJudgeJob(job: JudgeJobMessage, priority: JudgePriority) {
         add(priority.stream, objectMapper.writeValueAsString(job))
         log.debug("채점 작업 발행: submissionId={} priority={}", job.submissionId, priority)
+    }
+
+    /**
+     * 채점 결과를 **채점기가 낸 것과 같은 길**로 흘려보낸다 (#650).
+     *
+     * 퀴즈는 실행기를 쓰지 않아 api 가 직접 채점하는데, 그 결과를 여기로 보내면
+     * 뒤따르는 것이 전부 그대로 돈다 — 판정 기록·활동·점수·뱃지·문제 통계
+     * (`JudgeResultRecorder`)와 실시간 중계(`/ws/submissions`)가 **새 경로 없이** 붙는다.
+     *
+     * 직접 부르지 않고 발행하는 이유가 하나 더 있다: api 파드가 여럿일 때 소켓이
+     * 어느 파드에 붙어 있든 도달해야 한다. Pub/Sub 이 그것을 한다 (#9).
+     *
+     * **제출 행이 저장된 뒤에 불러야 한다.** 받는 쪽이 그 id 로 제출을 찾는다.
+     */
+    fun publishJudgeEvent(event: JudgeEventMessage) {
+        redis.convertAndSend(QueueKeys.EVENT_CHANNEL, objectMapper.writeValueAsString(event))
+        log.debug("채점 이벤트 발행: submissionId={} type={}", event.submissionId, event.type)
     }
 
     /**
