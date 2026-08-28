@@ -439,6 +439,8 @@ jobs:
           # 안 밀리지만, 다음 사람이 push 조건을 건드릴 때 태그가 그대로 남아 있으면
           # 그때 `:latest` 가 브랜치 이미지로 덮인다.
           tags: ${{ github.event_name == 'push' && format('ghcr.io/{0}/codekr-{1}:latest,ghcr.io/{0}/codekr-{1}:{2}', github.repository_owner, matrix.app, github.sha) || format('ghcr.io/{0}/codekr-{1}:{2}', github.repository_owner, matrix.app, github.sha) }}
+          build-args: |
+            NEXT_PUBLIC_GTM_ID=${{ matrix.app == 'web' && vars.NEXT_PUBLIC_GTM_ID || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
