@@ -8,6 +8,7 @@
 |---|---|---|
 | `runtimes.yaml` | `infra/runtimes/runtimes.yaml` | 실행기·api 가 읽는 런타임 정의 |
 | `seccomp.json` | `infra/sandbox/seccomp.json` | 샌드박스 seccomp 프로파일 (#48) |
+| `litellm-config.yaml` | `infra/litellm/config.yaml` | 모델 프록시가 여는 이름과 폴백 (#648, #649) |
 
 Helm 은 차트 디렉터리 밖을 가리키는 링크도 따라간다. 클론한 저장소에서도 같다 —
 `helm template` 으로 확인했다.

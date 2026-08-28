@@ -1,0 +1,23 @@
+{{- if .Values.litellm.enabled }}
+# 프록시가 무엇을 여는가 (#648, #649).
+#
+# **사본이 아니라 링크다.** `files/litellm-config.yaml` 은 `infra/litellm/config.yaml`
+# 을 가리키는 심볼릭 링크이고, 로컬 compose 가 마운트하는 것도 그 원본이다 —
+# 로컬과 운영이 **글자 하나까지 같은 파일**을 쓴다.
+#
+# 처음에는 여기에 사본을 두고 갈라짐을 검사하는 스크립트를 붙였는데, 되돌렸다.
+# `files/README.md` 가 이미 그 답을 적어 두었다: *"사본을 두지 않는다 — 한때 사본이었고
+# 실제로 갈라졌다."* 이미지 이름을 바꿨을 때(#171) 차트 쪽 사본만 옛 주소를 들고 있어
+# 배포된 실행기가 없는 이미지를 받으려 했던 자리다.
+#
+# 대가는 하나다: **예산이 환경마다 다를 수 없다.** 그 값은 원본 파일에 있다.
+# 어차피 제공자 계정이 하나이므로 총액 상한도 하나인 편이 맞다.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: codekr-litellm-config
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+{{ .Files.Get "files/litellm-config.yaml" | indent 4 }}
+{{- end }}

@@ -1,0 +1,86 @@
+{{- if .Values.litellm.enabled }}
+# 모델 제공자 앞에 서는 프록시 (#648, #649).
+#
+# **제공자 키가 api 에서 사라진다.** api 가 드는 것은 이 프록시의 가상 키뿐이라,
+# 새면 그것만 돌리면 되고 제공자 계정 전체가 열리지 않는다. 그리고 제공자를 바꾸는
+# 일이 **설정 파일 한 줄**이 된다 — api 를 다시 배포하지 않는다.
+#
+# **기본은 꺼짐이다.** 초안 만들기(#230)는 키가 있어야 쓸 수 있고, 부를 때마다 돈이
+# 든다. 켜는 것은 사람이 한 번 정하는 일이지 차트의 기본값이 아니다.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codekr-litellm
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  {{- include "codekr.revisionHistoryLimit" . | nindent 2 }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: litellm }
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: codekr
+        app.kubernetes.io/component: litellm
+      annotations:
+        # 설정이 바뀌면 파드를 다시 만든다. ConfigMap 만 갈면 **돌고 있는 프로세스는
+        # 옛 설정 그대로**라, 제공자를 바꿨는데 안 바뀐 것처럼 보인다.
+        checksum/config: {{ include (print $.Template.BasePath "/litellm-config.yaml") . | sha256sum }}
+    spec:
+      {{- include "codekr.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: litellm
+          image: {{ .Values.litellm.image | quote }}
+          args: ["--config", "/app/config.yaml", "--port", "4000"]
+          ports:
+            - { name: http, containerPort: 4000 }
+          # **제공자 키는 이 파드만 안다.** 시크릿을 통째로 붙이지 않고 이름을 하나씩
+          # 잇는다 — `envFrom` 은 시크릿의 모든 키를 환경변수로 만들고, 그 시크릿에는
+          # DB 비밀번호도 들어 있다 (#424 가 짚은 것과 같은 결).
+          env:
+            - name: LITELLM_MASTER_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.litellm.secretName }}, key: LITELLM_MASTER_KEY }
+            {{- range .Values.litellm.providerSecretKeys }}
+            - name: {{ . }}
+              valueFrom:
+                # **`optional` 이다.** 제공자를 하나만 쓰는 사람이 나머지 키까지
+                # 넣어야 파드가 뜨는 것은 과하다 — 없는 제공자는 그냥 실패하고
+                # 폴백이 다음으로 넘어간다.
+                secretKeyRef: { name: {{ $.Values.litellm.secretName }}, key: {{ . }}, optional: true }
+            {{- end }}
+          volumeMounts:
+            - { name: config, mountPath: /app/config.yaml, subPath: config.yaml, readOnly: true }
+            # 루트를 읽기 전용으로 두므로 쓸 자리를 하나 준다 — api 와 같은 모양이다.
+            - { name: tmp, mountPath: /tmp }
+          # `/health/liveliness` 는 **제공자에 붙어 보지 않는다** — 키가 없어도 답한다.
+          # 제공자까지 확인하는 `/health` 를 쓰면 프로브가 돈을 쓴다.
+          readinessProbe:
+            httpGet: { path: /health/liveliness, port: http }
+            periodSeconds: 10
+          startupProbe:
+            httpGet: { path: /health/liveliness, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          resources: {{- toYaml .Values.litellm.resources | nindent 12 }}
+          # **공용 것을 그대로 쓴다** — 이 이미지가 그 아래에서 도는지 확인했다.
+          # 기본은 root 로 뜨고 `/app` 에 쓸 수 있지만, 설정 파일만 쓰는 지금 방식에서는
+          # 실행 중에 그 자리가 필요 없다. uid 10001 · 읽기 전용 루트 · `/tmp` 만 준
+          # 상태로 띄워 `/health/liveliness` 가 200 을 내는 것까지 봤다.
+          securityContext: {{- include "codekr.securityContext" . | nindent 12 }}
+      volumes:
+        - name: config
+          configMap: { name: codekr-litellm-config }
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codekr-litellm
+  labels: {{- include "codekr.labels" . | nindent 4 }}
+spec:
+  selector: { app.kubernetes.io/name: codekr, app.kubernetes.io/component: litellm }
+  ports:
+    - { name: http, port: 4000, targetPort: http }
+{{- end }}
