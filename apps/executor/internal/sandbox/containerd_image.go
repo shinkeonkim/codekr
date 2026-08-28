@@ -184,3 +184,9 @@ func credentialState(creds registryCredentials, ref string) string {
 	}
 	return "이 호스트에는 없음"
 }
+
+// Warm 은 이미지를 미리 받아 둔다 (#712). 인터페이스 주석에 이유가 있다.
+func (s *containerdSandbox) Warm(ctx context.Context, image string) error {
+	_, err := s.pull(ctx, image)
+	return err
+}
