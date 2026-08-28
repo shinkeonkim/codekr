@@ -54,31 +54,56 @@ git config --global user.name codekr
 git config --global user.email codekr@codekr.kr
 git config --global safe.directory '*'
 
-# 한 저장소를 만들고 명령 파일들을 순서대로 흘려 넣는다.
-#
-# **한 줄이 명령 하나다.** `sh` 로 통째로 돌리지 않는 이유: 그러면 제출이 셸 스크립트가
-# 되어 `git` 이 아닌 것도 할 수 있다. 여기서 묻는 것은 git 이다.
-build() {
+# 저장소 하나를 새로 만든다.
+init_repo() {
     dir="/work/$1"
     rm -rf "$dir" && mkdir -p "$dir" && cd "$dir"
     git init -q .
-    shift
-    for file in "$@"; do
-        [ -f "$file" ] || continue
-        while IFS= read -r line || [ -n "$line" ]; do
-            case "$line" in
-                ''|'#'*) continue ;;
-            esac
-            # **git 명령만 받는다.** 다른 것이 오면 무엇이 막혔는지 말한다 —
-            # 조용히 건너뛰면 사용자는 자기 명령이 돌았다고 믿는다.
+}
+
+# 명령 파일 하나를 한 줄씩 흘려 넣는다.
+#
+# **한 줄이 명령 하나다.** `sh` 로 통째로 돌리지 않는 이유: 그러면 제출이 셸 스크립트가
+# 되어 `git` 이 아닌 것도 할 수 있다. 여기서 묻는 것은 git 이다.
+#
+# ## 제한은 파일마다 다르다 (#716)
+#
+# **시드와 정답은 문제가 소유한다.** 어드민이 쓰고 사용자는 못 건드린다 — SQL 문제가
+# 스키마·시드를 자유롭게 쓰는 것과 같다(#60). 거기까지 `git` 만 받으면 **작업 트리에
+# 파일을 만들 방법이 없어**, 스테이징·복원·stash 처럼 실무에서 실제로 쓰는 상황을
+# 하나도 낼 수 없다.
+#
+# **시드는 제출 쪽 저장소에서도 문제가 소유한다.** 그래서 신뢰는 저장소가 아니라
+# **파일**에 붙는다 — 저장소 단위로 걸었더니 제출 쪽 시드가 자기 규칙에 걸렸다.
+#
+# ## 죽지 않고 값을 돌려준다 (#715)
+#
+# 전에는 명령이 실패하면 `exit 1` 이었다. 셸 함수 안의 `exit` 는 **스크립트 전체를**
+# 끝내므로, 제출이 실패하면 `--- codekr:actual` 이 아예 안 나왔다 — 견줄 것이 없어
+# 채점기가 판정을 못 내고 사용자는 "채점 실패" 를 봤다. **제출이 실패하는 것은 정상적인
+# 오답 경로다.** 누가 실패했는지는 부르는 쪽이 정한다.
+#
+#   $1  명령 파일
+#   $2  trusted 이면 셸을 연다 (문제 소유). 아니면 git 명령만 받는다
+run_file() {
+    file="$1"
+    trusted="$2"
+    [ -f "$file" ] || return 0
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            ''|'#'*) continue ;;
+        esac
+        # **git 명령만 받는다.** 다른 것이 오면 무엇이 막혔는지 말한다 —
+        # 조용히 건너뛰면 사용자는 자기 명령이 돌았다고 믿는다.
+        if [ "$trusted" != "trusted" ]; then
             case "$line" in
                 git\ *) ;;
-                *) echo "git 명령만 쓸 수 있습니다: $line" >&2; exit 1 ;;
+                *) echo "git 명령만 쓸 수 있습니다: $line" >&2; return 1 ;;
             esac
-            # shellcheck disable=SC2086
-            eval "$line" || { echo "명령이 실패했습니다: $line" >&2; exit 1; }
-        done <"$file"
-    done
+        fi
+        # shellcheck disable=SC2086
+        eval "$line" || { echo "명령이 실패했습니다: $line" >&2; return 1; }
+    done <"$file"
 }
 
 if [ ! -f /work/verify.git ]; then
@@ -86,14 +111,36 @@ if [ ! -f /work/verify.git ]; then
     exit 1
 fi
 
-# 기대: 시드 + 정답
-build expected /work/seed.git /work/answer.git >/dev/null 2>&1
+# 기대: 시드 + 정답. **둘 다 문제가 소유하므로 셸을 연다** (#716).
+#
+# 여기서 실패하면 **문제가 깨진 것**이다 — 채점 오류로 끝낸다. 사용자가 할 수 있는
+# 일이 없고, 오답으로 처리하면 아무도 못 푸는 문제가 조용히 남는다.
+init_repo expected
+# **stderr 는 삼키지 않는다.** 문제가 깨졌을 때 무엇이 잘못됐는지 어드민이 볼 수
+# 있어야 한다 — 전에는 둘 다 버려서 아무 메시지 없이 끝났다.
+if ! { run_file /work/seed.git trusted && run_file /work/answer.git trusted; } >/dev/null; then
+    echo "문제의 시드나 정답 명령이 실패했습니다." >&2
+    exit 1
+fi
 echo "--- codekr:expected"
 cd /work/expected && sh /work/verify.git
 
-# 실제: 시드 + 제출
+# 실제: 같은 시드 + 제출.
+init_repo actual
+if ! run_file /work/seed.git trusted >/dev/null; then
+    echo "문제의 시드 명령이 실패했습니다." >&2
+    exit 1
+fi
+
+# **제출은 git 명령만 받고, 실패해도 계속한다** (#715).
 #
-# **제출의 stderr 는 사용자에게 보인다.** 명령이 막히거나 틀렸을 때 보일 것이 그것뿐이다.
-build actual /work/seed.git /work/commands.git >/dev/null
+# 명령이 실패하면 저장소가 기대한 상태가 안 될 뿐이고, 그것을 견주면 오답으로 나온다 —
+# 그것이 맞는 판정이다. 여기서 끝내면 견줄 것이 없어 채점 오류가 된다.
+#
+# **제출의 stderr 는 사용자에게 보인다.** 무엇이 잘못됐는지 볼 수 있는 것이 그것뿐이다.
+run_file /work/commands.git untrusted >/dev/null || true
+
 echo "--- codekr:actual"
-cd /work/actual && sh /work/verify.git
+# 확인 명령도 실패할 수 있다 — 제출이 커밋 하나 없는 상태로 두면 `rev-list` 가 죽는다.
+# 그때는 빈 출력으로 견주고, 기대값과 달라 오답이 된다.
+cd /work/actual && sh /work/verify.git || true
