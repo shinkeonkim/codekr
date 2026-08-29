@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { CodeBlock } from "./CodeBlock";
+import { GitGraphView } from "./GitGraphView";
+import { parseGitGraph } from "./gitGraph";
 import { parseTable } from "./markdownTable";
 
 /**
@@ -60,6 +62,22 @@ function renderBlocks(source: string, hideCode: boolean, labels: Map<number, str
         index += 1;
       }
       index += 1; // 닫는 ```
+
+      /*
+        커밋 그래프 (#720). **가지 관계는 글로 그리기 어렵다.**
+
+        읽을 수 없으면 아래로 흘려 코드 블록 그대로 그린다 — 문법이 그대로 보이는 편이
+        지문이 사라지는 것보다 낫다. 그리는 것은 React 엘리먼트이므로 이 렌더러가
+        HTML 문자열을 안 만든다는 성질(#137)은 그대로다.
+      */
+      if (language === "gitgraph") {
+        const graph = parseGitGraph(body);
+        if (graph) {
+          blocks.push(<GitGraphView key={key++} graph={graph} />);
+          continue;
+        }
+      }
+
       // 언어에 맞게 칠한다 (#384). **모르는 언어는 그대로 둔다** — `CodeBlock` 이 정한다.
       const code = <CodeBlock code={body.join("\n")} language={language || undefined} />;
       blocks.push(

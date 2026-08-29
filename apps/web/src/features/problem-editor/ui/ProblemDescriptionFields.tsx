@@ -33,8 +33,16 @@ export function ProblemDescriptionFields({
           rows={8}
           value={values.description}
           onChange={(event) => update("description", event.target.value)}
+          /*
+            **표는 이제 표로 그려진다** (#590) — 코드 블록으로 흉내 내라는 옛 안내를
+            남겨 두면 출제자가 그대로 따라 쓴다.
+
+            Git 문제의 커밋 그래프(#720)도 여기서 알려 준다. 아는 사람만 쓰는 문법은
+            없는 것과 같다.
+          */
           placeholder={
-            "마크다운으로 씁니다.\n\n**굵게**, 목록, 그리고 표 구조는 코드 블록으로:\n\n```\nmembers(id, name, city)\n```"
+            "마크다운으로 씁니다. **굵게**, 목록, 표(`| 키 | 값 |`)를 그립니다.\n\n" +
+            "Git 문제의 커밋 그래프:\n\n```gitgraph\nmain:    첫커밋 작업\nfeature: 첫커밋 딴작업\nhead:    main\n```"
           }
           required
         />
