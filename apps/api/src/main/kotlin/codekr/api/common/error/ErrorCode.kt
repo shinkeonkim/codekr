@@ -36,6 +36,14 @@ enum class ErrorCode(val status: HttpStatus, val message: String) {
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     PROBLEM_NOT_FOUND(HttpStatus.NOT_FOUND, "문제를 찾을 수 없습니다."),
+
+    /**
+     * 모범 답안이 없거나 **아직 볼 수 없다** (#719).
+     *
+     * 두 경우를 나누지 않는다. "있지만 못 본다" 를 알려 주면 어떤 문제에 모범 답안이
+     * 있는지가 보이고, 대회 중에는 그것만으로도 정보다.
+     */
+    EDITORIAL_NOT_FOUND(HttpStatus.NOT_FOUND, "모범 답안을 찾을 수 없습니다."),
     CONTEST_NOT_FOUND(HttpStatus.NOT_FOUND, "대회를 찾을 수 없습니다."),
     COLLECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "문제집을 찾을 수 없습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
