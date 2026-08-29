@@ -7,6 +7,7 @@ import {
 } from "@/entities/problem";
 import type { ProblemDetail } from "@/entities/problem";
 import { DifficultyVote } from "@/features/difficulty-vote";
+import { Editorial } from "@/features/editorial";
 import { TagChips } from "@/entities/tag";
 import { Button, Card, CardTitle, EmptyState, Markdown } from "@/shared/ui";
 import { ProblemHeader } from "@/widgets/problem-tabs";
@@ -74,6 +75,7 @@ export function ProblemDetailPage({
         난이도 투표 (#477). **푼 사람에게만 보인다** — 못 푼 사람에게는 자리 자체를
         그리지 않는다. 눌러 보고 거절당하는 것보다 처음부터 없는 편이 낫다.
       */}
+      <Editorial slug={slug} />
       <DifficultyVote slug={slug} />
 
       {problem.examples.length > 0 ? (
