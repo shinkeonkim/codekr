@@ -114,7 +114,7 @@ func (j *StdioJudge) runTestcase(
 		// 실행기가 응답하지 않아도 제출을 미결 상태로 두지 않는다.
 		j.log.Error("실행 요청 실패",
 			"submissionId", job.SubmissionID, "seq", testcase.Seq, "error", err)
-		return contract.ExecResult{Status: contract.StatusSystemError, Stderr: err.Error()}
+		return executorUnreachable()
 	}
 	return result
 }

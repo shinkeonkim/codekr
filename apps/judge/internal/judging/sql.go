@@ -83,7 +83,7 @@ func (j *SqlJudge) Judge(ctx context.Context, job contract.JudgeJob, emit Emitte
 	})
 	if err != nil {
 		j.log.Error("실행 요청 실패", "submissionId", job.SubmissionID, "error", err)
-		result = contract.ExecResult{Status: contract.StatusSystemError, Stderr: err.Error()}
+		result = executorUnreachable()
 	}
 
 	verdict, detail := j.verdictOf(result, job.SQL.IgnoreRowOrder)
