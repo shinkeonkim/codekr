@@ -28,7 +28,22 @@ const connectTimeout = 5 * time.Second
 처음 쓸 때 한 번뿐이다. 그래도 끝은 있어야 한다 — 레지스트리가 응답하지 않을 때
 채점 워커가 영영 붙잡혀 있으면 큐가 멈춘다.
 */
-const pullTimeout = 5 * time.Minute
+/*
+이미지 받기에 주는 시간. **두 경로가 다르다** (#737).
+
+	submitPullTimeout   제출이 기다리는 동안 받는다. **사람이 화면을 보고 있다**
+	warmPullTimeout     기동 뒤 배경에서 받는다. **아무도 안 기다린다**
+
+전에는 하나를 둘이 나눠 썼고, 그래서 `gcc:13` 처럼 5분을 넘기는 이미지는 **어느 쪽으로도
+받을 수 없었다** — 미리 받기가 5분에 취소되고, 제출도 5분에 취소되고, 채점기는 그보다
+먼저 60초에 포기했다. 운영에서 `elapsedMs` 가 정확히 300002 로 찍혔다.
+
+미리 받기를 무제한으로 두지는 않는다. 걸린 시간을 로그에 남겨 **실측을 모은다.**
+*/
+const (
+	submitPullTimeout = 5 * time.Minute
+	warmPullTimeout   = 30 * time.Minute
+)
 
 // 스냅샷터. containerd 의 기본값이고, 노드마다 다르면 이미지가 풀리지 않는다.
 const defaultSnapshotter = "overlayfs"
@@ -116,7 +131,7 @@ func (s *containerdSandbox) Run(ctx context.Context, spec Spec) (Outcome, error)
 	//
 	// 이미지는 노드에 남으므로 이 기다림은 **런타임마다 한 번**이다.
 	// 네임스페이스는 `pull` 이 스스로 씌운다 (#725). 여기서는 시간만 잰다.
-	pullCtx, cancelPull := context.WithTimeout(ctx, pullTimeout)
+	pullCtx, cancelPull := context.WithTimeout(ctx, submitPullTimeout)
 	image, err := s.pull(pullCtx, spec.Image)
 	cancelPull()
 	if err != nil {

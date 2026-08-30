@@ -241,13 +241,19 @@ func warmImages(
 			if ctx.Err() != nil {
 				return
 			}
+			at := time.Now()
 			if err := box.Warm(ctx, ref); err != nil {
 				stillFailing = append(stillFailing, ref)
 				// **경고로 남긴다.** 채점은 그대로 돌므로 오류가 아니다. 다만 그 런타임의
 				// 첫 제출은 여전히 이미지 받기를 기다린다.
-				log.Warn("런타임 이미지를 미리 받지 못했습니다", "image", ref, "error", err)
+				log.Warn("런타임 이미지를 미리 받지 못했습니다",
+					"image", ref, "걸린시간", time.Since(at).Round(time.Second).String(), "error", err)
 				continue
 			}
+			// **한 장에 얼마나 걸리는지 남긴다** (#737). 예산을 얼마로 둘지는 실측에서
+			// 나와야 하는데, 지금까지는 그 숫자가 어디에도 없었다.
+			log.Info("런타임 이미지를 미리 받았습니다",
+				"image", ref, "걸린시간", time.Since(at).Round(time.Second).String())
 			warmed++
 		}
 		pending = stillFailing
