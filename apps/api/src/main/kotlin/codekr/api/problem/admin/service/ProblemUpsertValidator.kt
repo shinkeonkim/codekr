@@ -25,6 +25,16 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
 
         /** 보기가 하나뿐이면 고를 것이 없다 (#650). */
         const val MIN_CHOICES = 2
+
+        /**
+         * 밖으로 나가는 명령 (#730).
+         *
+         * **샌드박스가 이미 막는다** (#47 의 egress 정책). 여기서 다시 보는 이유는
+         * 거기서 막히면 사용자가 **자기 잘못으로 오해하기 때문**이다 — 출제자가 넣은
+         * 시드가 실패한 것인데 화면에는 채점 오류만 뜬다.
+         */
+        val NETWORK_COMMANDS = setOf("curl", "wget", "nc", "ssh", "scp", "rsync", "pip", "npm", "apt", "apk")
+        val NETWORK_SUBCOMMANDS = setOf("clone", "fetch", "pull", "push", "submodule", "ls-remote")
     }
 
     /**
@@ -374,18 +384,49 @@ class ProblemUpsertValidator(private val runtimeRegistry: RuntimeRegistry) {
             )
         }
         /*
-            **명령 파일에는 git 명령만 담긴다.** 하네스도 같은 규칙으로 막지만,
-            거기서 막히면 사용자는 **출제자가 넣은 시드가 실패한 것**을 자기 잘못으로 본다.
-            등록에서 먼저 잡는다.
+            **git 만 받는 것은 제출이지 시드가 아니다** (#716, #730).
+
+            전에는 시드·정답도 `git` 으로 시작해야 했다. 그래서 작업 트리에 파일을 만들
+            방법이 없었고, Git 문제가 "빈 커밋을 몇 개 만들었나" 밖에 못 물었다. 시드와
+            정답은 **문제가 소유하고 어드민이 쓴다** — SQL 문제가 스키마와 시드를 자유롭게
+            쓰는 것과 같다 (#60). 제한이 필요한 것은 제출뿐이고 하네스가 그것을 막는다.
+
+            **그래도 등록에서 잡을 것이 남는다.** 네트워크를 부르는 명령이다. 샌드박스가
+            막기는 하지만, 거기서 막히면 사용자는 **출제자가 넣은 시드가 실패한 것**을
+            자기 잘못으로 본다. 그 자리를 여기서 먼저 끊는다.
         */
-        for ((label, commands) in listOf("시드" to spec.seedCommands, "정답" to spec.answerCommands)) {
+        for ((label, commands) in listOf(
+            "시드" to spec.seedCommands,
+            "정답" to spec.answerCommands,
+            "확인" to spec.verifyCommands,
+        )) {
             commands.orEmpty().lines()
                 .map { it.trim() }
-                .firstOrNull { it.isNotEmpty() && !it.startsWith("#") && !it.startsWith("git ") }
+                .firstOrNull { it.isNotEmpty() && !it.startsWith("#") && reachesNetwork(it) }
                 ?.let {
-                    throw ApiException(ErrorCode.VALIDATION_ERROR, "$label 명령은 git 으로 시작해야 합니다: $it")
+                    throw ApiException(
+                        ErrorCode.VALIDATION_ERROR,
+                        "$label 명령이 네트워크를 부릅니다. 샌드박스가 막으므로 채점이 실패합니다: $it",
+                    )
                 }
         }
+    }
+
+    /**
+     * 이 줄이 밖으로 나가려 하는가 (#730).
+     *
+     * **낱말 단위로 본다.** `git clone` 을 문자열로 찾으면 `# git clone 을 쓰지 마세요`
+     * 같은 설명도 걸리고, 반대로 `git   clone` 처럼 공백이 둘이면 놓친다.
+     *
+     * 목록이 완전할 수는 없다 — **완전해야 하는 것은 샌드박스**이고 이것은 출제자가
+     * 등록 시점에 알아채게 하는 자리다.
+     */
+    private fun reachesNetwork(line: String): Boolean {
+        val words = line.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (words.firstOrNull() in NETWORK_COMMANDS) return true
+        if (words.firstOrNull() == "git" && words.getOrNull(1) in NETWORK_SUBCOMMANDS) return true
+        // `git remote add` 는 그 자체로는 안 나가지만, 뒤이어 나가는 명령을 부르게 된다.
+        return words.take(3) == listOf("git", "remote", "add")
     }
 
     /**

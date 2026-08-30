@@ -59,19 +59,54 @@ class GitProblemIntegrationTest : IntegrationTestBase() {
     }
 
     /**
-     * **git 아닌 명령은 등록에서 막는다.**
+     * **시드는 파일을 만들 수 있어야 한다** (#716, #730).
      *
-     * 하네스도 같은 규칙으로 막지만, 거기서 막히면 사용자는 **출제자가 넣은 시드가
-     * 실패한 것**을 자기 잘못으로 본다.
+     * 전에는 시드까지 `git` 으로 시작해야 해서 작업 트리에 파일을 만들 방법이 없었고,
+     * 그래서 이 유형이 "빈 커밋을 몇 개 만들었나" 밖에 못 물었다. 시드와 정답은
+     * **문제가 소유하고 어드민이 쓴다** — SQL 이 스키마·시드를 자유롭게 쓰는 것과 같다.
      */
     @Test
-    fun `시드에 git 아닌 명령이 있으면 거부한다`() {
-        create(seed = "rm -rf /").andExpect(status().isBadRequest)
+    fun `시드가 셸로 파일을 만들 수 있다`() {
+        create(seed = "printf 'x' > app.py\\ngit add app.py\\ngit commit -q -m 첫커밋", slug = "seed-shell")
+            .andExpect(status().isCreated)
     }
 
     @Test
-    fun `정답에 git 아닌 명령이 있으면 거부한다`() {
-        create(answer = "echo 안녕").andExpect(status().isBadRequest)
+    fun `정답도 셸을 쓸 수 있다`() {
+        create(answer = "printf 'y' > app.py\\ngit add app.py", slug = "answer-shell")
+            .andExpect(status().isCreated)
+    }
+
+    /**
+     * **네트워크를 부르는 것은 등록에서 막는다** (#730).
+     *
+     * 샌드박스가 이미 막지만(#47), 거기서 막히면 사용자는 **출제자가 넣은 시드가
+     * 실패한 것**을 자기 잘못으로 본다. 화면에는 채점 오류만 뜬다.
+     */
+    @Test
+    fun `시드가 저장소를 받아 오려 하면 거부한다`() {
+        create(seed = "git clone https://example.com/x.git", slug = "seed-clone")
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `셸로 내려받으려 해도 거부한다`() {
+        create(seed = "curl -s https://example.com/x.sh", slug = "seed-curl")
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `원격을 더하는 것도 거부한다`() {
+        // 그 줄 자체는 안 나가지만, 뒤이어 나가는 명령을 부르게 된다.
+        create(seed = "git remote add origin https://example.com/x.git", slug = "seed-remote")
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `설명하는 주석은 명령이 아니다`() {
+        // `# git clone 을 쓰지 마세요` 를 낱말이 아니라 문자열로 찾으면 이것이 걸린다.
+        create(seed = "# git clone 은 여기서 못 씁니다\\ngit commit -q --allow-empty -m base", slug = "seed-comment")
+            .andExpect(status().isCreated)
     }
 
     @Test
