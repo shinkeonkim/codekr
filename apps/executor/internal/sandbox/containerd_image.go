@@ -39,6 +39,16 @@ func (s *containerdSandbox) pull(ctx context.Context, ref string) (client.Image,
 		return image, nil
 	}
 
+	// 여기부터가 실제로 받는 길이다. **같은 이미지를 동시에 두 번 받지 않는다** (#732) —
+	// 노드에 이미 있으면 위에서 돌아가므로 이 잠금은 정말 받을 때만 걸린다.
+	return s.pulls.Do(ctx, full, func(ctx context.Context) (client.Image, error) {
+		return s.fetch(ctx, full)
+	})
+}
+
+// fetch 는 레지스트리에서 실제로 받아 온다. 부르는 쪽은 `pull` 하나다.
+func (s *containerdSandbox) fetch(ctx context.Context, full string) (client.Image, error) {
+
 	opts := []client.RemoteOpt{
 		client.WithPlatformMatcher(targetPlatform()),
 		client.WithPullUnpack,
