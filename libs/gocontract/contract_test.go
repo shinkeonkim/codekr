@@ -52,6 +52,11 @@ func TestExecJobFixtureMatchesContract(t *testing.T) {
 	if job.TimeLimitMs != 2000 || job.MemoryLimitMb != 256 {
 		t.Fatalf("실행 제약이 손실되었습니다: %+v", job)
 	}
+	// **기한도 계약의 일부다** (#732). 이것이 안 실리면 실행기는 자기 예산으로 일하고,
+	// 그러면 이미지가 없는 런타임은 어느 조합에서도 성공할 수 없다.
+	if _, ok := job.Deadline(); !ok {
+		t.Fatalf("채점기의 기한이 손실되었습니다: %+v", job)
+	}
 }
 
 func TestExecResultFixtureMatchesContract(t *testing.T) {

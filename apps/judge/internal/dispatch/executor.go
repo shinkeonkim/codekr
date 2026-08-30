@@ -43,6 +43,15 @@ func (e *Executor) Run(ctx context.Context, job contract.ExecJob) (contract.Exec
 	job.ReplyStream = contract.ReplyStreamPfx + job.JobID
 	// 유형마다 흩어진 아홉 군데가 아니라 **여기 한 곳**에서 찍는다 (#681).
 	job.SubmissionID = contract.SubmissionIDFrom(ctx)
+	/*
+		**얼마나 기다릴지를 실어 보낸다** (#732).
+
+		전에는 이 값이 여기에만 있었다. 실행기는 자기 예산(이미지 받기 5분)으로 일했고,
+		그래서 이미지가 없는 런타임은 **어느 조합에서도 성공할 수 없었다** — 실행기가
+		5분을 다 쓰는 동안 우리는 이미 1분 전에 포기했고, 사용자는 이유 없는
+		`SYSTEM_ERROR` 만 봤다.
+	*/
+	job.DeadlineUnixMs = time.Now().Add(e.timeout).UnixMilli()
 
 	// 응답 스트림은 결과를 읽은 뒤 지운다. 못 읽고 끝나도 실행기 쪽 TTL 이 정리한다.
 	defer e.redis.Del(context.WithoutCancel(ctx), job.ReplyStream)

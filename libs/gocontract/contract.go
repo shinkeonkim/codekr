@@ -2,6 +2,8 @@
 // 세 서비스가 같은 정의를 보게 하려고 별도 모듈로 분리했다 (docs/02_도메인_모델.md 5장).
 package contract
 
+import "time"
+
 // Redis 키. Stream 은 작업 큐, Channel 은 실시간 이벤트 브로드캐스트에 쓴다.
 const (
 	// StreamExec 은 **옛 실행 큐**다 (#639 이전).
@@ -176,6 +178,20 @@ type ExecJob struct {
 	TimeLimitMs   int    `json:"timeLimitMs"`
 	MemoryLimitMb int    `json:"memoryLimitMb"`
 	ReplyStream   string `json:"replyStream"`
+	/*
+		DeadlineUnixMs 는 **채점기가 언제까지 기다리는가**다 (#732).
+
+		전에는 두 쪽이 각자 적은 값을 들고 있었다 — 채점기 60초, 실행기의 이미지 받기
+		5분. 그래서 이미지가 없는 런타임은 **어느 조합에서도 성공할 수 없었다**:
+		실행기가 5분을 다 쓰는 동안 채점기는 이미 1분 전에 포기했고, 사용자에게는
+		이유 없는 `SYSTEM_ERROR` 만 남았다.
+
+		기한을 실어 보내면 실행기가 **듣는 사람이 있을 때 답할 수 있다.** 못 끝낼 일은
+		못 끝낸다고 말하는 편이, 아무도 안 듣는 곳에 결과를 놓는 것보다 낫다.
+
+		0 이면 기한이 없다 — 옛 채점기가 보낸 메시지가 그렇다.
+	*/
+	DeadlineUnixMs int64 `json:"deadlineUnixMs,omitempty"`
 	// ExtraFiles 는 작업 디렉터리에 함께 풀 파일이다 (#60).
 	//
 	// SQL 문제의 스키마·시드·정답 쿼리처럼 **문제가 소유하는 자료**를 싣는다.
@@ -206,6 +222,22 @@ type ExecJob struct {
 	*/
 	SourceFiles map[string]string `json:"sourceFiles,omitempty"`
 }
+
+/*
+Deadline 은 이 작업에 남은 시간을 돌려준다 (#732).
+
+**여유를 둔다.** 채점기가 듣기를 그만두는 바로 그 순간에 답하면 그 답은 아무 데도 닿지
+않는다 — 실행기가 조금 먼저 포기해야 사용자가 이유를 본다.
+*/
+func (j ExecJob) Deadline() (time.Time, bool) {
+	if j.DeadlineUnixMs <= 0 {
+		return time.Time{}, false
+	}
+	return time.UnixMilli(j.DeadlineUnixMs).Add(-DeadlineMargin), true
+}
+
+// DeadlineMargin 은 답을 돌려보낼 시간이다. 결과를 쓰고 스트림에 넣는 데 드는 몫이다.
+const DeadlineMargin = 2 * time.Second
 
 // JudgeTestcaseGroup 은 부분 점수 묶음 하나다 (#473).
 type JudgeTestcaseGroup struct {
