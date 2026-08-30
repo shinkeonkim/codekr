@@ -102,7 +102,7 @@ func run() int {
 		"redis", cfg.RedisAddr, "http", cfg.HTTPAddr, "sandbox", cfg.SandboxRuntime,
 		"concurrency", cfg.Concurrency, "runtimes", registry.Images())
 
-	go warmImages(ctx, box, registry.Images(), cfg.RuntimeRegistry, log)
+	go warmImages(ctx, box, registry.Images(), cfg.RuntimeRegistry, warmRetries, warmRetryDelay, log)
 
 	runner := worker.NewRunner(
 		registry,
@@ -181,6 +181,15 @@ func runVerifyRuntimes(
 	return 0
 }
 
+// 미리 받기를 다시 시도하는 횟수와 간격 (#734).
+//
+// **레지스트리 재시작이 몇 분이면 끝난다**는 관찰에서 나온 값이다. 더 오래 죽어 있으면
+// 사람이 볼 일이고, 실행기가 계속 두드릴 일이 아니다.
+const (
+	warmRetries    = 3
+	warmRetryDelay = 2 * time.Minute
+)
+
 /*
 warmImages 는 정의 파일의 이미지를 미리 받아 둔다 (#712).
 
@@ -190,29 +199,69 @@ warmImages 는 정의 파일의 이미지를 미리 받아 둔다 (#712).
 **한 번에 하나씩 받는다.** 동시에 당기면 노드의 디스크와 네트워크를 실행 중인 채점과
 나눠 쓰게 된다 — 미리 받기가 지금 도는 채점을 느리게 만들면 안 된다.
 
-실패해도 계속한다. 하나가 안 받아진다고 나머지를 포기할 이유가 없고, 실패한 것은
-전처럼 첫 제출이 기다릴 뿐이다.
+실패해도 계속한다. 하나가 안 받아진다고 나머지를 포기할 이유가 없다.
+
+**그리고 실패한 것만 다시 받는다** (#734). 전에는 기동 때 한 번이 전부였고, 그때
+레지스트리가 잠깐 죽어 있으면 그 런타임들은 **영영 준비되지 않았다** — 실제로 열아홉 중
+넷만 받은 채 파드가 몇 시간을 그대로 돌았다. 그 사실을 아는 방법은 기동 로그의 WARN 을
+사람이 읽는 것뿐이었다.
+
+레지스트리 재시작은 몇 분이면 끝나므로 **몇 번만** 다시 본다. 무한히 두드리면 오래 죽은
+레지스트리를 실행기가 계속 때린다 — 그만둘 때는 **그만뒀다고 말한다.**
 */
-func warmImages(ctx context.Context, box sandbox.Sandbox, images []string, prefix string, log *slog.Logger) {
+func warmImages(
+	ctx context.Context, box sandbox.Sandbox, images []string, prefix string,
+	retries int, retryDelay time.Duration, log *slog.Logger,
+) {
 	started := time.Now()
-	warmed, failed := 0, 0
+	pending := make([]string, 0, len(images))
 	for _, image := range images {
-		if ctx.Err() != nil {
-			return
-		}
 		ref := image
 		if prefix != "" {
 			ref = prefix + "/" + image
 		}
-		if err := box.Warm(ctx, ref); err != nil {
-			failed++
-			// **경고로 남긴다.** 채점은 그대로 돌므로 오류가 아니다. 다만 그 런타임의
-			// 첫 제출은 여전히 이미지 받기를 기다린다.
-			log.Warn("런타임 이미지를 미리 받지 못했습니다", "image", ref, "error", err)
-			continue
-		}
-		warmed++
+		pending = append(pending, ref)
 	}
+
+	warmed := 0
+	for round := 0; round <= retries; round++ {
+		if round > 0 {
+			// 다시 받기 전에 쉰다. **성공한 것은 다시 받지 않는다** — `pending` 에 남은
+			// 것만 본다.
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(retryDelay):
+			}
+			log.Info("런타임 이미지를 다시 받아 봅니다", "남은것", len(pending), "회차", round)
+		}
+
+		var stillFailing []string
+		for _, ref := range pending {
+			if ctx.Err() != nil {
+				return
+			}
+			if err := box.Warm(ctx, ref); err != nil {
+				stillFailing = append(stillFailing, ref)
+				// **경고로 남긴다.** 채점은 그대로 돌므로 오류가 아니다. 다만 그 런타임의
+				// 첫 제출은 여전히 이미지 받기를 기다린다.
+				log.Warn("런타임 이미지를 미리 받지 못했습니다", "image", ref, "error", err)
+				continue
+			}
+			warmed++
+		}
+		pending = stillFailing
+		if len(pending) == 0 {
+			break
+		}
+	}
+
 	log.Info("런타임 이미지 준비 완료",
-		"받음", warmed, "실패", failed, "걸린시간", time.Since(started).Round(time.Second).String())
+		"받음", warmed, "실패", len(pending), "걸린시간", time.Since(started).Round(time.Second).String())
+	if len(pending) > 0 {
+		// **그만뒀다는 것이 보여야 한다.** 이 줄이 없으면 "실패 15" 가 아직 다시 받는
+		// 중인지 포기한 것인지 알 수 없다.
+		log.Warn("런타임 이미지 미리 받기를 그만둡니다. 그 런타임의 첫 제출은 이미지를 기다립니다",
+			"남은것", pending)
+	}
 }
