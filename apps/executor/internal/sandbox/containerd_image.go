@@ -39,6 +39,12 @@ func (s *containerdSandbox) pull(ctx context.Context, ref string) (client.Image,
 		return image, nil
 	}
 
+	// **받기 전에 짧게 물어본다** (#743). 401·403·404 는 기다린다고 달라지지 않는데,
+	// 전에는 그것을 모르고 예산(미리 받기 30분)을 통째로 썼다.
+	if err := s.probe(ctx, full); permanentPullFailure(err) {
+		return nil, pullRefused(full, err)
+	}
+
 	// 여기부터가 실제로 받는 길이다. **같은 이미지를 동시에 두 번 받지 않는다** (#732) —
 	// 노드에 이미 있으면 위에서 돌아가므로 이 잠금은 정말 받을 때만 걸린다.
 	return s.pulls.Do(ctx, full, func(ctx context.Context) (client.Image, error) {

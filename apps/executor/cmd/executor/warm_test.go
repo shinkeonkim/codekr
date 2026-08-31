@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"sync"
@@ -171,5 +172,40 @@ func TestWarmRetryStopsWhenShuttingDown(t *testing.T) {
 
 	if got := spy.countOf("gcc:13"); got != 0 {
 		t.Fatalf("종료 중인데 받았습니다: %d 번", got)
+	}
+}
+
+// 거부당한 것은 다시 물어보지 않는다 (#743).
+type refusingSpy struct {
+	mu       sync.Mutex
+	attempts int
+}
+
+func (s *refusingSpy) Preflight(context.Context) error { return nil }
+func (s *refusingSpy) Close() error                    { return nil }
+func (s *refusingSpy) Run(context.Context, sandbox.Spec) (sandbox.Outcome, error) {
+	return sandbox.Outcome{}, nil
+}
+
+func (s *refusingSpy) Warm(context.Context, string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.attempts++
+	return fmt.Errorf("%w (zot:5000/mongo:7): 401", sandbox.ErrPullRefused)
+}
+
+func TestWarmDoesNotRetryRefusedImages(t *testing.T) {
+	/*
+		**레지스트리가 0초 만에 401 을 답했는데 30분을 썼다.** 그것을 짧게 끊고 나서도
+		재시도가 남으면 세 번 더 묻게 된다 — 자격증명이 안 통하는 것을 세 번 더 물어볼
+		이유는 없고, 그 사이 뒤에 선 이미지들이 늦어진다.
+	*/
+	spy := &refusingSpy{}
+	warmImages(context.Background(), spy, []string{"mongo:7"}, "", 3, 0, quietLogger())
+
+	spy.mu.Lock()
+	defer spy.mu.Unlock()
+	if spy.attempts != 1 {
+		t.Fatalf("거부당한 것을 %d 번 물었습니다. 한 번이어야 합니다", spy.attempts)
 	}
 }
