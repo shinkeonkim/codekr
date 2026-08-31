@@ -341,6 +341,26 @@ jobs:
           test -S /run/containerd/containerd.sock
           sudo ctr version || echo "ctr 없음 — 소켓만 확인하고 넘어간다"
 
+      # **자체 빌드 런타임은 레지스트리에 없다** (#588 과 같은 자리). Git 라이브 시험이
+      # 쓰는 이미지가 그것이라, 여기서 만들어 containerd 에 넣지 않으면 시험이 이미지를
+      # 못 찾고 실패한다.
+      #
+      # 러너에 nerdctl 이 없으므로 docker 로 만들어 `ctr images import` 로 옮긴다.
+      # **실행기가 보는 네임스페이스(`codekr`)에 넣는 것이 핵심이다** — 기본 네임스페이스에
+      # 넣으면 빌드는 성공했는데 시험은 못 찾는 상태가 된다.
+      - name: Git 런타임 이미지 준비
+        run: |
+          tag=$(python3 -c "
+          import yaml
+          for d in yaml.safe_load(open('infra/runtimes/runtimes.yaml'))['runtimes']:
+              if 'codekr-runtime-git:' in d['image']:
+                  print(d['image']); break
+          ")
+          test -n "$tag"
+          docker build -t "$tag" infra/runtimes/images/git
+          docker save "$tag" | sudo ctr --namespace codekr images import -
+          sudo ctr --namespace codekr images ls -q | grep -q "$tag"
+
       # 소켓이 root 소유라 시험을 sudo 로 돌려야 한다. `go test` 를 sudo 로 돌리면
       # 캐시·모듈 경로가 root 것으로 바뀌므로, 바이너리로 뽑아서 그것만 올린다.
       - name: 시험 바이너리 빌드

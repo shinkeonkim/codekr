@@ -18,11 +18,19 @@ Git 문제가 **샌드박스 안에서** 도는지 본다 (#709).
 
 그래서 이 시험은 **하네스가 아니라 샌드박스를 통과시킨다.** 여기서만 드러난다.
 */
+/*
+Git 문제가 쓰는 이미지. **정의 파일과 같아야 한다** (#739).
+
+전에는 `gcc:13` 이 박혀 있었다 — 시험이 운영과 다른 이미지를 확인하면, 이미지를 바꾼
+날 그 시험은 **아무것도 안 지킨다.**
+*/
+const gitImage = "codekr-runtime-git:2.49"
+
 func TestLiveGitHarnessRunsUnderSandbox(t *testing.T) {
 	box := newLiveSandbox(t)
 
 	outcome, err := box.Run(context.Background(), Spec{
-		Image:      "gcc:13",
+		Image:      gitImage,
 		SourceFile: "commands.git",
 		SourceCode: "git commit --allow-empty -q -m \"첫 커밋\"\n",
 		Harness:    "git",
@@ -71,7 +79,7 @@ func TestLiveGitFailedSubmissionIsWrongAnswerNotError(t *testing.T) {
 	box := newLiveSandbox(t)
 
 	outcome, err := box.Run(context.Background(), Spec{
-		Image:      "gcc:13",
+		Image:      gitImage,
 		SourceFile: "commands.git",
 		// 빈 커밋이라 git 이 거부한다. 사용자가 흔히 겪는 실패다.
 		SourceCode: "git commit --amend -q -m \"고친 메시지\"\n",
@@ -126,7 +134,7 @@ func TestLiveGitSeedMayUseShellButSubmissionMayNot(t *testing.T) {
 	run := func(submission string) Outcome {
 		t.Helper()
 		outcome, err := box.Run(context.Background(), Spec{
-			Image:      "gcc:13",
+			Image:      gitImage,
 			SourceFile: "commands.git",
 			SourceCode: submission,
 			Harness:    "git",
