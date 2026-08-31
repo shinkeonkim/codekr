@@ -205,9 +205,12 @@ func credentialState(creds registryCredentials, ref string) string {
 //
 // **한 장에 시간 제한을 둔다.** 없으면 안 받아지는 이미지 하나가 기동 뒤의 미리 받기를
 // 통째로 멈춰 세우고, 뒤에 선 것들은 영영 차례가 오지 않는다 — 한 번에 하나씩 받기
-// 때문이다. 제출 경로와 같은 제한을 쓴다.
+// 때문이다.
+//
+// **제출 경로보다 훨씬 길다** (#737). 여기는 아무도 안 기다린다 — 5분을 넘긴다고
+// 취소하면 큰 이미지는 영영 준비되지 않는다.
 func (s *containerdSandbox) Warm(ctx context.Context, image string) error {
-	ctx, cancel := context.WithTimeout(ctx, pullTimeout)
+	ctx, cancel := context.WithTimeout(ctx, warmPullTimeout)
 	defer cancel()
 
 	_, err := s.pull(ctx, image)
