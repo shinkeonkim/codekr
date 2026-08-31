@@ -91,6 +91,8 @@ class QueueContractTest {
         assertEquals(QueueKeys.REPLY_STREAM_PREFIX + job.jobId, job.replyStream)
         assertEquals(2000, job.timeLimitMs)
         assertEquals(256, job.memoryLimitMb)
+        // **기한도 계약의 일부다** (#732). 빠지면 실행기가 자기 예산으로 일한다.
+        assertEquals(1787935241071L, job.deadlineUnixMs)
     }
 
     @Test

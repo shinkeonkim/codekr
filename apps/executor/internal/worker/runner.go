@@ -3,6 +3,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/shinkeonkim/codekr/apps/executor/internal/runtimes"
@@ -41,6 +42,23 @@ func NewRunner(
 // Run 은 작업을 실행하고 결과를 만든다. 인프라 오류도 결과(SYSTEM_ERROR)로 표현해
 // 호출자가 항상 응답을 돌려줄 수 있게 한다.
 func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecResult {
+	/*
+		**듣는 사람이 있을 때 답한다** (#732).
+
+		이미지가 없는 런타임은 받기에 몇 분이 걸린다. 그동안 채점기는 자기 시간이 지나면
+		포기하고, 그 뒤에 내놓는 결과는 아무 데도 닿지 않는다 — 사용자에게는 이유 없는
+		시스템 오류만 남는다.
+
+		그래서 채점기가 실어 보낸 기한을 그대로 쓴다. **받기는 멈추지 않는다**(#732 의
+		합치기가 뒤에서 계속 받는다) — 여기서 그만두는 것은 기다림뿐이고, 그래서 잠시
+		뒤 다시 낸 제출이 그 이미지를 쓴다.
+	*/
+	if deadline, ok := job.Deadline(); ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithDeadline(ctx, deadline)
+		defer cancel()
+	}
+
 	definition, found := r.registry.Find(job.RuntimeID)
 	if !found {
 		return systemError(job, fmt.Sprintf("지원하지 않는 런타임입니다: %s", job.RuntimeID))
@@ -90,6 +108,15 @@ func (r *Runner) Run(ctx context.Context, job contract.ExecJob) contract.ExecRes
 		MaxOutputBytes:       r.maxOutputBytes,
 	})
 	if err != nil {
+		/*
+			**기한이 지나서 멈춘 것과 실행이 잘못된 것은 다른 말이다.**
+
+			`context deadline exceeded` 를 그대로 보여 주면 사용자는 자기 코드가 잘못된
+			줄 안다. 준비가 덜 된 것이고, 사용자가 할 일은 잠시 뒤 다시 내는 것뿐이다.
+		*/
+		if errors.Is(err, context.DeadlineExceeded) {
+			return systemError(job, "실행 환경을 준비하는 중입니다. 잠시 뒤 다시 제출해 주세요.")
+		}
 		return systemError(job, err.Error())
 	}
 

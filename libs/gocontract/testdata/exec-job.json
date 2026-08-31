@@ -5,5 +5,6 @@
   "stdin": "1 2\n",
   "timeLimitMs": 2000,
   "memoryLimitMb": 256,
-  "replyStream": "codekr:exec:res:01JABCDEF"
+  "replyStream": "codekr:exec:res:01JABCDEF",
+  "deadlineUnixMs": 1787935241071
 }
