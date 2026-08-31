@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -56,5 +57,10 @@ func TestLiveWarmReportsUnknownImage(t *testing.T) {
 	*/
 	if elapsed := time.Since(started); elapsed > probeTimeout+30*time.Second {
 		t.Fatalf("못 받는다는 것을 아는 데 %s 걸렸습니다", elapsed.Round(time.Second))
+	}
+	// **빨리 끝난 것만으로는 부족하다.** 미리 물어보는 자리를 지나왔는지까지 본다 —
+	// 그 자리가 빠져도 시간만 보는 검사는 통과할 수 있다.
+	if !errors.Is(err, ErrPullRefused) {
+		t.Fatalf("거부로 분류되지 않았습니다: %v", err)
 	}
 }
