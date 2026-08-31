@@ -34,10 +34,22 @@ func (s *containerdSandbox) probe(ctx context.Context, ref string) error {
 	ctx, cancel := context.WithTimeout(ctx, probeTimeout)
 	defer cancel()
 
-	resolver := docker.NewResolver(docker.ResolverOptions{
-		Hosts: docker.ConfigureDefaultRegistries(s.registryOptions()...),
-	})
-	_, _, err := resolver.Resolve(ctx, ref)
+	/*
+		**`fetch` 와 같은 갈래를 타야 한다.**
+
+		처음에는 `ConfigureDefaultRegistries(...)` 를 무조건 씌웠는데, 설정할 것이 없을 때
+		그것은 **인증기가 없는** 호스트 설정을 만든다. 그러면 Docker Hub 가 익명 받기에
+		주는 401 인증 요구를 아무도 못 받아 넘기고, 그 401 이 "거부" 로 분류돼 **멀쩡한
+		공개 이미지가 전부 막혔다** — CI 의 라이브 시험이 그것을 잡았다.
+
+		설정할 것이 없으면 containerd 의 기본 resolver 를 그대로 쓴다. `fetch` 가 그 경우
+		`WithResolver` 를 안 붙이는 것과 같은 선택이다.
+	*/
+	options := docker.ResolverOptions{}
+	if opts := s.registryOptions(); len(opts) > 0 {
+		options.Hosts = docker.ConfigureDefaultRegistries(opts...)
+	}
+	_, _, err := docker.NewResolver(options).Resolve(ctx, ref)
 	return err
 }
 
