@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log/slog"
 	"net/http"
@@ -243,7 +244,11 @@ func warmImages(
 			}
 			at := time.Now()
 			if err := box.Warm(ctx, ref); err != nil {
-				stillFailing = append(stillFailing, ref)
+				// **거부는 다시 물어봐도 같은 답이다** (#743). 재시도는 레지스트리가
+				// 잠깐 죽은 경우를 위한 것이지, 자격증명이 안 통하는 경우가 아니다.
+				if !errors.Is(err, sandbox.ErrPullRefused) {
+					stillFailing = append(stillFailing, ref)
+				}
 				// **경고로 남긴다.** 채점은 그대로 돌므로 오류가 아니다. 다만 그 런타임의
 				// 첫 제출은 여전히 이미지 받기를 기다린다.
 				log.Warn("런타임 이미지를 미리 받지 못했습니다",
